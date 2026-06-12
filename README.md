@@ -146,18 +146,59 @@ MI HATO (80)
 - Los animales **cambian de grupo automáticamente por eventos**: un parto pasa la
   vaca de "horras" a "ordeño"; un secado la devuelve a "horras"; la edad sugiere
   pasar terneras a levante. Nadie reclasifica a mano.
-- **Ficha por animal** (se consulta, casi nunca se edita): número/nombre, foto,
-  raza, nacimiento, genealogía (madre/padre), grupo actual y su línea de tiempo
-  de eventos.
+#### La ficha del animal: todo lo de una vaca en una pantalla
+
+La ficha se **consulta** mucho y se **edita** poco: los datos generales se cargan
+una vez, y todo lo demás lo van construyendo los eventos.
+
+```
+┌──────────────────────────────────────────┐
+│ 📷  VACA 042 · "Lucero"                  │
+│ Holstein × Gyr · 5,2 años · En ordeño    │
+├──────────────────────────────────────────┤
+│ 🤰 PREÑADA · 6 meses (palpación 02 may)  │
+│    Parto probable: ~12 sep               │
+│    ⚠️ Secar: ~12 jul                     │
+├──────────────────────────────────────────┤
+│ ⚖️ Peso: 480 kg (abr) · ver historial    │
+│ 🥛 Último pesaje: 14 L/día · ver curva   │
+│ 🍼 Partos: 3 · Crías: 038, 051, 064      │
+│ 👪 Madre: 017 · Padre: toro "Sansón"     │
+├──────────────────────────────────────────┤
+│ 💊 SALUD                                 │
+│ • Aftosa: ✅ may 2026 (ciclo ICA)        │
+│ • Mastitis (mar 2026): tratada, ok       │
+│ • Sin retiro de leche activo             │
+├──────────────────────────────────────────┤
+│ HISTORIA ▾ (línea de tiempo de eventos)  │
+│ [+ Registrar evento]                     │
+└──────────────────────────────────────────┘
+```
+
+- **Datos generales (se cargan una vez):** número/nombre, foto, raza, fecha de
+  nacimiento (la **edad se calcula sola**), genealogía (madre/padre), procedencia
+  (nacida en finca o comprada). El **peso** es un evento periódico (capa 3): cada
+  registro construye el historial y la curva de crecimiento de las jóvenes.
 - **Ordeño diario = 1 número:** se ordeña una vez al día, así que el registro es
   el total de litros (o cantinas) de ese ordeño. El detalle por vaca sale del
   **pesaje mensual** (capa 3), no del día a día.
-- **Reproducción por eventos:** celo visto → servicio (monta o IA) → confirmación
-  de preñez → parto. El sistema deriva las alertas: secar a los 7 meses de preñez,
+- **Reproducción — la palpación como evento central:** el día que viene el
+  veterinario a palpar, la app entra en *modo palpación*: pasa la lista de vacas
+  y para cada una se marca el resultado en un toque — `preñada (+ meses)`,
+  `vacía` o `problema`. Con los meses de preñez el sistema calcula solo la fecha
+  probable de parto, la fecha de secado (~2 meses antes) y arma el **calendario
+  de partos** de la finca. El ciclo completo por eventos: celo visto → servicio
+  (monta o IA) → palpación → secado → parto. Alertas derivadas: secar pronto,
   parto próximo, vaca vacía > 120 días posparto.
-- **Salud:** tratamientos con **periodo de retiro** (alerta de que la leche de esa
-  vaca no se puede vender X días — y descuenta esos litros del estimado de venta),
-  ciclos de vacunación ICA (aftosa, brucelosis) y desparasitación por grupo.
+- **Salud — enfermedades, medicinas y vacunas:**
+  - **Enfermedad:** se registra qué tiene (mastitis, cojera, fiebre…) con foto
+    opcional; queda "en tratamiento" hasta marcar recuperación.
+  - **Medicina:** medicamento (sale del inventario), dosis y **periodo de
+    retiro** — la app alerta que la leche de esa vaca no se puede vender X días
+    y descuenta esos litros del estimado de venta.
+  - **Vacunas y desparasitación por grupo:** los ciclos ICA (aftosa, brucelosis)
+    se aplican a todo el hato en una sola acción — "vacunar grupo" marca las 80
+    de una vez, sin abrir 80 fichas. La app recuerda los ciclos (may/nov).
 
 **KPIs:** litros totales/día y litros/vaca en ordeño, curva de cada vaca con los
 pesajes mensuales, intervalo entre partos, % de preñez, costo por litro.
