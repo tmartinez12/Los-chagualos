@@ -766,6 +766,7 @@ de eventos — el modelo de "todo es un evento" lo hace natural.
 | Lluvia | Se registra en **Potreros** (lluvia → pasto), no en la rutina de leche |
 | Dispositivos | Mezcla Android/iPhone → **PWA** |
 | Datos iniciales | **Importación desde cuaderno/Excel**: plantilla de censo (animales, potreros, lecheros) que se llena una vez y se importa |
+| Pantalla principal de Leche | **Producción primero**: litros de hoy vs promedio de 7 días con mini-curva · vacas problema **solo si hay algo grave** · **sin dinero en lo diario** (las cuentas por lechero viven en Decisiones) |
 
 ---
 

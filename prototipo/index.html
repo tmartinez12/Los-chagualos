@@ -384,11 +384,40 @@ svg.ic-l{width:24px;height:24px}
     </div>
   </div>
 
-  <!-- ============ ORDEÑO ============ -->
+  <!-- ============ LECHE (módulo) ============ -->
   <div class="screen" id="scr-ordeno">
-    <div class="card" style="display:flex;align-items:center;gap:10px;margin-top:4px;padding:12px 16px">
+    <!-- 1. LA pregunta: ¿cómo va la producción? -->
+    <div class="card chart-card" style="margin-top:4px">
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <div style="font-size:40px;font-weight:700;letter-spacing:-1.5px">184 <span style="font-size:18px;color:var(--ink-2);font-weight:500">L hoy</span></div>
+        <div class="up" style="font-size:13px;font-weight:600">↑ 5% sobre tu semana (175 L)</div>
+      </div>
+      <svg class="chart" viewBox="0 0 320 54" style="margin-top:6px">
+        <polyline points="10,38 60,40 110,34 160,36 210,30 260,28 305,22"
+          fill="none" stroke="#2F7E33" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="305" cy="22" r="4" fill="#2F7E33"/>
+        <g font-family="Work Sans,sans-serif" font-size="9" fill="#A8ACA0">
+          <text x="10" y="52">vie</text><text x="60" y="52">sáb</text><text x="110" y="52">dom</text>
+          <text x="160" y="52">lun</text><text x="210" y="52">mar</text><text x="258" y="52">mié</text><text x="298" y="52">hoy</text>
+        </g>
+      </svg>
+    </div>
+
+    <!-- 2. Excepciones: SOLO aparece cuando algo está mal -->
+    <div class="alert urgent">
+      <div class="a-icon"><svg class="ic"><use href="#i-warn"/></svg></div>
+      <div class="a-body">
+        <div class="a-title">2 vacas requieren atención</div>
+        <div class="a-sub"><b>033 Paloma</b> — 6 L a DEL 95, muy bajo para su etapa ·
+          <b>017 Azucena</b> — retiro de leche, 2 días más</div>
+        <button class="btn outl small mt8" onclick="openGroup('ordeno')">Ver vacas</button>
+      </div>
+    </div>
+
+    <!-- 3. Registrar (la acción del día) -->
+    <div class="card" style="display:flex;align-items:center;gap:10px;padding:12px 16px">
       <svg class="ic" style="color:var(--ink-2)"><use href="#i-drop"/></svg>
-      <div style="flex:1;font-size:13px">Vaca <b id="cowIdx">1</b> de 6 <span style="color:var(--ink-2)">(demo — serían tus 26)</span></div>
+      <div style="flex:1;font-size:13px">Ordeño de hoy · vaca <b id="cowIdx">1</b> de 6 <span style="color:var(--ink-2)">(demo)</span></div>
       <div style="font-size:13.5px;font-weight:700">Σ <span id="runTotal">0</span> L</div>
     </div>
 
@@ -421,25 +450,23 @@ svg.ic-l{width:24px;height:24px}
 
     <div class="section-label" id="entregasSec">Entregas a los lecheros · hoy</div>
     <div class="card">
-      <div class="chart-sub" style="margin-bottom:8px">Precio fijo: $1.950/L (se configura una vez)</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0 8px;
         border-bottom:1px solid var(--border)">
         <div><div class="li-title">Don José</div><div class="li-sub">todos los días</div></div>
-        <div class="li-trail"><span class="li-num">120 L</span><br><span class="li-cap">$234.000</span></div>
+        <span class="li-num">120 L</span>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0">
         <div><div class="li-title">Quesería La María</div><div class="li-sub">lun · mié · vie</div></div>
-        <div class="li-trail"><span class="li-num">50 L</span><br><span class="li-cap">$97.500</span></div>
+        <span class="li-num">50 L</span>
       </div>
       <div style="font-size:12.5px;color:var(--ink-2);line-height:1.6;border-top:1px solid var(--border);
         padding-top:10px;margin-top:2px">
-        <b style="color:var(--ink)">Balance del día:</b> producida 184 − entregada 170 − terneras 12
+        <b style="color:var(--ink)">Balance:</b> producida 184 − entregada 170 − terneras 12
         = casa 2 L <b class="up">✓ cuadra</b></div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="btn filled small" style="flex:1;justify-content:center"
-          onclick="markRutina('entregas');snack('Entrega registrada — la cuenta de junio de Don José va en $5,4 millones (2.770 L)')">Registrar entrega</button>
-        <button class="btn text small" onclick="snack('Cuenta del mes: Don José $5,4M (2.770 L) · La María $1,9M (980 L)')">Cuentas del mes</button>
-      </div>
+      <button class="btn filled small mt8" style="width:100%;justify-content:center"
+        onclick="markRutina('entregas');snack('Entrega registrada — el balance del día cuadra')">Registrar entrega</button>
+      <div style="font-size:11px;color:var(--ink-3);margin-top:8px;text-align:center">
+        Las cuentas en pesos viven en Decisiones — aquí solo litros</div>
     </div>
   </div>
 
@@ -776,12 +803,13 @@ svg.ic-l{width:24px;height:24px}
     <div class="dec good">
       <div class="d-head">
         <div class="d-icon"><svg class="ic"><use href="#i-check"/></svg></div>
-        <div class="d-title">El costo por litro bajó a $1.180</div>
+        <div class="d-title">Cuentas del mes por lechero</div>
       </div>
-      <div class="d-why">Precio de venta: <b>$1.950/L</b> → margen de <b>$770/L</b> (39%).
-        El silo propio redujo 14% el costo de alimentación.</div>
+      <div class="d-why">Junio a la fecha: <b>Don José $5,4M</b> (2.770 L) ·
+        <b>La María $1,9M</b> (980 L) — a precio fijo de $1.950/L.
+        Total por cobrar: <b>$7,3M</b>.</div>
       <div class="d-actions">
-        <button class="btn text small" onclick="snack('Detalle de costos — en la siguiente iteración')">Ver detalle</button>
+        <button class="btn outl small" onclick="snack('Exportado: cuentas_junio.pdf — una hoja por lechero')">Exportar cuentas</button>
       </div>
     </div>
 
@@ -872,7 +900,7 @@ svg.ic-l{width:24px;height:24px}
     <button class="nav-item active" data-scr="scr-inicio" onclick="go('scr-inicio',this)">
       <svg class="ic"><use href="#i-home"/></svg><span class="n-label">Inicio</span></button>
     <button class="nav-item" data-scr="scr-ordeno" onclick="go('scr-ordeno',this)">
-      <svg class="ic"><use href="#i-drop"/></svg><span class="n-label">Ordeño</span></button>
+      <svg class="ic"><use href="#i-drop"/></svg><span class="n-label">Leche</span></button>
     <button class="nav-item" data-scr="scr-potreros" onclick="go('scr-potreros',this)">
       <svg class="ic"><use href="#i-leaf"/></svg><span class="n-label">Potreros</span></button>
     <button class="nav-item" data-scr="scr-hato" onclick="go('scr-hato',this)">
@@ -905,7 +933,7 @@ svg.ic-l{width:24px;height:24px}
 <script>
 const titles={
   'scr-inicio':['Los Chagualos','Jue 12 jun · Lluvia ayer: 12 mm'],
-  'scr-ordeno':['Ordeño del día','Vaca por vaca · queda guardado sin señal'],
+  'scr-ordeno':['Leche','Hoy vs tu promedio de 7 días'],
   'scr-potreros':['Potreros','12 potreros · ocupación 1 día (máx 2)'],
   'scr-hato':['Mi hato','80 animales · 26 en ordeño'],
   'scr-vaca':['Ficha del animal','Se consulta mucho, se edita poco'],
