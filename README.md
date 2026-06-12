@@ -100,10 +100,11 @@ CAPA 1 · DIARIO (obligatorio, < 5 minutos en total)
 │      entran al ordeño, con el valor de ayer pre-cargado →
 │      ¿dio igual? un toque ✓ · ¿cambió? 2 dígitos y ✓ (~2-3 min las 26)
 │      El total del día se suma solo.
+├── 🚚 Entrega a los lecheros: litros entregados a cada uno (2-3 números)
 ├── 🐄 Movimiento del hato: ¿a qué potrero entraron hoy? (1-2 toques —
 │      con ocupación de 1 día, máx 2, esto es rutina diaria, no evento)
 └── 🌧️ Lluvia del día: ___ mm (si llovió)
-    → Ordeño + potrero + lluvia. Nada más es obligatorio.
+    → Ordeño + entregas + potrero + lluvia. Nada más es obligatorio.
 
 CAPA 2 · POR EVENTO (solo cuando pasa algo)
 ├── 🐄 Parto, celo visto, servicio, secado, venta, muerte
@@ -252,6 +253,16 @@ una vez, y todo lo demás lo van construyendo los eventos.
 - **Alerta de caída de producción:** si una vaca baja bruscamente frente a su
   promedio de la semana (p. ej. −25%), la app la marca esa misma mañana — es el
   primer síntoma de mastitis, celo o problema de alimentación.
+- **Venta de leche — entregas por lechero (precio fijo):** el precio se configura
+  una vez y solo se toca cuando cambie. Lo que se registra a diario es lo que ya
+  se anota hoy en la finca: **cuántos litros se le entregaron a cada lechero**.
+  Con eso el sistema arma solo:
+  - el **balance del día**: producida − entregada − terneras = casa/diferencia
+    (y avisa si no cuadra — fugas de leche visibles de inmediato);
+  - la **cuenta del mes por lechero**: litros acumulados × precio = lo que debe
+    cada uno, lista para cobrar sin cuaderno ni calculadora;
+  - el cruce con los retiros: si hay vacas en tratamiento, la app recuerda
+    cuántos litros NO podían entregarse ese día.
 - **DEL (días en leche) — el reloj de cada lactancia:** se calcula solo desde el
   parto (cero captura) y acompaña a la vaca en toda la app: junto a sus litros en
   el ordeño, en su ficha y en los rankings. Es el contexto que hace interpretables
@@ -263,9 +274,13 @@ una vez, y todo lo demás lo van construyendo los eventos.
   y para cada una se marca el resultado en un toque — `preñada (+ meses)`,
   `vacía` o `problema`. Con los meses de preñez el sistema calcula solo la fecha
   probable de parto, la fecha de secado (~2 meses antes) y arma el **calendario
-  de partos** de la finca. El ciclo completo por eventos: celo visto → servicio
-  (monta o IA) → palpación → secado → parto. Alertas derivadas: secar pronto,
-  parto próximo, vaca vacía > 120 días posparto.
+  de partos** de la finca. La reproducción es **monta natural — el toro anda con
+  el hato** — así que registrar servicios es opcional (un celo o una monta vista
+  se anotan si se ven) y **la palpación es la fuente de verdad**. Alertas
+  derivadas: secar pronto, parto próximo, vaca vacía > 120 días posparto.
+  Y la alerta clave de la monta natural: **consanguinidad** — con la genealogía
+  ya capturada, la app avisa cuando las hijas del toro llegan a edad de servicio
+  ("4 novillas son hijas de Sansón → toca rotar o cambiar de toro").
 - **Salud — enfermedades, medicinas y vacunas:**
   - **Enfermedad:** se registra qué tiene (mastitis, cojera, fiebre…) con foto
     opcional; queda "en tratamiento" hasta marcar recuperación.
@@ -593,16 +608,16 @@ y vacunas, altas/bajas y decisiones de secado/descarte. Lo que falta:
 
 | # | Pendiente | Por qué importa |
 |---|---|---|
-| 1 | **Balance y venta de leche** | Producida → terneras/autoconsumo/descartes por retiro → vendida. Precio/litro, conciliación de la quincena del comprador y bonificaciones por calidad (grasa, proteína, células somáticas). *Es la plata.* |
-| 2 | **Alimentación y suplementación** | Consumo de sal, silo y concentrado por grupo → completa el costo real por litro y cierra el círculo con el módulo de maíz. |
+| ✅ | ~~Balance y venta de leche~~ | **Ya diseñado** (sección 4.1): entregas diarias por lechero a precio fijo, balance del día y cuenta del mes por lechero. |
+| 1 | **Plan sanitario anual** | Calendario que programa solo: aftosa (may/nov), brucelosis a terneras 3-8 meses, desparasitación periódica → genera las tareas sin depender de memoria. |
+| 2 | **Reproducción con toro** | Alerta de consanguinidad (hijas del toro llegando a edad de servicio → rotar/cambiar toro) y recordatorio de 21 días cuando se vio un celo o monta. Sin IA: la reproducción es monta natural. |
 | 3 | **Crianza de terneras** | Protocolo de leche por ternera, destete, curva de crecimiento vs meta (~500 g/día). Las terneras de hoy son el ordeño en 3 años. |
-| 4 | **Plan sanitario anual** | Calendario que programa solo: aftosa (may/nov), brucelosis a terneras 3-8 meses, desparasitación periódica → genera las tareas sin depender de memoria. |
-| 5 | **Reproducción fina** | Recordatorio de los 21 días (vaca servida que no repite celo ≈ preñada), pajillas y % concepción por toro, alerta de consanguinidad usando la genealogía. |
-| 6 | **Trazabilidad oficial ICA** | Guías de movilización, identificación oficial, reportes listos para trámites. |
-| 7 | **Hoja de vida exportable (PDF)** | La vida completa del animal demostrable → mejor precio al vender. |
+| 4 | **Trazabilidad oficial ICA** | Guías de movilización, identificación oficial, reportes listos para trámites. |
+| 5 | **Hoja de vida exportable (PDF)** | La vida completa del animal demostrable → mejor precio al vender. |
+| ⏸ | ~~Alimentación y suplementación~~ | **Pospuesto** — hoy no se hace seguimiento de alimentación en la finca. Cuando se quiera medir el costo por litro completo, se activa. |
 
-**Orden recomendado:** 1-2 (completan el dinero), luego 4-5 (automatizan la
-memoria), después 3, 6 y 7.
+**Orden recomendado:** 1-2 (automatizan la memoria sanitaria y reproductiva),
+luego 3, 4 y 5.
 
 ---
 
