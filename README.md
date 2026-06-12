@@ -291,6 +291,32 @@ una vez, y todo lo demás lo van construyendo los eventos.
     "vacunar hato" marca los 80 de una vez, sin abrir 80 fichas (con excepciones:
     se destildan los animales que no se vacunaron y se anota por qué).
 
+#### Reproducción con toro — consanguinidad y la regla de los 21 días
+
+Con monta natural el toro hace su trabajo solo; lo que el sistema aporta es la
+**memoria y la genética** que el ojo no alcanza a llevar:
+
+- **El toro como entidad:** ficha del toro activo (edad, años en el hato, # de
+  hijas vivas en la finca). Es el dato que sustenta la decisión más importante
+  de la monta natural: **cuándo cambiarlo**.
+- **Alerta de consanguinidad:** la app cruza la genealogía con la edad/peso de
+  las hembras jóvenes y avisa con meses de anticipación: *"4 novillas hijas de
+  Sansón llegan a edad de servicio → no deben quedar con su padre"*. Opciones
+  que sugiere: rotar o cambiar el toro, separar el lote de novillas, prestar
+  toro de otra finca. Sin esta alerta, en una finca con un solo toro la
+  consanguinidad llega sola en 2-3 años.
+- **La regla de los 21 días:** el ciclo de la vaca dura ~21 días. Si se vio un
+  celo o una monta y se anotó, la app programa la revisión: *"Mona: celo visto
+  el 3 jun → observar ~24 jun; si no repite celo, probablemente quedó preñada"*.
+  Las que no repiten van solas a la lista de palpación.
+- **La lista para el veterinario se arma sola:** el día de la palpación, el
+  *modo palpación* ya sabe a quién revisar: vacas con celo sin repetir, vacas
+  >60 días posparto sin celo visto, y las que salieron vacías la vez pasada.
+  El veterinario no pierde tiempo y no se le escapa ninguna.
+
+**KPIs reproductivos:** % de preñez del hato, intervalo entre partos, vacas
+vacías >120 DEL, # de hijas del toro activo.
+
 #### Plan sanitario anual — la memoria sanitaria de la finca
 
 Nadie debería tener que acordarse de una vacuna. El plan sanitario es un conjunto
@@ -632,13 +658,13 @@ y vacunas, altas/bajas y decisiones de secado/descarte. Lo que falta:
 |---|---|---|
 | ✅ | ~~Balance y venta de leche~~ | **Ya diseñado** (sección 4.1): entregas diarias por lechero a precio fijo, balance del día y cuenta del mes por lechero. |
 | ✅ | ~~Plan sanitario anual~~ | **Ya diseñado** (sección 4.1): protocolos por calendario y por edad, aplicación por grupo, soporte ICA exportable. |
-| 1 | **Reproducción con toro** | Alerta de consanguinidad (hijas del toro llegando a edad de servicio → rotar/cambiar toro) y recordatorio de 21 días cuando se vio un celo o monta. Sin IA: la reproducción es monta natural. |
-| 2 | **Crianza de terneras** | Protocolo de leche por ternera, destete, curva de crecimiento vs meta (~500 g/día). Las terneras de hoy son el ordeño en 3 años. |
-| 3 | **Trazabilidad oficial ICA** | Guías de movilización, identificación oficial, reportes listos para trámites. |
-| 4 | **Hoja de vida exportable (PDF)** | La vida completa del animal demostrable → mejor precio al vender. |
+| ✅ | ~~Reproducción con toro~~ | **Ya diseñado** (sección 4.1): ficha del toro, alerta de consanguinidad, regla de los 21 días y lista de palpación auto-armada. |
+| 1 | **Crianza de terneras** | Protocolo de leche por ternera, destete, curva de crecimiento vs meta (~500 g/día). Las terneras de hoy son el ordeño en 3 años. |
+| 2 | **Trazabilidad oficial ICA** | Guías de movilización, identificación oficial, reportes listos para trámites. |
+| 3 | **Hoja de vida exportable (PDF)** | La vida completa del animal demostrable → mejor precio al vender. |
 | ⏸ | ~~Alimentación y suplementación~~ | **Pospuesto** — hoy no se hace seguimiento de alimentación en la finca. Cuando se quiera medir el costo por litro completo, se activa. |
 
-**Orden recomendado:** 1 (reproducción con toro), luego 2, 3 y 4.
+**Orden recomendado:** 1 (terneras), luego 2 y 3.
 
 ---
 

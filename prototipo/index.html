@@ -632,10 +632,75 @@ body{background:#3a3f36;display:flex;align-items:center;justify-content:center;
     </div>
 
     <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn tonal" style="flex:1;justify-content:center" onclick="snack('Modo palpación: lista guiada vaca por vaca para el día del veterinario')">
-        🩺 Modo palpación</button>
+      <button class="btn tonal" style="flex:1;justify-content:center" onclick="go('scr-repro')">
+        🐂 Reproducción</button>
       <button class="btn tonal" style="flex:1;justify-content:center" onclick="go('scr-sanitario')">
         💉 Plan sanitario</button>
+    </div>
+  </div>
+
+  <!-- ============ PANTALLA: REPRODUCCIÓN ============ -->
+  <div class="screen" id="scr-repro">
+    <div class="kpi-row" style="margin-top:4px">
+      <div class="kpi"><div class="k-label">🤰 Preñez</div><div class="k-value">73<span class="k-unit">%</span></div></div>
+      <div class="kpi"><div class="k-label">🔁 Entre partos</div><div class="k-value">14,2<span class="k-unit">m</span></div></div>
+      <div class="kpi"><div class="k-label">⚠ Vacías >120d</div><div class="k-value">2</div></div>
+    </div>
+
+    <div class="card elevated" style="display:flex;gap:12px;align-items:center">
+      <div class="cow-photo" style="width:56px;height:56px;font-size:28px;border-radius:18px">🐂</div>
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:800;color:var(--md-on-surface)">T01 · Sansón — toro activo</div>
+        <div style="font-size:12.5px;color:var(--md-on-surface-variant)">6 años · en el hato desde 2021 ·
+          <b>23 hijas vivas en la finca</b></div>
+      </div>
+      <span class="chev">›</span>
+    </div>
+
+    <div class="alert urgent">
+      <div class="a-icon"><span class="emj">🧬</span></div>
+      <div class="a-body">
+        <div class="a-title">Consanguinidad: 4 novillas hijas de Sansón llegan a edad de servicio</div>
+        <div class="a-sub">055 Princesa y 058 Alondra ya tienen el peso; 2 más en ~5 meses.
+          <b>No deben quedar con su padre.</b></div>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <button class="btn filled small" onclick="snack('Opciones: rotar/cambiar toro · separar lote de novillas · prestar toro de otra finca')">Ver opciones</button>
+          <button class="btn text small" onclick="openGroup('novillas')">Ver novillas</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">🔁 REGLA DE LOS 21 DÍAS</div>
+    <div class="card elevated">
+      <div class="chart-sub" style="margin-bottom:8px">El ciclo de la vaca dura ~21 días: si el celo no
+        se repite, probablemente quedó preñada.</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;
+        border-bottom:1px solid var(--md-surface-container-high)">
+        <div><div class="li-title" style="font-size:14px">038 · Mona</div>
+          <div class="li-sub">Celo visto el 3 jun · monta de Sansón vista</div></div>
+        <span class="badge warn">revisar ~24 jun</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0">
+        <div><div class="li-title" style="font-size:14px">027 · Estrella</div>
+          <div class="li-sub">Celo visto el 28 may · no repitió el 18 jun</div></div>
+        <span class="badge ok">¿preñada? → palpar</span>
+      </div>
+      <button class="btn outl small mt8" style="width:100%;justify-content:center" onclick="openSheet()">
+        ＋ Registrar celo o monta vista</button>
+    </div>
+
+    <div class="section-label">🩺 LISTA PARA LA PRÓXIMA PALPACIÓN (se arma sola)</div>
+    <div class="card elevated">
+      <div style="font-size:13px;color:var(--md-on-surface);line-height:1.7">
+        • <b>027 Estrella</b> — celo sin repetir (¿preñada?)<br>
+        • <b>033 Paloma</b> — vacía hace 132 días<br>
+        • <b>029 Pinta</b> — vacía hace 150 días<br>
+        • <b>051 Careta</b> — parida hace 121 días, sin celo visto</div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn filled small" style="flex:1;justify-content:center"
+          onclick="snack('Modo palpación: el veterinario revisa estas 4 en orden, resultado en un toque')">🩺 Iniciar modo palpación</button>
+        <button class="btn text small" onclick="snack('Lista enviada al Dr. Restrepo por WhatsApp')">Enviar al vet</button>
+      </div>
     </div>
   </div>
 
@@ -912,6 +977,7 @@ const titles={
   'scr-decisiones':['Decisiones del mes','💡 Junio 2026 · 4 recomendaciones'],
   'scr-grupo':['Grupo','🐄'],
   'scr-sanitario':['Plan sanitario','💉 Se programa solo · genera las tareas'],
+  'scr-repro':['Reproducción','🐂 Monta natural · la palpación manda'],
 };
 /* drill-down: hato → grupo → animal */
 const grupos={
