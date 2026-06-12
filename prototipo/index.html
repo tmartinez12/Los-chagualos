@@ -507,43 +507,86 @@ body{background:#3a3f36;display:flex;align-items:center;justify-content:center;
       <div class="kpi"><div class="k-label">🤰 Preñadas</div><div class="k-value">19</div></div>
     </div>
 
-    <div class="section-label">🐄 GRUPOS DEL HATO</div>
+    <div class="section-label">🐄 GRUPOS DEL HATO · toca uno para ver sus animales</div>
     <div class="list">
-      <div class="list-item" onclick="openCow()">
+      <div class="list-item" onclick="openGroup('ordeno')">
         <div class="li-leading"><span class="emj">🥛</span></div>
         <div class="li-body"><div class="li-title">Vacas en ordeño</div>
           <div class="li-sub">Ayer: 11,4 L/vaca · DEL promedio: 164</div></div>
-        <div class="li-trail"><div class="li-num">26</div></div>
+        <div class="li-trail"><div class="li-num">26</div></div><span class="chev">›</span>
       </div>
-      <div class="list-item" onclick="snack('9 vacas horras · 6 paren antes de octubre')">
+      <div class="list-item" onclick="openGroup('horras')">
         <div class="li-leading"><span class="emj">🤰</span></div>
         <div class="li-body"><div class="li-title">Vacas horras (secas)</div>
           <div class="li-sub">6 paren antes de octubre</div></div>
-        <div class="li-trail"><div class="li-num">9</div></div>
+        <div class="li-trail"><div class="li-num">9</div></div><span class="chev">›</span>
       </div>
-      <div class="list-item" onclick="snack('14 novillas de vientre · 4 listas para servicio')">
+      <div class="list-item" onclick="openGroup('novillas')">
         <div class="li-leading"><span class="emj">🐮</span></div>
         <div class="li-body"><div class="li-title">Novillas de vientre</div>
           <div class="li-sub">4 con peso para servicio</div></div>
-        <div class="li-trail"><div class="li-num">14</div></div>
+        <div class="li-trail"><div class="li-num">14</div></div><span class="chev">›</span>
       </div>
-      <div class="list-item" onclick="snack('18 hembras de levante')">
+      <div class="list-item" onclick="openGroup('levante')">
         <div class="li-leading"><span class="emj">🌱</span></div>
         <div class="li-body"><div class="li-title">Hembras de levante</div>
-          <div class="li-sub">Pesaje mensual al día</div></div>
-        <div class="li-trail"><div class="li-num">18</div></div>
+          <div class="li-sub">Peso mensual al día</div></div>
+        <div class="li-trail"><div class="li-num">18</div></div><span class="chev">›</span>
       </div>
-      <div class="list-item" onclick="snack('11 terneras · 2 destetes próximos')">
+      <div class="list-item" onclick="openGroup('terneras')">
         <div class="li-leading"><span class="emj">🍼</span></div>
         <div class="li-body"><div class="li-title">Terneras</div>
           <div class="li-sub">2 destetes próximos</div></div>
-        <div class="li-trail"><div class="li-num">11</div></div>
+        <div class="li-trail"><div class="li-num">11</div></div><span class="chev">›</span>
       </div>
-      <div class="list-item" onclick="snack('2 machos: toro Sansón y un torete')">
+      <div class="list-item" onclick="openGroup('machos')">
         <div class="li-leading"><span class="emj">🐂</span></div>
         <div class="li-body"><div class="li-title">Machos / toros</div>
           <div class="li-sub">Sansón + 1 torete</div></div>
-        <div class="li-trail"><div class="li-num">2</div></div>
+        <div class="li-trail"><div class="li-num">2</div></div><span class="chev">›</span>
+      </div>
+    </div>
+
+    <div class="section-label">📋 INVENTARIO · LOS 80 ANIMALES</div>
+    <div class="card elevated" style="padding:12px">
+      <div style="display:flex;align-items:center;gap:8px;background:var(--md-surface-container);
+        border-radius:100px;padding:10px 16px;margin-bottom:10px">
+        <span class="emj">🔍</span>
+        <span style="font-size:14px;color:var(--md-on-surface-variant)">Buscar por número o nombre…</span>
+      </div>
+      <div class="chips">
+        <button class="chip sel" onclick="snack('Mostrando: todos los animales (80)')">Todas (80)</button>
+        <button class="chip" onclick="snack('Filtro: 19 preñadas')">🤰 Preñadas</button>
+        <button class="chip" onclick="snack('Filtro: 5 vacías >120 DEL')">⚠ Vacías</button>
+        <button class="chip" onclick="snack('Filtro: 1 en tratamiento')">💊 En tratamiento</button>
+      </div>
+      <div class="mt12" style="border-top:1px solid var(--md-surface-container-high)">
+        <div class="list-item" onclick="openCow()" style="padding:11px 4px">
+          <div class="li-body"><div class="li-title" style="font-size:14px">042 · Lucero</div>
+            <div class="li-sub">Ordeño · 5,2 años · preñada 6m · ayer 18 L</div></div>
+          <span class="chev">›</span></div>
+        <div class="list-item" style="padding:11px 4px" onclick="snack('Ficha de Mona — igual a la de Lucero')">
+          <div class="li-body"><div class="li-title" style="font-size:14px">038 · Mona</div>
+            <div class="li-sub">Ordeño · 4,1 años · servida (por confirmar) · ayer 16 L</div></div>
+          <span class="chev">›</span></div>
+        <div class="list-item" style="padding:11px 4px" onclick="snack('Ficha de la 017')">
+          <div class="li-body"><div class="li-title" style="font-size:14px">017 · Azucena</div>
+            <div class="li-sub">Ordeño · 8 años · 💊 retiro 2 días más · ayer 11 L</div></div>
+          <span class="chev">›</span></div>
+        <div class="list-item" style="padding:11px 4px" onclick="snack('Ficha de la 064')">
+          <div class="li-body"><div class="li-title" style="font-size:14px">064 · (cría de Lucero)</div>
+            <div class="li-sub">Ternera · 5 meses · destete próximo</div></div>
+          <span class="chev">›</span></div>
+        <div class="list-item" style="padding:11px 4px" onclick="snack('Ficha de Sansón')">
+          <div class="li-body"><div class="li-title" style="font-size:14px">T01 · Sansón</div>
+            <div class="li-sub">Toro · 6 años · aftosa al día</div></div>
+          <span class="chev">›</span></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <button class="btn text small" style="flex:1;justify-content:center"
+          onclick="snack('Lista completa de los 80 — con scroll en la app real')">Ver los 75 restantes</button>
+        <button class="btn tonal small" onclick="openSheet()">＋ Agregar</button>
+        <button class="btn text small" onclick="snack('Exportado: inventario_hato_jun2026.xlsx')">📤 Exportar</button>
       </div>
     </div>
 
@@ -643,6 +686,15 @@ body{background:#3a3f36;display:flex;align-items:center;justify-content:center;
         El sistema recomienda con el dato detrás — tú decides.</div>
     </div>
 
+    <div class="kpi-row">
+      <div class="kpi"><div class="k-label">🥛 L/vaca·día</div><div class="k-value">11,4</div>
+        <div class="k-trend trend-up">▲ vs may</div></div>
+      <div class="kpi"><div class="k-label">📆 DEL prom.</div><div class="k-value">164</div>
+        <div class="k-trend" style="color:var(--md-on-surface-variant)">sano &lt;200</div></div>
+      <div class="kpi"><div class="k-label">💰 Costo/L</div><div class="k-value" style="font-size:21px">$1.180</div>
+        <div class="k-trend trend-up">▼ −6%</div></div>
+    </div>
+
     <div class="dec">
       <div class="d-head">
         <div class="d-icon" style="background:var(--bad-bg)"><span class="emj">📉</span></div>
@@ -696,6 +748,15 @@ body{background:#3a3f36;display:flex;align-items:center;justify-content:center;
     </div>
   </div>
 
+  <!-- ============ PANTALLA: GRUPO (drill-down del hato) ============ -->
+  <div class="screen" id="scr-grupo">
+    <div class="card filled" id="grpHeader" style="margin-top:4px;font-size:13.5px;
+      color:var(--md-on-surface);line-height:1.45"></div>
+    <div class="list" id="grpList"></div>
+    <div style="font-size:12px;color:var(--md-on-surface-variant);margin-top:10px;text-align:center">
+      Toca un animal para abrir su ficha completa</div>
+  </div>
+
   <!-- FAB -->
   <button class="fab" onclick="openSheet()">＋</button>
 
@@ -720,9 +781,11 @@ body{background:#3a3f36;display:flex;align-items:center;justify-content:center;
     <h3>Registrar novedad</h3>
     <div class="quick">
       <button onclick="sheetPick('Celo visto registrado — se sugiere servicio en 12h')"><span class="emj">❤️</span><span class="q-label">Celo visto</span></button>
-      <button onclick="sheetPick('Parto registrado — la vaca pasa al grupo de ordeño')"><span class="emj">🍼</span><span class="q-label">Parto</span></button>
+      <button onclick="sheetPick('Parto registrado — cría creada y vinculada a su madre; la vaca arranca en DEL 0 y pasa al ordeño')"><span class="emj">🍼</span><span class="q-label">Parto / nacimiento</span></button>
       <button class="alt" onclick="sheetPick('Tratamiento registrado — retiro de leche activado 4 días')"><span class="emj">💊</span><span class="q-label">Enfermedad / medicina</span></button>
       <button class="alt" onclick="sheetPick('Labor registrada en el lote')"><span class="emj">🚜</span><span class="q-label">Labor de cultivo</span></button>
+      <button onclick="sheetPick('Alta registrada: animal comprado — ficha creada y gasto enviado a finanzas')"><span class="emj">🛒</span><span class="q-label">Compra de animal</span></button>
+      <button onclick="sheetPick('Baja registrada — si es venta, el ingreso va a finanzas; el animal queda en el histórico con su vida completa')"><span class="emj">📤</span><span class="q-label">Venta · muerte · descarte</span></button>
       <button onclick="sheetPick('Revisión de colmena registrada')"><span class="emj">🐝</span><span class="q-label">Revisión colmena</span></button>
       <button onclick="sheetPick('Cosecha registrada')"><span class="emj">🧺</span><span class="q-label">Cosecha</span></button>
     </div>
@@ -740,7 +803,70 @@ const titles={
   'scr-hato':['Mi hato','🐄 80 animales · 26 en ordeño'],
   'scr-vaca':['Ficha del animal','🐄 Se consulta mucho, se edita poco'],
   'scr-decisiones':['Decisiones del mes','💡 Junio 2026 · 4 recomendaciones'],
+  'scr-grupo':['Grupo','🐄'],
 };
+/* drill-down: hato → grupo → animal */
+const grupos={
+  ordeno:{nombre:'Vacas en ordeño',sub:'🥛 26 vacas · ayer 11,4 L/vaca · DEL prom. 164',
+    header:'<b>26 vacas en ordeño.</b> Ordenadas como entran al ordeño. Ayer: 296 L en total.',
+    animales:[
+      ['042 · Lucero','DEL 152 · preñada 6m · ayer 18 L',1],
+      ['038 · Mona','DEL 98 · servida (por confirmar) · ayer 16 L'],
+      ['051 · Careta','DEL 121 · ayer 14 L'],
+      ['027 · Estrella','DEL 64 · pico de lactancia · ayer 13 L'],
+      ['017 · Azucena','DEL 201 · 💊 retiro 2 días más · ayer 11 L'],
+      ['033 · Paloma','DEL 95 · ⚠ vacía 132 días · ayer 6 L'],
+      ['029 · Pinta','DEL 412 · ⚠ vacía 150 días · ayer 5 L'],
+      ['Ver las 19 restantes','',0,1]]},
+  horras:{nombre:'Vacas horras (secas)',sub:'🤰 9 vacas · 6 paren antes de octubre',
+    header:'<b>9 vacas horras.</b> Ordenadas por fecha de parto: las 3 primeras entran al ordeño antes de agosto.',
+    animales:[
+      ['011 · Violeta','preñada 8,5 meses · parto ~3 jul'],
+      ['019 · Canela','preñada 8 meses · parto ~18 jul'],
+      ['045 · Morena','preñada 7,5 meses · parto ~2 ago'],
+      ['008 · Golondrina','preñada 7 meses · parto ~12 sep'],
+      ['036 · Cereza','preñada 7 meses · parto ~15 sep'],
+      ['041 · Garza','preñada 6,5 meses · parto ~28 sep'],
+      ['014 · Nube','preñada 6 meses · parto ~10 oct'],
+      ['048 · Flor','preñada 5,5 meses · parto ~25 oct'],
+      ['022 · Luna','preñada 5 meses · parto ~8 nov']]},
+  novillas:{nombre:'Novillas de vientre',sub:'🐮 14 novillas · 4 listas para servicio',
+    header:'<b>14 novillas de vientre.</b> 4 ya tienen peso para servicio (>330 kg).',
+    animales:[
+      ['055 · Princesa','2,1 años · 342 kg · ✅ lista para servicio'],
+      ['058 · Alondra','2 años · 335 kg · ✅ lista para servicio'],
+      ['061 · Café','1,9 años · 318 kg · le faltan ~12 kg'],
+      ['Ver las 11 restantes','',0,1]]},
+  levante:{nombre:'Hembras de levante',sub:'🌱 18 hembras · peso mensual al día',
+    header:'<b>18 hembras de levante.</b> Crecimiento promedio: 480 g/día (meta: 500).',
+    animales:[
+      ['066 · Esmeralda','14 meses · 218 kg'],
+      ['068 · Perla','13 meses · 201 kg'],
+      ['Ver las 16 restantes','',0,1]]},
+  terneras:{nombre:'Terneras',sub:'🍼 11 terneras · 2 destetes próximos',
+    header:'<b>11 terneras.</b> Consumen 40 L/día de la leche del ordeño.',
+    animales:[
+      ['064 · (cría de Lucero)','5 meses · destete próximo'],
+      ['071 · (cría de Canela)','4,5 meses · destete próximo'],
+      ['Ver las 9 restantes','',0,1]]},
+  machos:{nombre:'Machos / toros',sub:'🐂 2 machos',
+    header:'<b>2 machos.</b> Sansón cubre el hato; el torete se vende en agosto.',
+    animales:[
+      ['T01 · Sansón','Toro · 6 años · aftosa al día'],
+      ['T02 · Torete','11 meses · venta programada ago']]}
+};
+function openGroup(k){const g=grupos[k];
+  titles['scr-grupo']=[g.nombre,g.sub];
+  document.getElementById('grpHeader').innerHTML=g.header;
+  const list=document.getElementById('grpList');list.innerHTML='';
+  g.animales.forEach(a=>{const d=document.createElement('div');d.className='list-item';
+    if(a[3]){d.innerHTML='<div class="li-body" style="text-align:center"><div class="li-sub" style="color:var(--md-primary);font-weight:700">'+a[0]+'</div></div>';
+      d.onclick=()=>snack('La lista completa, con scroll, en la app real');}
+    else{d.innerHTML='<div class="li-body"><div class="li-title" style="font-size:14.5px">'+a[0]+'</div>'+
+      '<div class="li-sub">'+a[1]+'</div></div><span class="chev">›</span>';
+      d.onclick=a[2]?openCow:()=>snack('Ficha de '+a[0]+' — misma estructura que la de Lucero');}
+    list.appendChild(d);});
+  go('scr-grupo');}
 let histStack=['scr-inicio'];
 function go(id,navBtn){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));

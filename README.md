@@ -126,6 +126,46 @@ mucho: la **curva de lactancia diaria de cada vaca** y la **alerta temprana de
 caídas** — una vaca que baja ~25% de un día a otro suele estar enferma, en celo o
 mal alimentada, y la app la señala esa misma mañana.
 
+### 3.2 Dos ritmos de lectura: operar a diario, gerenciar al mes
+
+Así como la captura tiene capas, la **lectura** tiene ritmos. Mezclarlos es el
+error de diseño más común: un dashboard diario lleno de indicadores financieros
+que nadie necesita a las 6 a.m., o decisiones de fondo tomadas con el dato suelto
+de un solo día.
+
+```
+📆 DIARIO — pantalla INICIO (operar la finca, lectura en 30 segundos)
+   Solo lo que puede cambiar una acción HOY:
+   ├── Litros de hoy vs ayer — y qué vaca cayó
+   ├── Dónde está el hato y qué día de ocupación lleva (¿toca mover?)
+   ├── Retiros de leche activos (¿qué leche NO se vende hoy?)
+   ├── Eventos de la semana: parto próximo, secado programado, vacuna
+   ├── Tareas de hoy del equipo
+   └── Lluvia
+   ✗ Aquí NO van: costo por litro, rentabilidad, DEL promedio, % preñez.
+     Son ruido a las 6 a.m. — nada de eso cambia lo que harás hoy.
+
+🗓️ MENSUAL — pantalla DECISIONES (gerenciar, la "reunión de finca")
+   Agregados y tendencias que sustentan decisiones de fondo:
+   ├── Producción del mes vs mes anterior y vs mismo mes del año pasado
+   ├── Litros/vaca y DEL promedio del hato (¿está "envejecido"?)
+   ├── Costo por litro, margen y rentabilidad por unidad productiva
+   ├── Ranking de vacas con DEL → secados, servicios, descartes
+   ├── % de preñez, vacas vacías >120 DEL, calendario de partos
+   ├── Días de silo, avance de cultivos, lluvia acumulada vs histórico
+   └── Salud del suelo: descanso promedio real de los potreros en el mes
+```
+
+**Las dos reglas que conectan los ritmos:**
+
+1. **Promoción por umbral:** un dato mensual solo aparece en el diario cuando
+   cruza un umbral y se convierte en alerta accionable. El silo no se mira a
+   diario — pero el día que baja de 50 días, aparece en Inicio como
+   "⚠ sembrar ya". Cruzado el umbral es operativo; antes, es ruido.
+2. **Agregación automática:** todo lo mensual se construye solo con los datos
+   diarios y de eventos — la reunión de fin de mes no requiere capturar nada
+   adicional, ya está lista cuando llegas.
+
 ---
 
 ## 4. Módulos en detalle
@@ -149,6 +189,29 @@ MI HATO (80)
 - Los animales **cambian de grupo automáticamente por eventos**: un parto pasa la
   vaca de "horras" a "ordeño"; un secado la devuelve a "horras"; la edad sugiere
   pasar terneras a levante. Nadie reclasifica a mano.
+- **Inventario completo del hato — los 80 a la vista:** además del resumen por
+  grupos, una lista de **todos los animales** con búsqueda por número/nombre y
+  filtros combinables (grupo, preñadas, vacías, en tratamiento, por edad). Cada
+  fila muestra lo esencial sin abrir la ficha: `042 Lucero · ordeño · 5,2 años ·
+  preñada 6m · ayer 18 L`. Es el censo vivo de la finca: sirve para el conteo
+  físico, los ciclos ICA (la lista ES el soporte de vacunación) y para responder
+  en segundos "¿qué animales tengo y en qué estado está cada uno?". Exportable
+  a Excel/PDF.
+- **Los grupos se exploran (drill-down):** tocar "vacas horras" abre la lista de
+  las 9 con su dato relevante al lado (meses de preñez y fecha probable de parto,
+  ordenadas por quién pare primero); tocar una abre su ficha. La jerarquía
+  completa es `hato → grupo → animal → evento`, siempre a un toque de distancia,
+  y cada grupo ordena su lista por lo que importa en ese grupo: las horras por
+  fecha de parto, las de ordeño por orden de ordeño, las novillas por peso.
+- **Altas y bajas — el censo siempre cuadra:**
+  - *Nacimiento:* registrar el parto **crea automáticamente la cría** como nuevo
+    animal, vinculada a su madre (y la vaca arranca su lactancia en DEL 0).
+  - *Compra:* formulario corto de alta — número, raza, edad, procedencia y precio
+    (el gasto va solo a finanzas).
+  - *Venta, muerte o descarte:* la baja pide el motivo. Venta → precio e ingreso
+    a finanzas; muerte → causa (alimenta la estadística sanitaria). El animal
+    **no se borra**: queda en el histórico con su vida completa, para trazabilidad
+    y para los números del año.
 #### La ficha del animal: todo lo de una vaca en una pantalla
 
 La ficha se **consulta** mucho y se **edita** poco: los datos generales se cargan
