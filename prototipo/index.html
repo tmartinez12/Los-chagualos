@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Los Chagualos · Prototipo</title>
+<style>
+/* ============ MATERIAL DESIGN 3 — TOKENS ============ */
+:root{
+  /* Paleta "finca regenerativa": primario verde pasto, secundario tierra, terciario miel */
+  --md-primary:#3A6B35;          --md-on-primary:#FFFFFF;
+  --md-primary-container:#BCF0B0;--md-on-primary-container:#002204;
+  --md-secondary:#54634D;        --md-on-secondary:#FFFFFF;
+  --md-secondary-container:#D7E8CD;--md-on-secondary-container:#121F0E;
+  --md-tertiary:#8F6B00;         --md-on-tertiary:#FFFFFF;
+  --md-tertiary-container:#FFE08F;--md-on-tertiary-container:#2D2000;
+  --md-error:#BA1A1A;            --md-on-error:#FFFFFF;
+  --md-error-container:#FFDAD6;  --md-on-error-container:#410002;
+  --md-surface:#F8FBF1;          --md-on-surface:#191D17;
+  --md-surface-container-lowest:#FFFFFF;
+  --md-surface-container-low:#F2F5EB;
+  --md-surface-container:#ECEFE5;
+  --md-surface-container-high:#E6E9E0;
+  --md-surface-container-highest:#E1E4DA;
+  --md-on-surface-variant:#43483E;
+  --md-outline:#73796C;          --md-outline-variant:#C3C8BA;
+  --md-inverse-surface:#2E312B;  --md-inverse-on-surface:#EFF2E8;
+  /* Estados semáforo */
+  --ok:#2E7D32; --ok-bg:#C8E6C9; --warn:#9E7C00; --warn-bg:#FFF1C1; --bad:#C62828; --bad-bg:#FFCDD2;
+  /* Elevaciones MD3 */
+  --el1:0 1px 2px rgba(0,0,0,.3),0 1px 3px 1px rgba(0,0,0,.15);
+  --el2:0 1px 2px rgba(0,0,0,.3),0 2px 6px 2px rgba(0,0,0,.15);
+  --el3:0 4px 8px 3px rgba(0,0,0,.15),0 1px 3px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:#3a3f36;display:flex;align-items:center;justify-content:center;
+  font-family:Roboto,'Segoe UI',system-ui,sans-serif;padding:16px}
+/* Íconos: emoji nativos (funcionan offline, coherente con app offline-first) */
+.emj{font-style:normal;line-height:1;display:inline-block}
+
+/* ============ MARCO DE TELÉFONO ============ */
+.phone{width:100%;max-width:412px;height:min(880px,calc(100vh - 32px));background:var(--md-surface);
+  border-radius:32px;overflow:hidden;position:relative;display:flex;flex-direction:column;
+  box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.statusbar{height:36px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 22px;font-size:13px;font-weight:500;color:var(--md-on-surface);flex:none}
+.statusbar .right{display:flex;gap:7px;align-items:center;font-size:12px}
+
+/* ============ TOP APP BAR ============ */
+.topbar{flex:none;display:flex;align-items:center;gap:6px;padding:8px 8px 8px 4px;min-height:64px}
+.topbar .icon-btn{width:48px;height:48px;border:none;background:none;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;color:var(--md-on-surface);cursor:pointer;font-size:20px}
+.icon-btn:active{background:rgba(0,0,0,.08)}
+.topbar .titles{flex:1;min-width:0;padding-left:12px}
+.topbar .title{font-size:22px;font-weight:500;color:var(--md-on-surface);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.topbar .subtitle{font-size:12px;color:var(--md-on-surface-variant);display:flex;align-items:center;gap:4px}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--md-tertiary-container);
+  color:var(--md-on-tertiary-container);display:flex;align-items:center;justify-content:center;
+  font-weight:600;font-size:14px;margin-right:10px;flex:none}
+
+/* ============ CONTENIDO ============ */
+.screen{flex:1;overflow-y:auto;display:none;padding:0 16px 110px;scrollbar-width:none}
+.screen::-webkit-scrollbar{display:none}
+.screen.active{display:block}
+.section-label{font-size:13px;font-weight:700;color:var(--md-on-surface-variant);
+  margin:20px 4px 10px;letter-spacing:.6px;display:flex;align-items:center;gap:7px}
+
+/* ============ TARJETAS MD3 ============ */
+.card{background:var(--md-surface-container-low);border-radius:16px;padding:16px;margin-bottom:10px}
+.card.filled{background:var(--md-surface-container-high)}
+.card.elevated{background:var(--md-surface-container-lowest);box-shadow:var(--el1)}
+
+/* Alertas accionables */
+.alert{display:flex;gap:12px;align-items:flex-start;border-radius:16px;padding:14px;margin-bottom:8px}
+.alert .a-icon{width:40px;height:40px;border-radius:12px;flex:none;display:flex;
+  align-items:center;justify-content:center;font-size:20px}
+.alert .a-body{flex:1;min-width:0}
+.alert .a-title{font-size:14.5px;font-weight:700;line-height:1.3}
+.alert .a-sub{font-size:13px;color:var(--md-on-surface-variant);margin-top:2px;line-height:1.35}
+.alert.urgent{background:var(--md-error-container)}
+.alert.urgent .a-icon{background:var(--md-error)}
+.alert.urgent .a-title{color:var(--md-on-error-container)}
+.alert.warn{background:var(--md-tertiary-container)}
+.alert.warn .a-icon{background:var(--md-tertiary)}
+.alert.warn .a-title{color:var(--md-on-tertiary-container)}
+.alert.info{background:var(--md-secondary-container)}
+.alert.info .a-icon{background:var(--md-secondary)}
+.alert.info .a-title{color:var(--md-on-secondary-container)}
+
+/* Botones MD3 */
+.btn{border:none;cursor:pointer;font-family:inherit;font-size:14px;font-weight:600;
+  border-radius:100px;padding:10px 20px;display:inline-flex;align-items:center;gap:8px;
+  letter-spacing:.1px;transition:box-shadow .15s}
+.btn.filled{background:var(--md-primary);color:var(--md-on-primary)}
+.btn.filled:active{box-shadow:var(--el1)}
+.btn.tonal{background:var(--md-secondary-container);color:var(--md-on-secondary-container)}
+.btn.text{background:none;color:var(--md-primary);padding:10px 12px}
+.btn.outl{background:none;border:1px solid var(--md-outline);color:var(--md-primary)}
+.btn.small{padding:7px 14px;font-size:13px}
+
+/* Registro rápido (grid) */
+.quick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.quick button{border:none;cursor:pointer;background:var(--md-primary-container);
+  color:var(--md-on-primary-container);border-radius:20px;padding:16px 14px;
+  display:flex;flex-direction:column;align-items:flex-start;gap:8px;font-family:inherit}
+.quick button:active{filter:brightness(.95)}
+.quick .emj{font-size:26px}
+.quick .q-label{font-size:14.5px;font-weight:700}
+.quick button.alt{background:var(--md-tertiary-container);color:var(--md-on-tertiary-container)}
+
+/* KPIs */
+.kpi-row{display:flex;gap:10px}
+.kpi{flex:1;background:var(--md-surface-container-lowest);box-shadow:var(--el1);
+  border-radius:16px;padding:14px 13px}
+.kpi .k-label{font-size:12px;color:var(--md-on-surface-variant);display:flex;gap:5px;align-items:center;font-weight:500}
+.kpi .k-value{font-size:25px;font-weight:800;color:var(--md-on-surface);margin-top:4px;line-height:1.1}
+.kpi .k-unit{font-size:14px;font-weight:500;color:var(--md-on-surface-variant)}
+.kpi .k-trend{font-size:12px;font-weight:700;margin-top:4px}
+.trend-up{color:var(--ok)} .trend-down{color:var(--bad)}
+
+/* Gráficos */
+.chart-card svg{display:block;width:100%}
+.chart-title{font-size:15px;font-weight:700;color:var(--md-on-surface)}
+.chart-sub{font-size:12.5px;color:var(--md-on-surface-variant);margin-top:1px;margin-bottom:8px}
+.legend{display:flex;gap:14px;margin-top:8px;font-size:11.5px;color:var(--md-on-surface-variant)}
+.legend span{display:flex;align-items:center;gap:5px}
+.dot{width:9px;height:9px;border-radius:3px;display:inline-block}
+
+/* Chips MD3 */
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--md-outline-variant);
+  border-radius:9px;padding:6px 12px;font-size:13px;font-weight:500;color:var(--md-on-surface-variant);
+  background:transparent;cursor:pointer;font-family:inherit}
+.chip.sel{background:var(--md-secondary-container);border-color:transparent;color:var(--md-on-secondary-container);font-weight:700}
+
+/* Listas MD3 */
+.list{background:var(--md-surface-container-lowest);border-radius:16px;overflow:hidden;box-shadow:var(--el1)}
+.list-item{display:flex;align-items:center;gap:14px;padding:13px 16px;cursor:pointer;
+  border-bottom:1px solid var(--md-surface-container-high)}
+.list-item:last-child{border-bottom:none}
+.list-item:active{background:var(--md-surface-container)}
+.li-leading{width:42px;height:42px;border-radius:50%;flex:none;display:flex;align-items:center;
+  justify-content:center;background:var(--md-primary-container);font-size:20px}
+.li-body{flex:1;min-width:0}
+.li-title{font-size:15px;font-weight:600;color:var(--md-on-surface)}
+.li-sub{font-size:12.5px;color:var(--md-on-surface-variant);margin-top:1px}
+.li-trail{text-align:right;flex:none}
+.li-num{font-size:18px;font-weight:800;color:var(--md-on-surface)}
+.li-cap{font-size:11px;color:var(--md-on-surface-variant)}
+.chev{color:var(--md-outline);font-size:20px;font-weight:600}
+.badge{font-size:11px;font-weight:800;border-radius:7px;padding:3px 8px;display:inline-block}
+.badge.ok{background:var(--ok-bg);color:var(--ok)}
+.badge.warn{background:var(--warn-bg);color:var(--warn)}
+
+/* Potreros grid */
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.pot{border-radius:16px;padding:11px 12px;cursor:pointer;position:relative;border:2.5px solid transparent}
+.pot .p-name{font-size:12px;font-weight:700;opacity:.85}
+.pot .p-days{font-size:23px;font-weight:800;line-height:1.15}
+.pot .p-cap{font-size:10.5px;opacity:.85}
+.pot.ok{background:var(--ok-bg);color:#1B4D1E}
+.pot.warn{background:var(--warn-bg);color:#5C4A00}
+.pot.bad{background:var(--bad-bg);color:#7A1C1C}
+.pot.now{border-color:var(--md-on-surface)}
+.pot.suggested{border-color:var(--md-primary);box-shadow:0 0 0 3px var(--md-primary-container)}
+.pot .p-tag{position:absolute;top:-8px;right:8px;font-size:9.5px;font-weight:800;background:var(--md-primary);
+  color:#fff;padding:2px 7px;border-radius:8px;letter-spacing:.3px}
+.pot.now .p-tag{background:var(--md-on-surface)}
+
+/* Barras ranking */
+.rank-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.rank-name{width:86px;font-size:12.5px;font-weight:600;color:var(--md-on-surface);flex:none;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-bar-wrap{flex:1;height:22px;background:var(--md-surface-container-high);border-radius:7px;overflow:hidden}
+.rank-bar{height:100%;border-radius:7px;background:var(--md-primary);display:flex;align-items:center;
+  justify-content:flex-end;padding-right:7px;color:#fff;font-size:11px;font-weight:700;min-width:36px}
+.rank-bar.low{background:var(--md-error)}
+
+/* Barra de silo */
+.fuel{height:26px;border-radius:9px;background:var(--md-surface-container-high);overflow:hidden;
+  position:relative;margin-top:8px}
+.fuel .f-fill{height:100%;width:38%;background:linear-gradient(90deg,#E9A700,#C77800);border-radius:9px}
+.fuel .f-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:12.5px;font-weight:800;color:var(--md-on-surface)}
+
+/* Ficha vaca */
+.cow-hero{display:flex;gap:14px;align-items:center;margin-bottom:12px;margin-top:4px}
+.cow-photo{width:72px;height:72px;border-radius:24px;background:var(--md-secondary-container);
+  display:flex;align-items:center;justify-content:center;font-size:36px;flex:none}
+.cow-hero h2{font-size:21px;font-weight:800;color:var(--md-on-surface)}
+.cow-hero .c-sub{font-size:13px;color:var(--md-on-surface-variant);margin-top:2px}
+.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.stat{background:var(--md-surface-container-lowest);box-shadow:var(--el1);border-radius:14px;padding:11px 13px}
+.stat .s-label{font-size:11px;color:var(--md-on-surface-variant);font-weight:600}
+.stat .s-value{font-size:16px;font-weight:800;color:var(--md-on-surface);margin-top:3px}
+.timeline{position:relative;padding-left:24px}
+.timeline:before{content:'';position:absolute;left:8px;top:6px;bottom:6px;width:2px;background:var(--md-outline-variant)}
+.tl-item{position:relative;padding:0 0 16px}
+.tl-item:before{content:'';position:absolute;left:-21px;top:5px;width:9px;height:9px;border-radius:50%;
+  background:var(--md-primary);box-shadow:0 0 0 3px var(--md-primary-container)}
+.tl-date{font-size:11px;font-weight:800;color:var(--md-primary);letter-spacing:.4px}
+.tl-text{font-size:13.5px;color:var(--md-on-surface);margin-top:1px}
+.tl-sub{font-size:12px;color:var(--md-on-surface-variant)}
+
+/* Pantalla ordeño */
+.milk-input{background:var(--md-surface-container-lowest);box-shadow:var(--el2);border-radius:24px;
+  padding:20px;text-align:center;margin-bottom:12px;margin-top:4px}
+.milk-input .m-label{font-size:12px;color:var(--md-on-surface-variant);font-weight:700;letter-spacing:.8px}
+.milk-value{font-size:62px;font-weight:800;color:var(--md-primary);line-height:1.05;
+  font-variant-numeric:tabular-nums}
+.milk-value .u{font-size:24px;font-weight:600;color:var(--md-on-surface-variant)}
+.milk-ref{font-size:13px;color:var(--md-on-surface-variant);margin-top:4px}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px}
+.keypad button{border:none;background:var(--md-surface-container);border-radius:16px;height:54px;
+  font-size:22px;font-weight:600;color:var(--md-on-surface);cursor:pointer;font-family:inherit;
+  display:flex;align-items:center;justify-content:center}
+.keypad button:active{background:var(--md-surface-container-highest)}
+.keypad button.action{background:var(--md-primary-container);color:var(--md-on-primary-container)}
+
+/* Decisiones */
+.dec{border-radius:18px;padding:15px;margin-bottom:10px;background:var(--md-surface-container-lowest);box-shadow:var(--el1)}
+.dec .d-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.dec .d-icon{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex:none;font-size:19px}
+.dec .d-title{font-size:15px;font-weight:800;color:var(--md-on-surface);flex:1;line-height:1.25}
+.dec .d-why{font-size:13px;color:var(--md-on-surface-variant);line-height:1.45;margin-bottom:10px}
+.dec .d-why b{color:var(--md-on-surface)}
+.dec .d-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ============ FAB + NAV BAR ============ */
+.fab{position:absolute;right:18px;bottom:104px;width:58px;height:58px;border:none;cursor:pointer;
+  border-radius:18px;background:var(--md-primary-container);color:var(--md-on-primary-container);
+  box-shadow:var(--el3);display:flex;align-items:center;justify-content:center;z-index:30;
+  font-size:26px;font-weight:600}
+.navbar{position:absolute;left:0;right:0;bottom:0;height:84px;background:var(--md-surface-container);
+  display:flex;z-index:25;padding-bottom:6px}
+.nav-item{flex:1;border:none;background:none;cursor:pointer;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:4px;font-family:inherit}
+.nav-item .pill{width:56px;height:30px;border-radius:16px;display:flex;align-items:center;
+  justify-content:center;font-size:17px;transition:background .15s;filter:grayscale(1);opacity:.72}
+.nav-item.active .pill{background:var(--md-secondary-container);filter:none;opacity:1}
+.nav-item .n-label{font-size:11px;font-weight:600;color:var(--md-on-surface-variant)}
+.nav-item.active .n-label{color:var(--md-on-surface);font-weight:800}
+
+/* ============ BOTTOM SHEET / SCRIM / SNACKBAR ============ */
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:40;opacity:0;
+  pointer-events:none;transition:opacity .2s}
+.scrim.show{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--md-surface-container-low);
+  border-radius:28px 28px 0 0;z-index:50;padding:10px 20px 30px;transform:translateY(105%);
+  transition:transform .25s cubic-bezier(.2,0,0,1)}
+.sheet.show{transform:translateY(0)}
+.sheet .handle{width:34px;height:4px;border-radius:2px;background:var(--md-outline-variant);margin:6px auto 14px}
+.sheet h3{font-size:17px;font-weight:800;color:var(--md-on-surface);margin-bottom:14px}
+.snackbar{position:absolute;left:16px;right:16px;bottom:100px;background:var(--md-inverse-surface);
+  color:var(--md-inverse-on-surface);border-radius:10px;padding:13px 16px;font-size:13.5px;
+  box-shadow:var(--el3);z-index:60;display:flex;align-items:center;gap:10px;opacity:0;
+  transform:translateY(12px);transition:all .25s;pointer-events:none}
+.snackbar.show{opacity:1;transform:translateY(0)}
+.mb0{margin-bottom:0}.mt8{margin-top:8px}.mt12{margin-top:12px}
+</style>
+</head>
+<body>
+<div class="phone">
+  <!-- STATUS BAR -->
+  <div class="statusbar">
+    <span>7:42</span>
+    <span class="right"><span class="emj">📴</span><span>▂▄▆</span><span class="emj">🔋</span></span>
+  </div>
+
+  <!-- TOP APP BAR -->
+  <div class="topbar" id="topbar">
+    <button class="icon-btn" id="backBtn" style="display:none" onclick="goBack()">←</button>
+    <div class="titles">
+      <div class="title" id="barTitle">Los Chagualos</div>
+      <div class="subtitle" id="barSub">🌧️ Jue 12 jun · Lluvia ayer: 12 mm</div>
+    </div>
+    <div class="avatar">T</div>
+  </div>
+
+  <!-- ============ PANTALLA: INICIO ============ -->
+  <div class="screen active" id="scr-inicio">
+    <div class="section-label">🔔 HOY · 3 ALERTAS</div>
+
+    <div class="alert urgent">
+      <div class="a-icon"><span class="emj">🐄</span></div>
+      <div class="a-body">
+        <div class="a-title">Hato: día 2 en el potrero 7 — mover hoy</div>
+        <div class="a-sub">Sugerido: <b>Potrero 4</b> · 35 días de descanso · aforo suficiente</div>
+        <button class="btn filled small mt8" onclick="go('scr-potreros')">Mover hato →</button>
+      </div>
+    </div>
+
+    <div class="alert warn">
+      <div class="a-icon"><span class="emj">🤰</span></div>
+      <div class="a-body">
+        <div class="a-title">Vaca 042 “Lucero”: programar secado</div>
+        <div class="a-sub">Preñada 7 meses (palpación 2 may) · parto probable ~12 sep</div>
+        <button class="btn tonal small mt8" onclick="openCow()">Ver ficha</button>
+      </div>
+    </div>
+
+    <div class="alert info">
+      <div class="a-icon"><span class="emj">🚫</span></div>
+      <div class="a-body">
+        <div class="a-title">Retiro de leche: vaca 017 — faltan 2 días</div>
+        <div class="a-sub">Tratamiento mastitis (oxitetraciclina) · no vender su leche hasta el sáb 14</div>
+      </div>
+    </div>
+
+    <div class="section-label">⚡ REGISTRO RÁPIDO</div>
+    <div class="quick">
+      <button onclick="go('scr-ordeno')"><span class="emj">🥛</span>
+        <span class="q-label">Ordeño de hoy</span></button>
+      <button onclick="go('scr-potreros')"><span class="emj">🐄</span>
+        <span class="q-label">Mover hato</span></button>
+      <button class="alt" onclick="snack('✅ Lluvia registrada: 8 mm')"><span class="emj">🌧️</span>
+        <span class="q-label">Lluvia</span></button>
+      <button class="alt" onclick="openSheet()"><span class="emj">📝</span>
+        <span class="q-label">Otra novedad</span></button>
+    </div>
+
+    <div class="section-label">📊 LA FINCA HOY</div>
+    <div class="kpi-row">
+      <div class="kpi">
+        <div class="k-label">🥛 Leche hoy</div>
+        <div class="k-value">184 <span class="k-unit">L</span></div>
+        <div class="k-trend trend-up">▲ +8% vs ayer</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">🌽 Silo restante</div>
+        <div class="k-value">45 <span class="k-unit">días</span></div>
+        <div class="k-trend trend-down">⚠ sembrar ya</div>
+      </div>
+    </div>
+
+    <div class="card elevated mt12 chart-card">
+      <div class="chart-title">La leche subió 8% este mes</div>
+      <div class="chart-sub">Junio · litros/día del hato (26 en ordeño) vs lluvia</div>
+      <svg viewBox="0 0 320 110">
+        <g fill="#9FC5E8" opacity=".75">
+          <rect x="12" y="86" width="6" height="14" rx="2"/><rect x="36" y="92" width="6" height="8" rx="2"/>
+          <rect x="78" y="78" width="6" height="22" rx="2"/><rect x="100" y="88" width="6" height="12" rx="2"/>
+          <rect x="148" y="70" width="6" height="30" rx="2"/><rect x="170" y="84" width="6" height="16" rx="2"/>
+          <rect x="218" y="90" width="6" height="10" rx="2"/><rect x="266" y="80" width="6" height="20" rx="2"/>
+        </g>
+        <polyline points="10,62 40,58 70,60 100,48 130,50 160,38 190,42 220,36 250,34 280,28 308,24"
+          fill="none" stroke="#3A6B35" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="308" cy="24" r="5" fill="#3A6B35"/>
+        <circle cx="308" cy="24" r="9" fill="#3A6B35" opacity=".25"/>
+        <g font-family="Roboto,sans-serif" font-size="9">
+          <line x1="160" y1="38" x2="160" y2="16" stroke="#8F6B00" stroke-dasharray="2,2"/>
+          <text x="164" y="14" fill="#8F6B00" font-weight="700">⬆ entró silo</text>
+          <text x="282" y="14" fill="#3A6B35" font-weight="700">184 L</text>
+        </g>
+      </svg>
+      <div class="legend">
+        <span><span class="dot" style="background:#3A6B35"></span>Leche (L/día)</span>
+        <span><span class="dot" style="background:#9FC5E8"></span>Lluvia (mm)</span>
+        <span><span class="dot" style="background:#8F6B00"></span>Eventos</span>
+      </div>
+    </div>
+
+    <div class="list mt12">
+      <div class="list-item" onclick="go('scr-decisiones')">
+        <div class="li-leading" style="background:var(--md-tertiary-container)"><span class="emj">💡</span></div>
+        <div class="li-body">
+          <div class="li-title">Decisiones del mes</div>
+          <div class="li-sub">4 recomendaciones listas para revisar</div>
+        </div>
+        <span class="chev">›</span>
+      </div>
+      <div class="list-item" onclick="snack('Módulo de tareas — próximamente en el prototipo')">
+        <div class="li-leading"><span class="emj">✅</span></div>
+        <div class="li-body">
+          <div class="li-title">Tareas pendientes</div>
+          <div class="li-sub">Revisar apiario 2 · arreglar cerca P11 · +3</div>
+        </div>
+        <div class="li-trail"><span class="badge warn">5</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PANTALLA: ORDEÑO ============ -->
+  <div class="screen" id="scr-ordeno">
+    <div class="milk-input">
+      <div class="m-label">ORDEÑO DE HOY · JUEVES 12 JUN</div>
+      <div class="milk-value"><span id="milkNum">184</span> <span class="u">L</span></div>
+      <div class="milk-ref">Ayer: 170 L · Promedio semana: 176 L</div>
+      <div class="chips mt8" style="justify-content:center">
+        <button class="chip sel" onclick="snack('Unidad: litros')">🥛 Litros</button>
+        <button class="chip" onclick="snack('4,6 cantinas de 40 L = 184 L')">🪣 Cantinas</button>
+      </div>
+      <div class="keypad">
+        <button onclick="key(1)">1</button><button onclick="key(2)">2</button><button onclick="key(3)">3</button>
+        <button onclick="key(4)">4</button><button onclick="key(5)">5</button><button onclick="key(6)">6</button>
+        <button onclick="key(7)">7</button><button onclick="key(8)">8</button><button onclick="key(9)">9</button>
+        <button class="action" onclick="keyClear()">⌫</button>
+        <button onclick="key(0)">0</button>
+        <button class="action" onclick="saveMilk()">✓</button>
+      </div>
+    </div>
+
+    <button class="btn outl" style="width:100%;justify-content:center" onclick="openSheet()">
+      ＋ Novedad en el ordeño (mastitis, celo visto…)</button>
+
+    <div class="section-label">⚖️ PESAJE MENSUAL · 28 MAY</div>
+    <div class="card elevated">
+      <div class="chart-title">Top y cola de las 26 en ordeño</div>
+      <div class="chart-sub">Próximo pesaje vaca por vaca: 28 jun (se crea la tarea sola)</div>
+      <div class="mt8">
+        <div class="rank-row"><div class="rank-name">042 Lucero</div>
+          <div class="rank-bar-wrap"><div class="rank-bar" style="width:100%">18 L</div></div></div>
+        <div class="rank-row"><div class="rank-name">038 Mona</div>
+          <div class="rank-bar-wrap"><div class="rank-bar" style="width:88%">16 L</div></div></div>
+        <div class="rank-row"><div class="rank-name">051 Careta</div>
+          <div class="rank-bar-wrap"><div class="rank-bar" style="width:77%">14 L</div></div></div>
+        <div class="rank-row"><div class="rank-name">033 Paloma</div>
+          <div class="rank-bar-wrap"><div class="rank-bar low" style="width:33%">6 L</div></div></div>
+        <div class="rank-row mb0"><div class="rank-name">029 Pinta</div>
+          <div class="rank-bar-wrap"><div class="rank-bar low" style="width:27%">5 L</div></div></div>
+      </div>
+      <div class="alert urgent mt12 mb0" style="padding:11px">
+        <div class="a-body">
+          <div class="a-title" style="font-size:13.5px">029 Pinta: 5 L y vacía hace 150 días</div>
+          <div class="a-sub">Candidata a descarte — revisar en Decisiones del mes</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PANTALLA: POTREROS ============ -->
+  <div class="screen" id="scr-potreros">
+    <div class="card filled" style="display:flex;gap:12px;align-items:center;margin-top:4px">
+      <span class="emj" style="font-size:30px">📍</span>
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:800;color:var(--md-on-surface)">El hato está en el potrero 7 · día 2</div>
+        <div style="font-size:12.5px;color:var(--md-on-surface-variant)">Regla de la finca: 1 día, máximo 2 — hay que mover hoy</div>
+      </div>
+    </div>
+
+    <div class="card elevated" style="border:2px solid var(--md-primary)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="emj" style="font-size:28px">⭐</span>
+        <div style="flex:1">
+          <div style="font-size:15.5px;font-weight:800;color:var(--md-on-surface)">Sugerido: Potrero 4</div>
+          <div style="font-size:12.5px;color:var(--md-on-surface-variant)">35 días de descanso · aforo 2.900 kg MV/ha · agua ok</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn filled" style="flex:1;justify-content:center" onclick="confirmMove()">✓ Mover al P4</button>
+        <button class="btn text" onclick="snack('Toca cualquier potrero verde para elegirlo')">Elegir otro</button>
+      </div>
+    </div>
+
+    <div class="section-label">🌿 POTREROS · DÍAS DE DESCANSO</div>
+    <div class="pgrid" id="pgrid">
+      <div class="pot warn"><div class="p-name">P1</div><div class="p-days">9</div><div class="p-cap">recuperando</div></div>
+      <div class="pot warn"><div class="p-name">P2</div><div class="p-days">14</div><div class="p-cap">recuperando</div></div>
+      <div class="pot ok" onclick="snack('Potrero 3: 29 días de descanso · aforo pendiente')"><div class="p-name">P3</div><div class="p-days">29</div><div class="p-cap">listo</div></div>
+      <div class="pot ok suggested" onclick="confirmMove()"><div class="p-tag">SUGERIDO</div><div class="p-name">P4</div><div class="p-days">35</div><div class="p-cap">listo · aforo ok</div></div>
+      <div class="pot ok" onclick="snack('Potrero 5: 31 días de descanso')"><div class="p-name">P5</div><div class="p-days">31</div><div class="p-cap">listo</div></div>
+      <div class="pot warn"><div class="p-name">P6</div><div class="p-days">18</div><div class="p-cap">recuperando</div></div>
+      <div class="pot bad now"><div class="p-tag">HATO AQUÍ</div><div class="p-name">P7</div><div class="p-days">2º</div><div class="p-cap">día de ocupación</div></div>
+      <div class="pot bad"><div class="p-name">P8</div><div class="p-days">1</div><div class="p-cap">recién pastoreado</div></div>
+      <div class="pot bad"><div class="p-name">P9</div><div class="p-days">3</div><div class="p-cap">recién pastoreado</div></div>
+      <div class="pot warn"><div class="p-name">P10</div><div class="p-days">12</div><div class="p-cap">recuperando</div></div>
+      <div class="pot warn"><div class="p-name">P11</div><div class="p-days">21</div><div class="p-cap">⚠ cerca dañada</div></div>
+      <div class="pot ok"><div class="p-name">P12</div><div class="p-days">26</div><div class="p-cap">listo</div></div>
+    </div>
+
+    <div class="card mt12">
+      <div class="chart-title" style="font-size:14px">Vuelta proyectada (próximos 7 días)</div>
+      <div class="chips mt8">
+        <span class="chip sel">Hoy → P4</span><span class="chip">vie P5</span><span class="chip">sáb P3</span>
+        <span class="chip">dom P12</span><span class="chip">lun P11</span><span class="chip">mar P2</span><span class="chip">mié P6</span>
+      </div>
+      <div class="chart-sub mt8 mb0">Descanso promedio de la vuelta: <b>31 días</b> — adecuado para lluvias.
+        En seca el sistema pedirá ampliar la vuelta.</div>
+    </div>
+  </div>
+
+  <!-- ============ PANTALLA: HATO ============ -->
+  <div class="screen" id="scr-hato">
+    <div class="kpi-row" style="margin-top:4px">
+      <div class="kpi"><div class="k-label">🐄 Animales</div><div class="k-value">80</div></div>
+      <div class="kpi"><div class="k-label">🥛 En ordeño</div><div class="k-value">26</div></div>
+      <div class="kpi"><div class="k-label">🤰 Preñadas</div><div class="k-value">19</div></div>
+    </div>
+
+    <div class="section-label">🐄 GRUPOS DEL HATO</div>
+    <div class="list">
+      <div class="list-item" onclick="openCow()">
+        <div class="li-leading"><span class="emj">🥛</span></div>
+        <div class="li-body"><div class="li-title">Vacas en ordeño</div>
+          <div class="li-sub">Promedio último pesaje: 11,4 L/vaca</div></div>
+        <div class="li-trail"><div class="li-num">26</div></div>
+      </div>
+      <div class="list-item" onclick="snack('9 vacas horras · 6 paren antes de octubre')">
+        <div class="li-leading"><span class="emj">🤰</span></div>
+        <div class="li-body"><div class="li-title">Vacas horras (secas)</div>
+          <div class="li-sub">6 paren antes de octubre</div></div>
+        <div class="li-trail"><div class="li-num">9</div></div>
+      </div>
+      <div class="list-item" onclick="snack('14 novillas de vientre · 4 listas para servicio')">
+        <div class="li-leading"><span class="emj">🐮</span></div>
+        <div class="li-body"><div class="li-title">Novillas de vientre</div>
+          <div class="li-sub">4 con peso para servicio</div></div>
+        <div class="li-trail"><div class="li-num">14</div></div>
+      </div>
+      <div class="list-item" onclick="snack('18 hembras de levante')">
+        <div class="li-leading"><span class="emj">🌱</span></div>
+        <div class="li-body"><div class="li-title">Hembras de levante</div>
+          <div class="li-sub">Pesaje mensual al día</div></div>
+        <div class="li-trail"><div class="li-num">18</div></div>
+      </div>
+      <div class="list-item" onclick="snack('11 terneras · 2 destetes próximos')">
+        <div class="li-leading"><span class="emj">🍼</span></div>
+        <div class="li-body"><div class="li-title">Terneras</div>
+          <div class="li-sub">2 destetes próximos</div></div>
+        <div class="li-trail"><div class="li-num">11</div></div>
+      </div>
+      <div class="list-item" onclick="snack('2 machos: toro Sansón y un torete')">
+        <div class="li-leading"><span class="emj">🐂</span></div>
+        <div class="li-body"><div class="li-title">Machos / toros</div>
+          <div class="li-sub">Sansón + 1 torete</div></div>
+        <div class="li-trail"><div class="li-num">2</div></div>
+      </div>
+    </div>
+
+    <div class="section-label">📅 PARTOS PRÓXIMOS (de las palpaciones)</div>
+    <div class="card elevated">
+      <div style="display:flex;align-items:flex-end;gap:10px;height:84px;padding:0 4px">
+        <div style="flex:1;text-align:center"><div style="background:var(--md-primary-container);border-radius:8px 8px 0 0;height:28px"></div><div class="li-cap mt8"><b>jul</b><br>2</div></div>
+        <div style="flex:1;text-align:center"><div style="background:var(--md-primary-container);border-radius:8px 8px 0 0;height:14px"></div><div class="li-cap mt8"><b>ago</b><br>1</div></div>
+        <div style="flex:1;text-align:center"><div style="background:var(--md-primary);border-radius:8px 8px 0 0;height:56px"></div><div class="li-cap mt8"><b>sep</b><br>4</div></div>
+        <div style="flex:1;text-align:center"><div style="background:var(--md-primary-container);border-radius:8px 8px 0 0;height:14px"></div><div class="li-cap mt8"><b>oct</b><br>1</div></div>
+        <div style="flex:1;text-align:center"><div style="background:var(--md-primary-container);border-radius:8px 8px 0 0;height:42px"></div><div class="li-cap mt8"><b>nov</b><br>3</div></div>
+        <div style="flex:1;text-align:center"><div style="background:var(--md-primary-container);border-radius:8px 8px 0 0;height:28px"></div><div class="li-cap mt8"><b>dic</b><br>2</div></div>
+      </div>
+      <div class="chart-sub mt8 mb0">Septiembre concentra 4 partos → más leche desde el último trimestre.</div>
+    </div>
+
+    <button class="btn tonal mt12" style="width:100%;justify-content:center" onclick="snack('Modo palpación: lista guiada vaca por vaca para el día del veterinario')">
+      🩺 Iniciar modo palpación (día del veterinario)</button>
+  </div>
+
+  <!-- ============ PANTALLA: FICHA VACA ============ -->
+  <div class="screen" id="scr-vaca">
+    <div class="cow-hero">
+      <div class="cow-photo">🐄</div>
+      <div>
+        <h2>042 · Lucero</h2>
+        <div class="c-sub">Holstein × Gyr · 5,2 años · En ordeño · Nació en finca</div>
+      </div>
+    </div>
+
+    <div class="alert warn mb0" style="margin-bottom:10px">
+      <div class="a-icon"><span class="emj">🤰</span></div>
+      <div class="a-body">
+        <div class="a-title">Preñada · 6 meses (palpación 2 may)</div>
+        <div class="a-sub">Parto probable ~12 sep · <b>Secar ~12 jul</b></div>
+        <button class="btn tonal small mt8" onclick="snack('Secado programado para el 12 jul — se creará la tarea')">Programar secado</button>
+      </div>
+    </div>
+
+    <div class="statgrid">
+      <div class="stat"><div class="s-label">⚖️ PESO (ABR)</div><div class="s-value">480 kg</div></div>
+      <div class="stat"><div class="s-label">🥛 ÚLTIMO PESAJE</div><div class="s-value">18 L/día</div></div>
+      <div class="stat"><div class="s-label">🍼 PARTOS · CRÍAS</div><div class="s-value">3 · (038, 051, 064)</div></div>
+      <div class="stat"><div class="s-label">👪 MADRE · PADRE</div><div class="s-value">017 · Sansón</div></div>
+    </div>
+
+    <div class="card elevated mt12 chart-card">
+      <div class="chart-title" style="font-size:14px">Curva de pesajes (esta lactancia)</div>
+      <svg viewBox="0 0 320 70">
+        <polyline points="10,52 55,34 100,22 145,18 190,22 235,28 280,30 310,32"
+          fill="none" stroke="#3A6B35" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="310" cy="32" r="4.5" fill="#3A6B35"/>
+        <g font-family="Roboto,sans-serif" font-size="9" fill="#73796C">
+          <text x="10" y="66">ene</text><text x="100" y="66">mar</text><text x="190" y="66">may</text><text x="290" y="66">jun</text>
+          <text x="284" y="24" fill="#3A6B35" font-weight="700">18 L</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="section-label">💊 SALUD</div>
+    <div class="list">
+      <div class="list-item"><div class="li-leading" style="background:var(--ok-bg)"><span class="emj">💉</span></div>
+        <div class="li-body"><div class="li-title">Aftosa — ciclo ICA</div><div class="li-sub">Aplicada may 2026 · próxima nov 2026</div></div>
+        <span class="badge ok">al día</span></div>
+      <div class="list-item"><div class="li-leading" style="background:var(--ok-bg)"><span class="emj">🩹</span></div>
+        <div class="li-body"><div class="li-title">Mastitis (mar 2026)</div><div class="li-sub">Tratada con retiro de 4 días · recuperada</div></div>
+        <span class="badge ok">ok</span></div>
+      <div class="list-item"><div class="li-leading"><span class="emj">🚫</span></div>
+        <div class="li-body"><div class="li-title">Retiro de leche</div><div class="li-sub">Sin retiro activo</div></div></div>
+    </div>
+
+    <div class="section-label">🕐 HISTORIA</div>
+    <div class="card">
+      <div class="timeline">
+        <div class="tl-item"><div class="tl-date">02 MAY 2026</div>
+          <div class="tl-text">Palpación: <b>preñada 6 meses</b></div>
+          <div class="tl-sub">Dr. Restrepo · parto calculado ~12 sep</div></div>
+        <div class="tl-item"><div class="tl-date">28 ABR 2026</div>
+          <div class="tl-text">Pesaje mensual: 18 L</div></div>
+        <div class="tl-item"><div class="tl-date">15 MAR 2026</div>
+          <div class="tl-text">Mastitis — tratamiento + retiro 4 días</div></div>
+        <div class="tl-item" style="padding-bottom:0"><div class="tl-date">03 DIC 2025</div>
+          <div class="tl-text">Servicio: monta con Sansón</div></div>
+      </div>
+    </div>
+    <button class="btn filled mt12" style="width:100%;justify-content:center" onclick="openSheet()">
+      ＋ Registrar evento en esta vaca</button>
+  </div>
+
+  <!-- ============ PANTALLA: DECISIONES ============ -->
+  <div class="screen" id="scr-decisiones">
+    <div class="card filled" style="display:flex;gap:12px;align-items:center;margin-top:4px">
+      <span class="emj" style="font-size:28px">💡</span>
+      <div style="font-size:13.5px;color:var(--md-on-surface);line-height:1.4">
+        <b>Tu reunión mensual de finca, en una pantalla.</b><br>
+        El sistema recomienda con el dato detrás — tú decides.</div>
+    </div>
+
+    <div class="dec">
+      <div class="d-head">
+        <div class="d-icon" style="background:var(--bad-bg)"><span class="emj">📉</span></div>
+        <div class="d-title">Revisar descarte: 029 Pinta y 033 Paloma</div>
+      </div>
+      <div class="d-why">Producen <b>5 y 6 L</b> (pesaje 28 may), están <b>vacías hace 150 y 132 días</b> y
+        el costo de mantenerlas supera su leche. Venderlas libera pasto para 2 novillas próximas a parir.</div>
+      <div class="d-actions">
+        <button class="btn filled small" onclick="snack('Marcadas para revisión de descarte')">Revisar</button>
+        <button class="btn text small" onclick="snack('Recordatorio pospuesto al próximo pesaje')">Después</button>
+      </div>
+    </div>
+
+    <div class="dec">
+      <div class="d-head">
+        <div class="d-icon" style="background:var(--warn-bg)"><span class="emj">🌽</span></div>
+        <div class="d-title">Sembrar maíz esta semana</div>
+      </div>
+      <div class="d-why">Quedan <b>45 días de silo</b> (consumo: 290 kg/día) y el ciclo tarda <b>~120 días</b>.
+        Sembrando ya, el bache se cubre con solo ~25 días de concentrado comprado.</div>
+      <div class="fuel"><div class="f-fill"></div><div class="f-label">Silo: 45 días restantes</div></div>
+      <div class="d-actions mt12">
+        <button class="btn filled small" onclick="snack('Tarea creada: preparar lote La Esquina para siembra')">Crear tarea de siembra</button>
+      </div>
+    </div>
+
+    <div class="dec">
+      <div class="d-head">
+        <div class="d-icon" style="background:var(--ok-bg)"><span class="emj">💰</span></div>
+        <div class="d-title">El costo por litro bajó a $1.180</div>
+      </div>
+      <div class="d-why">Precio de venta: <b>$1.950/L</b> → margen de <b>$770/L</b> (39%).
+        El silo propio redujo 14% el costo de alimentación vs comprar concentrado.</div>
+      <div class="d-actions">
+        <button class="btn text small" onclick="snack('Detalle de costos — en la siguiente iteración del prototipo')">Ver detalle</button>
+      </div>
+    </div>
+
+    <div class="dec">
+      <div class="d-head">
+        <div class="d-icon" style="background:var(--md-tertiary-container)"><span class="emj">☕</span></div>
+        <div class="d-title">Café: contratar recolectores para ~15 oct</div>
+      </div>
+      <div class="d-why">La floración principal fue el <b>2 de marzo</b> → pico de cosecha proyectado en
+        <b>octubre</b> (~32 semanas). Histórico del lote La Loma: 3.800 kg de cereza en el primer pase
+        → se necesitan <b>~6 recolectores</b>.</div>
+      <div class="d-actions">
+        <button class="btn tonal small" onclick="snack('Recordatorio: confirmar recolectores el 15 sep')">Recordármelo en sep</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAB -->
+  <button class="fab" onclick="openSheet()">＋</button>
+
+  <!-- NAV BAR -->
+  <div class="navbar">
+    <button class="nav-item active" data-scr="scr-inicio" onclick="go('scr-inicio',this)">
+      <span class="pill">🏠</span><span class="n-label">Inicio</span></button>
+    <button class="nav-item" data-scr="scr-ordeno" onclick="go('scr-ordeno',this)">
+      <span class="pill">🥛</span><span class="n-label">Ordeño</span></button>
+    <button class="nav-item" data-scr="scr-potreros" onclick="go('scr-potreros',this)">
+      <span class="pill">🌿</span><span class="n-label">Potreros</span></button>
+    <button class="nav-item" data-scr="scr-hato" onclick="go('scr-hato',this)">
+      <span class="pill">🐄</span><span class="n-label">Hato</span></button>
+    <button class="nav-item" data-scr="scr-decisiones" onclick="go('scr-decisiones',this)">
+      <span class="pill">💡</span><span class="n-label">Decidir</span></button>
+  </div>
+
+  <!-- BOTTOM SHEET -->
+  <div class="scrim" id="scrim" onclick="closeSheet()"></div>
+  <div class="sheet" id="sheet">
+    <div class="handle"></div>
+    <h3>Registrar novedad</h3>
+    <div class="quick">
+      <button onclick="sheetPick('Celo visto registrado — se sugiere servicio en 12h')"><span class="emj">❤️</span><span class="q-label">Celo visto</span></button>
+      <button onclick="sheetPick('Parto registrado — la vaca pasa al grupo de ordeño')"><span class="emj">🍼</span><span class="q-label">Parto</span></button>
+      <button class="alt" onclick="sheetPick('Tratamiento registrado — retiro de leche activado 4 días')"><span class="emj">💊</span><span class="q-label">Enfermedad / medicina</span></button>
+      <button class="alt" onclick="sheetPick('Labor registrada en el lote')"><span class="emj">🚜</span><span class="q-label">Labor de cultivo</span></button>
+      <button onclick="sheetPick('Revisión de colmena registrada')"><span class="emj">🐝</span><span class="q-label">Revisión colmena</span></button>
+      <button onclick="sheetPick('Cosecha registrada')"><span class="emj">🧺</span><span class="q-label">Cosecha</span></button>
+    </div>
+  </div>
+
+  <!-- SNACKBAR -->
+  <div class="snackbar" id="snackbar"><span class="emj">✅</span><span id="snackText"></span></div>
+</div>
+
+<script>
+const titles={
+  'scr-inicio':['Los Chagualos','🌧️ Jue 12 jun · Lluvia ayer: 12 mm'],
+  'scr-ordeno':['Ordeño del día','🥛 1 vez al día · queda guardado sin señal'],
+  'scr-potreros':['Potreros','🌿 12 potreros · ocupación 1 día (máx 2)'],
+  'scr-hato':['Mi hato','🐄 80 animales · 26 en ordeño'],
+  'scr-vaca':['Ficha del animal','🐄 Se consulta mucho, se edita poco'],
+  'scr-decisiones':['Decisiones del mes','💡 Junio 2026 · 4 recomendaciones'],
+};
+let histStack=['scr-inicio'];
+function go(id,navBtn){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.scr===id));
+  const t=titles[id];
+  document.getElementById('barTitle').textContent=t[0];
+  document.getElementById('barSub').textContent=t[1];
+  document.getElementById('backBtn').style.display=(id==='scr-inicio')?'none':'flex';
+  if(histStack[histStack.length-1]!==id)histStack.push(id);
+  document.getElementById(id).scrollTop=0;
+}
+function goBack(){histStack.pop();go(histStack.pop()||'scr-inicio');}
+function openCow(){go('scr-vaca');}
+function openSheet(){document.getElementById('scrim').classList.add('show');
+  document.getElementById('sheet').classList.add('show');}
+function closeSheet(){document.getElementById('scrim').classList.remove('show');
+  document.getElementById('sheet').classList.remove('show');}
+function sheetPick(msg){closeSheet();snack(msg);}
+let snackTimer;
+function snack(msg){const sb=document.getElementById('snackbar');
+  document.getElementById('snackText').textContent=msg;sb.classList.add('show');
+  clearTimeout(snackTimer);snackTimer=setTimeout(()=>sb.classList.remove('show'),2600);}
+/* teclado del ordeño */
+let typing=false;
+function key(n){const el=document.getElementById('milkNum');
+  if(!typing){el.textContent='';typing=true;}
+  if(el.textContent.length<3)el.textContent+=n;}
+function keyClear(){const el=document.getElementById('milkNum');
+  el.textContent=el.textContent.slice(0,-1)||'0';typing=true;}
+function saveMilk(){const v=document.getElementById('milkNum').textContent;typing=false;
+  snack('Ordeño guardado: '+v+' L · '+(v-170>=0?'+':'')+(v-170)+' L vs ayer (en cola offline)');}
+function confirmMove(){
+  snack('Hato movido al Potrero 4 · descanso del P7 reiniciado');
+  setTimeout(()=>go('scr-inicio'),1400);
+}
+</script>
+</body>
+</html>
