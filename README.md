@@ -89,18 +89,21 @@ café es más rentable por hectárea?".
 
 ### 3.1 El modelo de captura: tres capas
 
-El error clásico de los software de finca es pedir demasiado dato. Con 26 vacas en
-ordeño, registrar litros vaca por vaca dos veces al día serían **52 anotaciones
-diarias** — nadie sostiene eso más de una semana. Por eso la captura se organiza
-en tres capas según su frecuencia real:
+El error clásico de los software de finca es pedir demasiado dato — o pedirlo de
+forma lenta. Aquí lo diario se reduce a lo que de verdad se usa, y el registro más
+exigente (la leche **vaca por vaca**, como se hace en la finca) se diseña para
+tomar 2-3 minutos:
 
 ```
-CAPA 1 · DIARIO (obligatorio, < 1 minuto)
-├── 🥛 Leche total del ordeño (1 vez al día): ___ litros (o cantinas de 40 L)
+CAPA 1 · DIARIO (obligatorio, < 5 minutos en total)
+├── 🥛 Ordeño POR VACA (1 vez al día): las 26 aparecen en el orden en que
+│      entran al ordeño, con el valor de ayer pre-cargado →
+│      ¿dio igual? un toque ✓ · ¿cambió? 2 dígitos y ✓ (~2-3 min las 26)
+│      El total del día se suma solo.
 ├── 🐄 Movimiento del hato: ¿a qué potrero entraron hoy? (1-2 toques —
 │      con ocupación de 1 día, máx 2, esto es rutina diaria, no evento)
 └── 🌧️ Lluvia del día: ___ mm (si llovió)
-    → Leche + potrero + lluvia. Nada más es obligatorio.
+    → Ordeño + potrero + lluvia. Nada más es obligatorio.
 
 CAPA 2 · POR EVENTO (solo cuando pasa algo)
 ├── 🐄 Parto, celo visto, servicio, secado, venta, muerte
@@ -110,19 +113,18 @@ CAPA 2 · POR EVENTO (solo cuando pasa algo)
     → Se registra en el momento, sobre el animal/lote específico.
 
 CAPA 3 · PERIÓDICO (programado; el sistema lo recuerda con una tarea)
-├── 🥛 Pesaje de leche individual: 1 vez al mes (las 26 vacas, ese día sí
-│      una por una) → identifica las mejores/peores productoras y
-│      sustenta decisiones de secado y descarte
-├── ⚖️ Peso/condición corporal de novillas y terneras: mensual
+├── ⚖️ Peso/condición corporal del ganado: mensual
 ├── 🌿 Aforo de potreros: antes de cada entrada o quincenal
 └── 🐝 Revisión de colmenas: cada 15-21 días
     → El sistema genera la tarea y guía la captura ese día.
 ```
 
-**Por qué funciona:** el dato diario es trivial de llenar (el total que ya miden en
-la cantina o el tanque), y el detalle por animal se obtiene del *pesaje mensual* —
-la práctica estándar de control lechero — que da suficiente resolución para decidir
-sin esclavizar a nadie.
+**Por qué funciona:** registrar 26 vacas una por una solo es viable si la app sigue
+el **orden real en que entran al ordeño** (se configura una vez) y pre-carga el
+valor de ayer: confirmar es un toque, corregir son 2 dígitos. Y ese esfuerzo compra
+mucho: la **curva de lactancia diaria de cada vaca** y la **alerta temprana de
+caídas** — una vaca que baja ~25% de un día a otro suele estar enferma, en celo o
+mal alimentada, y la app la señala esa misma mañana.
 
 ---
 
@@ -161,8 +163,8 @@ una vez, y todo lo demás lo van construyendo los eventos.
 │    Parto probable: ~12 sep               │
 │    ⚠️ Secar: ~12 jul                     │
 ├──────────────────────────────────────────┤
+│ 🥛 Ayer: 18 L · DEL 152 (parto 11 ene)   │
 │ ⚖️ Peso: 480 kg (abr) · ver historial    │
-│ 🥛 Último pesaje: 14 L/día · ver curva   │
 │ 🍼 Partos: 3 · Crías: 038, 051, 064      │
 │ 👪 Madre: 017 · Padre: toro "Sansón"     │
 ├──────────────────────────────────────────┤
@@ -180,9 +182,19 @@ una vez, y todo lo demás lo van construyendo los eventos.
   nacimiento (la **edad se calcula sola**), genealogía (madre/padre), procedencia
   (nacida en finca o comprada). El **peso** es un evento periódico (capa 3): cada
   registro construye el historial y la curva de crecimiento de las jóvenes.
-- **Ordeño diario = 1 número:** se ordeña una vez al día, así que el registro es
-  el total de litros (o cantinas) de ese ordeño. El detalle por vaca sale del
-  **pesaje mensual** (capa 3), no del día a día.
+- **Ordeño diario por vaca:** se ordeña una vez al día y se anota cada vaca. La
+  app presenta las 26 en el orden en que entran al ordeño con el valor de ayer
+  pre-cargado (igual = un toque ✓, distinto = 2 dígitos); el total del día se
+  suma solo y cada vaca construye su **curva de lactancia real**.
+- **Alerta de caída de producción:** si una vaca baja bruscamente frente a su
+  promedio de la semana (p. ej. −25%), la app la marca esa misma mañana — es el
+  primer síntoma de mastitis, celo o problema de alimentación.
+- **DEL (días en leche) — el reloj de cada lactancia:** se calcula solo desde el
+  parto (cero captura) y acompaña a la vaca en toda la app: junto a sus litros en
+  el ordeño, en su ficha y en los rankings. Es el contexto que hace interpretables
+  los litros (5 L a DEL 400 es normal; a DEL 100 es un problema) y dispara las
+  ventanas de manejo: **servicio entre DEL 60-90**, revisión de vacas vacías a
+  DEL 120+, y alerta de **lactancia muy larga (DEL > 305)** sin preñez confirmada.
 - **Reproducción — la palpación como evento central:** el día que viene el
   veterinario a palpar, la app entra en *modo palpación*: pasa la lista de vacas
   y para cada una se marca el resultado en un toque — `preñada (+ meses)`,
@@ -201,8 +213,10 @@ una vez, y todo lo demás lo van construyendo los eventos.
     se aplican a todo el hato en una sola acción — "vacunar grupo" marca las 80
     de una vez, sin abrir 80 fichas. La app recuerda los ciclos (may/nov).
 
-**KPIs:** litros totales/día y litros/vaca en ordeño, curva de cada vaca con los
-pesajes mensuales, intervalo entre partos, % de preñez, costo por litro.
+**KPIs:** litros totales/día, litros/vaca/día con su curva de lactancia (eje en
+DEL), **DEL promedio del hato** (si sube de ~180-200, el hato está "envejecido" en
+lactancia: faltan partos recientes), intervalo entre partos, % de preñez, costo
+por litro.
 
 ### 4.2 🌿 Potreros y pastoreo (corazón del modelo regenerativo)
 
@@ -346,19 +360,17 @@ la vaca 042", "historia del potrero 7", "historia del lote La Loma".
 - **Botones de registro rápido**: las 4 capturas más frecuentes a un toque.
 - Navegación inferior: `Inicio · Módulos · + Registrar · Tareas · Reportes`.
 
-### 6.2 Flujo estrella: registrar el ordeño del día (< 30 segundos)
+### 6.2 Flujo estrella: el ordeño vaca por vaca (~2-3 minutos las 26)
 
-1. Toque en **🥛 Ordeño** → un solo campo grande: litros totales de hoy
-   (con el valor de ayer visible como referencia y opción de anotar en cantinas).
-2. Opcional, solo si pasó algo: botón **"+ Novedad"** para marcar sobre una vaca
-   específica mastitis o celo visto en el ordeño — ¡el momento real donde se
-   detectan los celos!
-3. **Guardar** → muestra la comparación contra ayer y el promedio de la semana;
-   queda en cola offline si no hay señal.
-
-El día del **pesaje mensual** (capa 3), este mismo flujo cambia a modo lista:
-las 26 vacas en ordeño una por una con teclado numérico grande. Es el único día
-del mes que se anota por vaca.
+1. Toque en **🥛 Ordeño** → aparece la **primera vaca del orden del ordeño**
+   (el orden se configura una vez, arrastrando) con su valor de ayer pre-cargado
+   en grande y su contexto: *"042 Lucero · DEL 152 · ayer 18 L"*.
+2. **¿Dio igual que ayer? → un toque en ✓.** ¿Cambió? → 2 dígitos en el teclado
+   grande y ✓. La app pasa sola a la siguiente vaca.
+3. En cualquier vaca: botón **"+ Novedad"** para marcar mastitis o celo visto en
+   el ordeño — ¡el momento real donde se detectan los celos!
+4. Al terminar: **el total del día se suma solo**, comparación contra ayer y
+   alerta de las vacas que cayeron frente a su semana. Todo queda en cola offline.
 
 ### 6.3 Flujo: mover el hato (rutina de cada mañana, 2 toques)
 
@@ -399,12 +411,24 @@ potrero, la app lo recuerda con una notificación.
   → La relación lluvia→pasto→leche, visible de un vistazo.
   → Eventos anotados explican cada caída o subida.
 
-🐄 PESAJE MENSUAL — ranking de las 26 en ordeño
-  Lucero 042  ████████████████ 18 L
-  Mona 038    ██████████████ 16 L
+🐄 POR VACA — ranking diario de las 26 en ordeño (registro de cada día)
+  Lucero 042  ████████████████ 18 L · DEL 152
+  Mona 038    ██████████████ 16 L · DEL 98
   ...
-  Pinta 029   ████ 5 L  🔴 vacía 150d → ¿descarte?
+  Pinta 029   ████ 5 L · DEL 412  🔴 vacía 150d → ¿descarte?
+  → Litros junto a los DEL: 5 L a DEL 400 es lo esperado al final de la
+    lactancia; 5 L a DEL 100 es un problema. El ranking se lee con contexto.
   → Las de abajo en rojo si además están vacías: decisión a un vistazo.
+
+📈 CURVA DE LACTANCIA — por vaca, eje X en DEL (días en leche)
+  L/día
+   20┤    ╭───╮ pico (DEL 40-60)
+   14┤  ╭─╯   ╰──────╮___
+    8┤ ╭╯               ╰──╮ hoy: DEL 152 · 18 L
+     └─┴────┴────┴────┴────┴──
+       0   60   120  180  240  DEL
+  → Cada lactancia de la vaca se superpone: ¿esta lactancia viene mejor
+    o peor que la anterior a los mismos DEL?
 
 📅 PARTOS — línea de tiempo de los próximos 9 meses
   jul ●● 2   ago ● 1   sep ●●●● 4   oct ● 1 ...
@@ -456,7 +480,7 @@ NIVEL 3 · ESTE AÑO (proyecciones — anticiparse)
 
 | Decisión | El sistema responde con… |
 |---|---|
-| 🐄 **¿Qué vacas seco, sirvo o descarto?** | Ranking de los pesajes mensuales + estado reproductivo: "estas 3 vacas producen < 6 L y están vacías hace 150 días — candidatas a descarte". |
+| 🐄 **¿Qué vacas seco, sirvo o descarto?** | Producción diaria leída con sus DEL + estado reproductivo: "Pinta da 5 L a DEL 412 y está vacía hace 150 días — candidata a descarte"; "Mona está en DEL 75: ventana ideal de servicio". |
 | 🌿 **¿A cuál potrero muevo el hato hoy?** | Sugerencia automática: el potrero con más días de descanso y aforo suficiente. |
 | 🌿 **¿Aguanta la finca más vacas?** | Carga animal actual vs. capacidad según aforos e historial de lluvia. |
 | 🌽 **¿Cuándo siembro el próximo maíz?** | Inventario de silo ÷ consumo diario del hato = "quedan **45 días** de comida; el ciclo tarda 120 — siembra ya". |

@@ -382,16 +382,20 @@ body{background:#3a3f36;display:flex;align-items:center;justify-content:center;
     </div>
   </div>
 
-  <!-- ============ PANTALLA: ORDEÑO ============ -->
+  <!-- ============ PANTALLA: ORDEÑO (vaca por vaca) ============ -->
   <div class="screen" id="scr-ordeno">
-    <div class="milk-input">
-      <div class="m-label">ORDEÑO DE HOY · JUEVES 12 JUN</div>
-      <div class="milk-value"><span id="milkNum">184</span> <span class="u">L</span></div>
-      <div class="milk-ref">Ayer: 170 L · Promedio semana: 176 L</div>
-      <div class="chips mt8" style="justify-content:center">
-        <button class="chip sel" onclick="snack('Unidad: litros')">🥛 Litros</button>
-        <button class="chip" onclick="snack('4,6 cantinas de 40 L = 184 L')">🪣 Cantinas</button>
-      </div>
+    <div class="card filled" style="display:flex;align-items:center;gap:10px;margin-top:4px;padding:12px 16px">
+      <span class="emj" style="font-size:20px">🥛</span>
+      <div style="flex:1;font-size:13.5px;color:var(--md-on-surface)">
+        Vaca <b id="cowIdx">1</b> de <b>6</b> <span style="color:var(--md-on-surface-variant)">(demo — serían tus 26)</span></div>
+      <div style="font-size:14px;font-weight:800;color:var(--md-on-surface)">Σ <span id="runTotal">0</span> L</div>
+    </div>
+
+    <div class="milk-input" style="margin-top:0">
+      <div class="m-label" id="cowName">042 · LUCERO</div>
+      <div class="milk-ref" id="cowDel" style="margin-top:2px">DEL 152 · 3er parto</div>
+      <div class="milk-value" style="margin-top:4px"><span id="milkNum">18</span> <span class="u">L</span></div>
+      <div class="milk-ref" id="cowRef">Ayer dio 18 L — si dio igual, solo toca ✓</div>
       <div class="keypad">
         <button onclick="key(1)">1</button><button onclick="key(2)">2</button><button onclick="key(3)">3</button>
         <button onclick="key(4)">4</button><button onclick="key(5)">5</button><button onclick="key(6)">6</button>
@@ -400,31 +404,45 @@ body{background:#3a3f36;display:flex;align-items:center;justify-content:center;
         <button onclick="key(0)">0</button>
         <button class="action" onclick="saveMilk()">✓</button>
       </div>
+      <div style="font-size:11.5px;color:var(--md-on-surface-variant);margin-top:10px">
+        ✓ guarda y pasa a la siguiente · el orden es el del ordeño (se configura una vez)</div>
     </div>
 
     <button class="btn outl" style="width:100%;justify-content:center" onclick="openSheet()">
-      ＋ Novedad en el ordeño (mastitis, celo visto…)</button>
+      ＋ Novedad en esta vaca (mastitis, celo visto…)</button>
 
-    <div class="section-label">⚖️ PESAJE MENSUAL · 28 MAY</div>
+    <div class="section-label">✅ REGISTRADAS HOY</div>
+    <div class="list" id="todayList">
+      <div class="list-item" id="todayEmpty" style="cursor:default">
+        <div class="li-body"><div class="li-sub">Aún ninguna — empieza con Lucero ☝️</div></div>
+      </div>
+    </div>
+
+    <div class="section-label">📊 RANKING · PROMEDIO 7 DÍAS</div>
     <div class="card elevated">
-      <div class="chart-title">Top y cola de las 26 en ordeño</div>
-      <div class="chart-sub">Próximo pesaje vaca por vaca: 28 jun (se crea la tarea sola)</div>
+      <div class="chart-title">Las 26 en ordeño, con sus DEL</div>
+      <div class="chart-sub">Litros + días en leche: 5 L a DEL 412 es fin de lactancia; a DEL 100 sería un problema</div>
       <div class="mt8">
         <div class="rank-row"><div class="rank-name">042 Lucero</div>
-          <div class="rank-bar-wrap"><div class="rank-bar" style="width:100%">18 L</div></div></div>
+          <div class="rank-bar-wrap"><div class="rank-bar" style="width:100%">18 L</div></div>
+          <div class="li-cap" style="width:54px;flex:none">DEL 152</div></div>
         <div class="rank-row"><div class="rank-name">038 Mona</div>
-          <div class="rank-bar-wrap"><div class="rank-bar" style="width:88%">16 L</div></div></div>
+          <div class="rank-bar-wrap"><div class="rank-bar" style="width:88%">16 L</div></div>
+          <div class="li-cap" style="width:54px;flex:none">DEL 98</div></div>
         <div class="rank-row"><div class="rank-name">051 Careta</div>
-          <div class="rank-bar-wrap"><div class="rank-bar" style="width:77%">14 L</div></div></div>
+          <div class="rank-bar-wrap"><div class="rank-bar" style="width:77%">14 L</div></div>
+          <div class="li-cap" style="width:54px;flex:none">DEL 121</div></div>
         <div class="rank-row"><div class="rank-name">033 Paloma</div>
-          <div class="rank-bar-wrap"><div class="rank-bar low" style="width:33%">6 L</div></div></div>
+          <div class="rank-bar-wrap"><div class="rank-bar low" style="width:33%">6 L</div></div>
+          <div class="li-cap" style="width:54px;flex:none">DEL 95 ⚠</div></div>
         <div class="rank-row mb0"><div class="rank-name">029 Pinta</div>
-          <div class="rank-bar-wrap"><div class="rank-bar low" style="width:27%">5 L</div></div></div>
+          <div class="rank-bar-wrap"><div class="rank-bar low" style="width:27%">5 L</div></div>
+          <div class="li-cap" style="width:54px;flex:none">DEL 412</div></div>
       </div>
       <div class="alert urgent mt12 mb0" style="padding:11px">
         <div class="a-body">
-          <div class="a-title" style="font-size:13.5px">029 Pinta: 5 L y vacía hace 150 días</div>
-          <div class="a-sub">Candidata a descarte — revisar en Decisiones del mes</div>
+          <div class="a-title" style="font-size:13.5px">033 Paloma: 6 L a DEL 95 — muy bajo para su etapa</div>
+          <div class="a-sub">Y Pinta: DEL 412, vacía hace 150 días → revisar en Decisiones</div>
         </div>
       </div>
     </div>
@@ -494,7 +512,7 @@ body{background:#3a3f36;display:flex;align-items:center;justify-content:center;
       <div class="list-item" onclick="openCow()">
         <div class="li-leading"><span class="emj">🥛</span></div>
         <div class="li-body"><div class="li-title">Vacas en ordeño</div>
-          <div class="li-sub">Promedio último pesaje: 11,4 L/vaca</div></div>
+          <div class="li-sub">Ayer: 11,4 L/vaca · DEL promedio: 164</div></div>
         <div class="li-trail"><div class="li-num">26</div></div>
       </div>
       <div class="list-item" onclick="snack('9 vacas horras · 6 paren antes de octubre')">
@@ -566,21 +584,22 @@ body{background:#3a3f36;display:flex;align-items:center;justify-content:center;
     </div>
 
     <div class="statgrid">
+      <div class="stat"><div class="s-label">🥛 AYER · DEL</div><div class="s-value">18 L · DEL 152</div></div>
       <div class="stat"><div class="s-label">⚖️ PESO (ABR)</div><div class="s-value">480 kg</div></div>
-      <div class="stat"><div class="s-label">🥛 ÚLTIMO PESAJE</div><div class="s-value">18 L/día</div></div>
       <div class="stat"><div class="s-label">🍼 PARTOS · CRÍAS</div><div class="s-value">3 · (038, 051, 064)</div></div>
       <div class="stat"><div class="s-label">👪 MADRE · PADRE</div><div class="s-value">017 · Sansón</div></div>
     </div>
 
     <div class="card elevated mt12 chart-card">
-      <div class="chart-title" style="font-size:14px">Curva de pesajes (esta lactancia)</div>
+      <div class="chart-title" style="font-size:14px">Curva de lactancia (eje en DEL)</div>
+      <div class="chart-sub">Pico en DEL 40-60 · hoy va en DEL 152</div>
       <svg viewBox="0 0 320 70">
-        <polyline points="10,52 55,34 100,22 145,18 190,22 235,28 280,30 310,32"
+        <polyline points="10,52 55,30 90,20 130,22 170,26 210,29 250,31 290,33"
           fill="none" stroke="#3A6B35" stroke-width="3" stroke-linecap="round"/>
-        <circle cx="310" cy="32" r="4.5" fill="#3A6B35"/>
+        <circle cx="200" cy="28" r="4.5" fill="#3A6B35"/>
         <g font-family="Roboto,sans-serif" font-size="9" fill="#73796C">
-          <text x="10" y="66">ene</text><text x="100" y="66">mar</text><text x="190" y="66">may</text><text x="290" y="66">jun</text>
-          <text x="284" y="24" fill="#3A6B35" font-weight="700">18 L</text>
+          <text x="10" y="66">DEL 0</text><text x="85" y="66">60</text><text x="160" y="66">120</text><text x="235" y="66">180</text><text x="290" y="66">240</text>
+          <text x="188" y="16" fill="#3A6B35" font-weight="700">hoy: 18 L</text>
         </g>
       </svg>
     </div>
@@ -603,10 +622,10 @@ body{background:#3a3f36;display:flex;align-items:center;justify-content:center;
         <div class="tl-item"><div class="tl-date">02 MAY 2026</div>
           <div class="tl-text">Palpación: <b>preñada 6 meses</b></div>
           <div class="tl-sub">Dr. Restrepo · parto calculado ~12 sep</div></div>
-        <div class="tl-item"><div class="tl-date">28 ABR 2026</div>
-          <div class="tl-text">Pesaje mensual: 18 L</div></div>
         <div class="tl-item"><div class="tl-date">15 MAR 2026</div>
           <div class="tl-text">Mastitis — tratamiento + retiro 4 días</div></div>
+        <div class="tl-item"><div class="tl-date">11 ENE 2026</div>
+          <div class="tl-text">Parto #3 — nació la 064 · arranca lactancia (DEL 0)</div></div>
         <div class="tl-item" style="padding-bottom:0"><div class="tl-date">03 DIC 2025</div>
           <div class="tl-text">Servicio: monta con Sansón</div></div>
       </div>
@@ -629,8 +648,9 @@ body{background:#3a3f36;display:flex;align-items:center;justify-content:center;
         <div class="d-icon" style="background:var(--bad-bg)"><span class="emj">📉</span></div>
         <div class="d-title">Revisar descarte: 029 Pinta y 033 Paloma</div>
       </div>
-      <div class="d-why">Producen <b>5 y 6 L</b> (pesaje 28 may), están <b>vacías hace 150 y 132 días</b> y
-        el costo de mantenerlas supera su leche. Venderlas libera pasto para 2 novillas próximas a parir.</div>
+      <div class="d-why">Pinta da <b>5 L a DEL 412</b> (lactancia ya muy larga) y Paloma <b>6 L a DEL 95</b>
+        (muy bajo para su etapa); están <b>vacías hace 150 y 132 días</b> y el costo de mantenerlas supera
+        su leche. Venderlas libera pasto para 2 novillas próximas a parir.</div>
       <div class="d-actions">
         <button class="btn filled small" onclick="snack('Marcadas para revisión de descarte')">Revisar</button>
         <button class="btn text small" onclick="snack('Recordatorio pospuesto al próximo pesaje')">Después</button>
@@ -715,7 +735,7 @@ body{background:#3a3f36;display:flex;align-items:center;justify-content:center;
 <script>
 const titles={
   'scr-inicio':['Los Chagualos','🌧️ Jue 12 jun · Lluvia ayer: 12 mm'],
-  'scr-ordeno':['Ordeño del día','🥛 1 vez al día · queda guardado sin señal'],
+  'scr-ordeno':['Ordeño del día','🥛 Vaca por vaca · queda guardado sin señal'],
   'scr-potreros':['Potreros','🌿 12 potreros · ocupación 1 día (máx 2)'],
   'scr-hato':['Mi hato','🐄 80 animales · 26 en ordeño'],
   'scr-vaca':['Ficha del animal','🐄 Se consulta mucho, se edita poco'],
@@ -744,15 +764,49 @@ let snackTimer;
 function snack(msg){const sb=document.getElementById('snackbar');
   document.getElementById('snackText').textContent=msg;sb.classList.add('show');
   clearTimeout(snackTimer);snackTimer=setTimeout(()=>sb.classList.remove('show'),2600);}
-/* teclado del ordeño */
-let typing=false;
+/* ordeño vaca por vaca */
+const cows=[
+  {n:'042 · Lucero', del:'DEL 152 · 3er parto', ayer:18},
+  {n:'038 · Mona',   del:'DEL 98 · 2do parto',  ayer:16},
+  {n:'051 · Careta', del:'DEL 121 · 1er parto', ayer:14},
+  {n:'027 · Estrella',del:'DEL 64 · pico de lactancia', ayer:13},
+  {n:'033 · Paloma', del:'DEL 95 · 4to parto',  ayer:6},
+  {n:'029 · Pinta',  del:'DEL 412 · lactancia larga ⚠', ayer:5}
+];
+let ci=0,total=0,typing=false;
+function loadCow(){const c=cows[ci];
+  document.getElementById('cowName').textContent=c.n.toUpperCase();
+  document.getElementById('cowDel').textContent=c.del;
+  document.getElementById('milkNum').textContent=c.ayer;
+  document.getElementById('cowRef').textContent='Ayer dio '+c.ayer+' L — si dio igual, solo toca ✓';
+  document.getElementById('cowIdx').textContent=ci+1;
+  typing=false;}
 function key(n){const el=document.getElementById('milkNum');
   if(!typing){el.textContent='';typing=true;}
-  if(el.textContent.length<3)el.textContent+=n;}
+  if(el.textContent.length<2)el.textContent+=n;}
 function keyClear(){const el=document.getElementById('milkNum');
   el.textContent=el.textContent.slice(0,-1)||'0';typing=true;}
-function saveMilk(){const v=document.getElementById('milkNum').textContent;typing=false;
-  snack('Ordeño guardado: '+v+' L · '+(v-170>=0?'+':'')+(v-170)+' L vs ayer (en cola offline)');}
+function saveMilk(){
+  const v=parseInt(document.getElementById('milkNum').textContent)||0;
+  const c=cows[ci];const d=v-c.ayer;total+=v;
+  document.getElementById('runTotal').textContent=total;
+  const empty=document.getElementById('todayEmpty');if(empty)empty.remove();
+  const drop=c.ayer>0&&v<=c.ayer*0.75;
+  const row=document.createElement('div');row.className='list-item';row.style.cursor='default';
+  const dTxt=d===0?'= ayer':(d>0?'+'+d+' L':d+' L');
+  const dCol=drop?'var(--bad)':(d>=0?'var(--ok)':'var(--md-on-surface-variant)');
+  row.innerHTML='<div class="li-body"><div class="li-title" style="font-size:14px">'+c.n+'</div>'+
+    '<div class="li-sub">'+c.del+'</div></div>'+
+    '<div class="li-trail"><span class="li-num" style="font-size:15px">'+v+' L</span><br>'+
+    '<span class="li-cap" style="color:'+dCol+';font-weight:700">'+dTxt+(drop?' ⚠ revisar':'')+'</span></div>';
+  document.getElementById('todayList').prepend(row);
+  if(drop)snack('⚠ '+c.n+' bajó '+(c.ayer-v)+' L vs ayer — ¿mastitis, celo, comida?');
+  ci++;
+  if(ci<cows.length){loadCow();}
+  else{snack('✅ Ordeño completo: '+total+' L en total — en cola offline');
+    ci=0;total=0;setTimeout(()=>{loadCow();document.getElementById('runTotal').textContent=0;},2000);}
+}
+loadCow();
 function confirmMove(){
   snack('Hato movido al Potrero 4 · descanso del P7 reiniciado');
   setTimeout(()=>go('scr-inicio'),1400);
