@@ -348,7 +348,66 @@ del mes que se anota por vaca.
 2. El sistema **sugiere** el potrero óptimo (más días de descanso + aforo).
 3. Confirmar → registra salida/entrada y reinicia contadores de descanso.
 
-### 6.4 Lenguaje visual
+### 6.4 Visualización de datos
+
+**Principios para gráficos de finca en celular:**
+
+1. **Un gráfico = una pregunta.** El título es la respuesta, no el nombre del dato:
+   ❌ "Producción láctea mensual" → ✅ "La leche subió 8% este mes".
+2. **Número grande primero, gráfico después.** En el dashboard solo el dato clave y
+   una mini-curva (sparkline); el gráfico completo se abre al tocar.
+3. **Siempre comparado.** Un número solo no dice nada: vs ayer, vs mes pasado y
+   **vs el mismo mes del año pasado** — esencial en Colombia, donde el clima bimodal
+   hace que abril nunca sea comparable con agosto.
+4. **Solo 3 tipos de gráfico en toda la app** — se aprenden una vez:
+   línea (evolución), barras (comparación/ranking) y semáforo-mapa (estado).
+5. **Los eventos se anotan sobre la curva.** Una caída de leche sin contexto asusta;
+   con la marca "💊 3 vacas en retiro" o "🌿 cambio a potrero pobre", se entiende.
+
+**Las visualizaciones clave por módulo:**
+
+```
+🥛 LECHE — curva diaria con lluvia de fondo
+  L/día                          ▌= lluvia (mm)
+  200┤      ╭──╮        ╭───●  184 L hoy
+  160┤ ╭────╯  ╰───╮╭───╯       ▲ 8% vs mayo
+  120┤─╯     💊    ╰╯⬆silo
+     └▌▌──▌────▌▌▌──▌──▌▌──
+      1    8     15     22   30
+  → La relación lluvia→pasto→leche, visible de un vistazo.
+  → Eventos anotados explican cada caída o subida.
+
+🐄 PESAJE MENSUAL — ranking de las 26 en ordeño
+  Lucero 042  ████████████████ 18 L
+  Mona 038    ██████████████ 16 L
+  ...
+  Pinta 029   ████ 5 L  🔴 vacía 150d → ¿descarte?
+  → Las de abajo en rojo si además están vacías: decisión a un vistazo.
+
+📅 PARTOS — línea de tiempo de los próximos 9 meses
+  jul ●● 2   ago ● 1   sep ●●●● 4   oct ● 1 ...
+  → Cuántas vacas entran al ordeño cada mes = leche futura.
+
+🌿 POTREROS — el mapa semáforo ES el gráfico
+  ┌────┬────┬────┐  🟢 listo (días de descanso en grande)
+  │ 1🔴│ 2🟡│ 3🟢│  🟡 recuperando
+  │ 4🟢│ 5🟡│ 6🔴│  🔴 ocupado / muy pastoreado
+  └────┴────┴────┘
+  → Tocar un potrero: su historial de descansos y aforos.
+
+🌽 SILO — una sola barra de combustible
+  Comida del hato: ██████████░░░░░░ 45 días restantes
+  ⚠️ El próximo ciclo tarda 120 días → sembrar ya
+  → No es un gráfico de producción: es un tanque de gasolina.
+
+💰 FINANZAS — barras por unidad productiva (mes/año)
+  Leche  ████████████│██████ ingresos vs costos
+  Café   ██████████│███
+  Miel   ███│█
+  → De un vistazo: qué unidad da plata y cuál está costando.
+```
+
+### 6.5 Lenguaje visual
 
 - Tarjetas con **semáforos y colores de estado**, no tablas densas.
 - Tipografía grande (mínimo 16px en campo), alto contraste para uso bajo sol directo.
@@ -358,7 +417,51 @@ del mes que se anota por vaca.
 
 ---
 
-## 7. Roadmap propuesto
+## 7. El sistema como copiloto de decisiones
+
+**Principio:** los datos no se capturan para tener datos — se capturan para decidir.
+Cada reporte del sistema responde una pregunta concreta de la finca; si un dato no
+alimenta ninguna decisión, no se pide. El soporte a decisiones funciona en tres
+niveles según el horizonte de tiempo:
+
+```
+NIVEL 1 · HOY (alertas — el sistema te avisa, tú actúas)
+NIVEL 2 · ESTE MES (rankings y semáforos — comparar para elegir)
+NIVEL 3 · ESTE AÑO (proyecciones — anticiparse)
+```
+
+### 7.1 Las decisiones concretas que soporta
+
+| Decisión | El sistema responde con… |
+|---|---|
+| 🐄 **¿Qué vacas seco, sirvo o descarto?** | Ranking de los pesajes mensuales + estado reproductivo: "estas 3 vacas producen < 6 L y están vacías hace 150 días — candidatas a descarte". |
+| 🌿 **¿A cuál potrero muevo el hato hoy?** | Sugerencia automática: el potrero con más días de descanso y aforo suficiente. |
+| 🌿 **¿Aguanta la finca más vacas?** | Carga animal actual vs. capacidad según aforos e historial de lluvia. |
+| 🌽 **¿Cuándo siembro el próximo maíz?** | Inventario de silo ÷ consumo diario del hato = "quedan **45 días** de comida; el ciclo tarda 120 — siembra ya". |
+| 🌽 **¿Producir maíz o comprar concentrado?** | Costo real del kg de silo producido vs. precio del concentrado en el mercado. |
+| ☕ **¿Cuándo y cuántos recolectores contrato?** | Proyección de cosecha desde la fecha de floración + kg de pases anteriores. |
+| ☕ **¿Vendo el pergamino ya o espero?** | Inventario valorizado + factor de rendimiento por lote (qué microlotes valen más como cafés especiales). |
+| 🐝 **¿Divido colmenas o refuerzo?** | Semáforo de fortaleza por colmena en las revisiones quincenales. |
+| 💰 **¿Qué unidad productiva me da plata?** | Rentabilidad por unidad y por hectárea — con la leche al costo real por litro (incluyendo el maíz). |
+| 📅 **¿Cómo viene la leche los próximos meses?** | Calendario de partos (de las palpaciones) → proyección de vacas en ordeño mes a mes. |
+
+### 7.2 Cómo se ve en la app
+
+- **Las alertas del dashboard son accionables:** no dicen "dato registrado", dicen
+  *"Potrero 4 listo (35 días de descanso) → [Mover hato]"* — la decisión y el botón
+  para ejecutarla en el mismo lugar.
+- **Pantalla "Decisiones del mes"** (para ti como administradora): un resumen
+  mensual con las 3-5 decisiones que los datos sugieren revisar — vacas candidatas
+  a secado/descarte, días de silo restantes, proyección de partos, rentabilidad
+  acumulada. Es la reunión mensual de la finca, en una pantalla.
+- **Toda recomendación muestra su porqué:** "sugerimos secar la 042" viene con el
+  dato detrás (preñada 7 meses, palpación del 2 de mayo). El sistema recomienda,
+  **tú decides** — y si decides distinto, el sistema aprende el contexto (puedes
+  anotar el motivo).
+
+---
+
+## 8. Roadmap propuesto
 
 | Fase | Alcance | Valor |
 |---|---|---|
@@ -373,7 +476,7 @@ por cola de eventos — el modelo de "todo es un evento" lo hace natural.
 
 ---
 
-## 8. Próximos pasos
+## 9. Próximos pasos
 
 1. Validar este mapa de módulos con quienes trabajan la finca (¿qué capturarían a diario, de verdad?).
 2. Priorizar el MVP (recomendado: leche + potreros).
