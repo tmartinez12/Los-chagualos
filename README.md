@@ -20,7 +20,8 @@ y no con memoria.
 |---|---|
 | 📱 **Mobile-first** | El 90% de los registros se hacen en campo, de pie, con una mano, a veces con guantes. Botones grandes, mínimo tipeo. |
 | 📴 **Offline-first** | La conectividad rural en Colombia es intermitente. Todo se registra local y sincroniza cuando hay señal. |
-| ⚡ **Captura en < 30 segundos** | Si registrar el ordeño toma más de medio minuto, nadie lo hará dos veces al día. |
+| ⚡ **Lo diario toma < 30 segundos** | El registro de todos los días (leche y lluvia) son 1-2 números en total. Punto. |
+| 📝 **Registro por excepción** | Si no se anota nada, todo está normal. Solo se registran las *novedades* (una vaca enferma, un celo visto). |
 | 🔄 **Visión regenerativa** | No solo producción: el sistema mide salud del suelo, días de descanso de potreros, cobertura vegetal y diversidad. |
 | 🇨🇴 **Contexto colombiano** | Unidades locales (litros, arrobas, cargas de café de 125 kg), calendario bimodal de lluvias, normativa ICA, precio de leche por resolución MinAgricultura. |
 | 👥 **Multi-rol** | El administrador ve finanzas y reportes; el operario de campo solo ve sus tareas y formularios de captura. |
@@ -50,7 +51,7 @@ LOS CHAGUALOS
 ├── MÓDULOS PRODUCTIVOS
 │   ├── 🐄 Ganadería de leche
 │   │   ├── Hato (fichas de animales)
-│   │   ├── Producción (ordeños AM/PM)
+│   │   ├── Producción (ordeño diario)
 │   │   ├── Reproducción (celos, servicios, partos)
 │   │   └── Salud (tratamientos, vacunas ICA)
 │   │
@@ -59,10 +60,10 @@ LOS CHAGUALOS
 │   │   ├── Plan de rotación
 │   │   └── Aforos y salud del suelo
 │   │
-│   ├── 🌽 Maíz
+│   ├── 🌽 Maíz (alimento del hato)
 │   │   ├── Lotes y ciclos de siembra
 │   │   ├── Labores culturales
-│   │   └── Cosecha y destino (venta / silo / alimento)
+│   │   └── Cosecha y ensilaje → suplementación de las vacas
 │   │
 │   ├── 🐝 Miel
 │   │   ├── Apiarios y colmenas
@@ -86,25 +87,80 @@ pertenece a una *unidad productiva* y a una *ubicación* (potrero o lote). Eso p
 cruzar cualquier dato: "¿cuánto cuesta producir un litro de leche?" o "¿qué lote de
 café es más rentable por hectárea?".
 
+### 3.1 El modelo de captura: tres capas
+
+El error clásico de los software de finca es pedir demasiado dato. Con 26 vacas en
+ordeño, registrar litros vaca por vaca dos veces al día serían **52 anotaciones
+diarias** — nadie sostiene eso más de una semana. Por eso la captura se organiza
+en tres capas según su frecuencia real:
+
+```
+CAPA 1 · DIARIO (obligatorio, < 30 segundos)
+├── 🥛 Leche total del ordeño (1 vez al día): ___ litros (o cantinas de 40 L)
+└── 🌧️ Lluvia del día: ___ mm (si llovió)
+    → 1-2 números al día. Nada más es obligatorio.
+
+CAPA 2 · POR EVENTO (solo cuando pasa algo)
+├── 🐄 Parto, celo visto, servicio, secado, venta, muerte
+├── 💊 Tratamiento a un animal (activa periodo de retiro)
+├── 🐄 Movimiento del hato a otro potrero
+├── 🌽☕🐝 Labores y cosechas
+└── 📦 Compra de insumos / venta de producto
+    → Se registra en el momento, sobre el animal/lote específico.
+
+CAPA 3 · PERIÓDICO (programado; el sistema lo recuerda con una tarea)
+├── 🥛 Pesaje de leche individual: 1 vez al mes (las 26 vacas, ese día sí
+│      una por una) → identifica las mejores/peores productoras y
+│      sustenta decisiones de secado y descarte
+├── ⚖️ Peso/condición corporal de novillas y terneras: mensual
+├── 🌿 Aforo de potreros: antes de cada entrada o quincenal
+└── 🐝 Revisión de colmenas: cada 15-21 días
+    → El sistema genera la tarea y guía la captura ese día.
+```
+
+**Por qué funciona:** el dato diario es trivial de llenar (el total que ya miden en
+la cantina o el tanque), y el detalle por animal se obtiene del *pesaje mensual* —
+la práctica estándar de control lechero — que da suficiente resolución para decidir
+sin esclavizar a nadie.
+
 ---
 
 ## 4. Módulos en detalle
 
 ### 4.1 🐄 Ganadería de leche
 
-- **Ficha por animal:** número/nombre, foto, raza, fecha de nacimiento, genealogía
-  (madre/padre), estado (lactante, seca, novilla, ternera), potrero actual.
-- **Ordeño:** registro AM/PM por vaca o por hato total (configurable). Litros,
-  destino (venta, terneras, autoconsumo) y novedades (mastitis, retención).
-- **Reproducción:** detección de celo → servicio (monta o IA) → confirmación de
-  preñez → fecha probable de parto → parto. El sistema calcula alertas: secado
-  (60 días antes del parto), parto próximo, vaca vacía > 120 días.
-- **Salud:** tratamientos con **periodo de retiro** (la app bloquea/alerta que la
-  leche de esa vaca no se puede vender X días), ciclos de vacunación ICA
-  (aftosa, brucelosis) y desparasitación.
+**El hato se gestiona por grupos, no animal por animal.** Con ~80 animales, la
+pantalla principal del hato es un resumen por categoría — el detalle individual
+solo se abre cuando hace falta:
 
-**KPIs:** litros/vaca/día, intervalo entre partos, % de preñez, células somáticas
-(si hay datos del comprador), costo por litro.
+```
+MI HATO (80)
+├── 🥛 Vacas en ordeño ......... 26
+├── 🤰 Vacas horras (secas) ....  9
+├── 🐄 Novillas de vientre ..... 14
+├── 🌱 Hembras de levante ...... 18
+├── 🍼 Terneras ................ 11
+└── 🐂 Machos / toros ..........  2
+```
+
+- Los animales **cambian de grupo automáticamente por eventos**: un parto pasa la
+  vaca de "horras" a "ordeño"; un secado la devuelve a "horras"; la edad sugiere
+  pasar terneras a levante. Nadie reclasifica a mano.
+- **Ficha por animal** (se consulta, casi nunca se edita): número/nombre, foto,
+  raza, nacimiento, genealogía (madre/padre), grupo actual y su línea de tiempo
+  de eventos.
+- **Ordeño diario = 1 número:** se ordeña una vez al día, así que el registro es
+  el total de litros (o cantinas) de ese ordeño. El detalle por vaca sale del
+  **pesaje mensual** (capa 3), no del día a día.
+- **Reproducción por eventos:** celo visto → servicio (monta o IA) → confirmación
+  de preñez → parto. El sistema deriva las alertas: secar a los 7 meses de preñez,
+  parto próximo, vaca vacía > 120 días posparto.
+- **Salud:** tratamientos con **periodo de retiro** (alerta de que la leche de esa
+  vaca no se puede vender X días — y descuenta esos litros del estimado de venta),
+  ciclos de vacunación ICA (aftosa, brucelosis) y desparasitación por grupo.
+
+**KPIs:** litros totales/día y litros/vaca en ordeño, curva de cada vaca con los
+pesajes mensuales, intervalo entre partos, % de preñez, costo por litro.
 
 ### 4.2 🌿 Potreros y pastoreo (corazón del modelo regenerativo)
 
@@ -120,14 +176,25 @@ café es más rentable por hectárea?".
 **Vista clave (UX):** una grilla de tarjetas de potreros con semáforo:
 🟢 listo para pastorear · 🟡 en recuperación · 🔴 ocupado o sobre-pastoreado.
 
-### 4.3 🌽 Maíz
+### 4.3 🌽 Maíz — alimento del hato (no se vende)
+
+El maíz de la finca se cultiva **exclusivamente para alimentar las vacas**, así
+que el módulo no maneja ventas: es un módulo de **producción de alimento** que
+conecta directo con ganadería.
 
 - **Ciclos de cultivo por lote:** semestre A/B (calendario bimodal colombiano),
   variedad, fecha de siembra, densidad.
 - **Labores:** preparación, siembra, fertilización (orgánica/mineral), control de
-  arvenses y plagas (gusano cogollero), riego. Cada labor registra jornales e insumos → costo.
-- **Cosecha:** kg cosechados y **destino**: venta, silo/ensilaje para las vacas
-  (se cruza con ganadería como alimento producido en finca) o autoconsumo.
+  arvenses y plagas (gusano cogollero). Cada labor registra jornales e insumos → costo.
+- **Cosecha y ensilaje:** kg cosechados → entran al **inventario de alimento**
+  (silo, maíz molido o forraje verde).
+- **Suministro al hato:** el consumo se descuenta del inventario (kg/día estimado
+  por grupo, sin pesar baldes), lo que permite proyectar **cuántos días de silo
+  quedan** y cuándo hay que sembrar el próximo ciclo para no quedarse sin comida.
+
+**El cruce que importa:** todo el costo del ciclo de maíz se traslada a ganadería
+como costo de alimentación → entra al **costo real por litro de leche** y permite
+comparar contra comprar concentrado.
 
 ### 4.4 🐝 Miel
 
@@ -220,14 +287,19 @@ la vaca 042", "historia del potrero 7", "historia del lote La Loma".
 - **Botones de registro rápido**: las 4 capturas más frecuentes a un toque.
 - Navegación inferior: `Inicio · Módulos · + Registrar · Tareas · Reportes`.
 
-### 6.2 Flujo estrella: registrar ordeño (< 30 segundos)
+### 6.2 Flujo estrella: registrar el ordeño del día (< 30 segundos)
 
-1. Toque en **🥛 Ordeño** → el sistema ya sabe si es AM o PM por la hora.
-2. Lista de vacas lactantes con teclado numérico grande; valor anterior pre-cargado
-   como sugerencia (un toque si fue igual).
-3. Swipe en una vaca para marcar novedad (mastitis, celo visto en el ordeño —
-   ¡momento real donde se detectan los celos!).
-4. **Guardar** → total del ordeño en pantalla, queda en cola offline si no hay señal.
+1. Toque en **🥛 Ordeño** → un solo campo grande: litros totales de hoy
+   (con el valor de ayer visible como referencia y opción de anotar en cantinas).
+2. Opcional, solo si pasó algo: botón **"+ Novedad"** para marcar sobre una vaca
+   específica mastitis o celo visto en el ordeño — ¡el momento real donde se
+   detectan los celos!
+3. **Guardar** → muestra la comparación contra ayer y el promedio de la semana;
+   queda en cola offline si no hay señal.
+
+El día del **pesaje mensual** (capa 3), este mismo flujo cambia a modo lista:
+las 26 vacas en ordeño una por una con teclado numérico grande. Es el único día
+del mes que se anota por vaca.
 
 ### 6.3 Flujo: mover el hato de potrero
 
