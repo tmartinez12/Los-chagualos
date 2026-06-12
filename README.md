@@ -30,12 +30,24 @@ y no con memoria.
 
 ## 2. Usuarios y roles
 
-| Rol | Quién es | Qué necesita |
+El modelo real de la finca: **cada unidad productiva la lleva una persona
+distinta**, y la administradora ve el conjunto.
+
+| Rol | Quién es | Su vista de la app |
 |---|---|---|
-| **Administrador** | Dueño/a de la finca | Panorama completo, finanzas, reportes, decisiones |
-| **Mayordomo** | Encargado general | Planear tareas, rotación de potreros, supervisar registros |
-| **Operario** | Ordeñador, recolector, apicultor | Capturar datos rápido: ordeño, labores, cosechas |
-| **Veterinario / Agrónomo** (invitado) | Asesor externo | Consultar historial sanitario / de lotes, dejar recomendaciones |
+| **Administradora** | Tatiana | Toda la finca: inicio global, todas las unidades, Decisiones y el **Diario de la finca** (quién registró qué hoy y qué falta) |
+| **Trabajador de unidad** | Ordeñador/a, cafetero, apicultor, quien lleva el maíz | **Su unidad completa**: registra Y consulta su historial, curvas y calendarios — pero solo de su unidad |
+| **Asesor invitado** | Veterinario, agrónomo | Solo lectura de lo suyo (historial sanitario, lotes) + dejar recomendaciones |
+
+**Identidad flexible (la realidad es mixta):** quien tiene celular propio usa su
+cuenta; donde no, un **dispositivo compartido de la finca** pregunta "¿quién
+registra?" antes de capturar. Todo evento queda firmado por su autor.
+
+**Supervisión por bitácora, no por aprobación:** los registros cuentan de
+inmediato (sin trámite de aprobación), y la administradora supervisa con el
+**Diario de la finca**: un resumen diario de qué se registró, quién lo hizo y
+qué falta ("el apiario 2 no se revisó esta semana", "ayer nadie anotó el
+ordeño").
 
 ---
 
@@ -77,10 +89,45 @@ LOS CHAGUALOS
 │
 └── MÓDULOS TRANSVERSALES
     ├── ✅ Tareas y labores (asignación al equipo)
+    ├── 📒 Diario de la finca (quién registró qué · qué falta — vista de la admin)
     ├── 📦 Inventario (insumos, herramientas, producto terminado)
-    ├── 💰 Finanzas (ingresos/gastos por unidad productiva)
     └── 📊 Reportes y clima
+    (💰 Finanzas: pospuesto por decisión — solo quedan las cuentas operativas
+     pegadas a producción, como la cuenta del mes por lechero)
 ```
+
+### 3.0 Una app, una vista por rol
+
+La finca se piensa **por unidades productivas** y cada unidad la lleva una
+persona → la app refleja exactamente eso: la **unidad productiva es el espacio
+de trabajo**. Al entrar, cada quien ve su mundo completo y nada más:
+
+```
+🧑‍🌾 ORDEÑADOR/A → unidad LECHE
+   Barra: Inicio · Ordeño · Potreros · Hato
+   (la vista que ya está prototipada)
+
+☕ CAFETERO → unidad CAFÉ
+   Barra: Inicio · Lotes · Cosecha · Beneficio
+
+🐝 APICULTOR → unidad MIEL
+   Barra: Inicio · Apiarios · Revisiones · Cosechas
+
+🌽 QUIEN LLEVA EL MAÍZ → unidad MAÍZ
+   Barra: Inicio · Lotes · Labores · Silo
+
+👩‍💼 ADMINISTRADORA → toda la finca
+   Barra: Inicio · Unidades · Decidir · Diario de la finca
+   "Unidades" abre cualquiera de las 4 vistas anteriores en modo completo.
+```
+
+- El **Inicio de cada rol** muestra solo sus alertas y su rutina; el Inicio de
+  la administradora agrega el pulso de toda la finca.
+- Los trabajadores **consultan, no solo registran**: el cafetero ve sus curvas
+  de cosecha y su historial de lotes — el dato le sirve a quien lo captura, o
+  dejará de capturarlo.
+- Mismo motor, misma base de datos: una vista por rol es un filtro, no una app
+  distinta.
 
 **Regla de oro de la IA (arquitectura de la información):** todo registro de campo
 pertenece a una *unidad productiva* y a una *ubicación* (potrero o lote). Eso permite
@@ -150,7 +197,7 @@ de un solo día.
    Agregados y tendencias que sustentan decisiones de fondo:
    ├── Producción del mes vs mes anterior y vs mismo mes del año pasado
    ├── Litros/vaca y DEL promedio del hato (¿está "envejecido"?)
-   ├── Costo por litro, margen y rentabilidad por unidad productiva
+   ├── Costo por litro y rentabilidad (cuando se activen las finanzas — pospuesto)
    ├── Ranking de vacas con DEL → secados, servicios, descartes
    ├── % de preñez, vacas vacías >120 DEL, calendario de partos
    ├── Días de silo, avance de cultivos, lluvia acumulada vs histórico
@@ -660,6 +707,10 @@ NIVEL 3 · ESTE AÑO (proyecciones — anticiparse)
 | 🐝 **¿Divido colmenas o refuerzo?** | Semáforo de fortaleza por colmena en las revisiones quincenales. |
 | 💰 **¿Qué unidad productiva me da plata?** | Rentabilidad por unidad y por hectárea — con la leche al costo real por litro (incluyendo el maíz). |
 | 📅 **¿Cómo viene la leche los próximos meses?** | Calendario de partos (de las palpaciones) → proyección de vacas en ordeño mes a mes. |
+
+> Nota: las decisiones que dependen de finanzas (costo por litro, rentabilidad
+> por unidad, producir vs comprar) quedan **en pausa** hasta que se active el
+> módulo financiero — decisión de alcance tomada en jun 2026.
 
 ### 7.2 Cómo se ve en la app
 
