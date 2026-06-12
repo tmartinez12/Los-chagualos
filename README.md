@@ -95,15 +95,16 @@ diarias** — nadie sostiene eso más de una semana. Por eso la captura se organ
 en tres capas según su frecuencia real:
 
 ```
-CAPA 1 · DIARIO (obligatorio, < 30 segundos)
+CAPA 1 · DIARIO (obligatorio, < 1 minuto)
 ├── 🥛 Leche total del ordeño (1 vez al día): ___ litros (o cantinas de 40 L)
+├── 🐄 Movimiento del hato: ¿a qué potrero entraron hoy? (1-2 toques —
+│      con ocupación de 1 día, máx 2, esto es rutina diaria, no evento)
 └── 🌧️ Lluvia del día: ___ mm (si llovió)
-    → 1-2 números al día. Nada más es obligatorio.
+    → Leche + potrero + lluvia. Nada más es obligatorio.
 
 CAPA 2 · POR EVENTO (solo cuando pasa algo)
 ├── 🐄 Parto, celo visto, servicio, secado, venta, muerte
 ├── 💊 Tratamiento a un animal (activa periodo de retiro)
-├── 🐄 Movimiento del hato a otro potrero
 ├── 🌽☕🐝 Labores y cosechas
 └── 📦 Compra de insumos / venta de producto
     → Se registra en el momento, sobre el animal/lote específico.
@@ -205,17 +206,33 @@ pesajes mensuales, intervalo entre partos, % de preñez, costo por litro.
 
 ### 4.2 🌿 Potreros y pastoreo (corazón del modelo regenerativo)
 
-- **Mapa de potreros:** croquis o mapa GPS con área (ha), tipo de pasto, aguadas y cercas.
-- **Rotación:** el módulo central. Cada movimiento del hato registra: potrero de
-  entrada, fecha, # animales. El sistema calcula **días de ocupación** y
-  **días de descanso** de cada potrero y sugiere el próximo (el de mayor descanso
-  con aforo suficiente).
-- **Aforo:** medición de kg de forraje verde/m² antes de entrar al potrero.
+**La regla de manejo de la finca: ocupación de 1 día, máximo 2.** Eso convierte la
+rotación en la rutina diaria más importante después del ordeño, y define cómo se
+diseña este módulo:
+
+- **El movimiento diario es de 2 toques:** cada mañana la app ya sabe dónde está el
+  hato y cuánto lleva ahí; propone el siguiente potrero (el de más días de descanso
+  con aforo suficiente) → confirmas o eliges otro. Listo.
+- **Alarma de sobre-ocupación:** si el hato amanece su **segundo día** en el mismo
+  potrero, la alerta del día es *"último día en el potrero 7 — mover mañana sin
+  falta"*. Al tercer día la alerta es roja: la regla de la finca se está rompiendo.
+- **El descanso se planifica solo:** con ocupación de 1 día, el descanso de cada
+  potrero ≈ (número de potreros − 1) días. El sistema muestra la **secuencia
+  proyectada de la rotación** (a dónde irá el hato los próximos 7-15 días) y avisa
+  si la vuelta está quedando muy corta para la época (en seca el pasto necesita
+  más días de recuperación que en lluvias).
+- **Mapa de potreros:** croquis o mapa GPS con área (ha), tipo de pasto, aguadas y
+  cercas (incluye divisiones con cerca eléctrica móvil si se usan franjas).
+- **Aforo:** medición de kg de forraje verde/m² antes de entrar al potrero
+  (capa 3 — periódico, no diario).
 - **Salud del suelo:** registros periódicos de cobertura, presencia de escarabajos
   estercoleros, compactación, materia orgánica (si hay análisis de laboratorio).
+  Con el historial de rotación, el sistema responde la pregunta regenerativa clave:
+  *¿cada potrero está descansando lo suficiente, en todas las épocas del año?*
 
-**Vista clave (UX):** una grilla de tarjetas de potreros con semáforo:
-🟢 listo para pastorear · 🟡 en recuperación · 🔴 ocupado o sobre-pastoreado.
+**Vista clave (UX):** una grilla de tarjetas de potreros con semáforo y los días
+de descanso en grande: 🟢 listo para pastorear · 🟡 en recuperación · 🔴 ocupado
+o recién pastoreado. La tarjeta del potrero actual muestra "día 1 de 2".
 
 ### 4.3 🌽 Maíz — alimento del hato (no se vende)
 
@@ -311,8 +328,9 @@ la vaca 042", "historia del potrero 7", "historia del lote La Loma".
 │ 🌧️ Lluvia ayer: 12 mm               │
 ├─────────────────────────────────────┤
 │ ⚠️ HOY (3 alertas)                  │
+│ • Hato: día 2 en potrero 7         │
+│   → mover hoy · sugerido: P4 (35d) │
 │ • Vaca 042: secar (parto en 60d)   │
-│ • Potrero 4: listo (35d descanso)  │
 │ • Retiro leche vaca 017: 2d más    │
 ├─────────────────────────────────────┤
 │ REGISTRO RÁPIDO                     │
@@ -342,11 +360,15 @@ El día del **pesaje mensual** (capa 3), este mismo flujo cambia a modo lista:
 las 26 vacas en ordeño una por una con teclado numérico grande. Es el único día
 del mes que se anota por vaca.
 
-### 6.3 Flujo: mover el hato de potrero
+### 6.3 Flujo: mover el hato (rutina de cada mañana, 2 toques)
 
-1. **🐄 Mover hato** → mapa/grilla de potreros con semáforo.
-2. El sistema **sugiere** el potrero óptimo (más días de descanso + aforo).
-3. Confirmar → registra salida/entrada y reinicia contadores de descanso.
+1. **🐄 Mover hato** → la app muestra dónde está el hato ("potrero 7, día 2 — hay
+   que mover hoy") y el **potrero sugerido** (más descanso + aforo suficiente).
+2. **Confirmar** (o tocar otro potrero en la grilla si decides distinto) →
+   registra salida/entrada y reinicia los contadores de descanso.
+
+Si a las 9 a.m. no se ha registrado movimiento y el hato lleva 2 días en el mismo
+potrero, la app lo recuerda con una notificación.
 
 ### 6.4 Visualización de datos
 
