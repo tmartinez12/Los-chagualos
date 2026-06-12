@@ -421,6 +421,13 @@ diseña este módulo:
 de descanso en grande: 🟢 listo para pastorear · 🟡 en recuperación · 🔴 ocupado
 o recién pastoreado. La tarjeta del potrero actual muestra "día 1 de 2".
 
+**Escala real (definido jun 2026): la finca tiene 30+ potreros.** La grilla no
+puede ser plana: se ordena **por estado** (listos primero, luego recuperando,
+los recién pastoreados al final y atenuados) y se agrupa **por zonas de la
+finca** si las hay. Con 30+ potreros y ocupación de 1 día, la vuelta da
+descansos de ~30+ días — coherente con lo que el pasto necesita incluso en
+época seca.
+
 ### 4.3 🌽 Maíz — alimento del hato (no se vende)
 
 El maíz de la finca se cultiva **exclusivamente para alimentar las vacas**, así
@@ -737,9 +744,28 @@ NIVEL 3 · ESTE AÑO (proyecciones — anticiparse)
 | **Fase 3** | Café (cosecha + beneficio + trazabilidad) y maíz | Cosechas estacionales bajo control |
 | **Fase 4** | Miel + inventario completo + reportes regenerativos | Finca completa, métricas de suelo |
 
-**Stack sugerido:** PWA (React + IndexedDB para offline) o app móvil
-(React Native / Flutter) con backend ligero (Supabase/PostgreSQL) y sincronización
-por cola de eventos — el modelo de "todo es un evento" lo hace natural.
+**Stack (definido):** **PWA** — en la finca hay mezcla de Android y iPhone, y
+una PWA corre igual en ambos sin tiendas de aplicaciones. React + IndexedDB
+para offline, backend ligero (Supabase/PostgreSQL) y sincronización por cola
+de eventos — el modelo de "todo es un evento" lo hace natural.
+
+### 8.1 Decisiones de producto tomadas (jun 2026)
+
+| Tema | Decisión |
+|---|---|
+| Ordeño | 1 vez al día, **registro por vaca** (orden del ordeño, valor de ayer pre-cargado) |
+| Venta de leche | Precio fijo · se registra la **entrega diaria a cada lechero** |
+| Reproducción | **Monta natural** con toro · la palpación es la fuente de verdad |
+| Alimentación | **Sin seguimiento** por ahora (pospuesto) |
+| Finanzas | **Pospuestas** — solo cuentas operativas por lechero |
+| Maíz | 100% alimento del hato, sin ventas |
+| Organización | Por **unidades productivas** · una vista por rol · cada trabajador ve su unidad completa |
+| Equipo | 3-5 personas · identidad mixta (cuenta propia o dispositivo compartido) |
+| Supervisión | **Bitácora** (Diario de la finca), sin flujo de aprobación |
+| Potreros | **30+** · ocupación 1 día (máx 2) · grilla ordenada por estado |
+| Lluvia | Se registra en **Potreros** (lluvia → pasto), no en la rutina de leche |
+| Dispositivos | Mezcla Android/iPhone → **PWA** |
+| Datos iniciales | **Importación desde cuaderno/Excel**: plantilla de censo (animales, potreros, lecheros) que se llena una vez y se importa |
 
 ---
 
