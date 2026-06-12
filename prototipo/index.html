@@ -335,33 +335,6 @@ body{background:#3a3f36;display:flex;align-items:center;justify-content:center;
       </div>
     </div>
 
-    <div class="card elevated mt12 chart-card">
-      <div class="chart-title">La leche subió 8% este mes</div>
-      <div class="chart-sub">Junio · litros/día del hato (26 en ordeño) vs lluvia</div>
-      <svg viewBox="0 0 320 110">
-        <g fill="#9FC5E8" opacity=".75">
-          <rect x="12" y="86" width="6" height="14" rx="2"/><rect x="36" y="92" width="6" height="8" rx="2"/>
-          <rect x="78" y="78" width="6" height="22" rx="2"/><rect x="100" y="88" width="6" height="12" rx="2"/>
-          <rect x="148" y="70" width="6" height="30" rx="2"/><rect x="170" y="84" width="6" height="16" rx="2"/>
-          <rect x="218" y="90" width="6" height="10" rx="2"/><rect x="266" y="80" width="6" height="20" rx="2"/>
-        </g>
-        <polyline points="10,62 40,58 70,60 100,48 130,50 160,38 190,42 220,36 250,34 280,28 308,24"
-          fill="none" stroke="#3A6B35" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="308" cy="24" r="5" fill="#3A6B35"/>
-        <circle cx="308" cy="24" r="9" fill="#3A6B35" opacity=".25"/>
-        <g font-family="Roboto,sans-serif" font-size="9">
-          <line x1="160" y1="38" x2="160" y2="16" stroke="#8F6B00" stroke-dasharray="2,2"/>
-          <text x="164" y="14" fill="#8F6B00" font-weight="700">⬆ entró silo</text>
-          <text x="282" y="14" fill="#3A6B35" font-weight="700">184 L</text>
-        </g>
-      </svg>
-      <div class="legend">
-        <span><span class="dot" style="background:#3A6B35"></span>Leche (L/día)</span>
-        <span><span class="dot" style="background:#9FC5E8"></span>Lluvia (mm)</span>
-        <span><span class="dot" style="background:#8F6B00"></span>Eventos</span>
-      </div>
-    </div>
-
     <div class="list mt12">
       <div class="list-item" onclick="go('scr-decisiones')">
         <div class="li-leading" style="background:var(--md-tertiary-container)"><span class="emj">💡</span></div>
@@ -446,34 +419,6 @@ body{background:#3a3f36;display:flex;align-items:center;justify-content:center;
       </div>
     </div>
 
-    <div class="section-label">📊 RANKING · PROMEDIO 7 DÍAS</div>
-    <div class="card elevated">
-      <div class="chart-title">Las 26 en ordeño, con sus DEL</div>
-      <div class="chart-sub">Litros + días en leche: 5 L a DEL 412 es fin de lactancia; a DEL 100 sería un problema</div>
-      <div class="mt8">
-        <div class="rank-row"><div class="rank-name">042 Lucero</div>
-          <div class="rank-bar-wrap"><div class="rank-bar" style="width:100%">18 L</div></div>
-          <div class="li-cap" style="width:54px;flex:none">DEL 152</div></div>
-        <div class="rank-row"><div class="rank-name">038 Mona</div>
-          <div class="rank-bar-wrap"><div class="rank-bar" style="width:88%">16 L</div></div>
-          <div class="li-cap" style="width:54px;flex:none">DEL 98</div></div>
-        <div class="rank-row"><div class="rank-name">051 Careta</div>
-          <div class="rank-bar-wrap"><div class="rank-bar" style="width:77%">14 L</div></div>
-          <div class="li-cap" style="width:54px;flex:none">DEL 121</div></div>
-        <div class="rank-row"><div class="rank-name">033 Paloma</div>
-          <div class="rank-bar-wrap"><div class="rank-bar low" style="width:33%">6 L</div></div>
-          <div class="li-cap" style="width:54px;flex:none">DEL 95 ⚠</div></div>
-        <div class="rank-row mb0"><div class="rank-name">029 Pinta</div>
-          <div class="rank-bar-wrap"><div class="rank-bar low" style="width:27%">5 L</div></div>
-          <div class="li-cap" style="width:54px;flex:none">DEL 412</div></div>
-      </div>
-      <div class="alert urgent mt12 mb0" style="padding:11px">
-        <div class="a-body">
-          <div class="a-title" style="font-size:13.5px">033 Paloma: 6 L a DEL 95 — muy bajo para su etapa</div>
-          <div class="a-sub">Y Pinta: DEL 412, vacía hace 150 días → revisar en Decisiones</div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- ============ PANTALLA: POTREROS ============ -->
@@ -588,47 +533,12 @@ body{background:#3a3f36;display:flex;align-items:center;justify-content:center;
         <button class="chip" onclick="snack('Filtro: 5 vacías >120 DEL')">⚠ Vacías</button>
         <button class="chip" onclick="snack('Filtro: 1 en tratamiento')">💊 En tratamiento</button>
       </div>
-      <div class="mt12" style="border-top:1px solid var(--md-surface-container-high)">
-        <div class="list-item" onclick="openCow()" style="padding:11px 4px">
-          <div class="li-body"><div class="li-title" style="font-size:14px">042 · Lucero</div>
-            <div class="li-sub">Ordeño · 5,2 años · preñada 6m · ayer 18 L</div></div>
-          <span class="chev">›</span></div>
-        <div class="list-item" style="padding:11px 4px" onclick="snack('Ficha de Mona — igual a la de Lucero')">
-          <div class="li-body"><div class="li-title" style="font-size:14px">038 · Mona</div>
-            <div class="li-sub">Ordeño · 4,1 años · servida (por confirmar) · ayer 16 L</div></div>
-          <span class="chev">›</span></div>
-        <div class="list-item" style="padding:11px 4px" onclick="snack('Ficha de la 017')">
-          <div class="li-body"><div class="li-title" style="font-size:14px">017 · Azucena</div>
-            <div class="li-sub">Ordeño · 8 años · 💊 retiro 2 días más · ayer 11 L</div></div>
-          <span class="chev">›</span></div>
-        <div class="list-item" style="padding:11px 4px" onclick="snack('Ficha de la 064')">
-          <div class="li-body"><div class="li-title" style="font-size:14px">064 · (cría de Lucero)</div>
-            <div class="li-sub">Ternera · 5 meses · destete próximo</div></div>
-          <span class="chev">›</span></div>
-        <div class="list-item" style="padding:11px 4px" onclick="snack('Ficha de Sansón')">
-          <div class="li-body"><div class="li-title" style="font-size:14px">T01 · Sansón</div>
-            <div class="li-sub">Toro · 6 años · aftosa al día</div></div>
-          <span class="chev">›</span></div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:6px">
+      <div style="display:flex;gap:8px;margin-top:10px">
         <button class="btn text small" style="flex:1;justify-content:center"
-          onclick="snack('Lista completa de los 80 — con scroll en la app real')">Ver los 75 restantes</button>
+          onclick="snack('Lista completa de los 80, con scroll — cada animal abre su ficha')">Ver la lista completa (80)</button>
         <button class="btn tonal small" onclick="openSheet()">＋ Agregar</button>
-        <button class="btn text small" onclick="snack('Exportado: inventario_hato_jun2026.xlsx')">📤 Exportar</button>
+        <button class="btn text small" onclick="snack('Exportado: inventario_hato_jun2026.xlsx')">📤</button>
       </div>
-    </div>
-
-    <div class="section-label">📅 PARTOS PRÓXIMOS (de las palpaciones)</div>
-    <div class="card elevated">
-      <div style="display:flex;align-items:flex-end;gap:10px;height:84px;padding:0 4px">
-        <div style="flex:1;text-align:center"><div style="background:var(--md-primary-container);border-radius:8px 8px 0 0;height:28px"></div><div class="li-cap mt8"><b>jul</b><br>2</div></div>
-        <div style="flex:1;text-align:center"><div style="background:var(--md-primary-container);border-radius:8px 8px 0 0;height:14px"></div><div class="li-cap mt8"><b>ago</b><br>1</div></div>
-        <div style="flex:1;text-align:center"><div style="background:var(--md-primary);border-radius:8px 8px 0 0;height:56px"></div><div class="li-cap mt8"><b>sep</b><br>4</div></div>
-        <div style="flex:1;text-align:center"><div style="background:var(--md-primary-container);border-radius:8px 8px 0 0;height:14px"></div><div class="li-cap mt8"><b>oct</b><br>1</div></div>
-        <div style="flex:1;text-align:center"><div style="background:var(--md-primary-container);border-radius:8px 8px 0 0;height:42px"></div><div class="li-cap mt8"><b>nov</b><br>3</div></div>
-        <div style="flex:1;text-align:center"><div style="background:var(--md-primary-container);border-radius:8px 8px 0 0;height:28px"></div><div class="li-cap mt8"><b>dic</b><br>2</div></div>
-      </div>
-      <div class="chart-sub mt8 mb0">Septiembre concentra 4 partos → más leche desde el último trimestre.</div>
     </div>
 
     <div style="display:flex;gap:8px;margin-top:12px">
@@ -654,6 +564,14 @@ body{background:#3a3f36;display:flex;align-items:center;justify-content:center;
         <div style="font-size:12.5px;color:var(--md-on-surface-variant)">6 años · en el hato desde 2021 ·
           <b>23 hijas vivas en la finca</b></div>
       </div>
+      <span class="chev">›</span>
+    </div>
+
+    <div class="card filled" style="display:flex;gap:10px;align-items:center;padding:12px 14px"
+      onclick="snack('Calendario de partos: jul 2 · ago 1 · sep 4 · oct 1 · nov 3 · dic 2 — de las palpaciones')" >
+      <span class="emj" style="font-size:18px">📅</span>
+      <div style="flex:1;font-size:13px;color:var(--md-on-surface)">
+        <b>Partos próximos:</b> jul 2 · ago 1 · sep 4 · oct 1 …</div>
       <span class="chev">›</span>
     </div>
 
@@ -747,35 +665,16 @@ body{background:#3a3f36;display:flex;align-items:center;justify-content:center;
       <div class="pot"><div class="p-name" style="color:var(--md-on-surface-variant)">DIC</div><div class="p-days" style="font-size:16px">—</div></div>
     </div>
 
-    <div class="section-label">📋 PROTOCOLOS (se configuran una vez)</div>
-    <div class="list">
-      <div class="list-item" onclick="snack('Aftosa: todo el hato · ciclos nacionales ICA may/nov')">
-        <div class="li-leading"><span class="emj">💉</span></div>
-        <div class="li-body"><div class="li-title">Aftosa — ciclo ICA</div>
-          <div class="li-sub">Todo el hato · mayo y noviembre</div></div><span class="chev">›</span></div>
-      <div class="list-item" onclick="snack('Brucelosis: hembras 3-8 meses, una vez en la vida — disparada por edad')">
-        <div class="li-leading"><span class="emj">🍼</span></div>
-        <div class="li-body"><div class="li-title">Brucelosis (RB51)</div>
-          <div class="li-sub">Hembras 3-8 meses · por edad, una vez</div></div><span class="chev">›</span></div>
-      <div class="list-item" onclick="snack('Desparasitación + vitaminas: todo el hato cada 3 meses')">
-        <div class="li-leading"><span class="emj">🪱</span></div>
-        <div class="li-body"><div class="li-title">Desparasitación + vitaminas</div>
-          <div class="li-sub">Todo el hato · cada 3 meses</div></div><span class="chev">›</span></div>
-      <div class="list-item" onclick="snack('Baño garrapaticida: según carga, sobre todo en época seca')">
-        <div class="li-leading"><span class="emj">🛁</span></div>
-        <div class="li-body"><div class="li-title">Baño garrapaticida</div>
-          <div class="li-sub">Según carga · época seca</div></div><span class="chev">›</span></div>
-    </div>
-
-    <div class="section-label">🗂️ HISTORIAL · SOPORTE ICA</div>
-    <div class="card elevated">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div><div class="li-title" style="font-size:14px">Aftosa · ciclo I-2026 (mayo)</div>
-          <div class="li-sub">80/80 aplicados · 0 excepciones</div></div>
-        <span class="badge ok">✓ completo</span>
-      </div>
-      <button class="btn text small mt8" onclick="snack('Exportado: soporte_aftosa_ciclo1_2026.pdf — lista oficial de los 80 animales')">
-        📤 Exportar soporte para el ICA</button>
+    <div class="list mt12">
+      <div class="list-item" onclick="snack('Protocolos: aftosa ICA may/nov · brucelosis 3-8 meses · desparasitación cada 3 meses · baño garrapaticida — se configuran una vez')">
+        <div class="li-leading"><span class="emj">📋</span></div>
+        <div class="li-body"><div class="li-title">Protocolos configurados</div>
+          <div class="li-sub">Aftosa · brucelosis · desparasitación · baño</div></div>
+        <div class="li-trail"><div class="li-num">4</div></div><span class="chev">›</span></div>
+      <div class="list-item" onclick="snack('Aftosa ciclo I-2026: 80/80 aplicados · exportable como soporte oficial ICA')">
+        <div class="li-leading" style="background:var(--ok-bg)"><span class="emj">🗂️</span></div>
+        <div class="li-body"><div class="li-title">Historial · soporte ICA</div>
+          <div class="li-sub">Último: aftosa may 2026 — 80/80 ✓</div></div><span class="chev">›</span></div>
     </div>
   </div>
 
@@ -819,16 +718,10 @@ body{background:#3a3f36;display:flex;align-items:center;justify-content:center;
       </svg>
     </div>
 
-    <div class="section-label">💊 SALUD</div>
-    <div class="list">
-      <div class="list-item"><div class="li-leading" style="background:var(--ok-bg)"><span class="emj">💉</span></div>
-        <div class="li-body"><div class="li-title">Aftosa — ciclo ICA</div><div class="li-sub">Aplicada may 2026 · próxima nov 2026</div></div>
-        <span class="badge ok">al día</span></div>
-      <div class="list-item"><div class="li-leading" style="background:var(--ok-bg)"><span class="emj">🩹</span></div>
-        <div class="li-body"><div class="li-title">Mastitis (mar 2026)</div><div class="li-sub">Tratada con retiro de 4 días · recuperada</div></div>
-        <span class="badge ok">ok</span></div>
-      <div class="list-item"><div class="li-leading"><span class="emj">🚫</span></div>
-        <div class="li-body"><div class="li-title">Retiro de leche</div><div class="li-sub">Sin retiro activo</div></div></div>
+    <div class="card filled mt12" style="display:flex;gap:10px;align-items:center;padding:12px 14px">
+      <span class="emj" style="font-size:18px">💊</span>
+      <div style="font-size:13px;color:var(--md-on-surface);line-height:1.4">
+        <b>Sanidad al día</b> — vacunas ok (aftosa may 2026) · sin tratamientos ni retiros activos</div>
     </div>
 
     <div class="section-label">🕐 HISTORIA</div>
@@ -851,20 +744,33 @@ body{background:#3a3f36;display:flex;align-items:center;justify-content:center;
 
   <!-- ============ PANTALLA: DECISIONES ============ -->
   <div class="screen" id="scr-decisiones">
-    <div class="card filled" style="display:flex;gap:12px;align-items:center;margin-top:4px">
-      <span class="emj" style="font-size:28px">💡</span>
-      <div style="font-size:13.5px;color:var(--md-on-surface);line-height:1.4">
-        <b>Tu reunión mensual de finca, en una pantalla.</b><br>
-        El sistema recomienda con el dato detrás — tú decides.</div>
-    </div>
-
-    <div class="kpi-row">
+    <div class="kpi-row" style="margin-top:4px">
       <div class="kpi"><div class="k-label">🥛 L/vaca·día</div><div class="k-value">11,4</div>
         <div class="k-trend trend-up">▲ vs may</div></div>
       <div class="kpi"><div class="k-label">📆 DEL prom.</div><div class="k-value">164</div>
         <div class="k-trend" style="color:var(--md-on-surface-variant)">sano &lt;200</div></div>
       <div class="kpi"><div class="k-label">💰 Costo/L</div><div class="k-value" style="font-size:21px">$1.180</div>
         <div class="k-trend trend-up">▼ −6%</div></div>
+    </div>
+
+    <div class="card elevated chart-card">
+      <div class="chart-title">La leche subió 8% en junio</div>
+      <div class="chart-sub">Litros/día vs lluvia · los eventos explican la curva</div>
+      <svg viewBox="0 0 320 100">
+        <g fill="#9FC5E8" opacity=".75">
+          <rect x="12" y="80" width="6" height="14" rx="2"/><rect x="78" y="72" width="6" height="22" rx="2"/>
+          <rect x="148" y="64" width="6" height="30" rx="2"/><rect x="218" y="84" width="6" height="10" rx="2"/>
+          <rect x="266" y="74" width="6" height="20" rx="2"/>
+        </g>
+        <polyline points="10,58 40,54 70,56 100,44 130,46 160,34 190,38 220,32 250,30 280,24 308,20"
+          fill="none" stroke="#3A6B35" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="308" cy="20" r="5" fill="#3A6B35"/>
+        <g font-family="Roboto,sans-serif" font-size="9">
+          <line x1="160" y1="34" x2="160" y2="14" stroke="#8F6B00" stroke-dasharray="2,2"/>
+          <text x="164" y="12" fill="#8F6B00" font-weight="700">⬆ entró silo</text>
+          <text x="282" y="12" fill="#3A6B35" font-weight="700">184 L</text>
+        </g>
+      </svg>
     </div>
 
     <div class="dec">

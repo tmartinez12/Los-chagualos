@@ -581,6 +581,13 @@ potrero, la app lo recuerda con una notificación.
 
 ### 6.5 Lenguaje visual
 
+- **Una pantalla = una pregunta; el detalle vive a un toque.** Inicio responde
+  "¿qué hago hoy?", Ordeño "registrar", Hato "¿qué animales tengo?", Decisiones
+  "¿cómo vamos y qué cambio?". Las tendencias y rankings viven en Decisiones
+  (ritmo mensual), no en las pantallas diarias.
+- **Lo normal no se muestra — solo las excepciones.** Si la sanidad de una vaca
+  está al día, es una línea ("Sanidad al día ✓"), no una lista de tres ítems;
+  el retiro de leche solo aparece cuando hay uno activo.
 - Tarjetas con **semáforos y colores de estado**, no tablas densas.
 - Tipografía grande (mínimo 16px en campo), alto contraste para uso bajo sol directo.
 - Iconografía por unidad productiva consistente en todo el sistema: 🐄 🌿 🌽 🐝 ☕.
