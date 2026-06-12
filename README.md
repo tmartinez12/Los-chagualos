@@ -143,10 +143,10 @@ tomar 2-3 minutos:
 
 ```
 CAPA 1 · DIARIO (obligatorio, < 5 minutos en total)
-├── 🥛 Ordeño POR VACA (1 vez al día): las 26 aparecen en el orden en que
-│      entran al ordeño, con el valor de ayer pre-cargado →
-│      ¿dio igual? un toque ✓ · ¿cambió? 2 dígitos y ✓ (~2-3 min las 26)
-│      El total del día se suma solo.
+├── 🥛 Ordeño POR VACA (1 vez al día): tablero con las 26 → tocas la vaca,
+│      pones los litros (el valor de ayer viene pre-cargado), aceptas ✓ y
+│      vuelves al tablero con esa vaca marcada (~2-3 min las 26, en el
+│      orden que tú quieras). El total del día se suma solo.
 ├── 🚚 Entrega a los lecheros: litros entregados a cada uno (2-3 números)
 ├── 🐄 Movimiento del hato: ¿a qué potrero entraron hoy? (1-2 toques —
 │      con ocupación de 1 día, máx 2, esto es rutina diaria, no evento)
@@ -540,17 +540,22 @@ la vaca 042", "historia del potrero 7", "historia del lote La Loma".
 - **Botones de registro rápido**: las 4 capturas más frecuentes a un toque.
 - Navegación inferior: `Inicio · Módulos · + Registrar · Tareas · Reportes`.
 
-### 6.2 Flujo estrella: el ordeño vaca por vaca (~2-3 minutos las 26)
+### 6.2 Flujo estrella: registrar la leche (tú eliges la vaca)
 
-1. Toque en **🥛 Ordeño** → aparece la **primera vaca del orden del ordeño**
-   (el orden se configura una vez, arrastrando) con su valor de ayer pre-cargado
-   en grande y su contexto: *"042 Lucero · DEL 152 · ayer 18 L"*.
-2. **¿Dio igual que ayer? → un toque en ✓.** ¿Cambió? → 2 dígitos en el teclado
-   grande y ✓. La app pasa sola a la siguiente vaca.
-3. En cualquier vaca: botón **"+ Novedad"** para marcar mastitis o celo visto en
-   el ordeño — ¡el momento real donde se detectan los celos!
-4. Al terminar: **el total del día se suma solo**, comparación contra ayer y
-   alerta de las vacas que cayeron frente a su semana. Todo queda en cola offline.
+El control del orden lo tiene quien ordeña, no la app:
+
+1. **Tablero de vacas:** las 26 en una grilla de tarjetas (número + nombre +
+   "ayer X L"). **Tocas la vaca** a la que le quieres registrar la leche.
+2. Se abre el **panel de captura**: su valor de ayer pre-cargado en grande y
+   su contexto (*042 Lucero · DEL 152*). ¿Dio igual? → **aceptar ✓**.
+   ¿Cambió? → 2 dígitos en el teclado grande y ✓.
+3. **Se guarda y vuelves al tablero**: la vaca queda marcada en verde con sus
+   litros (✓ 18 L) y el progreso arriba se actualiza ("12 de 26 · Σ 134 L").
+   Eliges la siguiente — en el orden que tú quieras. Tocar una vaca ya
+   registrada permite corregirla.
+4. Botón **"+ Novedad"** para marcar mastitis o celo visto en el ordeño.
+5. Al marcar la última: total del día listo, alerta de caídas frente a su
+   semana, y la app sugiere el siguiente paso (entregas). Todo en cola offline.
 
 ### 6.3 Flujo: mover el hato (rutina de cada mañana, 2 toques)
 

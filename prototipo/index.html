@@ -183,7 +183,17 @@ svg.ic-l{width:24px;height:24px}
 .tl-text{font-size:13px;margin-top:1px}
 .tl-sub{font-size:11.5px;color:var(--ink-2)}
 
-/* Ordeño */
+/* Leche: tablero de vacas */
+.cowgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cow-tile{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:11px 12px;cursor:pointer;box-shadow:var(--sh)}
+.cow-tile:active{background:var(--surface)}
+.cow-tile .ct-num{font-size:11px;font-weight:700;color:var(--ink-3)}
+.cow-tile .ct-name{font-size:13.5px;font-weight:700;margin-top:1px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.cow-tile .ct-sub{font-size:11px;color:var(--ink-2);margin-top:3px}
+.cow-tile.done{border-color:#CDE5CD;background:var(--green-soft)}
+.cow-tile.done .ct-sub{color:var(--green);font-weight:700}
 .milk-input{background:var(--card);border:1px solid var(--border);box-shadow:var(--sh);
   border-radius:18px;padding:20px;text-align:center;margin-bottom:8px;margin-top:4px}
 .m-label{font-size:11px;color:var(--ink-3);font-weight:700;letter-spacing:.8px}
@@ -414,39 +424,15 @@ svg.ic-l{width:24px;height:24px}
       </div>
     </div>
 
-    <!-- 3. Registrar (la acción del día) -->
-    <div class="card" style="display:flex;align-items:center;gap:10px;padding:12px 16px">
-      <svg class="ic" style="color:var(--ink-2)"><use href="#i-drop"/></svg>
-      <div style="flex:1;font-size:13px">Ordeño de hoy · vaca <b id="cowIdx">1</b> de 6 <span style="color:var(--ink-2)">(demo)</span></div>
-      <div style="font-size:13.5px;font-weight:700">Σ <span id="runTotal">0</span> L</div>
+    <!-- 3. Registrar: tú eliges la vaca, anotas, aceptas -->
+    <div class="section-label" style="display:flex;justify-content:space-between;align-items:baseline">
+      <span>Ordeño de hoy · toca una vaca</span>
+      <span style="font-weight:700;color:var(--ink)" id="milkProg">0 de 6 · Σ 0 L</span>
     </div>
+    <div class="cowgrid" id="cowGrid"></div>
 
-    <div class="milk-input">
-      <div class="m-label" id="cowName">042 · LUCERO</div>
-      <div class="m-del" id="cowDel">DEL 152 · 3er parto</div>
-      <div class="milk-value"><span id="milkNum">18</span> <span class="u">L</span></div>
-      <div class="milk-ref" id="cowRef">Ayer dio 18 L — si dio igual, solo toca ✓</div>
-      <div class="keypad">
-        <button onclick="key(1)">1</button><button onclick="key(2)">2</button><button onclick="key(3)">3</button>
-        <button onclick="key(4)">4</button><button onclick="key(5)">5</button><button onclick="key(6)">6</button>
-        <button onclick="key(7)">7</button><button onclick="key(8)">8</button><button onclick="key(9)">9</button>
-        <button onclick="keyClear()">⌫</button>
-        <button onclick="key(0)">0</button>
-        <button class="confirm" onclick="saveMilk()"><svg class="ic"><use href="#i-check"/></svg></button>
-      </div>
-      <div style="font-size:11px;color:var(--ink-3);margin-top:10px">
-        ✓ guarda y pasa a la siguiente · el orden es el del ordeño</div>
-    </div>
-
-    <button class="btn outl" style="width:100%;justify-content:center" onclick="openSheet()">
-      <svg class="ic-s ic"><use href="#i-plus"/></svg>Novedad en esta vaca (mastitis, celo visto…)</button>
-
-    <div class="section-label">Registradas hoy</div>
-    <div class="list" id="todayList">
-      <div class="list-item" id="todayEmpty" style="cursor:default">
-        <div class="li-body"><div class="li-sub">Aún ninguna — empieza con Lucero</div></div>
-      </div>
-    </div>
+    <button class="btn outl mt8" style="width:100%;justify-content:center" onclick="openSheet()">
+      <svg class="ic-s ic"><use href="#i-plus"/></svg>Novedad (mastitis, celo visto…)</button>
 
     <div class="section-label" id="entregasSec">Entregas a los lecheros · hoy</div>
     <div class="card">
@@ -910,7 +896,7 @@ svg.ic-l{width:24px;height:24px}
   </div>
 
   <!-- SHEET -->
-  <div class="scrim" id="scrim" onclick="closeSheet()"></div>
+  <div class="scrim" id="scrim" onclick="closeSheet();closeMilk()"></div>
   <div class="sheet" id="sheet">
     <div class="handle"></div>
     <h3>Registrar novedad</h3>
@@ -923,6 +909,27 @@ svg.ic-l{width:24px;height:24px}
       <button onclick="sheetPick('Baja registrada — si es venta, el ingreso va a finanzas; el animal queda en el histórico')"><svg class="ic"><use href="#i-out"/></svg><span class="q-label">Venta · muerte · descarte</span></button>
       <button onclick="sheetPick('Revisión de colmena registrada')"><svg class="ic"><use href="#i-hex"/></svg><span class="q-label">Revisión colmena</span></button>
       <button onclick="sheetPick('Cosecha registrada')"><svg class="ic"><use href="#i-bag"/></svg><span class="q-label">Cosecha</span></button>
+    </div>
+  </div>
+
+  <!-- SHEET: registrar leche de la vaca elegida -->
+  <div class="sheet" id="milkSheet">
+    <div class="handle"></div>
+    <div style="text-align:center">
+      <div class="m-label" id="cowName">042 · LUCERO</div>
+      <div class="m-del" id="cowDel">DEL 152 · 3er parto</div>
+      <div class="milk-value"><span id="milkNum">18</span> <span class="u">L</span></div>
+      <div class="milk-ref" id="cowRef">Ayer dio 18 L — acepta ✓ si dio igual</div>
+      <div class="keypad">
+        <button onclick="key(1)">1</button><button onclick="key(2)">2</button><button onclick="key(3)">3</button>
+        <button onclick="key(4)">4</button><button onclick="key(5)">5</button><button onclick="key(6)">6</button>
+        <button onclick="key(7)">7</button><button onclick="key(8)">8</button><button onclick="key(9)">9</button>
+        <button onclick="keyClear()">⌫</button>
+        <button onclick="key(0)">0</button>
+        <button class="confirm" onclick="saveMilk()"><svg class="ic"><use href="#i-check"/></svg></button>
+      </div>
+      <div style="font-size:11px;color:var(--ink-3);margin-top:10px">
+        ✓ acepta y guarda — vuelves al tablero para elegir la siguiente</div>
     </div>
   </div>
 
@@ -1045,51 +1052,57 @@ let snackTimer;
 function snack(msg){const sb=document.getElementById('snackbar');
   document.getElementById('snackText').textContent=msg;sb.classList.add('show');
   clearTimeout(snackTimer);snackTimer=setTimeout(()=>sb.classList.remove('show'),2600);}
-/* ordeño vaca por vaca */
+/* registrar leche: tú eliges la vaca → litros → aceptar */
 const cows=[
-  {n:'042 · Lucero', del:'DEL 152 · 3er parto', ayer:18},
-  {n:'038 · Mona',   del:'DEL 98 · 2do parto',  ayer:16},
-  {n:'051 · Careta', del:'DEL 121 · 1er parto', ayer:14},
-  {n:'027 · Estrella',del:'DEL 64 · pico de lactancia', ayer:13},
-  {n:'033 · Paloma', del:'DEL 95 · 4to parto',  ayer:6},
-  {n:'029 · Pinta',  del:'DEL 412 · lactancia larga', ayer:5}
+  {num:'042', n:'Lucero',  del:'DEL 152 · 3er parto', ayer:18},
+  {num:'038', n:'Mona',    del:'DEL 98 · 2do parto',  ayer:16},
+  {num:'051', n:'Careta',  del:'DEL 121 · 1er parto', ayer:14},
+  {num:'027', n:'Estrella',del:'DEL 64 · pico de lactancia', ayer:13},
+  {num:'033', n:'Paloma',  del:'DEL 95 · 4to parto',  ayer:6},
+  {num:'029', n:'Pinta',   del:'DEL 412 · lactancia larga', ayer:5}
 ];
-let ci=0,total=0,typing=false;
-function loadCow(){const c=cows[ci];
-  document.getElementById('cowName').textContent=c.n.toUpperCase();
+cows.forEach(c=>{c.done=false;c.v=null;});
+let ci=-1,typing=false;
+function renderCows(){
+  const g=document.getElementById('cowGrid');g.innerHTML='';
+  cows.forEach((c,i)=>{const d=document.createElement('div');
+    d.className='cow-tile'+(c.done?' done':'');
+    d.innerHTML='<div class="ct-num">'+c.num+'</div><div class="ct-name">'+c.n+'</div>'+
+      '<div class="ct-sub">'+(c.done?'✓ '+c.v+' L':'ayer '+c.ayer+' L')+'</div>';
+    d.onclick=()=>pickCow(i);g.appendChild(d);});
+  const done=cows.filter(c=>c.done);
+  document.getElementById('milkProg').textContent=
+    done.length+' de '+cows.length+' · Σ '+done.reduce((s,c)=>s+c.v,0)+' L';
+}
+function pickCow(i){ci=i;const c=cows[i];typing=false;
+  document.getElementById('cowName').textContent=c.num+' · '+c.n.toUpperCase();
   document.getElementById('cowDel').textContent=c.del;
-  document.getElementById('milkNum').textContent=c.ayer;
-  document.getElementById('cowRef').textContent='Ayer dio '+c.ayer+' L — si dio igual, solo toca ✓';
-  document.getElementById('cowIdx').textContent=ci+1;
-  typing=false;}
+  document.getElementById('milkNum').textContent=c.done?c.v:c.ayer;
+  document.getElementById('cowRef').textContent=c.done
+    ?'Ya registrada con '+c.v+' L — puedes corregirla'
+    :'Ayer dio '+c.ayer+' L — acepta ✓ si dio igual';
+  document.getElementById('scrim').classList.add('show');
+  document.getElementById('milkSheet').classList.add('show');}
+function closeMilk(){document.getElementById('milkSheet').classList.remove('show');
+  document.getElementById('scrim').classList.remove('show');}
 function key(n){const el=document.getElementById('milkNum');
   if(!typing){el.textContent='';typing=true;}
   if(el.textContent.length<2)el.textContent+=n;}
 function keyClear(){const el=document.getElementById('milkNum');
   el.textContent=el.textContent.slice(0,-1)||'0';typing=true;}
 function saveMilk(){
+  if(ci<0)return;
   const v=parseInt(document.getElementById('milkNum').textContent)||0;
-  const c=cows[ci];const d=v-c.ayer;total+=v;
-  document.getElementById('runTotal').textContent=total;
-  const empty=document.getElementById('todayEmpty');if(empty)empty.remove();
-  const drop=c.ayer>0&&v<=c.ayer*0.75;
-  const row=document.createElement('div');row.className='list-item';row.style.cursor='default';
-  const dTxt=d===0?'= ayer':(d>0?'+'+d+' L':d+' L');
-  const dCls=drop?'down':(d>=0?'up':'mut');
-  row.innerHTML='<div class="li-body"><div class="li-title">'+c.n+'</div>'+
-    '<div class="li-sub">'+c.del+'</div></div>'+
-    '<div class="li-trail"><span class="li-num" style="font-size:14px">'+v+' L</span><br>'+
-    '<span class="li-cap '+dCls+'" style="font-weight:600">'+dTxt+(drop?' · revisar':'')+'</span></div>';
-  document.getElementById('todayList').prepend(row);
+  const c=cows[ci];const drop=!c.done&&c.ayer>0&&v<=c.ayer*0.75;
+  c.done=true;c.v=v;renderCows();closeMilk();
   if(drop)snack('Atención: '+c.n+' bajó '+(c.ayer-v)+' L vs ayer — ¿mastitis, celo, comida?');
-  ci++;
-  if(ci<cows.length){loadCow();}
-  else{markRutina('ordeno');
-    snack('Ordeño completo: '+total+' L — siguiente paso: entregas a los lecheros');
-    setTimeout(()=>document.getElementById('entregasSec').scrollIntoView({behavior:'smooth'}),1200);
-    ci=0;total=0;setTimeout(()=>{loadCow();document.getElementById('runTotal').textContent=0;},2200);}
+  else snack(c.n+': '+v+' L guardados (en cola offline)');
+  if(cows.every(x=>x.done)){markRutina('ordeno');
+    const tot=cows.reduce((s,x)=>s+x.v,0);
+    setTimeout(()=>snack('Ordeño completo: '+tot+' L — siguiente: entregas a los lecheros'),1500);
+    setTimeout(()=>document.getElementById('entregasSec').scrollIntoView({behavior:'smooth'}),2600);}
 }
-loadCow();
+renderCows();
 function confirmMove(){
   markRutina('hato');
   snack('Hato movido al Potrero 4 · descanso del P7 reiniciado');
