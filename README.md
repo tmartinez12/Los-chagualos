@@ -287,9 +287,31 @@ una vez, y todo lo demás lo van construyendo los eventos.
   - **Medicina:** medicamento (sale del inventario), dosis y **periodo de
     retiro** — la app alerta que la leche de esa vaca no se puede vender X días
     y descuenta esos litros del estimado de venta.
-  - **Vacunas y desparasitación por grupo:** los ciclos ICA (aftosa, brucelosis)
-    se aplican a todo el hato en una sola acción — "vacunar grupo" marca las 80
-    de una vez, sin abrir 80 fichas. La app recuerda los ciclos (may/nov).
+  - **Vacunas y desparasitación por grupo:** se aplican en una sola acción —
+    "vacunar hato" marca los 80 de una vez, sin abrir 80 fichas (con excepciones:
+    se destildan los animales que no se vacunaron y se anota por qué).
+
+#### Plan sanitario anual — la memoria sanitaria de la finca
+
+Nadie debería tener que acordarse de una vacuna. El plan sanitario es un conjunto
+de **protocolos configurables** (qué producto, a quién, cada cuánto, qué retiro
+deja) que el sistema vigila y convierte en tareas. Hay **dos tipos de disparador**:
+
+| Disparador | Cómo funciona | Ejemplos |
+|---|---|---|
+| **Por calendario** | Fecha o frecuencia fija; la tarea se crea sola con anticipación | Aftosa en los ciclos ICA (may/nov) · desparasitación cada 3 meses · baño garrapaticida en época seca |
+| **Por edad del animal** | La app cruza el inventario con la regla y avisa **qué animales entran en ventana** | Brucelosis a hembras de 3-8 meses (una vez en la vida): "las terneras 064 y 071 entran en ventana este mes" |
+
+Cómo se comporta:
+
+- **Se programa solo:** cada protocolo genera su tarea con la **lista de animales
+  que tocan** ya armada. Aplicar es una acción por grupo, no 80 registros.
+- **Deja rastro en todo:** queda en la ficha de cada animal, descuenta el frasco
+  del inventario y suma el costo a ganadería.
+- **Respeta los ritmos de lectura (§3.2):** el plan vive en su propia vista
+  (calendario de 12 meses); solo aparece en Inicio cuando la fecha se acerca.
+- **Es el soporte oficial:** la lista de animales de cada ciclo de vacunación,
+  exportable, ES el soporte para el ICA.
 
 **KPIs:** litros totales/día, litros/vaca/día con su curva de lactancia (eje en
 DEL), **DEL promedio del hato** (si sube de ~180-200, el hato está "envejecido" en
@@ -609,15 +631,14 @@ y vacunas, altas/bajas y decisiones de secado/descarte. Lo que falta:
 | # | Pendiente | Por qué importa |
 |---|---|---|
 | ✅ | ~~Balance y venta de leche~~ | **Ya diseñado** (sección 4.1): entregas diarias por lechero a precio fijo, balance del día y cuenta del mes por lechero. |
-| 1 | **Plan sanitario anual** | Calendario que programa solo: aftosa (may/nov), brucelosis a terneras 3-8 meses, desparasitación periódica → genera las tareas sin depender de memoria. |
-| 2 | **Reproducción con toro** | Alerta de consanguinidad (hijas del toro llegando a edad de servicio → rotar/cambiar toro) y recordatorio de 21 días cuando se vio un celo o monta. Sin IA: la reproducción es monta natural. |
-| 3 | **Crianza de terneras** | Protocolo de leche por ternera, destete, curva de crecimiento vs meta (~500 g/día). Las terneras de hoy son el ordeño en 3 años. |
-| 4 | **Trazabilidad oficial ICA** | Guías de movilización, identificación oficial, reportes listos para trámites. |
-| 5 | **Hoja de vida exportable (PDF)** | La vida completa del animal demostrable → mejor precio al vender. |
+| ✅ | ~~Plan sanitario anual~~ | **Ya diseñado** (sección 4.1): protocolos por calendario y por edad, aplicación por grupo, soporte ICA exportable. |
+| 1 | **Reproducción con toro** | Alerta de consanguinidad (hijas del toro llegando a edad de servicio → rotar/cambiar toro) y recordatorio de 21 días cuando se vio un celo o monta. Sin IA: la reproducción es monta natural. |
+| 2 | **Crianza de terneras** | Protocolo de leche por ternera, destete, curva de crecimiento vs meta (~500 g/día). Las terneras de hoy son el ordeño en 3 años. |
+| 3 | **Trazabilidad oficial ICA** | Guías de movilización, identificación oficial, reportes listos para trámites. |
+| 4 | **Hoja de vida exportable (PDF)** | La vida completa del animal demostrable → mejor precio al vender. |
 | ⏸ | ~~Alimentación y suplementación~~ | **Pospuesto** — hoy no se hace seguimiento de alimentación en la finca. Cuando se quiera medir el costo por litro completo, se activa. |
 
-**Orden recomendado:** 1-2 (automatizan la memoria sanitaria y reproductiva),
-luego 3, 4 y 5.
+**Orden recomendado:** 1 (reproducción con toro), luego 2, 3 y 4.
 
 ---
 

@@ -631,8 +631,87 @@ body{background:#3a3f36;display:flex;align-items:center;justify-content:center;
       <div class="chart-sub mt8 mb0">Septiembre concentra 4 partos → más leche desde el último trimestre.</div>
     </div>
 
-    <button class="btn tonal mt12" style="width:100%;justify-content:center" onclick="snack('Modo palpación: lista guiada vaca por vaca para el día del veterinario')">
-      🩺 Iniciar modo palpación (día del veterinario)</button>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn tonal" style="flex:1;justify-content:center" onclick="snack('Modo palpación: lista guiada vaca por vaca para el día del veterinario')">
+        🩺 Modo palpación</button>
+      <button class="btn tonal" style="flex:1;justify-content:center" onclick="go('scr-sanitario')">
+        💉 Plan sanitario</button>
+    </div>
+  </div>
+
+  <!-- ============ PANTALLA: PLAN SANITARIO ============ -->
+  <div class="screen" id="scr-sanitario">
+    <div class="card elevated" style="border:2px solid var(--md-primary);margin-top:4px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="emj" style="font-size:28px">🪱</span>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:800;color:var(--md-on-surface)">Próxima: desparasitación + vitaminas</div>
+          <div style="font-size:12.5px;color:var(--md-on-surface-variant)">Todo el hato (80) · ~15 jul · en 33 días</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn filled small" style="flex:1;justify-content:center"
+          onclick="snack('Tarea creada para el 15 jul con la lista de los 80 animales')">Crear tarea</button>
+        <button class="btn text small" onclick="snack('Fecha movida — el ciclo se recalcula')">Cambiar fecha</button>
+      </div>
+    </div>
+
+    <div class="alert warn">
+      <div class="a-icon"><span class="emj">🍼</span></div>
+      <div class="a-body">
+        <div class="a-title">Brucelosis: 2 terneras entran en ventana</div>
+        <div class="a-sub">064 (5 meses) y 071 (4,5 meses) · la vacuna es una vez en la vida,
+          entre los 3 y 8 meses — vacunar este mes</div>
+        <button class="btn tonal small mt8" onclick="openGroup('terneras')">Ver terneras</button>
+      </div>
+    </div>
+
+    <div class="section-label">📅 CALENDARIO 2026</div>
+    <div class="pgrid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="pot ok"><div class="p-name">ENE</div><div class="p-days" style="font-size:16px">🪱✓</div><div class="p-cap">despar. 80/80</div></div>
+      <div class="pot"><div class="p-name" style="color:var(--md-on-surface-variant)">FEB</div><div class="p-days" style="font-size:16px">—</div></div>
+      <div class="pot"><div class="p-name" style="color:var(--md-on-surface-variant)">MAR</div><div class="p-days" style="font-size:16px">—</div></div>
+      <div class="pot ok"><div class="p-name">ABR</div><div class="p-days" style="font-size:16px">🪱✓</div><div class="p-cap">despar. 80/80</div></div>
+      <div class="pot ok"><div class="p-name">MAY</div><div class="p-days" style="font-size:16px">💉✓</div><div class="p-cap">aftosa ICA</div></div>
+      <div class="pot warn now"><div class="p-tag">HOY</div><div class="p-name">JUN</div><div class="p-days" style="font-size:16px">🍼</div><div class="p-cap">brucelosis ×2</div></div>
+      <div class="pot warn"><div class="p-name">JUL</div><div class="p-days" style="font-size:16px">🪱</div><div class="p-cap">despar. ~15</div></div>
+      <div class="pot"><div class="p-name" style="color:var(--md-on-surface-variant)">AGO</div><div class="p-days" style="font-size:16px">—</div></div>
+      <div class="pot"><div class="p-name" style="color:var(--md-on-surface-variant)">SEP</div><div class="p-days" style="font-size:16px">—</div></div>
+      <div class="pot warn"><div class="p-name">OCT</div><div class="p-days" style="font-size:16px">🪱</div><div class="p-cap">despar.</div></div>
+      <div class="pot warn"><div class="p-name">NOV</div><div class="p-days" style="font-size:16px">💉</div><div class="p-cap">aftosa ICA</div></div>
+      <div class="pot"><div class="p-name" style="color:var(--md-on-surface-variant)">DIC</div><div class="p-days" style="font-size:16px">—</div></div>
+    </div>
+
+    <div class="section-label">📋 PROTOCOLOS (se configuran una vez)</div>
+    <div class="list">
+      <div class="list-item" onclick="snack('Aftosa: todo el hato · ciclos nacionales ICA may/nov')">
+        <div class="li-leading"><span class="emj">💉</span></div>
+        <div class="li-body"><div class="li-title">Aftosa — ciclo ICA</div>
+          <div class="li-sub">Todo el hato · mayo y noviembre</div></div><span class="chev">›</span></div>
+      <div class="list-item" onclick="snack('Brucelosis: hembras 3-8 meses, una vez en la vida — disparada por edad')">
+        <div class="li-leading"><span class="emj">🍼</span></div>
+        <div class="li-body"><div class="li-title">Brucelosis (RB51)</div>
+          <div class="li-sub">Hembras 3-8 meses · por edad, una vez</div></div><span class="chev">›</span></div>
+      <div class="list-item" onclick="snack('Desparasitación + vitaminas: todo el hato cada 3 meses')">
+        <div class="li-leading"><span class="emj">🪱</span></div>
+        <div class="li-body"><div class="li-title">Desparasitación + vitaminas</div>
+          <div class="li-sub">Todo el hato · cada 3 meses</div></div><span class="chev">›</span></div>
+      <div class="list-item" onclick="snack('Baño garrapaticida: según carga, sobre todo en época seca')">
+        <div class="li-leading"><span class="emj">🛁</span></div>
+        <div class="li-body"><div class="li-title">Baño garrapaticida</div>
+          <div class="li-sub">Según carga · época seca</div></div><span class="chev">›</span></div>
+    </div>
+
+    <div class="section-label">🗂️ HISTORIAL · SOPORTE ICA</div>
+    <div class="card elevated">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><div class="li-title" style="font-size:14px">Aftosa · ciclo I-2026 (mayo)</div>
+          <div class="li-sub">80/80 aplicados · 0 excepciones</div></div>
+        <span class="badge ok">✓ completo</span>
+      </div>
+      <button class="btn text small mt8" onclick="snack('Exportado: soporte_aftosa_ciclo1_2026.pdf — lista oficial de los 80 animales')">
+        📤 Exportar soporte para el ICA</button>
+    </div>
   </div>
 
   <!-- ============ PANTALLA: FICHA VACA ============ -->
@@ -832,6 +911,7 @@ const titles={
   'scr-vaca':['Ficha del animal','🐄 Se consulta mucho, se edita poco'],
   'scr-decisiones':['Decisiones del mes','💡 Junio 2026 · 4 recomendaciones'],
   'scr-grupo':['Grupo','🐄'],
+  'scr-sanitario':['Plan sanitario','💉 Se programa solo · genera las tareas'],
 };
 /* drill-down: hato → grupo → animal */
 const grupos={
