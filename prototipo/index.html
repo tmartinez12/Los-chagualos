@@ -328,12 +328,26 @@ svg.ic-l{width:24px;height:24px}
       </div>
     </div>
 
-    <div class="section-label">Registro rápido</div>
-    <div class="quick">
-      <button onclick="go('scr-ordeno')"><svg class="ic"><use href="#i-drop"/></svg><span class="q-label">Ordeño de hoy</span></button>
-      <button onclick="go('scr-potreros')"><svg class="ic"><use href="#i-pin"/></svg><span class="q-label">Mover hato</span></button>
-      <button onclick="snack('Lluvia registrada: 8 mm')"><svg class="ic"><use href="#i-rain"/></svg><span class="q-label">Lluvia</span></button>
-      <button onclick="openSheet()"><svg class="ic"><use href="#i-plus"/></svg><span class="q-label">Otra novedad</span></button>
+    <div class="section-label">Rutina de la mañana · <span id="rutinaProg">0 de 3</span></div>
+    <div class="list">
+      <div class="list-item" onclick="go('scr-ordeno')">
+        <div class="li-leading" id="rut-ordeno"><svg class="ic"><use href="#i-drop"/></svg></div>
+        <div class="li-body"><div class="li-title">1 · Ordeño vaca por vaca</div>
+          <div class="li-sub">26 vacas · ~3 min · el total se suma solo</div></div>
+        <svg class="ic chev"><use href="#i-chev"/></svg>
+      </div>
+      <div class="list-item" onclick="goEntregas()">
+        <div class="li-leading" id="rut-entregas"><svg class="ic"><use href="#i-truck"/></svg></div>
+        <div class="li-body"><div class="li-title">2 · Entregas a los lecheros</div>
+          <div class="li-sub">Don José (diario) · La María (lun-mié-vie)</div></div>
+        <svg class="ic chev"><use href="#i-chev"/></svg>
+      </div>
+      <div class="list-item" onclick="go('scr-potreros')">
+        <div class="li-leading" id="rut-hato"><svg class="ic"><use href="#i-pin"/></svg></div>
+        <div class="li-body"><div class="li-title">3 · Mover el hato</div>
+          <div class="li-sub">Está en P7 (día 2) · sugerido: P4</div></div>
+        <svg class="ic chev"><use href="#i-chev"/></svg>
+      </div>
     </div>
 
     <div class="section-label">La finca hoy</div>
@@ -405,7 +419,7 @@ svg.ic-l{width:24px;height:24px}
       </div>
     </div>
 
-    <div class="section-label">Entregas a los lecheros · hoy</div>
+    <div class="section-label" id="entregasSec">Entregas a los lecheros · hoy</div>
     <div class="card">
       <div class="chart-sub" style="margin-bottom:8px">Precio fijo: $1.950/L (se configura una vez)</div>
       <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;
@@ -423,7 +437,7 @@ svg.ic-l{width:24px;height:24px}
         = casa 2 L <b class="up">✓ cuadra</b></div>
       <div style="display:flex;gap:8px;margin-top:10px">
         <button class="btn filled small" style="flex:1;justify-content:center"
-          onclick="snack('Entrega registrada — la cuenta de junio de Don José va en $5,4 millones (2.770 L)')">Registrar entrega</button>
+          onclick="markRutina('entregas');snack('Entrega registrada — la cuenta de junio de Don José va en $5,4 millones (2.770 L)')">Registrar entrega</button>
         <button class="btn text small" onclick="snack('Cuenta del mes: Don José $5,4M (2.770 L) · La María $1,9M (980 L)')">Cuentas del mes</button>
       </div>
     </div>
@@ -478,6 +492,13 @@ svg.ic-l{width:24px;height:24px}
       </div>
       <div class="chart-sub mt8 mb0">Descanso promedio: <b>31 días</b> — adecuado para lluvias.
         En seca el sistema pedirá ampliar la vuelta.</div>
+    </div>
+
+    <div class="card flat" style="display:flex;gap:10px;align-items:center;padding:12px 14px">
+      <svg class="ic-s ic" style="color:var(--ink-2)"><use href="#i-rain"/></svg>
+      <div style="flex:1;font-size:13px"><b>Lluvia</b> · ayer 12 mm · junio: 148 mm
+        <span style="color:var(--ink-2)">(el pasto crece con esto)</span></div>
+      <button class="btn outl small" onclick="snack('Lluvia de hoy registrada: 8 mm')">Registrar</button>
     </div>
   </div>
 
@@ -969,7 +990,25 @@ function go(id,navBtn){
 }
 function goBack(){histStack.pop();go(histStack.pop()||'scr-inicio');}
 function openCow(){go('scr-vaca');}
-function openSheet(){document.getElementById('scrim').classList.add('show');
+/* rutina de la mañana */
+const rutina={ordeno:false,entregas:false,hato:false};
+function markRutina(k){if(rutina[k])return;rutina[k]=true;
+  const el=document.getElementById('rut-'+k);
+  if(el){el.style.background='var(--green-soft)';el.style.color='var(--green)';
+    el.innerHTML='<svg class="ic"><use href="#i-check"/></svg>';}
+  const n=Object.values(rutina).filter(Boolean).length;
+  document.getElementById('rutinaProg').textContent=n+' de 3'+(n===3?' · día completo':'');
+  if(n===3)snack('Rutina de la mañana completa — buen día de finca');}
+function goEntregas(){go('scr-ordeno');
+  setTimeout(()=>document.getElementById('entregasSec').scrollIntoView({behavior:'smooth'}),150);}
+/* botón + contextual */
+function openSheet(){
+  const ctx={'scr-vaca':'Registrar evento en Lucero (042)',
+    'scr-repro':'Registrar celo o monta vista',
+    'scr-ordeno':'Novedad en el ordeño'};
+  const id=document.querySelector('.screen.active').id;
+  document.querySelector('#sheet h3').textContent=ctx[id]||'Registrar novedad';
+  document.getElementById('scrim').classList.add('show');
   document.getElementById('sheet').classList.add('show');}
 function closeSheet(){document.getElementById('scrim').classList.remove('show');
   document.getElementById('sheet').classList.remove('show');}
@@ -1017,11 +1056,14 @@ function saveMilk(){
   if(drop)snack('Atención: '+c.n+' bajó '+(c.ayer-v)+' L vs ayer — ¿mastitis, celo, comida?');
   ci++;
   if(ci<cows.length){loadCow();}
-  else{snack('Ordeño completo: '+total+' L en total — en cola offline');
-    ci=0;total=0;setTimeout(()=>{loadCow();document.getElementById('runTotal').textContent=0;},2000);}
+  else{markRutina('ordeno');
+    snack('Ordeño completo: '+total+' L — siguiente paso: entregas a los lecheros');
+    setTimeout(()=>document.getElementById('entregasSec').scrollIntoView({behavior:'smooth'}),1200);
+    ci=0;total=0;setTimeout(()=>{loadCow();document.getElementById('runTotal').textContent=0;},2200);}
 }
 loadCow();
 function confirmMove(){
+  markRutina('hato');
   snack('Hato movido al Potrero 4 · descanso del P7 reiniciado');
   setTimeout(()=>go('scr-inicio'),1400);
 }

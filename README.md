@@ -579,7 +579,44 @@ potrero, la app lo recuerda con una notificación.
   → De un vistazo: qué unidad da plata y cuál está costando.
 ```
 
-### 6.5 Lenguaje visual
+### 6.5 Navegación y flujos
+
+**Mapa de 3 niveles — todo a máximo 3 toques:**
+
+```
+NIVEL 1 · Barra inferior (ordenada por frecuencia de uso, no por organigrama)
+  Inicio · Ordeño · Potreros · Hato · Decidir
+
+NIVEL 2 · Secciones de módulo (a 1 toque del nivel 1)
+  Hato    → Reproducción · Plan sanitario · Grupos · Inventario
+  Inicio  → Rutina de la mañana · Decisiones · Tareas
+  Ordeño  → Entregas a lecheros
+
+NIVEL 3 · Detalle
+  Grupo → Ficha del animal → registrar evento
+```
+
+**Reglas de navegación:**
+
+1. **"Atrás" vuelve por donde viniste** (pila de navegación); la barra inferior
+   teletransporta y resetea la pila.
+2. **El botón "+" siempre está visible y es contextual:** en la ficha de Lucero
+   registra un evento *de Lucero*; en Reproducción sugiere celo/monta; en
+   Inicio, novedad general.
+3. **Toda alerta es un deep-link:** "mover hato hoy" no te lleva a un menú,
+   te lleva a la pantalla de mover con el potrero ya sugerido.
+
+**El flujo central: la rutina de la mañana (encadenada, con progreso).**
+Las tres capturas diarias no son botones sueltos sino una secuencia guiada
+en Inicio — `1 Ordeño → 2 Entregas → 3 Mover hato` — que se va marcando sola:
+al terminar el ordeño, la app sugiere las entregas; al confirmarlas, el
+movimiento del hato. "Rutina 3 de 3" = el día operativo está completo.
+
+**Dónde vive la lluvia:** no en la rutina de leche — su relación causal es
+`lluvia → pasto → rotación`, así que se registra en **Potreros** (y el
+encabezado de Inicio siempre muestra la última lluvia como contexto).
+
+### 6.6 Lenguaje visual
 
 - **Una pantalla = una pregunta; el detalle vive a un toque.** Inicio responde
   "¿qué hago hoy?", Ordeño "registrar", Hato "¿qué animales tengo?", Decisiones
