@@ -585,7 +585,28 @@ por cola de eventos — el modelo de "todo es un evento" lo hace natural.
 
 ---
 
-## 9. Próximos pasos
+## 9. Backlog de ganadería (pendientes priorizados)
+
+Lo ya diseñado: inventario por grupos con drill-down, ficha del animal, ordeño
+diario por vaca con DEL, reproducción completa con palpación, salud con retiros
+y vacunas, altas/bajas y decisiones de secado/descarte. Lo que falta:
+
+| # | Pendiente | Por qué importa |
+|---|---|---|
+| 1 | **Balance y venta de leche** | Producida → terneras/autoconsumo/descartes por retiro → vendida. Precio/litro, conciliación de la quincena del comprador y bonificaciones por calidad (grasa, proteína, células somáticas). *Es la plata.* |
+| 2 | **Alimentación y suplementación** | Consumo de sal, silo y concentrado por grupo → completa el costo real por litro y cierra el círculo con el módulo de maíz. |
+| 3 | **Crianza de terneras** | Protocolo de leche por ternera, destete, curva de crecimiento vs meta (~500 g/día). Las terneras de hoy son el ordeño en 3 años. |
+| 4 | **Plan sanitario anual** | Calendario que programa solo: aftosa (may/nov), brucelosis a terneras 3-8 meses, desparasitación periódica → genera las tareas sin depender de memoria. |
+| 5 | **Reproducción fina** | Recordatorio de los 21 días (vaca servida que no repite celo ≈ preñada), pajillas y % concepción por toro, alerta de consanguinidad usando la genealogía. |
+| 6 | **Trazabilidad oficial ICA** | Guías de movilización, identificación oficial, reportes listos para trámites. |
+| 7 | **Hoja de vida exportable (PDF)** | La vida completa del animal demostrable → mejor precio al vender. |
+
+**Orden recomendado:** 1-2 (completan el dinero), luego 4-5 (automatizan la
+memoria), después 3, 6 y 7.
+
+---
+
+## 10. Próximos pasos
 
 1. Validar este mapa de módulos con quienes trabajan la finca (¿qué capturarían a diario, de verdad?).
 2. Priorizar el MVP (recomendado: leche + potreros).
