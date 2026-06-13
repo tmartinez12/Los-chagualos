@@ -356,5 +356,73 @@ function saveParto(){
   });
 }
 renderPartos();
+/* ===== Palpación (la fuente de verdad de la reproducción) ===== */
+const palpCandidatas={
+  '027 · Estrella':'celo sin repetir — ¿preñada?',
+  '051 · Careta':'parida hace 121 días, sin celo visto',
+  '033 · Paloma':'vacía hace 132 días',
+  '029 · Pinta':'vacía hace 150 días'
+};
+const palp={cow:'027 · Estrella',resultado:'prenada',meses:2};
+const MESC=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function fechaParto(meses){            // hoy + lo que falta de gestación (~9 meses)
+  const d=new Date(2026,5,13);
+  d.setMonth(d.getMonth()+Math.max(0,9-meses));
+  const y=d.getFullYear(), mes=MESC[d.getMonth()];
+  return {corta:'~'+d.getDate()+' '+mes, mes:mes,
+    larga:d.getDate()+' '+mes+(y!==2026?' '+String(y).slice(2):'')};
+}
+function palpMostrarMeses(){document.getElementById('palpMesesWrap').style.display=
+  palp.resultado==='prenada'?'':'none';}
+function palpMarcarVaca(){document.querySelectorAll('#palpCows .chip').forEach(c=>
+  c.classList.toggle('sel',c.textContent.trim().startsWith(palp.cow.split('·')[0].trim())));}
+function openPalp(cow){
+  if(cow)palp.cow=cow;
+  palp.resultado='prenada';palp.meses=2;
+  document.getElementById('palpCow').textContent=palp.cow.toUpperCase();
+  document.getElementById('palpInfo').textContent=palpCandidatas[palp.cow]||'Confirma el resultado de la palpación';
+  document.getElementById('palpMesesVal').textContent=palp.meses;
+  palpMarcarVaca();
+  const res=document.querySelectorAll('#palpSheet .chips')[1].querySelectorAll('.chip');
+  res.forEach((c,i)=>c.classList.toggle('sel',i===0));
+  palpMostrarMeses();
+  document.getElementById('scrim').classList.add('show');
+  document.getElementById('palpSheet').classList.add('show');
+}
+function closePalp(){document.getElementById('palpSheet').classList.remove('show');
+  document.getElementById('scrim').classList.remove('show');}
+function palpCow(cow){palp.cow=cow;
+  document.getElementById('palpCow').textContent=cow.toUpperCase();
+  document.getElementById('palpInfo').textContent=palpCandidatas[cow]||'Confirma el resultado de la palpación';
+  palpMarcarVaca();}
+function palpRes(btn,val){palp.resultado=val;
+  [...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));
+  palpMostrarMeses();}
+function palpMes(d){palp.meses=Math.max(1,Math.min(9,palp.meses+d));
+  document.getElementById('palpMesesVal').textContent=palp.meses;}
+function savePalp(){
+  closePalp();
+  const nombre=palp.cow.split('·')[1].trim();
+  encolar();
+  if(palp.resultado==='vacia'){
+    setTimeout(()=>go('scr-repro'),300);
+    snack(nombre+': vacía — queda en la lista para servicio');
+    return;
+  }
+  const f=fechaParto(palp.meses);
+  const nuevo={cow:palp.cow,sub:'Preñada '+palp.meses+' meses · parto '+f.corta,
+    short:f.corta,badge:f.mes,bw:''};
+  const i=proximosPartos.findIndex(p=>p.cow===palp.cow);
+  const prev=i>=0?proximosPartos[i]:null;
+  if(i>=0)proximosPartos[i]=nuevo; else{proximosPartos.push(nuevo);porParir++;}
+  renderPartos();
+  setTimeout(()=>go('scr-partos'),300);
+  snack(nombre+': preñada '+palp.meses+' meses — parto estimado '+f.corta+' · entra a los próximos partos','Deshacer',()=>{
+    const j=proximosPartos.findIndex(p=>p.cow===palp.cow);
+    if(j>=0)proximosPartos.splice(j,1);
+    if(prev)proximosPartos.push(prev); else porParir--;
+    desencolar();renderPartos();snack('Palpación deshecha');
+  });
+}
 /* la app arranca en el selector de línea de negocio */
 go('scr-selector');
