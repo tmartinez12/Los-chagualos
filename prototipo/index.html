@@ -751,13 +751,32 @@
   <div class="scrim" id="scrim" onclick="closeSheet();closeMilk();closeParto()"></div>
   <div class="sheet" id="sheet">
     <div class="handle"></div>
-    <h3>Registrar novedad</h3>
+    <h3>Registrar</h3>
+
+    <!-- acción diaria destacada -->
+    <button class="quick-hero" onclick="closeSheet();go('scr-ordeno')">
+      <div class="qh-icon"><svg class="ic"><use href="#i-drop"/></svg></div>
+      <div class="qh-body">
+        <div class="qh-title">Producción de leche · hoy</div>
+        <div class="qh-sub" id="qhMilkSub">Registro vaca por vaca</div>
+      </div>
+      <svg class="ic chev"><use href="#i-chev"/></svg>
+    </button>
+
+    <button class="quick-row" onclick="closeSheet();goEntregas()">
+      <svg class="ic"><use href="#i-truck"/></svg>
+      <span class="q-label">Entrega a lecheros</span>
+      <svg class="ic chev"><use href="#i-chev"/></svg>
+    </button>
+
+    <div class="sheet-sec">Novedades del hato</div>
     <div class="quick">
-      <button onclick="sheetPick('Celo visto registrado — revisión programada en 21 días')"><svg class="ic"><use href="#i-heart"/></svg><span class="q-label">Celo / monta vista</span></button>
+      <button onclick="sheetPick('Palpación registrada — es la fuente de verdad de la reproducción')"><svg class="ic"><use href="#i-repeat"/></svg><span class="q-label">Palpación</span></button>
       <button onclick="closeSheet();openParto()"><svg class="ic"><use href="#i-sprout"/></svg><span class="q-label">Parto / nacimiento</span></button>
-      <button onclick="sheetPick('Tratamiento registrado — retiro de leche activado 4 días')"><svg class="ic"><use href="#i-cross"/></svg><span class="q-label">Enfermedad / medicina</span></button>
-      <button onclick="sheetPick('Alta registrada: animal comprado — ficha creada')"><svg class="ic"><use href="#i-bag"/></svg><span class="q-label">Compra de animal</span></button>
-      <button onclick="sheetPick('Baja registrada — el animal queda en el histórico')"><svg class="ic"><use href="#i-out"/></svg><span class="q-label">Venta · muerte · descarte</span></button>
+      <button onclick="sheetPick('Tratamiento registrado — retiro de leche activado 4 días')"><svg class="ic"><use href="#i-cross"/></svg><span class="q-label">Enfermedad / tratamiento</span></button>
+      <button onclick="sheetPick('Secado registrado — la vaca pasa a horra y se planea su parto')"><svg class="ic"><use href="#i-cal"/></svg><span class="q-label">Secado de vaca</span></button>
+      <button onclick="sheetPick('Alta registrada: animal comprado — ficha creada')"><svg class="ic"><use href="#i-bag"/></svg><span class="q-label">Alta · compra</span></button>
+      <button onclick="sheetPick('Baja registrada — el animal queda en el histórico')"><svg class="ic"><use href="#i-out"/></svg><span class="q-label">Baja · venta/muerte</span></button>
     </div>
   </div>
 

@@ -137,12 +137,16 @@ function goEntregas(){go('scr-ordeno');
   setTimeout(()=>document.getElementById('entregasSec').scrollIntoView({behavior:'smooth'}),150);}
 /* botón + contextual */
 function openSheet(){
-  const ctx={'scr-vaca':'Registrar evento en Lucero (042)',
-    'scr-repro':'Registrar celo o monta vista',
+  const ctx={'scr-vaca':'Registrar en Lucero (042)',
     'scr-sanitario':'Registrar enfermedad o tratamiento',
-    'scr-ordeno':'Novedad en el ordeño'};
+    'scr-ordeno':'Registrar en el ordeño'};
   const id=document.querySelector('.screen.active').id;
-  document.querySelector('#sheet h3').textContent=ctx[id]||'Registrar novedad';
+  document.querySelector('#sheet h3').textContent=ctx[id]||'Registrar';
+  // subtítulo vivo de la acción de leche: progreso del ordeño de hoy
+  const done=cows.filter(c=>c.done);
+  document.getElementById('qhMilkSub').textContent = done.length
+    ? done.length+' de '+cows.length+' vacas · Σ '+done.reduce((s,c)=>s+c.v,0)+' L'
+    : 'Registro vaca por vaca · '+cows.length+' vacas';
   document.getElementById('scrim').classList.add('show');
   document.getElementById('sheet').classList.add('show');}
 function closeSheet(){document.getElementById('scrim').classList.remove('show');
