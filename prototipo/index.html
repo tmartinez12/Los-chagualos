@@ -357,9 +357,9 @@
     </div>
 
     <div class="card flat" style="display:flex;gap:10px;align-items:center;padding:12px 14px;cursor:pointer"
-      onclick="snack('Calendario de partos: jul 2 · ago 1 · sep 4 · oct 1 · nov 3 · dic 2 — de las palpaciones')">
-      <svg class="ic-s ic" style="color:var(--ink-2)"><use href="#i-cal"/></svg>
-      <div style="flex:1;font-size:13px"><b>Partos próximos:</b> jul 2 · ago 1 · sep 4 · oct 1 …</div>
+      onclick="go('scr-partos')">
+      <svg class="ic-s ic" style="color:var(--ink-2)"><use href="#i-sprout"/></svg>
+      <div style="flex:1;font-size:13px"><b>Partos:</b> 9 por parir · próximo ~3 jul · registrar parto</div>
       <svg class="ic chev"><use href="#i-chev"/></svg>
     </div>
 
@@ -625,6 +625,71 @@
       Toca un animal para abrir su ficha completa</div>
   </div>
 
+  <!-- ============ PARTOS ============ -->
+  <div class="screen" id="scr-partos">
+    <div class="kpi-row" style="margin-top:4px">
+      <div class="kpi"><div class="k-label">Partos 2026</div><div class="k-value">7</div></div>
+      <div class="kpi"><div class="k-label">Por parir</div><div class="k-value">9</div></div>
+      <div class="kpi"><div class="k-label">Próximo</div><div class="k-value" style="font-size:19px">~3 jul</div></div>
+    </div>
+
+    <button class="btn filled" style="width:100%;justify-content:center;margin-top:2px" onclick="openParto()">
+      <svg class="ic-s ic"><use href="#i-sprout"/></svg>Registrar un parto</button>
+
+    <div class="alert info" style="margin-top:12px">
+      <div class="a-icon"><svg class="ic"><use href="#i-cal"/></svg></div>
+      <div class="a-body">
+        <div class="a-title">011 “Violeta” pare en ~3 semanas</div>
+        <div class="a-sub">Confirma el secado y pásala al potrero de maternidad. Tras parir entra al ordeño en DEL 0.</div>
+      </div>
+    </div>
+
+    <div class="section-label">Próximos partos · de las palpaciones</div>
+    <div class="list">
+      <div class="list-item" onclick="openParto('011 · Violeta')">
+        <div class="li-leading"><svg class="ic"><use href="#i-sprout"/></svg></div>
+        <div class="li-body"><div class="li-title">011 · Violeta</div>
+          <div class="li-sub">Preñada 8,5 meses · parto ~3 jul</div></div>
+        <span class="badge warn">~3 sem</span>
+      </div>
+      <div class="list-item" onclick="openParto('019 · Canela')">
+        <div class="li-leading"><svg class="ic"><use href="#i-sprout"/></svg></div>
+        <div class="li-body"><div class="li-title">019 · Canela</div>
+          <div class="li-sub">Preñada 8 meses · parto ~18 jul</div></div>
+        <span class="badge">~5 sem</span>
+      </div>
+      <div class="list-item" onclick="openParto('045 · Morena')">
+        <div class="li-leading"><svg class="ic"><use href="#i-sprout"/></svg></div>
+        <div class="li-body"><div class="li-title">045 · Morena</div>
+          <div class="li-sub">Preñada 7,5 meses · parto ~2 ago</div></div>
+        <span class="badge">ago</span>
+      </div>
+      <div class="list-item" onclick="snack('Calendario completo de partos: jul 2 · ago 1 · sep 4 · oct 1 · nov 3 · dic 2')">
+        <div class="li-body" style="text-align:center"><div class="li-sub" style="font-weight:600;text-decoration:underline;text-underline-offset:3px">Ver los 9 próximos partos</div></div>
+      </div>
+    </div>
+
+    <div class="section-label">Partos recientes · 2026</div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div><div class="li-title">042 · Lucero → cría 064</div>
+          <div class="li-sub">12 ene · ♀ hembra · viva · parto normal</div></div>
+        <span class="badge ok">en ordeño</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div><div class="li-title">019 · Canela → cría 071</div>
+          <div class="li-sub">28 feb · ♀ hembra · viva · parto normal</div></div>
+        <span class="badge ok">en ordeño</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0">
+        <div><div class="li-title">033 · Paloma → cría</div>
+          <div class="li-sub">20 abr · ♂ macho · nació muerto · parto asistido</div></div>
+        <span class="badge bad">mortinato</span>
+      </div>
+      <button class="btn text small mt8" style="width:100%;justify-content:center" onclick="snack('Historial completo de partos — cada cría con su fecha, sexo y notas')">Ver historial completo</button>
+    </div>
+  </div>
+
   <!-- FAB -->
   <button class="fab" onclick="openSheet()"><svg class="ic"><use href="#i-plus"/></svg></button>
 
@@ -643,13 +708,13 @@
   </div>
 
   <!-- SHEET -->
-  <div class="scrim" id="scrim" onclick="closeSheet();closeMilk()"></div>
+  <div class="scrim" id="scrim" onclick="closeSheet();closeMilk();closeParto()"></div>
   <div class="sheet" id="sheet">
     <div class="handle"></div>
     <h3>Registrar novedad</h3>
     <div class="quick">
       <button onclick="sheetPick('Celo visto registrado — revisión programada en 21 días')"><svg class="ic"><use href="#i-heart"/></svg><span class="q-label">Celo / monta vista</span></button>
-      <button onclick="sheetPick('Parto registrado — cría creada y vinculada; la vaca arranca en DEL 0')"><svg class="ic"><use href="#i-sprout"/></svg><span class="q-label">Parto / nacimiento</span></button>
+      <button onclick="closeSheet();openParto()"><svg class="ic"><use href="#i-sprout"/></svg><span class="q-label">Parto / nacimiento</span></button>
       <button onclick="sheetPick('Tratamiento registrado — retiro de leche activado 4 días')"><svg class="ic"><use href="#i-cross"/></svg><span class="q-label">Enfermedad / medicina</span></button>
       <button onclick="sheetPick('Labor registrada en el lote')"><svg class="ic"><use href="#i-leaf"/></svg><span class="q-label">Labor de cultivo</span></button>
       <button onclick="sheetPick('Alta registrada: animal comprado — ficha creada y gasto a finanzas')"><svg class="ic"><use href="#i-bag"/></svg><span class="q-label">Compra de animal</span></button>
@@ -678,6 +743,43 @@
       <div style="font-size:11px;color:var(--ink-3);margin-top:10px">
         ✓ acepta y guarda — vuelves al tablero para elegir la siguiente</div>
     </div>
+  </div>
+
+  <!-- SHEET: registrar parto -->
+  <div class="sheet" id="partoSheet">
+    <div class="handle"></div>
+    <h3>Registrar parto</h3>
+    <div class="m-label" id="partoCow">011 · VIOLETA</div>
+    <div class="m-del" id="partoDel" style="margin-bottom:14px">Preñada 8,5 meses · esperado ~3 jul</div>
+
+    <div class="section-label" style="margin-top:0">Fecha</div>
+    <div class="chips">
+      <button class="chip sel">Hoy · 13 jun</button>
+      <button class="chip" onclick="snack('En la app real abre el calendario')">Otra fecha…</button>
+    </div>
+
+    <div class="section-label">Sexo de la cría</div>
+    <div class="chips">
+      <button class="chip sel" onclick="partoPick(this,'sexo','H')">♀ Hembra</button>
+      <button class="chip" onclick="partoPick(this,'sexo','M')">♂ Macho</button>
+    </div>
+
+    <div class="section-label">Tipo de parto</div>
+    <div class="chips">
+      <button class="chip sel" onclick="partoPick(this,'tipo','normal')">Normal</button>
+      <button class="chip" onclick="partoPick(this,'tipo','asistido')">Asistido</button>
+    </div>
+
+    <div class="section-label">Estado de la cría</div>
+    <div class="chips">
+      <button class="chip sel" onclick="partoPick(this,'estado','viva')">Viva</button>
+      <button class="chip" onclick="partoPick(this,'estado','muerta')">Muerta</button>
+    </div>
+
+    <button class="btn filled" style="width:100%;justify-content:center;margin-top:16px" onclick="saveParto()">
+      <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar parto</button>
+    <div style="font-size:11px;color:var(--ink-3);margin-top:10px;text-align:center">
+      Se crea la ficha de la cría y se vincula a la madre · la vaca entra al ordeño en DEL 0</div>
   </div>
 
   <!-- SNACKBAR -->

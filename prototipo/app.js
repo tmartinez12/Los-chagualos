@@ -7,6 +7,7 @@ const titles={
   'scr-decisiones':['Decisiones del mes','Junio 2026 · 4 recomendaciones'],
   'scr-sanitario':['Plan sanitario','Se programa solo · genera las tareas'],
   'scr-repro':['Reproducción','Monta natural · la palpación manda'],
+  'scr-partos':['Partos','Las palpaciones marcan las fechas'],
   'scr-grupo':['Grupo',''],
 };
 /* drill-down: hato → grupo → animal */
@@ -175,4 +176,37 @@ function confirmMove(){
   markRutina('hato');
   snack('Hato movido al Potrero 4 · descanso del P7 reiniciado');
   setTimeout(()=>go('scr-inicio'),1400);
+}
+/* registrar parto: elige (o viene preseleccionada) la vaca → sexo, tipo, estado → guardar */
+const partoInfo={
+  '011 · Violeta':'Preñada 8,5 meses · esperado ~3 jul',
+  '019 · Canela' :'Preñada 8 meses · esperado ~18 jul',
+  '045 · Morena' :'Preñada 7,5 meses · esperado ~2 ago'
+};
+const parto={cow:'011 · Violeta',sexo:'H',tipo:'normal',estado:'viva'};
+function openParto(cow){
+  if(cow)parto.cow=cow;
+  parto.sexo='H';parto.tipo='normal';parto.estado='viva';
+  document.getElementById('partoCow').textContent=parto.cow.toUpperCase();
+  document.getElementById('partoDel').textContent=partoInfo[parto.cow]||'Confirma la fecha y los datos de la cría';
+  // cada grupo de chips vuelve a su primera opción
+  document.querySelectorAll('#partoSheet .chips').forEach(g=>
+    g.querySelectorAll('.chip').forEach((c,i)=>c.classList.toggle('sel',i===0)));
+  document.getElementById('scrim').classList.add('show');
+  document.getElementById('partoSheet').classList.add('show');
+}
+function closeParto(){document.getElementById('partoSheet').classList.remove('show');
+  document.getElementById('scrim').classList.remove('show');}
+function partoPick(btn,campo,val){parto[campo]=val;
+  [...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));}
+function saveParto(){
+  closeParto();
+  const nombre=parto.cow.split('·')[1].trim();
+  if(parto.estado==='muerta')
+    snack('Parto de '+nombre+' registrado · la cría nació muerta · '+nombre+' entra al ordeño en DEL 0');
+  else{
+    const cria=parto.sexo==='H'?'ternera 072 (hembra)':'ternero 072 (macho)';
+    snack('Parto de '+nombre+' · '+cria+' creada y vinculada · '+nombre+' entra al ordeño en DEL 0');
+  }
+  setTimeout(()=>go('scr-partos'),300);
 }
