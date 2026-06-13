@@ -1,0 +1,37 @@
+name: Publicar prototipo (GitHub Pages)
+
+on:
+  push:
+    branches: [claude/youthful-cannon-l903re]
+    paths: [prototipo/**, .github/workflows/pages.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Un despliegue a la vez
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configurar Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: Subir la carpeta del prototipo
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: prototipo
+      - name: Desplegar
+        id: deployment
+        uses: actions/deploy-pages@v4
