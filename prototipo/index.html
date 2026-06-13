@@ -39,6 +39,9 @@
   <symbol id="i-cross" viewBox="0 0 24 24"><path d="M10 4h4v5h5v4h-5v5h-4v-5H5V9h5z"/></symbol>
   <symbol id="i-male" viewBox="0 0 24 24"><circle cx="10" cy="14" r="5"/><path d="M14 10l6-6"/><path d="M15 4h5v5"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-coffee" viewBox="0 0 24 24"><path d="M5 9h11v6a5 5 0 0 1-10 0z"/><path d="M16 10h2a2.5 2.5 0 0 1 0 5h-2"/></symbol>
+  <symbol id="i-corn" viewBox="0 0 24 24"><path d="M12 21V8"/><path d="M12 13c0-4-3-6-7-6 0 4 3 6 7 6z"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></symbol>
 </svg>
 
 <div class="phone">
@@ -56,7 +59,39 @@
   </div>
 
   <!-- ============ INICIO ============ -->
-  <div class="screen active" id="scr-inicio">
+  <!-- ============ SELECTOR DE LÍNEA DE NEGOCIO ============ -->
+  <div class="screen active" id="scr-selector">
+    <div class="sel-hero">
+      <div class="sel-hi">Hola, Tatiana 👋</div>
+      <div class="sel-q">¿Qué línea quieres gestionar hoy?</div>
+    </div>
+    <div class="mod-grid">
+      <button class="mod-card" onclick="entrarModulo('leche')">
+        <div class="mod-ic"><svg class="ic"><use href="#i-drop"/></svg></div>
+        <div class="mod-name">Leche</div>
+        <div class="mod-sub">26 en ordeño · 184 L hoy</div>
+        <span class="mod-tag on">activa</span>
+      </button>
+      <button class="mod-card dis" onclick="snack('Café — próximamente')">
+        <div class="mod-ic"><svg class="ic"><use href="#i-coffee"/></svg></div>
+        <div class="mod-name">Café</div>
+        <div class="mod-sub">próximamente</div>
+      </button>
+      <button class="mod-card dis" onclick="snack('Miel — próximamente')">
+        <div class="mod-ic"><svg class="ic"><use href="#i-hex"/></svg></div>
+        <div class="mod-name">Miel</div>
+        <div class="mod-sub">próximamente</div>
+      </button>
+      <button class="mod-card dis" onclick="snack('Maíz — próximamente')">
+        <div class="mod-ic"><svg class="ic"><use href="#i-corn"/></svg></div>
+        <div class="mod-name">Maíz</div>
+        <div class="mod-sub">próximamente</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============ DASHBOARD ============ -->
+  <div class="screen" id="scr-inicio">
 
     <!-- ============ LECHE — lo más importante para decidir en el día ============ -->
     <div class="section-label"><svg class="ic" style="vertical-align:-2px"><use href="#i-drop"/></svg> Leche · hoy</div>
@@ -137,6 +172,22 @@
           <div class="k-value">38 <span class="k-unit">días</span></div>
           <div class="k-trend">cosecha ~ 75 días</div>
         </div>
+      </div>
+    </div>
+
+    <div class="section-label">Más de la finca</div>
+    <div class="list">
+      <div class="list-item" onclick="go('scr-potreros')">
+        <div class="li-leading"><svg class="ic"><use href="#i-leaf"/></svg></div>
+        <div class="li-body"><div class="li-title">Potreros y pastoreo</div>
+          <div class="li-sub">El hato lleva 2 días en P7 · mover hoy</div></div>
+        <svg class="ic chev"><use href="#i-chev"/></svg>
+      </div>
+      <div class="list-item" onclick="go('scr-decisiones')">
+        <div class="li-leading"><svg class="ic"><use href="#i-bulb"/></svg></div>
+        <div class="li-body"><div class="li-title">Decisiones del mes</div>
+          <div class="li-sub">4 recomendaciones con datos para revisar</div></div>
+        <div class="li-trail"><span class="badge">4</span></div>
       </div>
     </div>
 
@@ -308,6 +359,16 @@
         <div class="li-body"><div class="li-title">Machos / toros</div>
           <div class="li-sub">Sansón + 1 torete</div></div>
         <div class="li-trail"><div class="li-num">2</div></div><svg class="ic chev"><use href="#i-chev"/></svg>
+      </div>
+    </div>
+
+    <div class="section-label">Histórico</div>
+    <div class="list">
+      <div class="list-item" onclick="openGroup('bajas')">
+        <div class="li-leading"><svg class="ic"><use href="#i-out"/></svg></div>
+        <div class="li-body"><div class="li-title">Bajas · vendidas, muertas, perdidas</div>
+          <div class="li-sub">Animales que salieron del hato — quedan en el histórico</div></div>
+        <div class="li-trail"><div class="li-num">7</div></div><svg class="ic chev"><use href="#i-chev"/></svg>
       </div>
     </div>
 
@@ -563,7 +624,24 @@
 
   <!-- ============ PLAN SANITARIO ============ -->
   <div class="screen" id="scr-sanitario">
-    <div class="card" style="border:1.5px solid var(--ink);margin-top:4px">
+    <button class="btn filled" style="width:100%;justify-content:center;margin-top:4px"
+      onclick="openSheet()"><svg class="ic-s ic"><use href="#i-cross"/></svg>Registrar enfermedad o tratamiento</button>
+
+    <div class="section-label">En tratamiento ahora · <span style="color:var(--ink)">1</span></div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div><div class="li-title">017 · Azucena</div>
+          <div class="li-sub">Mastitis · antibiótico (3er día de 5) · <b>retiro de leche hasta sáb 14</b></div></div>
+        <span class="badge bad">retiro 2 d</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn outl small" onclick="snack('Tratamiento marcado como terminado — el retiro de leche se levanta el sáb 14')">Marcar terminado</button>
+        <button class="btn text small" onclick="snack('Historia clínica de Azucena — tratamientos, dosis y retiros')">Ver historia</button>
+      </div>
+    </div>
+
+    <div class="section-label">Vacunas</div>
+    <div class="card" style="border:1.5px solid var(--ink)">
       <div class="row">
         <svg class="ic" style="color:var(--ink-2)"><use href="#i-shield"/></svg>
         <div style="flex:1">
@@ -658,15 +736,15 @@
   <!-- NAV -->
   <div class="navbar">
     <button class="nav-item active" data-scr="scr-inicio" onclick="go('scr-inicio',this)">
-      <svg class="ic"><use href="#i-home"/></svg><span class="n-label">Inicio</span></button>
+      <svg class="ic"><use href="#i-home"/></svg><span class="n-label">Dashboard</span></button>
     <button class="nav-item" data-scr="scr-ordeno" onclick="go('scr-ordeno',this)">
       <svg class="ic"><use href="#i-drop"/></svg><span class="n-label">Leche</span></button>
-    <button class="nav-item" data-scr="scr-potreros" onclick="go('scr-potreros',this)">
-      <svg class="ic"><use href="#i-leaf"/></svg><span class="n-label">Potreros</span></button>
     <button class="nav-item" data-scr="scr-hato" onclick="go('scr-hato',this)">
       <svg class="ic"><use href="#i-tag"/></svg><span class="n-label">Hato</span></button>
-    <button class="nav-item" data-scr="scr-decisiones" onclick="go('scr-decisiones',this)">
-      <svg class="ic"><use href="#i-bulb"/></svg><span class="n-label">Decidir</span></button>
+    <button class="nav-item" data-scr="scr-sanitario" onclick="go('scr-sanitario',this)">
+      <svg class="ic"><use href="#i-shield"/></svg><span class="n-label">Sanidad</span></button>
+    <button class="nav-item" data-scr="scr-repro" onclick="go('scr-repro',this)">
+      <svg class="ic"><use href="#i-repeat"/></svg><span class="n-label">Reproducción</span></button>
   </div>
 
   <!-- SHEET -->

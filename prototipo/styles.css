@@ -263,3 +263,21 @@ svg.ic-l{width:24px;height:24px}
 .sync-chip:active{opacity:.7}
 .mb0{margin-bottom:0}.mt8{margin-top:8px}.mt12{margin-top:12px}
 .row{display:flex;align-items:center;gap:10px}
+/* selector de línea de negocio */
+.sel-hero{padding:18px 2px 16px}
+.sel-hi{font-size:22px;font-weight:700;letter-spacing:-.3px}
+.sel-q{font-size:14px;color:var(--ink-2);margin-top:4px}
+.mod-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mod-card{position:relative;text-align:left;background:var(--card);border:1px solid var(--border);
+  border-radius:16px;padding:16px 14px;min-height:128px;box-shadow:var(--sh);cursor:pointer;
+  font-family:inherit;display:flex;flex-direction:column;gap:2px}
+.mod-card:active{background:var(--surface)}
+.mod-card.dis{opacity:.5}
+.mod-ic{width:42px;height:42px;border-radius:12px;background:var(--surface);color:var(--ink);
+  display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.mod-card .mod-ic svg{width:22px;height:22px}
+.mod-name{font-size:16px;font-weight:700}
+.mod-sub{font-size:12px;color:var(--ink-2)}
+.mod-tag{position:absolute;top:12px;right:12px;font-size:10px;font-weight:700;border-radius:100px;
+  padding:3px 9px;background:var(--surface);color:var(--ink-2)}
+.mod-tag.on{background:var(--green-soft);color:var(--green)}

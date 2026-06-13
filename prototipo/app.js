@@ -1,11 +1,12 @@
 const titles={
-  'scr-inicio':['Los Chagualos','Jue 12 jun · Lluvia ayer: 12 mm'],
-  'scr-ordeno':['Leche','Hoy vs tu promedio de 7 días'],
+  'scr-selector':['Los Chagualos','Elige una línea de negocio'],
+  'scr-inicio':['Dashboard','Leche · jue 12 jun · datos clave'],
+  'scr-ordeno':['Leche','Producción y ordeño del día'],
   'scr-potreros':['Potreros','12 potreros · ocupación 1 día (máx 2)'],
-  'scr-hato':['Mi hato','80 animales · 26 en ordeño'],
+  'scr-hato':['Hato','80 animales · 26 en ordeño'],
   'scr-vaca':['Ficha del animal','Se consulta mucho, se edita poco'],
   'scr-decisiones':['Decisiones del mes','Junio 2026 · 4 recomendaciones'],
-  'scr-sanitario':['Plan sanitario','Se programa solo · genera las tareas'],
+  'scr-sanitario':['Sanidad','Tratamientos, retiros y vacunas'],
   'scr-repro':['Reproducción','Monta natural · la palpación manda'],
   'scr-partos':['Partos','Las palpaciones marcan las fechas'],
   'scr-grupo':['Grupo',''],
@@ -58,7 +59,17 @@ const grupos={
     header:'<b>2 machos.</b> Sansón cubre el hato; el torete se vende en agosto.',
     animales:[
       ['T01 · Sansón','Toro · 6 años · sanidad al día'],
-      ['T02 · Torete','11 meses · venta programada ago']]}
+      ['T02 · Torete','11 meses · venta programada ago']]},
+  bajas:{nombre:'Bajas · histórico',sub:'7 animales fuera del hato · 2026',
+    header:'<b>7 bajas en 2026.</b> Vendidas, muertas o perdidas — ya no están en el hato, pero su historia se conserva.',
+    animales:[
+      ['021 · Lucía','VENDIDA · 4 may · descarte por baja producción ($2,1 M)'],
+      ['009 · Manzana','MUERTA · 18 abr · timpanismo'],
+      ['T02 · (cría 058)','VENDIDO · 2 abr · ternero macho ($0,9 M)'],
+      ['044 · Estrella vieja','MUERTA · 11 mar · parto complicado'],
+      ['016 · Perla','VENDIDA · 20 feb · descarte por edad ($1,8 M)'],
+      ['033 · (cría de Paloma)','MUERTA · 20 abr · mortinato'],
+      ['052 · Nube','PERDIDA · 6 ene · no apareció tras tormenta']]}
 };
 function openGroup(k){const g=grupos[k];
   titles['scr-grupo']=[g.nombre,g.sub];
@@ -73,25 +84,38 @@ function openGroup(k){const g=grupos[k];
     list.appendChild(d);});
   go('scr-grupo');}
 /* pestañas de primer nivel y a qué pestaña pertenece cada pantalla hija */
-const TABS=['scr-inicio','scr-ordeno','scr-potreros','scr-hato','scr-decisiones'];
-const tabPadre={'scr-repro':'scr-hato','scr-partos':'scr-hato','scr-vaca':'scr-hato',
-  'scr-sanitario':'scr-hato','scr-grupo':'scr-hato'};
-let histStack=['scr-inicio'];
+const TABS=['scr-inicio','scr-ordeno','scr-hato','scr-sanitario','scr-repro'];
+const tabPadre={'scr-potreros':'scr-inicio','scr-decisiones':'scr-inicio',
+  'scr-partos':'scr-repro','scr-vaca':'scr-hato','scr-grupo':'scr-hato'};
+let histStack=['scr-selector'];
 function go(id,navBtn){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  const enSelector=id==='scr-selector';
+  // el selector es pantalla completa: sin barra inferior ni botón +
+  document.querySelector('.navbar').style.display=enSelector?'none':'';
+  document.querySelector('.fab').style.display=enSelector?'none':'';
   const tab=tabPadre[id]||id;   // las pantallas hijas iluminan su pestaña madre
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.scr===tab));
   const t=titles[id];
   document.getElementById('barTitle').textContent=t[0];
   document.getElementById('barSub').textContent=t[1];
-  // flecha "atrás" solo en pantallas hijas, nunca en una pestaña de primer nivel
-  document.getElementById('backBtn').style.display=TABS.includes(id)?'none':'flex';
-  if(navBtn)histStack=[id];                                   // cambiar de pestaña reinicia el historial
+  // botón superior izquierdo: rejilla (volver al selector) en pestañas, flecha atrás en hijas, nada en el selector
+  const back=document.getElementById('backBtn');
+  if(enSelector){back.style.display='none';}
+  else if(TABS.includes(id)){back.style.display='flex';back.onclick=()=>go('scr-selector');
+    back.innerHTML='<svg class="ic"><use href="#i-grid"/></svg>';}
+  else{back.style.display='flex';back.onclick=goBack;
+    back.innerHTML='<svg class="ic"><use href="#i-back"/></svg>';}
+  if(navBtn||enSelector)histStack=[id];                       // cambiar de pestaña o ir al selector reinicia el historial
   else if(histStack[histStack.length-1]!==id)histStack.push(id);
   document.getElementById(id).scrollTop=0;
 }
 function goBack(){histStack.pop();go(histStack.pop()||'scr-inicio');}
+function entrarModulo(m){
+  if(m!=='leche'){snack('Esa línea aún no está disponible');return;}
+  go('scr-inicio',1);   // entra al módulo Leche, en el Dashboard
+}
 function openCow(){go('scr-vaca');}
 /* rutina de la mañana */
 const rutina={ordeno:false,entregas:false,hato:false};
@@ -115,6 +139,7 @@ function goEntregas(){go('scr-ordeno');
 function openSheet(){
   const ctx={'scr-vaca':'Registrar evento en Lucero (042)',
     'scr-repro':'Registrar celo o monta vista',
+    'scr-sanitario':'Registrar enfermedad o tratamiento',
     'scr-ordeno':'Novedad en el ordeño'};
   const id=document.querySelector('.screen.active').id;
   document.querySelector('#sheet h3').textContent=ctx[id]||'Registrar novedad';
@@ -327,3 +352,5 @@ function saveParto(){
   });
 }
 renderPartos();
+/* la app arranca en el selector de línea de negocio */
+go('scr-selector');
