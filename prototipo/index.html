@@ -51,6 +51,7 @@
       <div class="title" id="barTitle">Los Chagualos</div>
       <div class="subtitle" id="barSub">Jue 12 jun · Lluvia ayer: 12 mm</div>
     </div>
+    <button class="sync-chip" id="syncChip" onclick="sincronizar()">al día ✓</button>
     <div class="avatar">T</div>
   </div>
 
@@ -197,7 +198,7 @@
         <b style="color:var(--ink)">Balance:</b> producida 184 − entregada 170 − terneras 12
         = casa 2 L <b class="up">✓ cuadra</b></div>
       <button class="btn filled small mt8" style="width:100%;justify-content:center"
-        onclick="markRutina('entregas');snack('Entrega registrada — el balance del día cuadra')">Registrar entrega</button>
+        onclick="registrarEntrega()">Registrar entrega</button>
       <div style="font-size:11px;color:var(--ink-3);margin-top:8px;text-align:center">
         Las cuentas en pesos viven en Decisiones — aquí solo litros</div>
     </div>
@@ -230,18 +231,18 @@
 
     <div class="section-label">Potreros · días de descanso</div>
     <div class="pgrid">
-      <div class="pot warn"><div class="p-top"><span class="p-name">P1</span><span class="dot"></span></div><div class="p-days">9</div><div class="p-cap">recuperando</div></div>
-      <div class="pot warn"><div class="p-top"><span class="p-name">P2</span><span class="dot"></span></div><div class="p-days">14</div><div class="p-cap">recuperando</div></div>
+      <div class="pot warn" onclick="snack('Potrero 1: 9 días de descanso · aún recuperando')"><div class="p-top"><span class="p-name">P1</span><span class="dot"></span></div><div class="p-days">9</div><div class="p-cap">recuperando</div></div>
+      <div class="pot warn" onclick="snack('Potrero 2: 14 días de descanso · aún recuperando')"><div class="p-top"><span class="p-name">P2</span><span class="dot"></span></div><div class="p-days">14</div><div class="p-cap">recuperando</div></div>
       <div class="pot ok" onclick="snack('Potrero 3: 29 días de descanso · aforo pendiente')"><div class="p-top"><span class="p-name">P3</span><span class="dot"></span></div><div class="p-days">29</div><div class="p-cap">listo</div></div>
       <div class="pot ok suggested" onclick="confirmMove()"><div class="p-tag">SUGERIDO</div><div class="p-top"><span class="p-name">P4</span><span class="dot"></span></div><div class="p-days">35</div><div class="p-cap">listo · aforo ok</div></div>
-      <div class="pot ok" onclick="snack('Potrero 5: 31 días de descanso')"><div class="p-top"><span class="p-name">P5</span><span class="dot"></span></div><div class="p-days">31</div><div class="p-cap">listo</div></div>
-      <div class="pot warn"><div class="p-top"><span class="p-name">P6</span><span class="dot"></span></div><div class="p-days">18</div><div class="p-cap">recuperando</div></div>
-      <div class="pot bad now"><div class="p-tag">HATO AQUÍ</div><div class="p-top"><span class="p-name">P7</span><span class="dot"></span></div><div class="p-days">2º</div><div class="p-cap">día de ocupación</div></div>
-      <div class="pot bad off"><div class="p-top"><span class="p-name">P8</span><span class="dot"></span></div><div class="p-days">1</div><div class="p-cap">recién pastoreado</div></div>
-      <div class="pot bad off"><div class="p-top"><span class="p-name">P9</span><span class="dot"></span></div><div class="p-days">3</div><div class="p-cap">recién pastoreado</div></div>
-      <div class="pot warn"><div class="p-top"><span class="p-name">P10</span><span class="dot"></span></div><div class="p-days">12</div><div class="p-cap">recuperando</div></div>
-      <div class="pot warn"><div class="p-top"><span class="p-name">P11</span><span class="dot"></span></div><div class="p-days">21</div><div class="p-cap">cerca dañada</div></div>
-      <div class="pot ok"><div class="p-top"><span class="p-name">P12</span><span class="dot"></span></div><div class="p-days">26</div><div class="p-cap">listo</div></div>
+      <div class="pot ok" onclick="snack('Potrero 5: 31 días de descanso · listo')"><div class="p-top"><span class="p-name">P5</span><span class="dot"></span></div><div class="p-days">31</div><div class="p-cap">listo</div></div>
+      <div class="pot warn" onclick="snack('Potrero 6: 18 días de descanso · aún recuperando')"><div class="p-top"><span class="p-name">P6</span><span class="dot"></span></div><div class="p-days">18</div><div class="p-cap">recuperando</div></div>
+      <div class="pot bad now" onclick="snack('El hato está aquí · día 2 de ocupación — hay que mover hoy')"><div class="p-tag">HATO AQUÍ</div><div class="p-top"><span class="p-name">P7</span><span class="dot"></span></div><div class="p-days">2º</div><div class="p-cap">día de ocupación</div></div>
+      <div class="pot bad off" onclick="snack('Potrero 8: recién pastoreado hace 1 día — necesita descanso')"><div class="p-top"><span class="p-name">P8</span><span class="dot"></span></div><div class="p-days">1</div><div class="p-cap">recién pastoreado</div></div>
+      <div class="pot bad off" onclick="snack('Potrero 9: recién pastoreado hace 3 días — necesita descanso')"><div class="p-top"><span class="p-name">P9</span><span class="dot"></span></div><div class="p-days">3</div><div class="p-cap">recién pastoreado</div></div>
+      <div class="pot warn" onclick="snack('Potrero 10: 12 días de descanso · aún recuperando')"><div class="p-top"><span class="p-name">P10</span><span class="dot"></span></div><div class="p-days">12</div><div class="p-cap">recuperando</div></div>
+      <div class="pot warn" onclick="snack('Potrero 11: 21 días · ojo: cerca dañada, revisar antes de usar')"><div class="p-top"><span class="p-name">P11</span><span class="dot"></span></div><div class="p-days">21</div><div class="p-cap">cerca dañada</div></div>
+      <div class="pot ok" onclick="snack('Potrero 12: 26 días de descanso · listo')"><div class="p-top"><span class="p-name">P12</span><span class="dot"></span></div><div class="p-days">26</div><div class="p-cap">listo</div></div>
     </div>
 
     <div class="card mt12">
@@ -677,11 +678,8 @@
       <button onclick="sheetPick('Celo visto registrado — revisión programada en 21 días')"><svg class="ic"><use href="#i-heart"/></svg><span class="q-label">Celo / monta vista</span></button>
       <button onclick="closeSheet();openParto()"><svg class="ic"><use href="#i-sprout"/></svg><span class="q-label">Parto / nacimiento</span></button>
       <button onclick="sheetPick('Tratamiento registrado — retiro de leche activado 4 días')"><svg class="ic"><use href="#i-cross"/></svg><span class="q-label">Enfermedad / medicina</span></button>
-      <button onclick="sheetPick('Labor registrada en el lote')"><svg class="ic"><use href="#i-leaf"/></svg><span class="q-label">Labor de cultivo</span></button>
-      <button onclick="sheetPick('Alta registrada: animal comprado — ficha creada y gasto a finanzas')"><svg class="ic"><use href="#i-bag"/></svg><span class="q-label">Compra de animal</span></button>
-      <button onclick="sheetPick('Baja registrada — si es venta, el ingreso va a finanzas; el animal queda en el histórico')"><svg class="ic"><use href="#i-out"/></svg><span class="q-label">Venta · muerte · descarte</span></button>
-      <button onclick="sheetPick('Revisión de colmena registrada')"><svg class="ic"><use href="#i-hex"/></svg><span class="q-label">Revisión colmena</span></button>
-      <button onclick="sheetPick('Cosecha registrada')"><svg class="ic"><use href="#i-bag"/></svg><span class="q-label">Cosecha</span></button>
+      <button onclick="sheetPick('Alta registrada: animal comprado — ficha creada')"><svg class="ic"><use href="#i-bag"/></svg><span class="q-label">Compra de animal</span></button>
+      <button onclick="sheetPick('Baja registrada — el animal queda en el histórico')"><svg class="ic"><use href="#i-out"/></svg><span class="q-label">Venta · muerte · descarte</span></button>
     </div>
   </div>
 
@@ -752,7 +750,7 @@
   </div>
 
   <!-- SNACKBAR -->
-  <div class="snackbar" id="snackbar"><svg class="ic-s ic"><use href="#i-check"/></svg><span id="snackText"></span></div>
+  <div class="snackbar" id="snackbar"><svg class="ic-s ic"><use href="#i-check"/></svg><span id="snackText"></span><button class="snack-action" id="snackAction" style="display:none"></button></div>
 </div>
 <script src="app.js"></script>
 </body>

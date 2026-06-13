@@ -72,29 +72,43 @@ function openGroup(k){const g=grupos[k];
       d.onclick=a[2]?openCow:()=>snack('Ficha de '+a[0]+' — misma estructura que la de Lucero');}
     list.appendChild(d);});
   go('scr-grupo');}
+/* pestañas de primer nivel y a qué pestaña pertenece cada pantalla hija */
+const TABS=['scr-inicio','scr-ordeno','scr-potreros','scr-hato','scr-decisiones'];
+const tabPadre={'scr-repro':'scr-hato','scr-partos':'scr-hato','scr-vaca':'scr-hato',
+  'scr-sanitario':'scr-hato','scr-grupo':'scr-hato'};
 let histStack=['scr-inicio'];
 function go(id,navBtn){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.scr===id));
+  const tab=tabPadre[id]||id;   // las pantallas hijas iluminan su pestaña madre
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.scr===tab));
   const t=titles[id];
   document.getElementById('barTitle').textContent=t[0];
   document.getElementById('barSub').textContent=t[1];
-  document.getElementById('backBtn').style.display=(id==='scr-inicio')?'none':'flex';
-  if(histStack[histStack.length-1]!==id)histStack.push(id);
+  // flecha "atrás" solo en pantallas hijas, nunca en una pestaña de primer nivel
+  document.getElementById('backBtn').style.display=TABS.includes(id)?'none':'flex';
+  if(navBtn)histStack=[id];                                   // cambiar de pestaña reinicia el historial
+  else if(histStack[histStack.length-1]!==id)histStack.push(id);
   document.getElementById(id).scrollTop=0;
 }
 function goBack(){histStack.pop();go(histStack.pop()||'scr-inicio');}
 function openCow(){go('scr-vaca');}
 /* rutina de la mañana */
 const rutina={ordeno:false,entregas:false,hato:false};
+const rutinaIcono={ordeno:'i-drop',entregas:'i-truck',hato:'i-pin'};
+function pintaRutina(){const n=Object.values(rutina).filter(Boolean).length;
+  document.getElementById('rutinaProg').textContent=n+' de 3'+(n===3?' · día completo':'');}
 function markRutina(k){if(rutina[k])return;rutina[k]=true;
   const el=document.getElementById('rut-'+k);
   if(el){el.style.background='var(--green-soft)';el.style.color='var(--green)';
     el.innerHTML='<svg class="ic"><use href="#i-check"/></svg>';}
-  const n=Object.values(rutina).filter(Boolean).length;
-  document.getElementById('rutinaProg').textContent=n+' de 3'+(n===3?' · día completo':'');
-  if(n===3)snack('Rutina de la mañana completa — buen día de finca');}
+  pintaRutina();
+  if(Object.values(rutina).every(Boolean))snack('Rutina de la mañana completa — buen día de finca');}
+function unmarkRutina(k){if(!rutina[k])return;rutina[k]=false;
+  const el=document.getElementById('rut-'+k);
+  if(el){el.style.background='';el.style.color='';
+    el.innerHTML='<svg class="ic"><use href="#'+rutinaIcono[k]+'"/></svg>';}
+  pintaRutina();}
 function goEntregas(){go('scr-ordeno');
   setTimeout(()=>document.getElementById('entregasSec').scrollIntoView({behavior:'smooth'}),150);}
 /* botón + contextual */
@@ -110,9 +124,14 @@ function closeSheet(){document.getElementById('scrim').classList.remove('show');
   document.getElementById('sheet').classList.remove('show');}
 function sheetPick(msg){closeSheet();snack(msg);}
 let snackTimer;
-function snack(msg){const sb=document.getElementById('snackbar');
-  document.getElementById('snackText').textContent=msg;sb.classList.add('show');
-  clearTimeout(snackTimer);snackTimer=setTimeout(()=>sb.classList.remove('show'),2600);}
+function snack(msg,accionLabel,accionFn){const sb=document.getElementById('snackbar');
+  document.getElementById('snackText').textContent=msg;
+  const act=document.getElementById('snackAction');
+  if(accionLabel){act.textContent=accionLabel;act.style.display='';
+    act.onclick=()=>{act.style.display='none';sb.classList.remove('show');clearTimeout(snackTimer);accionFn&&accionFn();};}
+  else{act.style.display='none';act.onclick=null;}
+  sb.classList.add('show');
+  clearTimeout(snackTimer);snackTimer=setTimeout(()=>sb.classList.remove('show'),accionLabel?5200:2600);}
 /* registrar leche: tú eliges la vaca → litros → aceptar */
 const cows=[
   {num:'042', n:'Lucero',  del:'DEL 152 · 3er parto', ayer:18},
@@ -155,7 +174,7 @@ function saveMilk(){
   if(ci<0)return;
   const v=parseInt(document.getElementById('milkNum').textContent)||0;
   const c=cows[ci];const drop=!c.done&&c.ayer>0&&v<=c.ayer*0.75;
-  c.done=true;c.v=v;renderCows();closeMilk();
+  c.done=true;c.v=v;renderCows();closeMilk();encolar();
   if(drop)snack('Atención: '+c.n+' bajó '+(c.ayer-v)+' L vs ayer — ¿mastitis, celo, comida?');
   else snack(c.n+': '+v+' L guardados (en cola offline)');
   if(cows.every(x=>x.done)){markRutina('ordeno');
@@ -173,10 +192,28 @@ function aplicarMaiz(){
 }
 aplicarMaiz();
 function confirmMove(){
-  markRutina('hato');
-  snack('Hato movido al Potrero 4 · descanso del P7 reiniciado');
-  setTimeout(()=>go('scr-inicio'),1400);
+  const yaEstaba=rutina.hato;
+  markRutina('hato');encolar();
+  snack('Hato movido al P4 · descanso del P7 reiniciado','Deshacer',()=>{
+    if(!yaEstaba)unmarkRutina('hato');
+    desencolar();snack('Movimiento deshecho');
+  });
 }
+function registrarEntrega(){markRutina('entregas');encolar();
+  snack('Entrega registrada — el balance del día cuadra');}
+/* sincronización offline: cuántos registros faltan por subir */
+let pendientes=3;
+function updateSync(){const c=document.getElementById('syncChip');if(!c)return;
+  c.textContent=pendientes>0?(pendientes+' sin subir'):'al día ✓';
+  c.classList.toggle('pending',pendientes>0);}
+function encolar(n){pendientes+=(n||1);updateSync();}
+function desencolar(n){pendientes=Math.max(0,pendientes-(n||1));updateSync();}
+function sincronizar(){
+  snack(pendientes>0
+    ? pendientes+' registro(s) en cola — se suben solos cuando haya señal'
+    : 'Todo está subido ✓');
+}
+updateSync();
 /* ===== Partos ===== */
 const partoInfo={
   '011 · Violeta':'Preñada 8,5 meses · esperado ~3 jul',
@@ -245,32 +282,48 @@ function saveParto(){
   const nombre=parto.cow.split('·')[1].trim();
   const sexoTxt=parto.sexo==='H'?'♀ hembra':'♂ macho';
   const tipoTxt=parto.tipo==='asistido'?'parto asistido':'parto normal';
-  // la vaca parió: sale de "por parir" y suma al conteo del año
+  // snapshot para poder deshacer
   const idx=proximosPartos.findIndex(p=>p.cow===parto.cow);
+  const removed=idx>=0?proximosPartos[idx]:null;
+  const prevPorParir=porParir;
   if(idx>=0)proximosPartos.splice(idx,1);
   if(porParir>0)porParir--;
   partos2026++;
+  let deshacerCria=()=>{}, msg;
   if(parto.estado==='viva'){
     const num=String(++criaNum).padStart(3,'0');
     // la cría viva entra sola al Hato: hembra → Terneras, macho → Machos
-    let grupo,destino;
-    if(parto.sexo==='H'){grupo='terneras';destino='Terneras';nTerneras++;
+    const grupo=parto.sexo==='H'?'terneras':'machos';
+    const destino=parto.sexo==='H'?'Terneras':'Machos';
+    const prevSub=grupos[grupo].sub, prevHeader=grupos[grupo].header;
+    if(parto.sexo==='H'){nTerneras++;
       grupos.terneras.sub=nTerneras+' terneras · 2 destetes próximos';
       grupos.terneras.header='<b>'+nTerneras+' terneras.</b> Consumen ~40 L/día de la leche del ordeño.';
-    }else{grupo='machos';destino='Machos';nMachos++;
+    }else{nMachos++;
       grupos.machos.sub=nMachos+' machos';
       grupos.machos.header='<b>'+nMachos+' machos.</b> Sansón cubre el hato; los terneros machos se levantan o se venden.';}
     grupos[grupo].animales.unshift([num+' · (cría de '+nombre+')','recién nacid'+(parto.sexo==='H'?'a':'o')+' · '+parto.peso+' kg · 0 meses',0]);
     partosRecientes.unshift({t:parto.cow+' → cría '+num,
       s:'13 jun · '+sexoTxt+' · viva · '+parto.peso+' kg · '+tipoTxt,badge:'en '+destino,bw:'ok'});
-    snack('Parto de '+nombre+' · cría '+num+' ('+sexoTxt+', '+parto.peso+' kg) creada en '+destino+' y vinculada · '+nombre+' al ordeño en DEL 0');
+    deshacerCria=()=>{grupos[grupo].animales.shift();grupos[grupo].sub=prevSub;grupos[grupo].header=prevHeader;
+      if(parto.sexo==='H')nTerneras--;else nMachos--;criaNum--;};
+    msg='Parto de '+nombre+' · cría '+num+' ('+sexoTxt+', '+parto.peso+' kg) creada en '+destino+' y vinculada · '+nombre+' al ordeño en DEL 0';
   }else{
     // mortinato: no entra al hato, pero queda registrado
     partosRecientes.unshift({t:parto.cow+' → cría',
       s:'13 jun · '+sexoTxt+' · nació muerta · '+parto.peso+' kg · '+tipoTxt,badge:'mortinato',bw:'bad'});
-    snack('Parto de '+nombre+' · la cría nació muerta — queda registrada en el historial · '+nombre+' al ordeño en DEL 0');
+    msg='Parto de '+nombre+' · la cría nació muerta — queda en el historial · '+nombre+' al ordeño en DEL 0';
   }
+  encolar();
   renderPartos();
   setTimeout(()=>go('scr-partos'),300);
+  snack(msg,'Deshacer',()=>{
+    partosRecientes.shift();
+    partos2026--; porParir=prevPorParir;
+    if(removed)proximosPartos.splice(Math.min(idx,proximosPartos.length),0,removed);
+    deshacerCria(); desencolar();
+    renderPartos();
+    snack('Parto deshecho');
+  });
 }
 renderPartos();

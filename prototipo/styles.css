@@ -109,9 +109,10 @@ svg.ic-l{width:24px;height:24px}
 
 /* Chips */
 .chips{display:flex;gap:6px;flex-wrap:wrap}
-.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);
-  border-radius:100px;padding:6px 12px;font-size:12.5px;font-weight:500;color:var(--ink-2);
+.chip{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--border);
+  border-radius:100px;padding:8px 14px;min-height:38px;font-size:12.5px;font-weight:500;color:var(--ink-2);
   background:var(--card);cursor:pointer;font-family:inherit}
+.chip:active{background:var(--surface)}
 .chip.sel{background:var(--black);border-color:var(--black);color:#fff;font-weight:600}
 
 /* Listas */
@@ -138,8 +139,9 @@ svg.ic-l{width:24px;height:24px}
 
 /* Potreros: tarjetas blancas, estado = punto + número de color */
 .pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.pot{border-radius:12px;padding:10px 11px;cursor:pointer;position:relative;
+.pot{border-radius:12px;padding:10px 11px;min-height:64px;cursor:pointer;position:relative;
   background:var(--card);border:1px solid var(--border);box-shadow:var(--sh)}
+.pot:active{background:var(--surface)}
 .pot .p-top{display:flex;align-items:center;justify-content:space-between}
 .pot .p-name{font-size:11.5px;font-weight:700;color:var(--ink-2)}
 .pot .dot{width:8px;height:8px;border-radius:50%}
@@ -248,5 +250,16 @@ svg.ic-l{width:24px;height:24px}
   transform:translateY(10px);transition:all .25s;pointer-events:none}
 .snackbar.show{opacity:1;transform:translateY(0)}
 .snackbar svg.ic{color:#7FC97F}
+.snackbar #snackText{flex:1}
+.snack-action{flex:none;border:none;background:none;color:#7FC97F;font-family:inherit;
+  font-size:13px;font-weight:700;letter-spacing:.3px;padding:6px 8px;margin:-6px -4px -6px 4px;
+  cursor:pointer;text-transform:uppercase}
+.snack-action:active{opacity:.6}
+/* chip de sincronización en la barra superior */
+.sync-chip{flex:none;border:1px solid var(--border);background:var(--card);color:var(--ink-2);
+  font-family:inherit;font-size:11.5px;font-weight:600;border-radius:100px;padding:6px 11px;min-height:32px;
+  cursor:pointer;white-space:nowrap}
+.sync-chip.pending{border-color:#EBDDB5;background:var(--amber-soft);color:var(--amber)}
+.sync-chip:active{opacity:.7}
 .mb0{margin-bottom:0}.mt8{margin-top:8px}.mt12{margin-top:12px}
 .row{display:flex;align-items:center;gap:10px}
