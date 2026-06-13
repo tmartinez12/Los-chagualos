@@ -310,14 +310,27 @@ svg.ic-l{width:24px;height:24px}
 
   <!-- ============ INICIO ============ -->
   <div class="screen active" id="scr-inicio">
-    <div class="section-label">Hoy · 3 alertas</div>
 
-    <div class="alert urgent">
-      <div class="a-icon"><svg class="ic"><use href="#i-pin"/></svg></div>
+    <!-- ============ LECHE — lo más importante para decidir en el día ============ -->
+    <div class="section-label"><svg class="ic" style="vertical-align:-2px"><use href="#i-drop"/></svg> Leche · hoy</div>
+    <div class="kpi-row">
+      <div class="kpi">
+        <div class="k-label">Leche hoy</div>
+        <div class="k-value">184 <span class="k-unit">L</span></div>
+        <div class="k-trend up">↑ 8% vs ayer</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">Promedio 7 días</div>
+        <div class="k-value">171 <span class="k-unit">L</span></div>
+        <div class="k-trend">26 vacas en ordeño</div>
+      </div>
+    </div>
+
+    <div class="alert info mt12">
+      <div class="a-icon"><svg class="ic"><use href="#i-x"/></svg></div>
       <div class="a-body">
-        <div class="a-title">Hato: día 2 en el potrero 7 — mover hoy</div>
-        <div class="a-sub">Sugerido: <b>Potrero 4</b> · 35 días de descanso · aforo suficiente</div>
-        <button class="btn filled small mt8" onclick="go('scr-potreros')">Mover hato</button>
+        <div class="a-title">Retiro de leche: vaca 017 — faltan 2 días</div>
+        <div class="a-sub">Tratamiento mastitis · no vender su leche hasta el sáb 14</div>
       </div>
     </div>
 
@@ -327,14 +340,6 @@ svg.ic-l{width:24px;height:24px}
         <div class="a-title">Vaca 042 “Lucero”: programar secado</div>
         <div class="a-sub">Preñada 7 meses (palpación 2 may) · parto probable ~12 sep</div>
         <button class="btn outl small mt8" onclick="openCow()">Ver ficha</button>
-      </div>
-    </div>
-
-    <div class="alert info">
-      <div class="a-icon"><svg class="ic"><use href="#i-x"/></svg></div>
-      <div class="a-body">
-        <div class="a-title">Retiro de leche: vaca 017 — faltan 2 días</div>
-        <div class="a-sub">Tratamiento mastitis · no vender su leche hasta el sáb 14</div>
       </div>
     </div>
 
@@ -360,38 +365,34 @@ svg.ic-l{width:24px;height:24px}
       </div>
     </div>
 
-    <div class="section-label">La finca hoy</div>
-    <div class="kpi-row">
-      <div class="kpi">
-        <div class="k-label">Leche hoy</div>
-        <div class="k-value">184 <span class="k-unit">L</span></div>
-        <div class="k-trend up">↑ 8% vs ayer</div>
-      </div>
-      <div class="kpi">
-        <div class="k-label">Silo restante</div>
-        <div class="k-value">45 <span class="k-unit">días</span></div>
-        <div class="k-trend down">sembrar ya</div>
+    <!-- ============ POTREROS ============ -->
+    <div class="section-label"><svg class="ic" style="vertical-align:-2px"><use href="#i-leaf"/></svg> Potreros</div>
+    <div class="alert urgent">
+      <div class="a-icon"><svg class="ic"><use href="#i-pin"/></svg></div>
+      <div class="a-body">
+        <div class="a-title">Hato: día 2 en el potrero 7 — mover hoy</div>
+        <div class="a-sub">Sugerido: <b>Potrero 4</b> · 35 días de descanso · aforo suficiente</div>
+        <button class="btn filled small mt8" onclick="go('scr-potreros')">Mover hato</button>
       </div>
     </div>
 
-    <div class="list mt12">
-      <div class="list-item" onclick="go('scr-decisiones')">
-        <div class="li-leading"><svg class="ic"><use href="#i-bulb"/></svg></div>
-        <div class="li-body">
-          <div class="li-title">Decisiones del mes</div>
-          <div class="li-sub">4 recomendaciones para revisar</div>
+    <!-- ============ MAÍZ — solo se ve si hay datos del cultivo ============ -->
+    <div id="bloque-maiz" style="display:none">
+      <div class="section-label"><svg class="ic" style="vertical-align:-2px"><use href="#i-sprout"/></svg> Maíz · alimento del hato</div>
+      <div class="kpi-row">
+        <div class="kpi">
+          <div class="k-label">Silo restante</div>
+          <div class="k-value">45 <span class="k-unit">días</span></div>
+          <div class="k-trend down">sembrar ya</div>
         </div>
-        <svg class="ic chev"><use href="#i-chev"/></svg>
-      </div>
-      <div class="list-item" onclick="snack('Módulo de tareas — próximamente en el prototipo')">
-        <div class="li-leading"><svg class="ic"><use href="#i-check"/></svg></div>
-        <div class="li-body">
-          <div class="li-title">Tareas pendientes</div>
-          <div class="li-sub">Revisar apiario 2 · arreglar cerca P11 · +3</div>
+        <div class="kpi">
+          <div class="k-label">Lote en crecimiento</div>
+          <div class="k-value">38 <span class="k-unit">días</span></div>
+          <div class="k-trend">cosecha ~ 75 días</div>
         </div>
-        <div class="li-trail"><span class="badge">5</span></div>
       </div>
     </div>
+
   </div>
 
   <!-- ============ LECHE (módulo) ============ -->
@@ -1103,6 +1104,14 @@ function saveMilk(){
     setTimeout(()=>document.getElementById('entregasSec').scrollIntoView({behavior:'smooth'}),2600);}
 }
 renderCows();
+/* Maíz: el bloque del inicio solo se muestra si la finca tiene datos del cultivo.
+   Si no hay siembra/silo registrado (datosMaiz = null), no se ve nada de maíz. */
+let datosMaiz = { siloDias:45, loteDias:38 };   // pon null para simular "sin datos de cultivo"
+function aplicarMaiz(){
+  const b=document.getElementById('bloque-maiz');
+  if(b)b.style.display = datosMaiz ? '' : 'none';
+}
+aplicarMaiz();
 function confirmMove(){
   markRutina('hato');
   snack('Hato movido al Potrero 4 · descanso del P7 reiniciado');
