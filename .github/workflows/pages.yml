@@ -26,8 +26,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Configurar Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - name: Subir la carpeta del prototipo
         uses: actions/upload-pages-artifact@v3
         with:
