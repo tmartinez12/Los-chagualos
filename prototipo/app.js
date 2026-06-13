@@ -177,19 +177,58 @@ function confirmMove(){
   snack('Hato movido al Potrero 4 · descanso del P7 reiniciado');
   setTimeout(()=>go('scr-inicio'),1400);
 }
-/* registrar parto: elige (o viene preseleccionada) la vaca → sexo, tipo, estado → guardar */
+/* ===== Partos ===== */
 const partoInfo={
   '011 · Violeta':'Preñada 8,5 meses · esperado ~3 jul',
   '019 · Canela' :'Preñada 8 meses · esperado ~18 jul',
   '045 · Morena' :'Preñada 7,5 meses · esperado ~2 ago'
 };
-const parto={cow:'011 · Violeta',sexo:'H',tipo:'normal',estado:'viva'};
+/* próximos partos (salen de las palpaciones) e historial reciente */
+let proximosPartos=[
+  {cow:'011 · Violeta',sub:'Preñada 8,5 meses · parto ~3 jul',short:'~3 jul',badge:'~3 sem',bw:'warn'},
+  {cow:'019 · Canela', sub:'Preñada 8 meses · parto ~18 jul',short:'~18 jul',badge:'~5 sem',bw:''},
+  {cow:'045 · Morena', sub:'Preñada 7,5 meses · parto ~2 ago',short:'~2 ago',badge:'ago',bw:''}
+];
+let partosRecientes=[
+  {t:'042 · Lucero → cría 064',s:'12 ene · ♀ hembra · viva · 36 kg · parto normal',badge:'en Terneras',bw:'ok'},
+  {t:'027 · Estrella → cría 069',s:'28 feb · ♀ hembra · viva · 34 kg · parto normal',badge:'en Terneras',bw:'ok'},
+  {t:'033 · Paloma → cría',s:'20 abr · ♂ macho · nació muerto · 41 kg · parto asistido',badge:'mortinato',bw:'bad'}
+];
+let partos2026=7, porParir=9, criaNum=71, nTerneras=11, nMachos=2;
+const parto={cow:'011 · Violeta',sexo:'H',tipo:'normal',estado:'viva',peso:38};
+function renderPartos(){
+  document.getElementById('kpiPartos2026').textContent=partos2026;
+  document.getElementById('kpiPorParir').textContent=porParir;
+  document.getElementById('kpiProximo').textContent=proximosPartos[0]?proximosPartos[0].short:'—';
+  const lp=document.getElementById('listProximos');lp.innerHTML='';
+  proximosPartos.forEach(p=>{const d=document.createElement('div');d.className='list-item';
+    d.onclick=()=>openParto(p.cow);
+    d.innerHTML='<div class="li-leading"><svg class="ic"><use href="#i-sprout"/></svg></div>'+
+      '<div class="li-body"><div class="li-title">'+p.cow+'</div><div class="li-sub">'+p.sub+'</div></div>'+
+      '<span class="badge '+p.bw+'">'+p.badge+'</span>';
+    lp.appendChild(d);});
+  const ver=document.createElement('div');ver.className='list-item';
+  ver.onclick=()=>snack('Calendario completo de partos: jul · ago · sep · oct · nov · dic — de las palpaciones');
+  ver.innerHTML='<div class="li-body" style="text-align:center"><div class="li-sub" style="font-weight:600;text-decoration:underline;text-underline-offset:3px">Ver los '+porParir+' próximos partos</div></div>';
+  lp.appendChild(ver);
+  const lr=document.getElementById('listRecientes');lr.innerHTML='';
+  partosRecientes.forEach((p,i)=>{const row=document.createElement('div');
+    row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:8px 0'+
+      (i<partosRecientes.length-1?';border-bottom:1px solid var(--border)':'');
+    row.innerHTML='<div><div class="li-title">'+p.t+'</div><div class="li-sub">'+p.s+'</div></div>'+
+      '<span class="badge '+p.bw+'">'+p.badge+'</span>';
+    lr.appendChild(row);});
+  const hist=document.createElement('button');hist.className='btn text small mt8';
+  hist.style.cssText='width:100%;justify-content:center';hist.textContent='Ver historial completo';
+  hist.onclick=()=>snack('Historial completo de partos — cada cría con su fecha, sexo, peso y notas; incluye los mortinatos');
+  lr.appendChild(hist);
+}
 function openParto(cow){
   if(cow)parto.cow=cow;
-  parto.sexo='H';parto.tipo='normal';parto.estado='viva';
+  parto.sexo='H';parto.tipo='normal';parto.estado='viva';parto.peso=38;
   document.getElementById('partoCow').textContent=parto.cow.toUpperCase();
   document.getElementById('partoDel').textContent=partoInfo[parto.cow]||'Confirma la fecha y los datos de la cría';
-  // cada grupo de chips vuelve a su primera opción
+  document.getElementById('partoPesoVal').textContent=parto.peso;
   document.querySelectorAll('#partoSheet .chips').forEach(g=>
     g.querySelectorAll('.chip').forEach((c,i)=>c.classList.toggle('sel',i===0)));
   document.getElementById('scrim').classList.add('show');
@@ -199,14 +238,39 @@ function closeParto(){document.getElementById('partoSheet').classList.remove('sh
   document.getElementById('scrim').classList.remove('show');}
 function partoPick(btn,campo,val){parto[campo]=val;
   [...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));}
+function partoPeso(d){parto.peso=Math.max(20,Math.min(60,parto.peso+d));
+  document.getElementById('partoPesoVal').textContent=parto.peso;}
 function saveParto(){
   closeParto();
   const nombre=parto.cow.split('·')[1].trim();
-  if(parto.estado==='muerta')
-    snack('Parto de '+nombre+' registrado · la cría nació muerta · '+nombre+' entra al ordeño en DEL 0');
-  else{
-    const cria=parto.sexo==='H'?'ternera 072 (hembra)':'ternero 072 (macho)';
-    snack('Parto de '+nombre+' · '+cria+' creada y vinculada · '+nombre+' entra al ordeño en DEL 0');
+  const sexoTxt=parto.sexo==='H'?'♀ hembra':'♂ macho';
+  const tipoTxt=parto.tipo==='asistido'?'parto asistido':'parto normal';
+  // la vaca parió: sale de "por parir" y suma al conteo del año
+  const idx=proximosPartos.findIndex(p=>p.cow===parto.cow);
+  if(idx>=0)proximosPartos.splice(idx,1);
+  if(porParir>0)porParir--;
+  partos2026++;
+  if(parto.estado==='viva'){
+    const num=String(++criaNum).padStart(3,'0');
+    // la cría viva entra sola al Hato: hembra → Terneras, macho → Machos
+    let grupo,destino;
+    if(parto.sexo==='H'){grupo='terneras';destino='Terneras';nTerneras++;
+      grupos.terneras.sub=nTerneras+' terneras · 2 destetes próximos';
+      grupos.terneras.header='<b>'+nTerneras+' terneras.</b> Consumen ~40 L/día de la leche del ordeño.';
+    }else{grupo='machos';destino='Machos';nMachos++;
+      grupos.machos.sub=nMachos+' machos';
+      grupos.machos.header='<b>'+nMachos+' machos.</b> Sansón cubre el hato; los terneros machos se levantan o se venden.';}
+    grupos[grupo].animales.unshift([num+' · (cría de '+nombre+')','recién nacid'+(parto.sexo==='H'?'a':'o')+' · '+parto.peso+' kg · 0 meses',0]);
+    partosRecientes.unshift({t:parto.cow+' → cría '+num,
+      s:'13 jun · '+sexoTxt+' · viva · '+parto.peso+' kg · '+tipoTxt,badge:'en '+destino,bw:'ok'});
+    snack('Parto de '+nombre+' · cría '+num+' ('+sexoTxt+', '+parto.peso+' kg) creada en '+destino+' y vinculada · '+nombre+' al ordeño en DEL 0');
+  }else{
+    // mortinato: no entra al hato, pero queda registrado
+    partosRecientes.unshift({t:parto.cow+' → cría',
+      s:'13 jun · '+sexoTxt+' · nació muerta · '+parto.peso+' kg · '+tipoTxt,badge:'mortinato',bw:'bad'});
+    snack('Parto de '+nombre+' · la cría nació muerta — queda registrada en el historial · '+nombre+' al ordeño en DEL 0');
   }
+  renderPartos();
   setTimeout(()=>go('scr-partos'),300);
 }
+renderPartos();
