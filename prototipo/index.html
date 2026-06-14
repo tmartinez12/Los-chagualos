@@ -748,7 +748,7 @@
   </div>
 
   <!-- SHEET -->
-  <div class="scrim" id="scrim" onclick="closeSheet();closeMilk();closeParto();closePalp()"></div>
+  <div class="scrim" id="scrim" onclick="closeSheet();closeMilk();closeParto();closePalp();closeTrata()"></div>
   <div class="sheet" id="sheet">
     <div class="handle"></div>
     <h3>Registrar</h3>
@@ -773,7 +773,7 @@
     <div class="quick">
       <button onclick="closeSheet();openPalp()"><svg class="ic"><use href="#i-repeat"/></svg><span class="q-label">Palpación</span></button>
       <button onclick="closeSheet();openParto()"><svg class="ic"><use href="#i-sprout"/></svg><span class="q-label">Parto / nacimiento</span></button>
-      <button onclick="sheetPick('Tratamiento registrado — retiro de leche activado 4 días')"><svg class="ic"><use href="#i-cross"/></svg><span class="q-label">Enfermedad / tratamiento</span></button>
+      <button onclick="closeSheet();openTrata()"><svg class="ic"><use href="#i-cross"/></svg><span class="q-label">Enfermedad / tratamiento</span></button>
       <button onclick="sheetPick('Secado registrado — la vaca pasa a horra y se planea su parto')"><svg class="ic"><use href="#i-cal"/></svg><span class="q-label">Secado de vaca</span></button>
       <button onclick="sheetPick('Alta registrada: animal comprado — ficha creada')"><svg class="ic"><use href="#i-bag"/></svg><span class="q-label">Alta · compra</span></button>
       <button onclick="sheetPick('Baja registrada — el animal queda en el histórico')"><svg class="ic"><use href="#i-out"/></svg><span class="q-label">Baja · venta/muerte</span></button>
@@ -881,6 +881,52 @@
     <div style="font-size:11px;color:var(--ink-3);margin-top:10px;text-align:center">
       Si está preñada, se calcula el parto (~9 meses de gestación) y entra a los próximos partos.
       Si está vacía, queda en la lista para servicio.</div>
+  </div>
+
+  <!-- SHEET: registrar enfermedad / tratamiento -->
+  <div class="sheet" id="trataSheet">
+    <div class="handle"></div>
+    <h3>Registrar enfermedad / tratamiento</h3>
+    <div class="m-label" id="trataCow">033 · PALOMA</div>
+    <div class="m-del" id="trataInfo" style="margin-bottom:14px">DEL 95 · 4to parto</div>
+
+    <div class="section-label" style="margin-top:0">Vaca</div>
+    <div class="chips" id="trataCows">
+      <button class="chip" onclick="trataCow('042 · Lucero')">042 Lucero</button>
+      <button class="chip" onclick="trataCow('038 · Mona')">038 Mona</button>
+      <button class="chip" onclick="trataCow('051 · Careta')">051 Careta</button>
+      <button class="chip" onclick="trataCow('027 · Estrella')">027 Estrella</button>
+      <button class="chip sel" onclick="trataCow('033 · Paloma')">033 Paloma</button>
+      <button class="chip" onclick="trataCow('029 · Pinta')">029 Pinta</button>
+    </div>
+
+    <div class="section-label">Problema</div>
+    <div class="chips">
+      <button class="chip sel" onclick="trataPick(this,'problema','Mastitis')">Mastitis</button>
+      <button class="chip" onclick="trataPick(this,'problema','Cojera')">Cojera</button>
+      <button class="chip" onclick="trataPick(this,'problema','Diarrea')">Diarrea</button>
+      <button class="chip" onclick="trataPick(this,'problema','Herida')">Herida</button>
+      <button class="chip" onclick="trataPick(this,'problema','Otro')">Otro</button>
+    </div>
+
+    <div class="section-label">Tratamiento</div>
+    <div class="chips">
+      <button class="chip sel" onclick="trataPick(this,'medicina','Antibiótico')">Antibiótico</button>
+      <button class="chip" onclick="trataPick(this,'medicina','Antiinflamatorio')">Antiinflamatorio</button>
+      <button class="chip" onclick="trataPick(this,'medicina','Otro')">Otro</button>
+    </div>
+
+    <div class="section-label">Retiro de leche (días)</div>
+    <div class="chips" style="align-items:center">
+      <button class="chip" onclick="trataRetiro(-1)">−</button>
+      <span style="font-weight:700;min-width:80px;text-align:center;font-size:15px"><span id="trataRetiroVal">4</span> días</span>
+      <button class="chip" onclick="trataRetiro(1)">＋</button>
+    </div>
+
+    <button class="btn filled" style="width:100%;justify-content:center;margin-top:16px" onclick="saveTrata()">
+      <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar tratamiento</button>
+    <div style="font-size:11px;color:var(--ink-3);margin-top:10px;text-align:center">
+      El retiro marca la vaca en el ordeño y avisa que su leche no se vende hasta la fecha.</div>
   </div>
 
   <!-- SNACKBAR -->

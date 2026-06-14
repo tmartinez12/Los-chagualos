@@ -175,9 +175,10 @@ let ci=-1,typing=false;
 function renderCows(){
   const g=document.getElementById('cowGrid');g.innerHTML='';
   cows.forEach((c,i)=>{const d=document.createElement('div');
-    d.className='cow-tile'+(c.done?' done':'');
+    d.className='cow-tile'+(c.done?' done':'')+(c.retiro?' retiro':'');
+    const sub=c.done?'✓ '+c.v+' L':(c.retiro?'⛔ retiro '+c.retiro+'d':'ayer '+c.ayer+' L');
     d.innerHTML='<div class="ct-num">'+c.num+'</div><div class="ct-name">'+c.n+'</div>'+
-      '<div class="ct-sub">'+(c.done?'✓ '+c.v+' L':'ayer '+c.ayer+' L')+'</div>';
+      '<div class="ct-sub">'+sub+'</div>';
     d.onclick=()=>pickCow(i);g.appendChild(d);});
   const done=cows.filter(c=>c.done);
   document.getElementById('milkProg').textContent=
@@ -187,9 +188,11 @@ function pickCow(i){ci=i;const c=cows[i];typing=false;
   document.getElementById('cowName').textContent=c.num+' · '+c.n.toUpperCase();
   document.getElementById('cowDel').textContent=c.del;
   document.getElementById('milkNum').textContent=c.done?c.v:c.ayer;
-  document.getElementById('cowRef').textContent=c.done
-    ?'Ya registrada con '+c.v+' L — puedes corregirla'
-    :'Ayer dio '+c.ayer+' L — acepta ✓ si dio igual';
+  document.getElementById('cowRef').textContent=c.retiro
+    ?'⛔ En retiro '+c.retiro+' días — registra su leche, pero no se vende'
+    :(c.done
+      ?'Ya registrada con '+c.v+' L — puedes corregirla'
+      :'Ayer dio '+c.ayer+' L — acepta ✓ si dio igual');
   document.getElementById('scrim').classList.add('show');
   document.getElementById('milkSheet').classList.add('show');}
 function closeMilk(){document.getElementById('milkSheet').classList.remove('show');
@@ -422,6 +425,53 @@ function savePalp(){
     if(j>=0)proximosPartos.splice(j,1);
     if(prev)proximosPartos.push(prev); else porParir--;
     desencolar();renderPartos();snack('Palpación deshecha');
+  });
+}
+/* ===== Enfermedad / tratamiento (activa el retiro de leche) ===== */
+function fechaDias(dias){const d=new Date(2026,5,13);d.setDate(d.getDate()+dias);
+  return d.getDate()+' '+MESC[d.getMonth()];}
+const trata={cow:'033 · Paloma',problema:'Mastitis',medicina:'Antibiótico',retiro:4};
+function trataMarcarVaca(){document.querySelectorAll('#trataCows .chip').forEach(c=>
+  c.classList.toggle('sel',c.textContent.trim().startsWith(trata.cow.split('·')[0].trim())));}
+function openTrata(cow){
+  if(cow)trata.cow=cow;
+  trata.problema='Mastitis';trata.medicina='Antibiótico';trata.retiro=4;
+  document.getElementById('trataCow').textContent=trata.cow.toUpperCase();
+  const cd=cows.find(c=>trata.cow.startsWith(c.num));
+  document.getElementById('trataInfo').textContent=cd?cd.del:'Selecciona el problema y el tratamiento';
+  document.getElementById('trataRetiroVal').textContent=trata.retiro;
+  trataMarcarVaca();
+  // problema y tratamiento vuelven a la primera opción
+  const groups=document.querySelectorAll('#trataSheet .chips');
+  [1,2].forEach(gi=>groups[gi].querySelectorAll('.chip').forEach((c,i)=>c.classList.toggle('sel',i===0)));
+  document.getElementById('scrim').classList.add('show');
+  document.getElementById('trataSheet').classList.add('show');
+}
+function closeTrata(){document.getElementById('trataSheet').classList.remove('show');
+  document.getElementById('scrim').classList.remove('show');}
+function trataCow(cow){trata.cow=cow;
+  document.getElementById('trataCow').textContent=cow.toUpperCase();
+  const cd=cows.find(c=>cow.startsWith(c.num));
+  document.getElementById('trataInfo').textContent=cd?cd.del:'Selecciona el problema y el tratamiento';
+  trataMarcarVaca();}
+function trataPick(btn,campo,val){trata[campo]=val;
+  [...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));}
+function trataRetiro(d){trata.retiro=Math.max(0,Math.min(10,trata.retiro+d));
+  document.getElementById('trataRetiroVal').textContent=trata.retiro;}
+function saveTrata(){
+  closeTrata();
+  const cd=cows.find(c=>trata.cow.startsWith(c.num));
+  const nombre=trata.cow.split('·')[1].trim();
+  const prev=cd?cd.retiro:undefined;
+  if(cd)cd.retiro=trata.retiro||undefined;
+  renderCows();encolar();
+  setTimeout(()=>go('scr-ordeno'),300);
+  const base='Tratamiento de '+trata.problema.toLowerCase()+' en '+nombre+' ('+trata.medicina.toLowerCase()+')';
+  const msg=trata.retiro>0
+    ? base+' · retiro de leche '+trata.retiro+'d (hasta '+fechaDias(trata.retiro)+') — no vender su leche'
+    : base+' · sin retiro de leche';
+  snack(msg,'Deshacer',()=>{
+    if(cd)cd.retiro=prev;renderCows();desencolar();snack('Tratamiento deshecho');
   });
 }
 /* la app arranca en el selector de línea de negocio */
