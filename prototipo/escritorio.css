@@ -179,3 +179,6 @@ td .pending{color:var(--ink-3)}
 td .reg{color:var(--green);font-weight:700}
 tbody tr.done td{background:var(--green-soft)}
 tbody tr.done:hover td{background:#E2F0E2}
+td input[type=number]::-webkit-inner-spin-button,
+td input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+td input[type=number]{-moz-appearance:textfield}

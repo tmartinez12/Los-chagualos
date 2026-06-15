@@ -117,13 +117,37 @@ const mensualData=[
 ];
 let mensualVista='promedio';   // 'promedio' | 'total' (solo aplica al resumen)
 let mensualMes=-1;             // -1 = resumen 2026; 0..5 = detalle diario del mes
-/* día concreto, determinista: oscila alrededor del promedio del mes */
+const diaOverrides={};         // clave "num-mes-dia" → valor editado
+function diaKey(num,m,d){return num+'-'+m+'-'+d;}
 function diaVal(numStr,monthIdx,day){
+  const k=diaKey(numStr,monthIdx,day);
+  if(k in diaOverrides)return diaOverrides[k];
   const avg=mensualData.find(c=>c.num===numStr).m[monthIdx];
   if(avg===null)return null;
   const seed=parseInt(numStr)*13+monthIdx*101+day*7;
-  const wobble=Math.sin(seed)*0.5+Math.sin(seed*2.3)*0.3;   // -0.8..0.8 aprox
+  const wobble=Math.sin(seed)*0.5+Math.sin(seed*2.3)*0.3;
   return Math.max(0,Math.round((avg+wobble*avg*0.16)*10)/10);
+}
+function editDiaCell(td,cow,day,oldVal){
+  if(td.querySelector('input'))return;
+  const inp=document.createElement('input');
+  inp.type='number';inp.step='0.1';inp.min='0';inp.value=oldVal.toFixed(1);
+  inp.style.cssText='width:52px;border:none;border-bottom:2px solid var(--green);background:transparent;font-family:inherit;font-size:13px;font-weight:700;text-align:center;color:var(--ink);outline:none;padding:2px';
+  td.innerHTML='';td.appendChild(inp);inp.focus();inp.select();
+  function save(){
+    const raw=parseFloat(inp.value);
+    if(isNaN(raw)||raw<0){renderMensual();return;}
+    const nv=Math.round(raw*10)/10;
+    const k=diaKey(cow.num,mensualMes,day);
+    const prev=k in diaOverrides?diaOverrides[k]:null;
+    diaOverrides[k]=nv;
+    renderMensual();
+    snack(cow.n+' · día '+day+' '+MESES_L[mensualMes]+': '+oldVal.toFixed(1)+' → '+nv.toFixed(1)+' L','Deshacer',()=>{
+      if(prev!==null)diaOverrides[k]=prev;else delete diaOverrides[k];renderMensual();});
+  }
+  inp.onblur=save;
+  inp.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();inp.blur();}
+    if(e.key==='Escape'){e.preventDefault();renderMensual();}};
 }
 function toggleMensual(v){mensualVista=v;
   document.getElementById('btnTotal').style.cssText=v==='total'?'font-weight:700;border-color:var(--ink)':'';
@@ -150,7 +174,7 @@ function renderMensual(){
     if(btnT)btnT.style.display='none';if(btnP)btnP.style.display='none';
     const n=DIAS_MES[mensualMes];
     if(tit)tit.textContent='Producción diaria · '+MESES_L[mensualMes]+' 2026 (L/día por vaca)';
-    if(hint)hint.textContent='Cada columna es un día · ‹ Resumen 2026 › para volver · toca una vaca para su ficha';
+    if(hint)hint.textContent='Clic en un valor para editarlo · ‹ Resumen 2026 › para volver';
     let h='<tr><th>Animal</th>';
     for(let d=1;d<=n;d++)h+='<th class="r" style="padding:8px 6px">'+d+'</th>';
     h+='<th class="r" style="font-weight:800">Prom</th><th class="r" style="font-weight:800">Total</th></tr>';
@@ -161,20 +185,27 @@ function renderMensual(){
     mensualData.forEach(c=>{
       const avg=c.m[mensualMes];
       const tr=document.createElement('tr');
-      let cells='<td><div class="cell-animal"><div class="cini">'+c.num+'</div><div><div class="cn">'+c.n+'</div>'+
-        (c.nota?'<div class="cs" style="color:var(--red)">'+c.nota+'</div>':'')+'</div></div></td>';
+      const tdAnimal=document.createElement('td');
+      tdAnimal.innerHTML='<div class="cell-animal"><div class="cini">'+c.num+'</div><div><div class="cn">'+c.n+'</div>'+
+        (c.nota?'<div class="cs" style="color:var(--red)">'+c.nota+'</div>':'')+'</div></div>';
+      tr.appendChild(tdAnimal);
       let suma=0,dias=0;
       for(let d=1;d<=n;d++){const v=diaVal(c.num,mensualMes,d);
-        if(v===null){cells+='<td class="r" style="padding:8px 6px"><span class="pending">—</span></td>';}
+        const td=document.createElement('td');td.className='r';td.style.cssText='padding:8px 6px;cursor:pointer';
+        if(v===null){td.innerHTML='<span class="pending">—</span>';td.style.cursor='default';}
         else{suma+=v;dias++;let cls='';
           if(v<avg*0.85)cls=' class="down"';else if(v>avg*1.15)cls=' class="up"';
-          cells+='<td class="r" style="padding:8px 6px"><span'+cls+'>'+v.toFixed(1)+'</span></td>';}
+          const edited=diaKey(c.num,mensualMes,d) in diaOverrides;
+          td.innerHTML='<span'+cls+'>'+v.toFixed(1)+'</span>'+(edited?'<span style="font-size:8px;color:var(--amber);vertical-align:super"> ✎</span>':'');
+          td.onclick=(function(cow,day,val){return function(e){e.stopPropagation();editDiaCell(this,cow,day,val);};})(c,d,v);
+        }
+        tr.appendChild(td);
       }
       const prom=dias?suma/dias:0;
-      cells+='<td class="r" style="font-weight:700">'+(dias?prom.toFixed(1):'—')+'</td>';
-      cells+='<td class="r" style="font-weight:700">'+(dias?Math.round(suma):0)+' L</td>';
-      tr.innerHTML=cells;
-      tr.onclick=()=>snack(c.n+' · '+MESES_L[mensualMes]+': '+(dias?prom.toFixed(1)+' L/día prom · '+Math.round(suma)+' L en el mes':'sin ordeño este mes'));
+      const tdProm=document.createElement('td');tdProm.className='r';tdProm.style.fontWeight='700';
+      tdProm.textContent=dias?prom.toFixed(1):'—';tr.appendChild(tdProm);
+      const tdTot=document.createElement('td');tdTot.className='r';tdTot.style.fontWeight='700';
+      tdTot.textContent=(dias?Math.round(suma):0)+' L';tr.appendChild(tdTot);
       tb.appendChild(tr);
     });
     const trT=document.createElement('tr');trT.style.cssText='background:var(--surface);font-weight:700';
