@@ -636,84 +636,150 @@ function renderVacias(){
   const lbl=document.getElementById('vaciasLabel');
   if(lbl)lbl.textContent='Vacas vacías · '+vacasVacias.length+(vacasVacias.length===1?' requiere':' requieren')+' decisión';
 }
-const palp={cow:'027 · Estrella',resultado:'prenada',meses:2};
+const palp={cow:'027 · Estrella',nota:'',parsed:null};
 function renderPalpCows(){
   const c=document.getElementById('palpCows');if(!c)return;c.innerHTML='';
   palpCandidatas.forEach(it=>{
     const b=document.createElement('button');b.className='pchip';
     b.textContent=it.cow.replace(' · ',' ');
     if(it.cow===palp.cow)b.classList.add('sel');
-    b.onclick=()=>palpPickCow(it.cow);
+    b.onclick=()=>{palp.cow=it.cow;
+      document.getElementById('palpInfo').textContent=it.motivo;
+      renderPalpCows();};
     c.appendChild(b);
   });
 }
-function palpInfoText(cow){const f=palpCandidatas.find(x=>x.cow===cow);return f?f.motivo:'Confirma el resultado de la palpación';}
-function palpPickCow(cow){palp.cow=cow;
-  document.getElementById('palpInfo').textContent=palpInfoText(cow);
-  renderPalpCows();}
-function palpRes(btn,val){palp.resultado=val;
-  document.getElementById('palpResPren').classList.toggle('sel',val==='prenada');
-  document.getElementById('palpResVac').classList.toggle('sel',val==='vacia');
-  palpMostrarMeses();}
-function palpMostrarMeses(){
-  document.getElementById('palpMesesWrap').style.display=palp.resultado==='prenada'?'':'none';
-  if(palp.resultado==='prenada')palpActualizarParto();}
-function palpMes(d){palp.meses=Math.max(1,Math.min(9,palp.meses+d));
-  document.getElementById('palpMesesVal').textContent=palp.meses;palpActualizarParto();}
-function palpActualizarParto(){
-  const f=fechaParto(palp.meses);
-  document.getElementById('palpPartoHint').textContent='Parto estimado: '+f.larga;}
+function parsePalpNota(raw){
+  const s=raw.toUpperCase().trim().replace(/\s+/g,' ');
+  if(!s)return null;
+  let m=s.match(/P(?:T)?[\s+]*(\d+)(?:\s*DIAS?)?/);
+  if(m){const dias=parseInt(m[1]);const meses=Math.round(dias/30*10)/10;
+    return {tipo:'prenada',dias,meses,label:'Preñada ~'+dias+' días (~'+meses.toFixed(1)+' meses)',trat:parseTrat(s)};}
+  if(s.includes('PROXIMA'))return {tipo:'prenada',dias:240,meses:8,label:'Próxima a parir (~8+ meses)',trat:parseTrat(s)};
+  if(s==='VF'||s.includes('VACIA F')||s.includes('V.FISIOLOG'))
+    return {tipo:'vacia',subtipo:'fisiologica',label:'Vacía fisiológica — lista para servicio',trat:parseTrat(s)};
+  if(s.includes('VO FRIO')||s.includes('FRIO'))
+    return {tipo:'observacion',subtipo:'frio',label:'Ovarios inactivos ("fríos") — sin actividad reproductiva',trat:parseTrat(s)};
+  if(s==='VO'||s.includes('V.OBS')||s.includes('VACIA OBS'))
+    return {tipo:'observacion',label:'En observación — reevaluar en próxima visita',trat:parseTrat(s)};
+  if(s.includes('V CELO')||s==='CELO')
+    return {tipo:'celo',label:'En celo — servir o programar servicio',trat:parseTrat(s)};
+  if(s.includes('R-SERVIDA')||s.includes('RECIEN SERVIDA'))
+    return {tipo:'servida',label:'Recién servida — esperar para confirmar preñez',trat:parseTrat(s)};
+  if(s.includes('RECIEN PARIDA')||s.includes('R-PARIDA'))
+    return {tipo:'parida',label:'Recién parida — involución uterina en curso',trat:parseTrat(s)};
+  if(s==='CL'||s.includes('CUERPO LUTEO'))
+    return {tipo:'servida',label:'Cuerpo lúteo presente — posible preñez temprana, confirmar',trat:parseTrat(s)};
+  if(s.includes('V.NORMAL')||s==='NORMAL')
+    return {tipo:'vacia',subtipo:'normal',label:'Aparato reproductor normal — vacía, lista para servicio',trat:parseTrat(s)};
+  if(s.includes('COD'))
+    return {tipo:'observacion',subtipo:'quiste',label:'Posible quiste ovárico — confirmar con veterinario',trat:parseTrat(s)};
+  if(s.includes('VENCO'))
+    return {tipo:'observacion',label:'Involución uterina / cérvix — confirmar con veterinario',trat:parseTrat(s)};
+  const trat=parseTrat(s);
+  if(trat.length)return {tipo:'tratamiento',label:'Tratamiento recomendado',trat};
+  return {tipo:'otro',label:'Anotación registrada: "'+raw.trim()+'"',trat:[]};
+}
+function parseTrat(s){
+  const t=[];
+  if(s.includes('FOSFOSAN')||s.includes('PQ/'))t.push('Fosfosan (suplemento mineral)');
+  if(s.includes('ANTRIPAN'))t.push('Antripan');
+  if(s.includes('VITAMINA A')||s.includes('VIT A'))t.push('Vitamina A');
+  else if(s.includes('VITAMINA')||s.includes('VIT '))t.push('Vitaminas');
+  return t;
+}
+const interpCol={prenada:'var(--green)',vacia:'var(--red)',observacion:'var(--amber)',
+  celo:'var(--green)',servida:'var(--amber)',parida:'var(--ink-2)',tratamiento:'var(--amber)',otro:'var(--ink-2)'};
+const interpTag={prenada:'✓ Preñada',vacia:'✗ Vacía',observacion:'⊘ Observación',
+  celo:'♀ Celo',servida:'↻ Servida',parida:'★ Parida',tratamiento:'💊 Tratamiento',otro:'📝 Registrada'};
+function renderPalpInterp(){
+  const box=document.getElementById('palpInterp');
+  const extra=document.getElementById('palpExtraWrap');
+  const btn=document.getElementById('palpSaveBtn');
+  const p=palp.parsed;
+  if(!p){box.innerHTML='<div style="font-size:12.5px;color:var(--ink-3)">Escribe la anotación tal como la dice el veterinario</div>';
+    extra.style.display='none';btn.disabled=true;return;}
+  btn.disabled=false;
+  const col=interpCol[p.tipo]||'var(--ink-2)';
+  let h='<div style="display:flex;gap:10px;align-items:flex-start">'+
+    '<span style="font-size:12px;font-weight:700;color:'+col+';background:'+col+'18;padding:4px 10px;border-radius:100px;white-space:nowrap">'+
+    (interpTag[p.tipo]||p.tipo)+'</span>'+
+    '<div><div style="font-size:13.5px;font-weight:600;color:var(--ink)">'+p.label+'</div>';
+  if(p.tipo==='prenada'){
+    const f=fechaParto(Math.round(p.meses));
+    h+='<div style="font-size:12px;color:var(--green);font-weight:600;margin-top:4px">Parto estimado: '+f.larga+'</div>';
+  }
+  h+='</div></div>';
+  box.innerHTML=h;
+  if(p.trat&&p.trat.length){
+    extra.style.display='';
+    const chips=document.getElementById('palpTratChips');chips.innerHTML='';
+    p.trat.forEach(t=>{const b=document.createElement('span');b.className='pchip sel';
+      b.style.cssText='font-size:12px;cursor:default;background:var(--amber);border-color:var(--amber)';
+      b.textContent='💊 '+t;chips.appendChild(b);});
+  }else{extra.style.display='none';}
+}
 function openPalp(cow){
   if(cow)palp.cow=cow; else if(!palpCandidatas.find(x=>x.cow===palp.cow))palp.cow=palpCandidatas[0].cow;
-  palp.resultado='prenada';palp.meses=2;
-  document.getElementById('palpInfo').textContent=palpInfoText(palp.cow);
-  document.getElementById('palpMesesVal').textContent=palp.meses;
-  document.getElementById('palpResPren').classList.add('sel');
-  document.getElementById('palpResVac').classList.remove('sel');
-  renderPalpCows();palpMostrarMeses();
+  palp.nota='';palp.parsed=null;
+  const info=palpCandidatas.find(x=>x.cow===palp.cow);
+  document.getElementById('palpInfo').textContent=info?info.motivo:'Confirma el resultado de la palpación';
+  document.getElementById('palpNota').value='';
+  renderPalpCows();renderPalpInterp();
   document.getElementById('palpScrim').classList.add('show');
   document.getElementById('palpModal').classList.add('show');
+  setTimeout(()=>document.getElementById('palpNota').focus(),100);
 }
+document.addEventListener('DOMContentLoaded',()=>{
+  const inp=document.getElementById('palpNota');
+  if(inp)inp.addEventListener('input',()=>{palp.nota=inp.value;palp.parsed=parsePalpNota(inp.value);renderPalpInterp();});
+});
 function closePalp(){document.getElementById('palpModal').classList.remove('show');
   document.getElementById('palpScrim').classList.remove('show');}
 function savePalp(){
   const cow=palp.cow,nombre=cow.split('·')[1].trim();
+  const p=palp.parsed;if(!p)return;
+  const nota=palp.nota.trim();
   closePalp();
-  if(palp.resultado==='vacia'){
-    /* si ya estaba en próximos partos, sale */
-    const pi=proximosPartos.findIndex(p=>p.cow===cow);
+  if(p.tipo==='prenada'){
+    const meses=Math.round(p.meses);
+    const f=fechaParto(meses);
+    const nuevo={cow:cow,prenez:p.dias+' días (~'+meses+' m)',parto:f.corta,badge:meses>=8?'warn':''};
+    const pi=proximosPartos.findIndex(pp=>pp.cow===cow);
+    const prevParto=pi>=0?proximosPartos[pi]:null;
+    if(pi>=0)proximosPartos[pi]=nuevo; else proximosPartos.push(nuevo);
+    const vi=vacasVacias.findIndex(v=>v.cow===cow);
+    const removedVacia=vi>=0?vacasVacias.splice(vi,1)[0]:null;
+    renderPartos();renderVacias();go('pg-partos',document.querySelector('[data-pg="pg-partos"]'));
+    const trats=p.trat.length?' · Trat: '+p.trat.join(', '):'';
+    snack(nombre+': '+nota+' → preñada ~'+p.dias+'d — parto '+f.corta+trats,'Deshacer',()=>{
+      const j=proximosPartos.findIndex(pp=>pp.cow===cow);
+      if(j>=0)proximosPartos.splice(j,1);
+      if(prevParto)proximosPartos.push(prevParto);
+      if(removedVacia)vacasVacias.splice(Math.min(vi,vacasVacias.length),0,removedVacia);
+      renderPartos();renderVacias();});
+    return;
+  }
+  if(p.tipo==='vacia'){
+    const pi=proximosPartos.findIndex(pp=>pp.cow===cow);
     const prevParto=pi>=0?proximosPartos.splice(pi,1)[0]:null;
-    /* si no estaba en vacías, entra */
     let added=null;
     if(!vacasVacias.find(v=>v.cow===cow)){
       const num=cow.split('·')[0].trim();const fi=fichas[num];
       added={cow:cow,num:num,del:fi?fi.del:'—',sub:fi?(fi.parto+'° parto · '+fi.raza):'—',
-        dias:1,ultima:'13 jun 2026',ayer:fi?fi.ayer+' L':'—',rec:'Recién confirmada vacía — programar servicio'};
+        dias:1,ultima:'13 jun 2026',ayer:fi?fi.ayer+' L':'—',
+        rec:p.subtipo==='fisiologica'?'Vacía fisiológica — programar servicio':'Vacía — evaluar siguiente paso'};
       vacasVacias.push(added);
     }
     renderPartos();renderVacias();go('pg-repro',document.querySelector('[data-pg="pg-repro"]'));
-    snack(nombre+': vacía — queda en la lista para servicio','Deshacer',()=>{
+    snack(nombre+': '+nota+' → vacía — lista para servicio','Deshacer',()=>{
       if(added){const ai=vacasVacias.findIndex(v=>v.cow===cow);if(ai>=0)vacasVacias.splice(ai,1);}
       if(prevParto)proximosPartos.splice(Math.min(pi,proximosPartos.length),0,prevParto);
       renderPartos();renderVacias();});
     return;
   }
-  /* preñada */
-  const f=fechaParto(palp.meses);
-  const nuevo={cow:cow,prenez:palp.meses+' meses',parto:f.corta,badge:palp.meses>=8?'warn':''};
-  const pi=proximosPartos.findIndex(p=>p.cow===cow);
-  const prevParto=pi>=0?proximosPartos[pi]:null;
-  if(pi>=0)proximosPartos[pi]=nuevo; else proximosPartos.push(nuevo);
-  /* ordenar por mes de parto aproximado para que el próximo quede arriba */
-  const vi=vacasVacias.findIndex(v=>v.cow===cow);
-  const removedVacia=vi>=0?vacasVacias.splice(vi,1)[0]:null;
-  renderPartos();renderVacias();go('pg-partos',document.querySelector('[data-pg="pg-partos"]'));
-  snack(nombre+': preñada '+palp.meses+' meses — parto '+f.corta+' · entra a próximos partos','Deshacer',()=>{
-    const j=proximosPartos.findIndex(p=>p.cow===cow);
-    if(j>=0)proximosPartos.splice(j,1);
-    if(prevParto)proximosPartos.push(prevParto);
-    if(removedVacia)vacasVacias.splice(Math.min(vi,vacasVacias.length),0,removedVacia);
-    renderPartos();renderVacias();});
+  const trats=p.trat.length?' · Trat: '+p.trat.join(', '):'';
+  snack(nombre+': '+nota+' → '+p.label+trats);
 }
 renderPartos();renderVacias();
 
