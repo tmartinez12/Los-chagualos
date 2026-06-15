@@ -18,9 +18,91 @@ function go(id,el){
   document.querySelector('.content').scrollTop=0;
 }
 let snackTimer;
-function snack(msg){const sb=document.getElementById('snackbar');
-  document.getElementById('snackText').textContent=msg;sb.classList.add('show');
-  clearTimeout(snackTimer);snackTimer=setTimeout(()=>sb.classList.remove('show'),2600);}
+function snack(msg,accionLabel,accionFn){const sb=document.getElementById('snackbar');
+  document.getElementById('snackText').textContent=msg;
+  const act=document.getElementById('snackAction');
+  if(act){
+    if(accionLabel){act.textContent=accionLabel;act.style.display='';
+      act.onclick=()=>{act.style.display='none';sb.classList.remove('show');clearTimeout(snackTimer);accionFn&&accionFn();};}
+    else{act.style.display='none';act.onclick=null;}
+  }
+  sb.classList.add('show');
+  clearTimeout(snackTimer);snackTimer=setTimeout(()=>sb.classList.remove('show'),accionLabel?5200:2600);}
+
+/* ===== Registrar leche por vaca ===== */
+const milkCows=[
+  {num:'042',n:'Lucero',  del:'DEL 152 · 3er parto',          ayer:18},
+  {num:'038',n:'Mona',    del:'DEL 98 · servida, por palpar', ayer:16},
+  {num:'051',n:'Careta',  del:'DEL 121 · 1er parto',          ayer:14},
+  {num:'027',n:'Estrella',del:'DEL 64 · pico de lactancia',   ayer:13},
+  {num:'017',n:'Azucena', del:'DEL 201 · retiro 2 días más',  ayer:11, retiro:2,
+    estado:'<span class="badge bad">retiro 2d</span>', nota:'no vender su leche'},
+  {num:'033',n:'Paloma',  del:'DEL 95 · 4to parto',           ayer:9,
+    estado:'<span class="badge bad">vacía 132d</span>', nota:'producción muy baja', notaRed:1},
+  {num:'029',n:'Pinta',   del:'DEL 412 · lactancia larga',    ayer:5,
+    estado:'<span class="badge bad">vacía 150d</span>', nota:'evaluar descarte', notaRed:1}
+];
+milkCows[0].estado='<span class="badge warn">preñada 6m</span>';milkCows[0].nota='secar ~12 jul';
+milkCows[1].estado='<span class="badge">servida</span>';milkCows[1].nota='por confirmar palp.';
+milkCows[2].nota='1er parto';milkCows[3].nota='pico de lactancia';
+milkCows.forEach(c=>{c.done=false;c.v=null;});
+let mi=-1;
+function renderMilk(){
+  const tb=document.getElementById('milkTbody');if(!tb)return;tb.innerHTML='';
+  milkCows.forEach((c,i)=>{
+    const tr=document.createElement('tr');
+    if(c.done)tr.className='done';
+    tr.onclick=()=>openMilk(i);
+    let hoy,varCell;
+    if(c.done){
+      hoy='<span class="reg">'+c.v+' L ✓</span>';
+      const d=c.v-c.ayer;
+      varCell=d>0?'<span class="up">↑ +'+d+'</span>':d<0?'<span class="down">↓ '+d+'</span>':'<span class="mut">= ayer</span>';
+    }else{hoy='<span class="pending">— pend.</span>';varCell='<span class="mut">—</span>';}
+    tr.innerHTML='<td><div class="cell-animal"><div class="cini">'+c.num+'</div><div><div class="cn">'+c.n+'</div></div></div></td>'+
+      '<td class="r">'+c.ayer+'</td><td class="r">'+hoy+'</td><td class="r">'+varCell+'</td>'+
+      '<td class="r">'+c.del.replace(/DEL (\d+).*/,'$1')+'</td>'+
+      '<td>'+(c.estado||'')+'</td>'+
+      '<td class="sub"'+(c.notaRed?' style="color:var(--red)"':'')+'>'+(c.nota||'')+'</td>';
+    tb.appendChild(tr);
+  });
+  const done=milkCows.filter(c=>c.done);
+  const prog=document.getElementById('milkProg');
+  if(prog)prog.textContent=done.length+' de '+milkCows.length+' · Σ '+done.reduce((s,c)=>s+c.v,0)+' L';
+}
+function openMilk(i){mi=i;const c=milkCows[i];
+  document.getElementById('mCow').textContent=c.num+' · '+c.n.toUpperCase();
+  document.getElementById('mDel').textContent=c.del;
+  const inp=document.getElementById('mInput');inp.value=c.done?c.v:c.ayer;
+  const ref=document.getElementById('mRef');
+  if(c.retiro){ref.className='m-ref warn';
+    ref.textContent='⛔ En retiro '+c.retiro+' días — registra su leche, pero no se vende';}
+  else{ref.className='m-ref';
+    ref.textContent=c.done?'Ya registrada con '+c.v+' L — puedes corregirla':'Ayer dio '+c.ayer+' L — acepta si dio igual';}
+  document.getElementById('scrim').classList.add('show');
+  document.getElementById('milkModal').classList.add('show');
+  setTimeout(()=>{inp.focus();inp.select();},60);
+}
+function closeMilk(){document.getElementById('milkModal').classList.remove('show');
+  document.getElementById('scrim').classList.remove('show');mi=-1;}
+function saveMilk(){
+  if(mi<0)return;
+  const c=milkCows[mi];
+  const v=Math.max(0,Math.min(60,parseInt(document.getElementById('mInput').value)||0));
+  const prev={done:c.done,v:c.v};
+  const drop=!c.done&&c.ayer>0&&v<=c.ayer*0.75;
+  c.done=true;c.v=v;
+  closeMilk();renderMilk();
+  if(drop)snack('Atención: '+c.n+' bajó '+(c.ayer-v)+' L vs ayer — ¿mastitis, celo, comida?','Deshacer',()=>{
+    c.done=prev.done;c.v=prev.v;renderMilk();snack('Registro deshecho');});
+  else snack(c.n+': '+v+' L guardados','Deshacer',()=>{
+    c.done=prev.done;c.v=prev.v;renderMilk();snack('Registro deshecho');});
+  if(milkCows.every(x=>x.done)){
+    const tot=milkCows.reduce((s,x)=>s+x.v,0);
+    setTimeout(()=>snack('Ordeño completo: '+tot+' L en estas '+milkCows.length+' vacas — siguiente: entregas a los lecheros'),1600);
+  }
+}
+renderMilk();
 /* 32 potreros ordenados por estado: listos → recuperando → recién pastoreados */
 const pots=[];
 for(let i=1;i<=32;i++){

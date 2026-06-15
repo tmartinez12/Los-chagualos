@@ -187,36 +187,17 @@
           </div>
         </div>
 
-        <div class="section-label">Ordeño de hoy · producción por vaca</div>
+        <div class="section-label" style="display:flex;justify-content:space-between;align-items:baseline">
+          <span>Ordeño de hoy · toca una vaca para registrar</span>
+          <span style="font-weight:700;color:var(--ink);text-transform:none;letter-spacing:0" id="milkProg">0 de 7 · Σ 0 L</span>
+        </div>
         <div class="card" style="padding:8px">
           <table>
             <thead><tr>
               <th>Animal</th><th class="r">Ayer</th><th class="r">Hoy</th><th class="r">Var.</th>
               <th class="r">DEL</th><th>Estado</th><th>Nota</th>
             </tr></thead>
-            <tbody>
-              <tr><td><div class="cell-animal"><div class="cini">042</div><div><div class="cn">Lucero</div></div></div></td>
-                <td class="r">17</td><td class="r"><b>18 L</b></td><td class="r up">↑ +1</td>
-                <td class="r">152</td><td><span class="badge warn">preñada 6m</span></td><td class="sub">secar ~12 jul</td></tr>
-              <tr><td><div class="cell-animal"><div class="cini">038</div><div><div class="cn">Mona</div></div></div></td>
-                <td class="r">16</td><td class="r"><b>16 L</b></td><td class="r mut">= ayer</td>
-                <td class="r">98</td><td><span class="badge">servida</span></td><td class="sub">por confirmar palp.</td></tr>
-              <tr><td><div class="cell-animal"><div class="cini">051</div><div><div class="cn">Careta</div></div></div></td>
-                <td class="r">13</td><td class="r"><b>14 L</b></td><td class="r up">↑ +1</td>
-                <td class="r">121</td><td></td><td class="sub">1er parto</td></tr>
-              <tr><td><div class="cell-animal"><div class="cini">027</div><div><div class="cn">Estrella</div></div></div></td>
-                <td class="r">12</td><td class="r"><b>13 L</b></td><td class="r up">↑ +1</td>
-                <td class="r">64</td><td></td><td class="sub">pico de lactancia</td></tr>
-              <tr><td><div class="cell-animal"><div class="cini">017</div><div><div class="cn">Azucena</div></div></div></td>
-                <td class="r">11</td><td class="r"><b>11 L</b></td><td class="r mut">= ayer</td>
-                <td class="r">201</td><td><span class="badge bad">retiro 2d</span></td><td class="sub">no vender su leche</td></tr>
-              <tr><td><div class="cell-animal"><div class="cini">033</div><div><div class="cn">Paloma</div></div></div></td>
-                <td class="r">9</td><td class="r"><b>6 L</b></td><td class="r down">↓ −3</td>
-                <td class="r">95</td><td><span class="badge bad">vacía 132d</span></td><td class="sub" style="color:var(--red)">producción muy baja</td></tr>
-              <tr><td><div class="cell-animal"><div class="cini">029</div><div><div class="cn">Pinta</div></div></div></td>
-                <td class="r">5</td><td class="r"><b>5 L</b></td><td class="r mut">= ayer</td>
-                <td class="r">412</td><td><span class="badge bad">vacía 150d</span></td><td class="sub" style="color:var(--red)">evaluar descarte</td></tr>
-            </tbody>
+            <tbody id="milkTbody"></tbody>
           </table>
           <div style="text-align:center;padding:12px">
             <button class="btn outl small" onclick="snack('Tabla completa de las 26 vacas en ordeño, con orden por cualquier columna')">Ver las 19 restantes</button>
@@ -648,7 +629,23 @@
   </div>
 </div>
 
-<div class="snackbar" id="snackbar"><svg class="ic-s ic"><use href="#i-check"/></svg><span id="snackText"></span></div>
+<!-- MODAL: registrar leche de la vaca elegida -->
+<div class="scrim" id="scrim" onclick="closeMilk()"></div>
+<div class="modal" id="milkModal">
+  <div class="m-cow" id="mCow">042 · LUCERO</div>
+  <div class="m-del" id="mDel">DEL 152 · 3er parto</div>
+  <div class="m-input">
+    <input id="mInput" type="number" inputmode="numeric" min="0" max="60"
+      onkeydown="if(event.key==='Enter')saveMilk()"><span class="u">L</span>
+  </div>
+  <div class="m-ref" id="mRef">Ayer dio 18 L — acepta si dio igual</div>
+  <div class="m-actions">
+    <button class="btn outl" onclick="closeMilk()">Cancelar</button>
+    <button class="btn filled" onclick="saveMilk()"><svg class="ic-s ic"><use href="#i-check"/></svg>Guardar</button>
+  </div>
+</div>
+
+<div class="snackbar" id="snackbar"><svg class="ic-s ic"><use href="#i-check"/></svg><span id="snackText"></span><button class="snack-action" id="snackAction" style="display:none"></button></div>
 <script src="escritorio.js"></script>
 </body>
 </html>

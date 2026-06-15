@@ -149,5 +149,33 @@ td .sub{font-size:11.5px;color:var(--ink-2)}
   z-index:60;display:flex;align-items:center;gap:10px;opacity:0;transition:all .25s;pointer-events:none}
 .snackbar.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .snackbar svg.ic{color:#7FC97F}
+.snack-action{background:none;border:none;color:#7FC97F;font-family:inherit;font-size:12.5px;
+  font-weight:700;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;margin-left:6px}
 .chart-title{font-size:14.5px;font-weight:700;letter-spacing:-.1px}
 .chart-sub{font-size:12px;color:var(--ink-2);margin-top:2px;margin-bottom:10px}
+
+/* modal (registrar leche por vaca) */
+.scrim{position:fixed;inset:0;background:rgba(20,22,16,.38);z-index:70;opacity:0;
+  pointer-events:none;transition:opacity .2s}
+.scrim.show{opacity:1;pointer-events:auto}
+.modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-46%) scale(.97);z-index:80;
+  width:380px;max-width:calc(100vw - 40px);background:var(--card);border-radius:18px;
+  padding:22px;box-shadow:0 24px 60px rgba(20,22,16,.3);opacity:0;pointer-events:none;
+  transition:opacity .2s,transform .2s}
+.modal.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+.modal .m-cow{font-size:12px;font-weight:700;letter-spacing:.6px;color:var(--ink-2);text-transform:uppercase}
+.modal .m-del{font-size:12.5px;color:var(--ink-2);margin-top:2px}
+.modal .m-input{display:flex;align-items:baseline;justify-content:center;gap:8px;margin:18px 0 6px}
+.modal .m-input input{width:130px;border:none;border-bottom:2px solid var(--border);background:transparent;
+  font-family:inherit;font-size:46px;font-weight:700;text-align:center;color:var(--ink);
+  letter-spacing:-1px;outline:none;padding:0 4px}
+.modal .m-input input:focus{border-bottom-color:var(--green)}
+.modal .m-input .u{font-size:18px;color:var(--ink-2);font-weight:500}
+.modal .m-ref{font-size:12px;color:var(--ink-2);text-align:center;line-height:1.4;min-height:32px}
+.modal .m-ref.warn{color:var(--red)}
+.modal .m-actions{display:flex;gap:8px;margin-top:16px}
+.modal .m-actions .btn{flex:1;justify-content:center}
+td .pending{color:var(--ink-3)}
+td .reg{color:var(--green);font-weight:700}
+tbody tr.done td{background:var(--green-soft)}
+tbody tr.done:hover td{background:#E2F0E2}
