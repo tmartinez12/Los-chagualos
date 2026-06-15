@@ -103,6 +103,80 @@ function saveMilk(){
   }
 }
 renderMilk();
+/* ===== Producción mensual por vaca ===== */
+const mensualData=[
+  {num:'042',n:'Lucero',   m:[null,null,12.5,14.8,17.2,18.0], partos:'parió ene'},
+  {num:'038',n:'Mona',     m:[14.2,14.0,15.1,14.8,15.5,16.0]},
+  {num:'051',n:'Careta',   m:[null,null,10.2,12.0,13.6,14.0], partos:'parió feb, 1er parto'},
+  {num:'027',n:'Estrella', m:[null,null,null,null,11.8,13.0], partos:'parió abr'},
+  {num:'017',n:'Azucena',  m:[14.0,13.5,9.0,10.5,11.0,11.0], nota:'mastitis mar → baja'},
+  {num:'033',n:'Paloma',   m:[11.0,10.2,9.8,8.5,7.0,6.0],    nota:'bajando — vacía'},
+  {num:'029',n:'Pinta',    m:[8.0,7.5,7.0,6.2,5.5,5.0],      nota:'lactancia >400d — vacía'},
+];
+let mensualVista='promedio';
+function toggleMensual(v){mensualVista=v;renderMensual();
+  document.querySelectorAll('.section-label .btn.outl.small').forEach(b=>{
+    if(b.textContent.includes('Total'))b.style.cssText=v==='total'?'font-weight:700;border-color:var(--ink)':'';
+    if(b.textContent.includes('L/día'))b.style.cssText=v==='promedio'?'font-weight:700;border-color:var(--ink)':'';
+  });}
+function renderMensual(){
+  const tb=document.getElementById('mensualBody');if(!tb)return;tb.innerHTML='';
+  const totales=[0,0,0,0,0,0];const conteos=[0,0,0,0,0,0];
+  mensualData.forEach(c=>{
+    c.m.forEach((v,i)=>{if(v!==null){totales[i]+=v;conteos[i]++;}});
+  });
+  mensualData.forEach(c=>{
+    const tr=document.createElement('tr');
+    const vals=c.m.map(v=>v!==null?v:null);
+    const activos=vals.filter(v=>v!==null);
+    const prom=activos.length?activos.reduce((a,b)=>a+b,0)/activos.length:0;
+    const total=activos.reduce((a,b)=>a+b,0);
+    const diasMes=[31,28,31,30,31,12];
+    const totalL=vals.map((v,i)=>v!==null?Math.round(v*diasMes[i]):0).reduce((a,b)=>a+b,0);
+    let cells='<td><div class="cell-animal"><div class="cini">'+c.num+'</div><div><div class="cn">'+c.n+'</div>'+
+      (c.nota?'<div class="cs" style="color:var(--red)">'+c.nota+'</div>':
+       c.partos?'<div class="cs">'+c.partos+'</div>':'')+
+      '</div></div></td>';
+    vals.forEach((v,i)=>{
+      if(v===null){cells+='<td class="r"><span class="pending">—</span></td>';}
+      else{
+        const val=mensualVista==='total'?Math.round(v*diasMes[i]):v.toFixed(1);
+        const promHato=conteos[i]?totales[i]/conteos[i]:0;
+        let cls='';
+        if(v<promHato*0.65)cls=' class="down"';
+        else if(v>promHato*1.15)cls=' class="up"';
+        cells+='<td class="r"><span'+cls+'>'+(mensualVista==='total'?val:val)+
+          (mensualVista==='promedio'?'':'')+'</span></td>';
+      }
+    });
+    const promVal=mensualVista==='total'?Math.round(totalL/Math.max(1,activos.length)):prom.toFixed(1);
+    cells+='<td class="r" style="font-weight:700">'+promVal+'</td>';
+    cells+='<td class="r" style="font-weight:700">'+(mensualVista==='total'?totalL:Math.round(totalL))+' L</td>';
+    tr.innerHTML=cells;
+    tr.onclick=()=>snack('Ficha de '+c.n+' — curva de lactancia completa, historia y datos por mes');
+    tb.appendChild(tr);
+  });
+  const trT=document.createElement('tr');
+  trT.style.cssText='background:var(--surface);font-weight:700';
+  let tc='<td style="font-weight:700;padding-left:14px">HATO ('+mensualData.length+' vacas)</td>';
+  const diasMes=[31,28,31,30,31,12];
+  let grandTotal=0;
+  totales.forEach((t,i)=>{
+    if(conteos[i]===0)tc+='<td class="r">—</td>';
+    else{const val=mensualVista==='total'?Math.round(t*diasMes[i]/conteos[i]*conteos[i]):
+      (t/conteos[i]).toFixed(1);
+      const tl=Math.round(t*diasMes[i]/conteos[i]*conteos[i]);
+      grandTotal+=tl;
+      tc+='<td class="r">'+(mensualVista==='total'?Math.round(t*diasMes[i]/conteos[i]*conteos[i]):val)+'</td>';}
+  });
+  tc+='<td class="r" style="font-weight:800">'+(mensualVista==='total'?Math.round(grandTotal/6):
+    (totales.reduce((a,b)=>a+b,0)/conteos.reduce((a,b)=>a+b,0)).toFixed(1))+'</td>';
+  tc+='<td class="r" style="font-weight:800">'+grandTotal+' L</td>';
+  trT.innerHTML=tc;
+  tb.appendChild(trT);
+}
+renderMensual();
+
 /* 32 potreros ordenados por estado: listos → recuperando → recién pastoreados */
 const pots=[];
 for(let i=1;i<=32;i++){

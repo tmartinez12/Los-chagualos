@@ -225,6 +225,25 @@
               <b style="color:var(--ink)">Total por cobrar (junio):</b> $3,98M</div>
           </div>
         </div>
+
+        <div class="section-label" style="display:flex;justify-content:space-between;align-items:baseline">
+          <span>Producción mensual por vaca · litros/día promedio</span>
+          <span style="text-transform:none;letter-spacing:0">
+            <button class="btn outl small" onclick="toggleMensual('total')">Total L</button>
+            <button class="btn outl small" onclick="toggleMensual('promedio')" style="font-weight:700;border-color:var(--ink)">L/día prom.</button>
+            <button class="btn outl small" onclick="snack('Exportado: produccion_mensual_2026.xlsx')"><svg class="ic-s ic"><use href="#i-export"/></svg></button>
+          </span>
+        </div>
+        <div class="card" style="padding:8px;overflow-x:auto">
+          <table id="tblMensual">
+            <thead><tr>
+              <th>Animal</th><th class="r">Ene</th><th class="r">Feb</th><th class="r">Mar</th>
+              <th class="r">Abr</th><th class="r">May</th><th class="r">Jun</th>
+              <th class="r" style="font-weight:800">Prom. 2026</th><th class="r" style="font-weight:800">Total 2026</th>
+            </tr></thead>
+            <tbody id="mensualBody"></tbody>
+          </table>
+        </div>
       </div>
 
       <!-- ============ HATO (tabla) ============ -->
