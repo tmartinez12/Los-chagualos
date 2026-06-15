@@ -263,43 +263,43 @@
               <th class="r">DEL</th><th class="r">Ayer</th><th class="r">Var.</th><th></th>
             </tr></thead>
             <tbody>
-              <tr onclick="snack('Ficha de Lucero — como en el celular, con curva e historia')">
+              <tr onclick="goVaca('042','pg-hato')">
                 <td><div class="cell-animal"><div class="cini">042</div><div><div class="cn">Lucero</div><div class="cs">Holstein × Gyr</div></div></div></td>
                 <td>En ordeño</td><td class="r">5,2 a</td>
                 <td><span class="badge warn">preñada 6 m</span> <span class="sub">secar ~12 jul</span></td>
                 <td class="r">152</td><td class="r"><b>18 L</b></td><td class="r up">↑ +1</td>
                 <td class="r"><svg class="ic-s ic" style="color:var(--ink-3)"><use href="#i-dots"/></svg></td></tr>
-              <tr onclick="snack('Ficha de Mona')">
+              <tr onclick="goVaca('038','pg-hato')">
                 <td><div class="cell-animal"><div class="cini">038</div><div><div class="cn">Mona</div><div class="cs">Gyrolando</div></div></div></td>
                 <td>En ordeño</td><td class="r">4,1 a</td>
                 <td><span class="badge">servida · por palpar</span></td>
                 <td class="r">98</td><td class="r"><b>16 L</b></td><td class="r mut">= ayer</td>
                 <td class="r"><svg class="ic-s ic" style="color:var(--ink-3)"><use href="#i-dots"/></svg></td></tr>
-              <tr onclick="snack('Ficha de Azucena — retiro activo')">
+              <tr onclick="goVaca('017','pg-hato')">
                 <td><div class="cell-animal"><div class="cini">017</div><div><div class="cn">Azucena</div><div class="cs">Holstein</div></div></div></td>
                 <td>En ordeño</td><td class="r">8 a</td>
                 <td><span class="badge bad">retiro 2 días más</span></td>
                 <td class="r">201</td><td class="r"><b>11 L</b></td><td class="r mut">= ayer</td>
                 <td class="r"><svg class="ic-s ic" style="color:var(--ink-3)"><use href="#i-dots"/></svg></td></tr>
-              <tr onclick="snack('Ficha de Paloma — producción muy baja para su DEL')">
+              <tr onclick="goVaca('033','pg-hato')">
                 <td><div class="cell-animal"><div class="cini">033</div><div><div class="cn">Paloma</div><div class="cs">Normando</div></div></div></td>
                 <td>En ordeño</td><td class="r">6,5 a</td>
                 <td><span class="badge bad">vacía 132 días</span></td>
                 <td class="r">95</td><td class="r"><b>6 L</b></td><td class="r down">↓ −3</td>
                 <td class="r"><svg class="ic-s ic" style="color:var(--ink-3)"><use href="#i-dots"/></svg></td></tr>
-              <tr onclick="snack('Ficha de Violeta — parto ~3 jul')">
+              <tr onclick="goVaca('011','pg-hato')">
                 <td><div class="cell-animal"><div class="cini">011</div><div><div class="cn">Violeta</div><div class="cs">Gyrolando</div></div></div></td>
                 <td>Horra</td><td class="r">7 a</td>
                 <td><span class="badge ok">preñada 8,5 m · parto ~3 jul</span></td>
                 <td class="r">—</td><td class="r">—</td><td class="r">—</td>
                 <td class="r"><svg class="ic-s ic" style="color:var(--ink-3)"><use href="#i-dots"/></svg></td></tr>
-              <tr onclick="snack('Ficha de Princesa — lista para servicio, hija de Sansón')">
+              <tr onclick="goVaca('055','pg-hato')">
                 <td><div class="cell-animal"><div class="cini">055</div><div><div class="cn">Princesa</div><div class="cs">Gyrolando</div></div></div></td>
                 <td>Novilla</td><td class="r">2,1 a</td>
                 <td><span class="badge warn">lista para servicio · hija de Sansón</span></td>
                 <td class="r">—</td><td class="r">—</td><td class="r">—</td>
                 <td class="r"><svg class="ic-s ic" style="color:var(--ink-3)"><use href="#i-dots"/></svg></td></tr>
-              <tr onclick="snack('Ficha de Sansón — toro activo, 23 hijas')">
+              <tr onclick="goVaca('T01','pg-hato')">
                 <td><div class="cell-animal"><div class="cini">T01</div><div><div class="cn">Sansón</div><div class="cs">Toro · Gyr</div></div></div></td>
                 <td>Macho</td><td class="r">6 a</td>
                 <td><span class="badge">toro activo · 23 hijas</span></td>
@@ -310,6 +310,51 @@
           <div style="text-align:center;padding:12px">
             <button class="btn outl small" onclick="snack('Tabla completa de los 80, con orden por cualquier columna')">Ver los 73 restantes</button>
           </div>
+        </div>
+      </div>
+
+      <!-- ============ FICHA DE VACA ============ -->
+      <div class="page" id="pg-vaca">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer" id="vacaBack">
+          <svg class="ic" style="transform:rotate(180deg)"><use href="#i-export"/></svg>
+          <span style="font-size:13px;color:var(--ink-2)" id="vacaBackLabel">Volver al hato</span>
+        </div>
+        <div style="display:flex;gap:18px;align-items:flex-start">
+          <div style="flex:1;min-width:0">
+            <div class="card" style="display:flex;gap:16px;align-items:center;padding:16px 20px">
+              <div class="cini" style="width:52px;height:52px;font-size:16px" id="vacaIni">042</div>
+              <div style="flex:1">
+                <div style="font-size:20px;font-weight:700;letter-spacing:-.3px" id="vacaNombre">042 · Lucero</div>
+                <div style="font-size:13px;color:var(--ink-2);margin-top:2px" id="vacaSub">Holstein × Gyr · 5,2 años · En ordeño · Nació en finca</div>
+              </div>
+              <div id="vacaBadge"></div>
+            </div>
+            <div id="vacaAlerta" style="margin-top:10px"></div>
+            <div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-top:12px" id="vacaKpis"></div>
+            <div class="card" style="margin-top:12px" id="vacaCurvaCard">
+              <div class="chart-title" style="font-size:13.5px">Curva de lactancia (eje en DEL)</div>
+              <div class="chart-sub" id="vacaCurvaSub">Pico en DEL 40-60 · hoy va en DEL 152</div>
+              <svg id="vacaCurva" viewBox="0 0 560 90" style="width:100%"></svg>
+            </div>
+          </div>
+          <div style="width:320px;flex:none">
+            <div class="card" style="display:flex;gap:10px;align-items:center;padding:12px 14px" id="vacaSanidad">
+              <svg class="ic-s ic" style="color:var(--green)"><use href="#i-shield"/></svg>
+              <div style="font-size:12.5px;color:var(--ink-2)">
+                <b style="color:var(--ink)">Sanidad al día</b> — vacunas ok · sin retiros activos</div>
+            </div>
+            <div class="section-label">Historia</div>
+            <div class="card">
+              <div class="feed" id="vacaHistoria" style="padding-left:20px"></div>
+            </div>
+            <button class="btn filled" style="width:100%;justify-content:center;margin-top:12px" onclick="snack('Registrar evento en '+document.getElementById('vacaNombre').textContent)">
+              ＋ Registrar evento</button>
+          </div>
+        </div>
+        <div class="section-label" style="margin-top:18px">Producción mensual</div>
+        <div class="card" style="padding:8px;overflow-x:auto">
+          <table><thead><tr><th>Mes</th><th class="r">L/día prom</th><th class="r">Total L</th><th class="r">Días ordeño</th><th>Nota</th></tr></thead>
+          <tbody id="vacaMensualTb"></tbody></table>
         </div>
       </div>
 
@@ -548,7 +593,7 @@
               <table>
                 <thead><tr><th>Vaca</th><th>Preñez</th><th class="r">Parto estimado</th></tr></thead>
                 <tbody>
-                  <tr onclick="snack('Ficha de Violeta — parto ~3 jul')"><td>011 · Violeta</td><td>8,5 meses</td><td class="r"><span class="badge warn">~3 jul</span></td></tr>
+                  <tr onclick="goVaca('011','pg-partos')"><td>011 · Violeta</td><td>8,5 meses</td><td class="r"><span class="badge warn">~3 jul</span></td></tr>
                   <tr onclick="snack('Ficha de Canela — parto ~18 jul')"><td>019 · Canela</td><td>8 meses</td><td class="r">~18 jul</td></tr>
                   <tr onclick="snack('Ficha de Morena — parto ~2 ago')"><td>045 · Morena</td><td>7,5 meses</td><td class="r">~2 ago</td></tr>
                   <tr onclick="snack('Ficha de Golondrina — parto ~12 sep')"><td>008 · Golondrina</td><td>7 meses</td><td class="r">~12 sep</td></tr>

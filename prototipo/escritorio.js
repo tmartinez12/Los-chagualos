@@ -185,9 +185,10 @@ function renderMensual(){
     mensualData.forEach(c=>{
       const avg=c.m[mensualMes];
       const tr=document.createElement('tr');
-      const tdAnimal=document.createElement('td');
+      const tdAnimal=document.createElement('td');tdAnimal.style.cursor='pointer';
       tdAnimal.innerHTML='<div class="cell-animal"><div class="cini">'+c.num+'</div><div><div class="cn">'+c.n+'</div>'+
         (c.nota?'<div class="cs" style="color:var(--red)">'+c.nota+'</div>':'')+'</div></div>';
+      tdAnimal.onclick=(function(num){return function(e){e.stopPropagation();goVaca(num,'pg-leche');};})(c.num);
       tr.appendChild(tdAnimal);
       let suma=0,dias=0;
       for(let d=1;d<=n;d++){const v=diaVal(c.num,mensualMes,d);
@@ -244,7 +245,7 @@ function renderMensual(){
     cells+='<td class="r" style="font-weight:700">'+(mensualVista==='total'?Math.round(totalL/Math.max(1,activos.length)):prom.toFixed(1))+'</td>';
     cells+='<td class="r" style="font-weight:700">'+totalL+' L</td>';
     tr.innerHTML=cells;
-    tr.onclick=()=>snack('Ficha de '+c.n+' — curva de lactancia completa, historia y datos por mes');
+    tr.onclick=()=>goVaca(c.num,'pg-leche');
     tb.appendChild(tr);
   });
   const trT=document.createElement('tr');trT.style.cssText='background:var(--surface);font-weight:700';
@@ -260,6 +261,147 @@ function renderMensual(){
   trT.innerHTML=tc;tb.appendChild(trT);
 }
 renderMesPicker();renderMensual();
+
+/* ===== Ficha de vaca ===== */
+const fichas={
+  '042':{num:'042',n:'Lucero',raza:'Holstein × Gyr',edad:'5,2 años',grupo:'En ordeño',origen:'Nació en finca',
+    del:152,parto:3,ayer:18,peso:'480 kg (abr)',madre:'017 Azucena',padre:'Sansón',
+    crias:['038 Mona','051 Careta','064'],
+    repro:{badge:'warn',text:'Preñada · 6 meses (palpación 2 may)',sub:'Parto probable ~12 sep · Secar ~12 jul'},
+    sanidad:'Sanidad al día — vacunas ok (aftosa may 2026) · sin tratamientos ni retiros activos',sanOk:true,
+    historia:[
+      {fecha:'02 MAY 2026',texto:'Palpación: <b>preñada 6 meses</b>',sub:'Dr. Restrepo · parto calculado ~12 sep'},
+      {fecha:'15 MAR 2026',texto:'Mastitis — tratamiento + retiro 4 días'},
+      {fecha:'11 ENE 2026',texto:'Parto #3 — nació la 064 · arranca lactancia (DEL 0)'},
+      {fecha:'03 DIC 2025',texto:'Monta de Sansón vista'}],
+    curva:[[0,52],[40,20],[60,16],[90,18],[120,22],[152,24]],curvaHoy:{del:152,l:18}},
+  '038':{num:'038',n:'Mona',raza:'Gyrolando',edad:'4,1 años',grupo:'En ordeño',origen:'Nació en finca',
+    del:98,parto:2,ayer:16,peso:'460 kg (abr)',madre:'011 Violeta',padre:'Sansón',crias:['064'],
+    repro:{badge:'',text:'Servida · por palpar',sub:'Monta observada 10 abr — palpación pendiente'},
+    sanidad:'Sanidad al día — vacunas ok · sin retiros',sanOk:true,
+    historia:[
+      {fecha:'10 ABR 2026',texto:'Monta de Sansón observada'},
+      {fecha:'08 MAR 2026',texto:'Parto #2 — nació la 064'},
+      {fecha:'MAY 2025',texto:'Desparasitación'}],
+    curva:[[0,48],[30,22],[60,16],[98,18]],curvaHoy:{del:98,l:16}},
+  '051':{num:'051',n:'Careta',raza:'Holstein × Gyr',edad:'3,2 años',grupo:'En ordeño',origen:'Nació en finca',
+    del:121,parto:1,ayer:14,peso:'420 kg (mar)',madre:'033 Paloma',padre:'Sansón',crias:[],
+    repro:{badge:'',text:'1er parto · vacía',sub:'Esperar mínimo 60 días postparto para servicio'},
+    sanidad:'Sanidad al día — vacunas ok · sin retiros',sanOk:true,
+    historia:[
+      {fecha:'12 FEB 2026',texto:'Parto #1 — arranca lactancia'},
+      {fecha:'MAY 2025',texto:'Desparasitación'}],
+    curva:[[0,46],[30,24],[60,16],[90,14],[121,14]],curvaHoy:{del:121,l:14}},
+  '027':{num:'027',n:'Estrella',raza:'Gyrolando',edad:'3,8 años',grupo:'En ordeño',origen:'Nació en finca',
+    del:64,parto:1,ayer:13,peso:'440 kg (may)',madre:'038 Mona',padre:'Sansón',crias:[],
+    repro:{badge:'ok',text:'Pico de lactancia · 1er parto',sub:'DEL 64 — esperar para servicio'},
+    sanidad:'Sanidad al día — vacunas ok · sin retiros',sanOk:true,
+    historia:[
+      {fecha:'11 ABR 2026',texto:'Parto #1 — arranca lactancia'},
+      {fecha:'MAY 2025',texto:'Aftosa ICA'}],
+    curva:[[0,42],[30,18],[64,14]],curvaHoy:{del:64,l:13}},
+  '017':{num:'017',n:'Azucena',raza:'Holstein',edad:'8 años',grupo:'En ordeño',origen:'Nació en finca',
+    del:201,parto:5,ayer:11,peso:'510 kg (abr)',madre:'—',padre:'—',crias:['042 Lucero','039','044'],
+    repro:{badge:'warn',text:'Preñada · 4 meses',sub:'Pendiente: confirmar palpación siguiente'},
+    sanidad:'Retiro activo — mastitis jun · antibiótico · no vender leche hasta sáb 14',sanOk:false,
+    historia:[
+      {fecha:'10 JUN 2026',texto:'Mastitis — inicio tratamiento + retiro 4 días',miss:true},
+      {fecha:'01 MAY 2026',texto:'Palpación: <b>preñada 4 meses</b>'},
+      {fecha:'ENE 2026',texto:'Parto #5'}],
+    curva:[[0,50],[40,22],[100,16],[150,13],[201,12]],curvaHoy:{del:201,l:11}},
+  '033':{num:'033',n:'Paloma',raza:'Normando',edad:'6,5 años',grupo:'En ordeño',origen:'Nació en finca',
+    del:95,parto:4,ayer:6,peso:'490 kg (may)',madre:'—',padre:'—',crias:['051 Careta','046','048'],
+    repro:{badge:'bad',text:'Vacía 132 días · producción muy baja',sub:'Evaluar descarte o tratamiento reproductivo'},
+    sanidad:'Sanidad al día — vacunas ok · sin retiros',sanOk:true,
+    historia:[
+      {fecha:'02 MAY 2026',texto:'Palpación: <b>vacía</b>',sub:'132 días vacía — alerta'},
+      {fecha:'FEB 2026',texto:'Parto #4 — producción bajó'},
+      {fecha:'DIC 2025',texto:'Desparasitación'}],
+    curva:[[0,48],[30,18],[60,12],[95,8]],curvaHoy:{del:95,l:6}},
+  '029':{num:'029',n:'Pinta',raza:'Holstein × Gyr',edad:'7 años',grupo:'En ordeño',origen:'Comprada',
+    del:412,parto:5,ayer:5,peso:'470 kg (may)',madre:'—',padre:'—',crias:['052','053','056'],
+    repro:{badge:'bad',text:'Vacía 150 días · lactancia >400 DEL',sub:'Urgente: palpar o evaluar descarte'},
+    sanidad:'Sanidad al día — vacunas ok · sin retiros',sanOk:true,
+    historia:[
+      {fecha:'02 MAY 2026',texto:'Palpación: <b>vacía</b>',sub:'150 días vacía — alerta crítica'},
+      {fecha:'ABR 2025',texto:'Parto #5 — lactancia extendida'}],
+    curva:[[0,50],[60,14],[150,10],[300,7],[412,5]],curvaHoy:{del:412,l:5}},
+};
+let vacaFrom='pg-hato';
+function goVaca(num,from){
+  const cow=fichas[num];if(!cow)return snack('Ficha de '+num+' — próximamente');
+  vacaFrom=from||'pg-hato';
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('pg-vaca').classList.add('active');
+  document.querySelectorAll('#nav a').forEach(a=>a.classList.remove('active'));
+  document.getElementById('pgTitle').textContent='Ficha: '+cow.num+' · '+cow.n;
+  document.getElementById('pgSub').textContent=cow.raza+' · '+cow.edad+' · '+cow.grupo;
+  document.querySelector('.content').scrollTop=0;
+  const backLabels={'pg-hato':'Volver al hato','pg-leche':'Volver a producción','pg-repro':'Volver a reproducción'};
+  document.getElementById('vacaBackLabel').textContent=backLabels[vacaFrom]||'Volver';
+  document.getElementById('vacaBack').onclick=()=>go(vacaFrom,document.querySelector('[data-pg="'+vacaFrom+'"]'));
+  document.getElementById('vacaIni').textContent=cow.num;
+  document.getElementById('vacaNombre').textContent=cow.num+' · '+cow.n;
+  document.getElementById('vacaSub').textContent=cow.raza+' · '+cow.edad+' · '+cow.grupo+' · '+cow.origen;
+  const bd=document.getElementById('vacaBadge');
+  if(cow.repro.badge)bd.innerHTML='<span class="badge '+cow.repro.badge+'">'+cow.repro.text.split('·')[0].trim()+'</span>';
+  else bd.innerHTML='';
+  const al=document.getElementById('vacaAlerta');
+  al.innerHTML='<div class="alert '+(cow.repro.badge==='bad'?'urgent':cow.repro.badge==='warn'?'warn':'info')+'">'+
+    '<div style="flex:1"><div class="a-title">'+cow.repro.text+'</div>'+
+    '<div class="a-sub">'+cow.repro.sub+'</div></div></div>';
+  const kpis=document.getElementById('vacaKpis');
+  kpis.innerHTML=
+    '<div class="card kpi"><div class="k-label">Ayer · DEL</div><div class="k-value">'+cow.ayer+' L <span class="k-unit">· DEL '+cow.del+'</span></div></div>'+
+    '<div class="card kpi"><div class="k-label">Peso</div><div class="k-value" style="font-size:20px">'+cow.peso+'</div></div>'+
+    '<div class="card kpi"><div class="k-label">Partos · crías</div><div class="k-value" style="font-size:20px">'+cow.parto+(cow.crias.length?' · ('+cow.crias.join(', ')+')':' · sin crías')+'</div></div>'+
+    '<div class="card kpi"><div class="k-label">Madre · padre</div><div class="k-value" style="font-size:20px">'+cow.madre+' · '+cow.padre+'</div></div>';
+  /* curva de lactancia */
+  const svg=document.getElementById('vacaCurva');
+  const maxDel=Math.max(cow.del+30,180);
+  const pts=cow.curva.map(p=>{const x=20+p[0]/maxDel*520;const y=80-p[1]/25*60;return x+','+y;}).join(' ');
+  const hx=20+cow.curvaHoy.del/maxDel*520,hy=80-cow.curvaHoy.l/25*60;
+  svg.innerHTML='<polyline points="'+pts+'" fill="none" stroke="#2F7E33" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'+
+    '<circle cx="'+hx+'" cy="'+hy+'" r="4.5" fill="#2F7E33"/>'+
+    '<g font-family="Work Sans,sans-serif" font-size="10" fill="#A8ACA0">'+
+    '<text x="20" y="88">DEL 0</text><text x="'+(20+60/maxDel*520)+'" y="88">60</text>'+
+    '<text x="'+(20+120/maxDel*520)+'" y="88">120</text><text x="'+(20+180/maxDel*520)+'" y="88">180</text>'+
+    (maxDel>240?'<text x="'+(20+240/maxDel*520)+'" y="88">240</text>':'')+
+    (maxDel>360?'<text x="'+(20+360/maxDel*520)+'" y="88">360</text>':'')+
+    '<text x="'+(hx+6)+'" y="'+(hy-6)+'" fill="#16181B" font-weight="700">hoy: '+cow.ayer+' L</text></g>';
+  document.getElementById('vacaCurvaSub').textContent='Hoy va en DEL '+cow.del+' · '+cow.parto+(cow.parto===1?'er':'°')+' parto';
+  /* sanidad */
+  const san=document.getElementById('vacaSanidad');
+  san.innerHTML='<svg class="ic-s ic" style="color:var('+(cow.sanOk?'--green':'--red')+')"><use href="#i-shield"/></svg>'+
+    '<div style="font-size:12.5px;color:var(--ink-2)"><b style="color:var(--ink)">'+(cow.sanOk?'Sanidad al día':'Alerta sanitaria')+'</b> — '+cow.sanidad+'</div>';
+  /* historia */
+  const hist=document.getElementById('vacaHistoria');hist.innerHTML='';
+  cow.historia.forEach((h,i)=>{
+    hist.innerHTML+='<div class="f-item'+(h.miss?' miss':'')+'">'+
+      '<span class="f-time" style="width:auto;font-size:10px;white-space:nowrap">'+h.fecha+'</span>'+
+      '<span class="f-text">'+h.texto+(h.sub?'<br><span class="sub">'+h.sub+'</span>':'')+'</span></div>';
+  });
+  /* produccion mensual individual */
+  const md=mensualData.find(c=>c.num===num);
+  const mtb=document.getElementById('vacaMensualTb');mtb.innerHTML='';
+  if(md){
+    let total=0;
+    md.m.forEach((v,i)=>{
+      const tr=document.createElement('tr');
+      if(v===null){tr.innerHTML='<td>'+MESES_L[i]+' 2026</td><td class="r pending">—</td><td class="r pending">—</td><td class="r pending">—</td><td class="sub">sin ordeño</td>';}
+      else{const t=Math.round(v*DIAS_MES[i]);total+=t;
+        tr.innerHTML='<td><b>'+MESES_L[i]+' 2026</b></td><td class="r">'+v.toFixed(1)+'</td><td class="r"><b>'+t+' L</b></td><td class="r">'+DIAS_MES[i]+'</td><td class="sub">'+(v<8?'bajo':'normal')+'</td>';}
+      tr.style.cursor='pointer';
+      tr.onclick=()=>{mensualMes=i;renderMesPicker();renderMensual();go('pg-leche',document.querySelector('[data-pg="pg-leche"]'));
+        document.querySelector('.content').scrollTop=document.getElementById('mesPicker').offsetTop-60;};
+      mtb.appendChild(tr);
+    });
+    const avgM=md.m.filter(v=>v!==null);
+    const trT=document.createElement('tr');trT.style.cssText='font-weight:700;background:var(--surface)';
+    trT.innerHTML='<td>Total 2026</td><td class="r">'+(avgM.length?(avgM.reduce((a,b)=>a+b,0)/avgM.length).toFixed(1):'—')+'</td><td class="r">'+total+' L</td><td class="r">'+DIAS_MES.slice(0,md.m.filter(v=>v!==null).length).reduce((a,b)=>a+b,0)+'</td><td></td>';
+    mtb.appendChild(trT);
+  }
+}
 
 /* 32 potreros ordenados por estado: listos → recuperando → recién pastoreados */
 const pots=[];
