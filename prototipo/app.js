@@ -525,5 +525,92 @@ function saveSeca(){
     desencolar(); openGroup('horras'); snack('Secado deshecho');
   });
 }
+/* ===== Alta y Baja (inventario del hato) ===== */
+let nOrdeno=26, nNovillas=14, nBajas=7;   // nHorras, nTerneras, nMachos ya existen
+function subOrdeno(){grupos.ordeno.sub=nOrdeno+' vacas · ayer 11,4 L/vaca · DEL prom. 164';
+  grupos.ordeno.header='<b>'+nOrdeno+' vacas en ordeño.</b> Ordenadas como entran al ordeño.';}
+function subNovillas(){grupos.novillas.sub=nNovillas+' novillas · 4 listas para servicio';
+  grupos.novillas.header='<b>'+nNovillas+' novillas de vientre.</b> 4 ya tienen peso para servicio (>330 kg).';}
+function subTerneras(){grupos.terneras.sub=nTerneras+' terneras · 2 destetes próximos';
+  grupos.terneras.header='<b>'+nTerneras+' terneras.</b> Consumen ~40 L/día de la leche del ordeño.';}
+function subMachos(){grupos.machos.sub=nMachos+' machos';
+  grupos.machos.header='<b>'+nMachos+' machos.</b> Sansón cubre el hato; los terneros machos se levantan o se venden.';}
+function subHorras(){grupos.horras.sub=nHorras+' vacas · 6 paren antes de octubre';
+  grupos.horras.header='<b>'+nHorras+' vacas horras.</b> Ordenadas por fecha de parto; tras parir vuelven al ordeño.';}
+function subBajas(){grupos.bajas.sub=nBajas+' animales fuera del hato · 2026';
+  grupos.bajas.header='<b>'+nBajas+' bajas en 2026.</b> Vendidas, muertas o perdidas — su historia se conserva.';}
+function incGrupo(g,d){
+  if(g==='ordeno'){nOrdeno+=d;subOrdeno();}
+  else if(g==='novillas'){nNovillas+=d;subNovillas();}
+  else if(g==='terneras'){nTerneras+=d;subTerneras();}
+  else if(g==='machos'){nMachos+=d;subMachos();}
+  else if(g==='horras'){nHorras+=d;subHorras();}
+  else if(g==='bajas'){nBajas+=d;subBajas();}
+}
+/* --- Alta (compra) --- */
+const altaGrupo={'Vaca en ordeño':'ordeno','Novilla':'novillas','Ternera':'terneras','Toro':'machos'};
+const alta={tipo:'Novilla'};
+let altaSeq=79, toroSeq=2;
+function openAlta(){alta.tipo='Novilla';
+  document.querySelectorAll('#altaSheet .chips')[0].querySelectorAll('.chip')
+    .forEach(c=>c.classList.toggle('sel',c.textContent.trim()==='Novilla'));
+  document.getElementById('scrim').classList.add('show');
+  document.getElementById('altaSheet').classList.add('show');}
+function closeAlta(){document.getElementById('altaSheet').classList.remove('show');
+  document.getElementById('scrim').classList.remove('show');}
+function altaPick(btn,campo,val){alta[campo]=val;
+  [...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));}
+function saveAlta(){
+  closeAlta();
+  const g=altaGrupo[alta.tipo];
+  const num=g==='machos'?'T0'+(++toroSeq):String(++altaSeq).padStart(3,'0');
+  grupos[g].animales.unshift([num+' · (compra)',alta.tipo+' comprada · ficha por completar',0]);
+  incGrupo(g,1);encolar();
+  setTimeout(()=>openGroup(g),300);
+  snack('Alta: '+num+' ('+alta.tipo.toLowerCase()+') — entró al hato, en '+grupos[g].nombre,'Deshacer',()=>{
+    grupos[g].animales.shift();incGrupo(g,-1);
+    if(g==='machos')toroSeq--;else altaSeq--;
+    desencolar();openGroup(g);snack('Alta deshecha');
+  });
+}
+/* --- Baja (venta / muerte / descarte / pérdida) --- */
+const baja={cow:'033 · Paloma',motivo:'Venta'};
+function bajaMarcar(){document.querySelectorAll('#bajaCows .chip').forEach(c=>
+  c.classList.toggle('sel',c.textContent.trim().startsWith(baja.cow.split('·')[0].trim())));}
+function openBaja(cow){
+  if(cow)baja.cow=cow;baja.motivo='Venta';
+  document.getElementById('bajaCow').textContent=baja.cow.toUpperCase();
+  const cd=cows.find(c=>baja.cow.startsWith(c.num));
+  document.getElementById('bajaInfo').textContent=cd?cd.del:'Elige el animal y el motivo';
+  bajaMarcar();
+  document.querySelectorAll('#bajaSheet .chips')[1].querySelectorAll('.chip')
+    .forEach((c,i)=>c.classList.toggle('sel',i===0));
+  document.getElementById('scrim').classList.add('show');
+  document.getElementById('bajaSheet').classList.add('show');}
+function closeBaja(){document.getElementById('bajaSheet').classList.remove('show');
+  document.getElementById('scrim').classList.remove('show');}
+function bajaCow(cow){baja.cow=cow;
+  document.getElementById('bajaCow').textContent=cow.toUpperCase();
+  const cd=cows.find(c=>cow.startsWith(c.num));
+  document.getElementById('bajaInfo').textContent=cd?cd.del:'Elige el animal y el motivo';
+  bajaMarcar();}
+function bajaPick(btn,campo,val){baja[campo]=val;
+  [...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));}
+function saveBaja(){
+  closeBaja();
+  const nombre=baja.cow.split('·')[1].trim();
+  const idx=cows.findIndex(c=>baja.cow.startsWith(c.num));
+  const removed=idx>=0?cows[idx]:null;
+  if(idx>=0){cows.splice(idx,1);renderCows();incGrupo('ordeno',-1);}
+  nBajas++;subBajas();
+  grupos.bajas.animales.unshift([baja.cow,baja.motivo.toUpperCase()+' · 13 jun · registrada']);
+  encolar();
+  setTimeout(()=>openGroup('bajas'),300);
+  snack(nombre+': baja por '+baja.motivo.toLowerCase()+' — sale del hato, su historia se conserva','Deshacer',()=>{
+    if(removed){cows.splice(Math.min(idx,cows.length),0,removed);renderCows();incGrupo('ordeno',1);}
+    nBajas--;subBajas();grupos.bajas.animales.shift();
+    desencolar();openGroup('bajas');snack('Baja deshecha');
+  });
+}
 /* la app arranca en el selector de línea de negocio */
 go('scr-selector');

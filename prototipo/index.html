@@ -388,7 +388,7 @@
       <div style="display:flex;gap:8px;margin-top:12px">
         <button class="btn text small" style="flex:1;justify-content:center"
           onclick="snack('Lista completa de los 80, con scroll — cada animal abre su ficha')">Ver la lista completa</button>
-        <button class="btn outl small" onclick="openSheet()">＋ Agregar</button>
+        <button class="btn outl small" onclick="openAlta()">＋ Agregar</button>
         <button class="btn outl small" onclick="snack('Exportado: inventario_hato_jun2026.xlsx')"><svg class="ic-s ic"><use href="#i-export"/></svg></button>
       </div>
     </div>
@@ -748,7 +748,7 @@
   </div>
 
   <!-- SHEET -->
-  <div class="scrim" id="scrim" onclick="closeSheet();closeMilk();closeParto();closePalp();closeTrata();closeSeca()"></div>
+  <div class="scrim" id="scrim" onclick="closeSheet();closeMilk();closeParto();closePalp();closeTrata();closeSeca();closeAlta();closeBaja()"></div>
   <div class="sheet" id="sheet">
     <div class="handle"></div>
     <h3>Registrar</h3>
@@ -775,8 +775,8 @@
       <button onclick="closeSheet();openParto()"><svg class="ic"><use href="#i-sprout"/></svg><span class="q-label">Parto / nacimiento</span></button>
       <button onclick="closeSheet();openTrata()"><svg class="ic"><use href="#i-cross"/></svg><span class="q-label">Enfermedad / tratamiento</span></button>
       <button onclick="closeSheet();openSeca()"><svg class="ic"><use href="#i-cal"/></svg><span class="q-label">Secado de vaca</span></button>
-      <button onclick="sheetPick('Alta registrada: animal comprado — ficha creada')"><svg class="ic"><use href="#i-bag"/></svg><span class="q-label">Alta · compra</span></button>
-      <button onclick="sheetPick('Baja registrada — el animal queda en el histórico')"><svg class="ic"><use href="#i-out"/></svg><span class="q-label">Baja · venta/muerte</span></button>
+      <button onclick="closeSheet();openAlta()"><svg class="ic"><use href="#i-bag"/></svg><span class="q-label">Alta · compra</span></button>
+      <button onclick="closeSheet();openBaja()"><svg class="ic"><use href="#i-out"/></svg><span class="q-label">Baja · venta/muerte</span></button>
     </div>
   </div>
 
@@ -956,6 +956,57 @@
       <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar secado</button>
     <div style="font-size:11px;color:var(--ink-3);margin-top:10px;text-align:center">
       La vaca sale del ordeño y pasa a horras (secas). Se mantiene su preñez y se planea su próximo parto.</div>
+  </div>
+
+  <!-- SHEET: registrar alta (compra) -->
+  <div class="sheet" id="altaSheet">
+    <div class="handle"></div>
+    <h3>Registrar alta · compra</h3>
+    <div class="m-del" style="margin-bottom:14px">Se crea la ficha y el animal entra al hato.</div>
+
+    <div class="section-label" style="margin-top:0">Tipo de animal</div>
+    <div class="chips">
+      <button class="chip sel" onclick="altaPick(this,'tipo','Novilla')">Novilla</button>
+      <button class="chip" onclick="altaPick(this,'tipo','Ternera')">Ternera</button>
+      <button class="chip" onclick="altaPick(this,'tipo','Vaca en ordeño')">Vaca en ordeño</button>
+      <button class="chip" onclick="altaPick(this,'tipo','Toro')">Toro</button>
+    </div>
+
+    <button class="btn filled" style="width:100%;justify-content:center;margin-top:16px" onclick="saveAlta()">
+      <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar alta</button>
+    <div style="font-size:11px;color:var(--ink-3);margin-top:10px;text-align:center">
+      Se le asigna el número siguiente disponible; completas la ficha (raza, edad, peso) después.</div>
+  </div>
+
+  <!-- SHEET: registrar baja -->
+  <div class="sheet" id="bajaSheet">
+    <div class="handle"></div>
+    <h3>Registrar baja</h3>
+    <div class="m-label" id="bajaCow">033 · PALOMA</div>
+    <div class="m-del" id="bajaInfo" style="margin-bottom:14px">DEL 95 · 4to parto</div>
+
+    <div class="section-label" style="margin-top:0">Animal</div>
+    <div class="chips" id="bajaCows">
+      <button class="chip" onclick="bajaCow('042 · Lucero')">042 Lucero</button>
+      <button class="chip" onclick="bajaCow('038 · Mona')">038 Mona</button>
+      <button class="chip" onclick="bajaCow('051 · Careta')">051 Careta</button>
+      <button class="chip" onclick="bajaCow('027 · Estrella')">027 Estrella</button>
+      <button class="chip sel" onclick="bajaCow('033 · Paloma')">033 Paloma</button>
+      <button class="chip" onclick="bajaCow('029 · Pinta')">029 Pinta</button>
+    </div>
+
+    <div class="section-label">Motivo</div>
+    <div class="chips">
+      <button class="chip sel" onclick="bajaPick(this,'motivo','Venta')">Venta</button>
+      <button class="chip" onclick="bajaPick(this,'motivo','Muerte')">Muerte</button>
+      <button class="chip" onclick="bajaPick(this,'motivo','Descarte')">Descarte</button>
+      <button class="chip" onclick="bajaPick(this,'motivo','Pérdida')">Pérdida</button>
+    </div>
+
+    <button class="btn filled" style="width:100%;justify-content:center;margin-top:16px" onclick="saveBaja()">
+      <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar baja</button>
+    <div style="font-size:11px;color:var(--ink-3);margin-top:10px;text-align:center">
+      El animal sale del hato y queda en el histórico de bajas; su historia se conserva.</div>
   </div>
 
   <!-- SNACKBAR -->
