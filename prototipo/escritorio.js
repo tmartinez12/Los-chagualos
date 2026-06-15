@@ -1,5 +1,6 @@
 const titles={
   'pg-inicio':['Buenos días, Tatiana','Jueves 12 de junio · lluvia ayer: 12 mm'],
+  'pg-leche':['Producción de leche','26 vacas en ordeño · hoy 184 L'],
   'pg-hato':['Hato','80 animales · unidad leche'],
   'pg-potreros':['Potreros','32 potreros · ocupación 1 día (máx 2)'],
   'pg-diario':['Diario de la finca','Quién registró qué — y qué falta'],

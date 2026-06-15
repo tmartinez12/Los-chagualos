@@ -41,6 +41,7 @@
       <a data-pg="pg-diario" onclick="go('pg-diario',this)"><svg class="ic"><use href="#i-book"/></svg>Diario de la finca<span class="badge bad">2</span></a>
       <a data-pg="pg-decisiones" onclick="go('pg-decisiones',this)"><svg class="ic"><use href="#i-bulb"/></svg>Decisiones<span class="badge">4</span></a>
       <div class="nav-sec">Unidad · Leche</div>
+      <a data-pg="pg-leche" onclick="go('pg-leche',this)"><svg class="ic"><use href="#i-drop"/></svg>Producción</a>
       <a data-pg="pg-hato" onclick="go('pg-hato',this)"><svg class="ic"><use href="#i-tag"/></svg>Hato</a>
       <a data-pg="pg-potreros" onclick="go('pg-potreros',this)"><svg class="ic"><use href="#i-leaf"/></svg>Potreros</a>
       <a data-pg="pg-repro" onclick="go('pg-repro',this)"><svg class="ic"><use href="#i-repeat"/></svg>Reproducción</a>
@@ -136,6 +137,115 @@
         </div>
       </div>
 
+      <!-- ============ LECHE (producción) ============ -->
+      <div class="page" id="pg-leche">
+        <div class="kpis">
+          <div class="card kpi"><div class="k-label">Leche hoy</div>
+            <div class="k-value">184 <span class="k-unit">L</span></div>
+            <div class="k-trend up">↑ 8% vs ayer</div></div>
+          <div class="card kpi"><div class="k-label">Promedio 7 días</div>
+            <div class="k-value">171 <span class="k-unit">L</span></div>
+            <div class="k-trend mut">26 vacas en ordeño</div></div>
+          <div class="card kpi"><div class="k-label">L/vaca·día</div>
+            <div class="k-value">11,4</div>
+            <div class="k-trend up">↑ vs mayo</div></div>
+          <div class="card kpi"><div class="k-label">Entregado hoy</div>
+            <div class="k-value">170 <span class="k-unit">L</span></div>
+            <div class="k-trend up">balance cuadra ✓</div></div>
+        </div>
+
+        <div class="grid" style="grid-template-columns:1.4fr 1fr;margin-top:12px">
+          <div class="card chart-card">
+            <div class="chart-title">Producción diaria · últimos 7 días</div>
+            <div class="chart-sub">Litros/día vs lluvia · los eventos explican la curva</div>
+            <svg class="chart" viewBox="0 0 560 150" style="width:100%">
+              <g fill="#E2E4D8">
+                <rect x="20" y="120" width="9" height="22" rx="2"/><rect x="135" y="108" width="9" height="34" rx="2"/>
+                <rect x="260" y="96" width="9" height="46" rx="2"/><rect x="382" y="126" width="9" height="16" rx="2"/>
+                <rect x="466" y="111" width="9" height="31" rx="2"/>
+              </g>
+              <polyline points="18,88 70,82 122,85 175,66 228,70 280,52 332,58 385,48 437,45 490,36 540,30"
+                fill="none" stroke="#2F7E33" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="540" cy="30" r="4.5" fill="#2F7E33"/>
+              <g font-family="Work Sans,sans-serif" font-size="11">
+                <line x1="280" y1="52" x2="280" y2="22" stroke="#A8ACA0" stroke-dasharray="2,2"/>
+                <text x="286" y="20" fill="#70756A" font-weight="600">entró silo</text>
+                <text x="498" y="18" fill="#16181B" font-weight="700">184 L</text>
+              </g>
+            </svg>
+          </div>
+          <div>
+            <div class="alert info" style="margin-bottom:8px">
+              <div style="flex:1"><div class="a-title">Retiro de leche: 017 Azucena — faltan 2 días</div>
+                <div class="a-sub">Mastitis · antibiótico · no vender su leche hasta el sáb 14</div></div>
+            </div>
+            <div class="alert urgent">
+              <div style="flex:1"><div class="a-title">2 vacas requieren atención</div>
+                <div class="a-sub"><b>033 Paloma</b> — 6 L a DEL 95, muy bajo ·
+                  <b>029 Pinta</b> — 5 L a DEL 412, lactancia muy larga</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-label">Ordeño de hoy · producción por vaca</div>
+        <div class="card" style="padding:8px">
+          <table>
+            <thead><tr>
+              <th>Animal</th><th class="r">Ayer</th><th class="r">Hoy</th><th class="r">Var.</th>
+              <th class="r">DEL</th><th>Estado</th><th>Nota</th>
+            </tr></thead>
+            <tbody>
+              <tr><td><div class="cell-animal"><div class="cini">042</div><div><div class="cn">Lucero</div></div></div></td>
+                <td class="r">17</td><td class="r"><b>18 L</b></td><td class="r up">↑ +1</td>
+                <td class="r">152</td><td><span class="badge warn">preñada 6m</span></td><td class="sub">secar ~12 jul</td></tr>
+              <tr><td><div class="cell-animal"><div class="cini">038</div><div><div class="cn">Mona</div></div></div></td>
+                <td class="r">16</td><td class="r"><b>16 L</b></td><td class="r mut">= ayer</td>
+                <td class="r">98</td><td><span class="badge">servida</span></td><td class="sub">por confirmar palp.</td></tr>
+              <tr><td><div class="cell-animal"><div class="cini">051</div><div><div class="cn">Careta</div></div></div></td>
+                <td class="r">13</td><td class="r"><b>14 L</b></td><td class="r up">↑ +1</td>
+                <td class="r">121</td><td></td><td class="sub">1er parto</td></tr>
+              <tr><td><div class="cell-animal"><div class="cini">027</div><div><div class="cn">Estrella</div></div></div></td>
+                <td class="r">12</td><td class="r"><b>13 L</b></td><td class="r up">↑ +1</td>
+                <td class="r">64</td><td></td><td class="sub">pico de lactancia</td></tr>
+              <tr><td><div class="cell-animal"><div class="cini">017</div><div><div class="cn">Azucena</div></div></div></td>
+                <td class="r">11</td><td class="r"><b>11 L</b></td><td class="r mut">= ayer</td>
+                <td class="r">201</td><td><span class="badge bad">retiro 2d</span></td><td class="sub">no vender su leche</td></tr>
+              <tr><td><div class="cell-animal"><div class="cini">033</div><div><div class="cn">Paloma</div></div></div></td>
+                <td class="r">9</td><td class="r"><b>6 L</b></td><td class="r down">↓ −3</td>
+                <td class="r">95</td><td><span class="badge bad">vacía 132d</span></td><td class="sub" style="color:var(--red)">producción muy baja</td></tr>
+              <tr><td><div class="cell-animal"><div class="cini">029</div><div><div class="cn">Pinta</div></div></div></td>
+                <td class="r">5</td><td class="r"><b>5 L</b></td><td class="r mut">= ayer</td>
+                <td class="r">412</td><td><span class="badge bad">vacía 150d</span></td><td class="sub" style="color:var(--red)">evaluar descarte</td></tr>
+            </tbody>
+          </table>
+          <div style="text-align:center;padding:12px">
+            <button class="btn outl small" onclick="snack('Tabla completa de las 26 vacas en ordeño, con orden por cualquier columna')">Ver las 19 restantes</button>
+          </div>
+        </div>
+
+        <div class="section-label">Entregas a los lecheros · hoy</div>
+        <div class="grid" style="grid-template-columns:1fr 1fr">
+          <div class="card" style="padding:8px">
+            <table>
+              <thead><tr><th>Lechero</th><th>Frecuencia</th><th class="r">Hoy</th><th class="r">Junio acum.</th><th class="r">$ Junio</th></tr></thead>
+              <tbody>
+                <tr><td><b>Don José</b></td><td>Diario</td><td class="r"><b>120 L</b></td><td class="r">1.440 L</td><td class="r">$2,8M</td></tr>
+                <tr><td><b>Quesería La María</b></td><td>Lun · Mié · Vie</td><td class="r"><b>50 L</b></td><td class="r">600 L</td><td class="r">$1,2M</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card">
+            <div style="font-size:13px;color:var(--ink-2);line-height:1.8">
+              <b style="color:var(--ink)">Balance del día:</b><br>
+              Producida <b>184 L</b> − entregada <b>170 L</b> − terneras <b>12 L</b> = casa <b>2 L</b>
+              <span class="up" style="font-weight:700"> ✓ cuadra</span></div>
+            <div style="margin-top:12px;font-size:13px;color:var(--ink-2);line-height:1.8">
+              <b style="color:var(--ink)">Precio vigente:</b> $1.950/L<br>
+              <b style="color:var(--ink)">Total por cobrar (junio):</b> $3,98M</div>
+          </div>
+        </div>
+      </div>
+
       <!-- ============ HATO (tabla) ============ -->
       <div class="page" id="pg-hato">
         <div class="card" style="padding:10px 14px;display:flex;gap:10px;align-items:center;margin-bottom:12px">
@@ -219,6 +329,19 @@
         </div>
         <div class="section-label" style="margin-top:4px">32 potreros · ordenados por estado (listos primero)</div>
         <div class="pgrid" id="pgrid"></div>
+
+        <div class="card" style="margin-top:14px">
+          <div class="chart-title" style="font-size:13.5px">Vuelta proyectada (próximos 7 días)</div>
+          <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+            <span class="badge sel" style="background:var(--black);color:#fff;border-color:var(--black)">Hoy → P4</span>
+            <span class="badge">vie P5</span><span class="badge">sáb P3</span>
+            <span class="badge">dom P12</span><span class="badge">lun P11</span>
+            <span class="badge">mar P2</span><span class="badge">mié P6</span>
+          </div>
+          <div style="font-size:12.5px;color:var(--ink-2);margin-top:10px">Descanso promedio: <b>31 días</b> — adecuado para lluvias.
+            En seca el sistema pedirá ampliar la vuelta.</div>
+        </div>
+
         <div class="card" style="margin-top:14px;display:flex;gap:12px;align-items:center;padding:12px 16px">
           <svg class="ic-s ic" style="color:var(--ink-2)"><use href="#i-rain"/></svg>
           <span style="font-size:13px"><b>Lluvia</b> · ayer 12 mm · junio: 148 mm · vuelta proyectada: descanso promedio <b>31 días</b></span>
@@ -280,11 +403,13 @@
 
       <!-- ============ DECISIONES ============ -->
       <div class="page" id="pg-decisiones">
-        <div class="kpis" style="grid-template-columns:repeat(3,1fr);margin-bottom:12px">
+        <div class="kpis" style="margin-bottom:12px">
           <div class="card kpi"><div class="k-label">Litros/vaca·día</div><div class="k-value">11,4</div>
             <div class="k-trend up">↑ vs mayo</div></div>
-          <div class="card kpi"><div class="k-label">DEL promedio del hato</div><div class="k-value">164</div>
+          <div class="card kpi"><div class="k-label">DEL promedio</div><div class="k-value">164</div>
             <div class="k-trend mut">sano: &lt;200</div></div>
+          <div class="card kpi"><div class="k-label">Costo/L</div><div class="k-value" style="font-size:20px">$1.180</div>
+            <div class="k-trend up">↓ 6%</div></div>
           <div class="card kpi"><div class="k-label">Preñez</div><div class="k-value">73<span class="k-unit">%</span></div>
             <div class="k-trend mut">19 de 26 elegibles</div></div>
         </div>
@@ -313,6 +438,13 @@
               Histórico de La Loma: ~6 recolectores.</div>
             <button class="btn outl small" onclick="snack('Recordatorio: confirmar recolectores el 15 sep')">Recordármelo en sep</button>
           </div>
+          <div class="dec" style="border-left:3px solid var(--green)">
+            <div class="d-title">Cuentas del mes por lechero</div>
+            <div class="d-why">Junio a la fecha: <b>Don José $5,4M</b> (2.770 L) ·
+              <b>La María $1,9M</b> (980 L) — a precio fijo de $1.950/L.
+              Total por cobrar: <b>$7,3M</b>.</div>
+            <button class="btn outl small" onclick="snack('Exportado: cuentas_junio.pdf — una hoja por lechero')"><svg class="ic-s ic"><use href="#i-export"/></svg>Exportar cuentas</button>
+          </div>
         </div>
       </div>
 
@@ -334,6 +466,11 @@
                 <div style="font-size:12px;color:var(--ink-2)">6 años · en el hato desde 2021 · <b>23 hijas vivas</b> · monta natural</div>
               </div>
               <button class="btn outl small" onclick="snack('Ficha del toro Sansón — 23 hijas en la finca')">Ver ficha</button>
+            </div>
+            <div class="card" style="display:flex;gap:12px;align-items:center;cursor:pointer" onclick="go('pg-partos')">
+              <svg class="ic" style="color:var(--ink-2)"><use href="#i-sprout"/></svg>
+              <div style="flex:1;font-size:13px"><b>Partos:</b> 9 por parir · próximo ~3 jul (Violeta)</div>
+              <button class="btn outl small">Ver partos</button>
             </div>
             <div class="section-label">Regla de los 21 días</div>
             <div class="card">
@@ -370,6 +507,29 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <div class="section-label" style="color:var(--red)">Vacas vacías · 2 requieren decisión</div>
+        <div class="card" style="padding:8px">
+          <table>
+            <thead><tr><th>Animal</th><th class="r">DEL</th><th class="r">Días vacía</th><th>Última palpación</th><th class="r">Ayer</th><th>Recomendación</th><th></th></tr></thead>
+            <tbody>
+              <tr>
+                <td><div class="cell-animal"><div class="cini">033</div><div><div class="cn">Paloma</div><div class="cs">4to parto · Normando</div></div></div></td>
+                <td class="r">95</td><td class="r"><span class="badge bad">132 d</span></td>
+                <td>3 feb 2026 → vacía</td><td class="r"><b>6 L</b></td>
+                <td style="color:var(--red);font-size:12px">Producción muy baja para su etapa — evaluar descarte</td>
+                <td class="r"><button class="btn outl small" onclick="snack('Opciones: palpar de nuevo · dar de baja · secar')">Acción</button></td>
+              </tr>
+              <tr>
+                <td><div class="cell-animal"><div class="cini">029</div><div><div class="cn">Pinta</div><div class="cs">Lactancia larga · Holstein × Gyr</div></div></div></td>
+                <td class="r">412</td><td class="r"><span class="badge bad">150 d</span></td>
+                <td>18 ene 2026 → vacía</td><td class="r"><b>5 L</b></td>
+                <td style="color:var(--red);font-size:12px">Lactancia extendida sin preñez — evaluar descarte</td>
+                <td class="r"><button class="btn outl small" onclick="snack('Opciones: palpar de nuevo · dar de baja · secar')">Acción</button></td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -417,6 +577,26 @@
 
       <!-- ============ PLAN SANITARIO ============ -->
       <div class="page" id="pg-sanitario">
+        <button class="btn filled" style="margin-bottom:14px" onclick="snack('Registrar enfermedad o tratamiento — selecciona el animal, el problema y el tratamiento')">
+          <svg class="ic-s ic"><use href="#i-shield"/></svg>Registrar enfermedad o tratamiento</button>
+
+        <div class="section-label" style="margin-top:0">En tratamiento ahora · <span style="color:var(--red)">1</span></div>
+        <div class="card" style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px">
+            <div class="cell-animal" style="display:flex;gap:10px;align-items:center">
+              <div class="cini">017</div>
+              <div><div class="cn">Azucena</div>
+                <div class="cs">Mastitis · antibiótico (3er día de 5) · <b style="color:var(--red)">retiro de leche hasta sáb 14</b></div></div>
+            </div>
+            <span class="badge bad">retiro 2 d</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn outl small" onclick="snack('Tratamiento marcado como terminado — el retiro de leche se levanta el sáb 14')">Marcar terminado</button>
+            <button class="btn outl small" onclick="snack('Historia clínica de Azucena — tratamientos, dosis y retiros')">Ver historia</button>
+          </div>
+        </div>
+
+        <div class="section-label">Vacunas</div>
         <div class="grid" style="grid-template-columns:1fr 1fr">
           <div class="card" style="border:1.5px solid var(--ink);display:flex;align-items:center;gap:14px">
             <svg class="ic" style="color:var(--ink-2)"><use href="#i-shield"/></svg>
