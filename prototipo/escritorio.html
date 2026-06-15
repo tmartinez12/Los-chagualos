@@ -204,26 +204,31 @@
           </div>
         </div>
 
-        <div class="section-label">Entregas a los lecheros · hoy</div>
+        <div class="section-label" style="display:flex;justify-content:space-between;align-items:baseline">
+          <span>Entregas a los lecheros · hoy</span>
+          <span id="entregaProg" style="font-weight:700;color:var(--ink);text-transform:none;letter-spacing:0">0 de 2 · Σ 0 L</span>
+        </div>
         <div class="grid" style="grid-template-columns:1fr 1fr">
           <div class="card" style="padding:8px">
             <table>
-              <thead><tr><th>Lechero</th><th>Frecuencia</th><th class="r">Hoy</th><th class="r">Junio acum.</th><th class="r">$ Junio</th></tr></thead>
-              <tbody>
-                <tr><td><b>Don José</b></td><td>Diario</td><td class="r"><b>120 L</b></td><td class="r">1.440 L</td><td class="r">$2,8M</td></tr>
-                <tr><td><b>Quesería La María</b></td><td>Lun · Mié · Vie</td><td class="r"><b>50 L</b></td><td class="r">600 L</td><td class="r">$1,2M</td></tr>
-              </tbody>
+              <thead><tr><th>Lechero</th><th>Frecuencia</th><th class="r">Ayer</th><th class="r">Hoy</th><th class="r">Junio acum.</th><th class="r">$ Junio</th></tr></thead>
+              <tbody id="entregaTbody"></tbody>
             </table>
           </div>
-          <div class="card">
-            <div style="font-size:13px;color:var(--ink-2);line-height:1.8">
-              <b style="color:var(--ink)">Balance del día:</b><br>
-              Producida <b>184 L</b> − entregada <b>170 L</b> − terneras <b>12 L</b> = casa <b>2 L</b>
-              <span class="up" style="font-weight:700"> ✓ cuadra</span></div>
-            <div style="margin-top:12px;font-size:13px;color:var(--ink-2);line-height:1.8">
-              <b style="color:var(--ink)">Precio vigente:</b> $1.950/L<br>
-              <b style="color:var(--ink)">Total por cobrar (junio):</b> $3,98M</div>
+          <div class="card" id="entregaBalance">
           </div>
+        </div>
+
+        <div class="section-label" style="display:flex;justify-content:space-between;align-items:baseline">
+          <span id="entregaHistTitulo">Historial de entregas · Junio 2026</span>
+          <button class="btn outl small" onclick="snack('Exportado: entregas_'+(entregaMesIdx<0?'2026':MESES_L[entregaMesIdx].toLowerCase()+'2026')+'.xlsx')"><svg class="ic-s ic"><use href="#i-export"/></svg></button>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="entregaMesPicker"></div>
+        <div class="card" style="padding:8px;overflow-x:auto">
+          <table>
+            <thead id="entregaHistHead"></thead>
+            <tbody id="entregaHistBody"></tbody>
+          </table>
         </div>
 
         <div class="section-label" style="display:flex;justify-content:space-between;align-items:baseline">

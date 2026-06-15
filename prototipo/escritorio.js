@@ -103,9 +103,168 @@ function saveMilk(){
   }
 }
 renderMilk();
-/* ===== Producción mensual por vaca (resumen) y diaria (detalle del mes) ===== */
+
+/* ===== Entregas a lecheros ===== */
 const MESES_L=['Ene','Feb','Mar','Abr','May','Jun'];
-const DIAS_MES=[31,28,31,30,31,12];   // junio: al día (12 jun)
+const DIAS_MES=[31,28,31,30,31,12];
+const lecheros=[
+  {id:'jose',n:'Don José',freq:'Diario',precio:1950,diasSemana:[0,1,2,3,4,5,6],
+   ayer:120,hoy:null,done:false},
+  {id:'maria',n:'Quesería La María',freq:'Lun · Mié · Vie',precio:1950,diasSemana:[1,3,5],
+   ayer:50,hoy:null,done:false},
+];
+const entregaOverrides={};
+function entregaDiaKey(lid,m,d){return lid+'-'+m+'-'+d;}
+function entregaDiaVal(lid,mesIdx,dia){
+  const k=entregaDiaKey(lid,mesIdx,dia);
+  if(k in entregaOverrides)return entregaOverrides[k];
+  const l=lecheros.find(x=>x.id===lid);if(!l)return 0;
+  const dow=new Date(2026,mesIdx,dia).getDay();
+  if(!l.diasSemana.includes(dow))return 0;
+  const base=l.id==='jose'?120:50;
+  const seed=lid.charCodeAt(0)*13+mesIdx*101+dia*7;
+  const wobble=Math.sin(seed)*0.08;
+  return Math.max(0,Math.round(base*(1+wobble)));
+}
+function renderEntregas(){
+  const tb=document.getElementById('entregaTbody');if(!tb)return;tb.innerHTML='';
+  let totalHoy=0,totalAyer=0;
+  lecheros.forEach((l,i)=>{
+    const tr=document.createElement('tr');
+    if(l.done)tr.className='done';
+    let hoyCell,acumL=0,acumP=0;
+    for(let d=1;d<=DIAS_MES[5];d++){const v=entregaDiaVal(l.id,5,d);acumL+=v;acumP+=v*l.precio;}
+    if(l.done){
+      totalHoy+=l.hoy;
+      hoyCell='<span class="reg">'+l.hoy+' L ✓</span>';
+    }else{hoyCell='<span class="pending">— pend.</span>';}
+    totalAyer+=l.ayer;
+    tr.innerHTML='<td><b>'+l.n+'</b></td><td>'+l.freq+'</td><td class="r">'+l.ayer+'</td>'+
+      '<td class="r">'+hoyCell+'</td><td class="r">'+(acumL+(l.done?l.hoy:0))+' L</td>'+
+      '<td class="r">$'+((acumP+(l.done?l.hoy*l.precio:0))/1e6).toFixed(1)+'M</td>';
+    tr.style.cursor='pointer';
+    tr.onclick=()=>openEntrega(i);
+    tb.appendChild(tr);
+  });
+  const done=lecheros.filter(l=>l.done);
+  const prog=document.getElementById('entregaProg');
+  if(prog)prog.textContent=done.length+' de '+lecheros.length+' · Σ '+done.reduce((s,l)=>s+l.hoy,0)+' L';
+  const bal=document.getElementById('entregaBalance');
+  if(bal){
+    const producida=184;const terneras=12;
+    const entregada=done.reduce((s,l)=>s+l.hoy,0);
+    const pendientes=lecheros.filter(l=>!l.done);
+    const casa=producida-entregada-terneras;
+    const cuadra=casa>=0&&pendientes.length===0;
+    bal.innerHTML='<div style="font-size:13px;color:var(--ink-2);line-height:1.8">'+
+      '<b style="color:var(--ink)">Balance del día:</b><br>'+
+      'Producida <b>184 L</b> − entregada <b>'+(entregada||'…')+' L</b> − terneras <b>12 L</b> = casa <b>'+(done.length?casa:'…')+' L</b>'+
+      (cuadra?' <span class="up" style="font-weight:700"> ✓ cuadra</span>':pendientes.length?' <span class="mut">(faltan '+pendientes.length+' entregas)</span>':
+        casa<0?' <span class="down" style="font-weight:700">⚠ más entregada que producida</span>':'')+'</div>'+
+      '<div style="margin-top:12px;font-size:13px;color:var(--ink-2);line-height:1.8">'+
+      '<b style="color:var(--ink)">Precio vigente:</b> $1.950/L<br>'+
+      '<b style="color:var(--ink)">Total por cobrar (junio):</b> $'+((lecheros.reduce((s,l)=>{
+        let t=0;for(let d=1;d<=DIAS_MES[5];d++)t+=entregaDiaVal(l.id,5,d);
+        if(l.done)t+=l.hoy;return s+t*l.precio;},0))/1e6).toFixed(2)+'M</div>';
+  }
+}
+function openEntrega(i){
+  const l=lecheros[i];
+  document.getElementById('mCow').textContent=l.n.toUpperCase();
+  document.getElementById('mDel').textContent=l.freq+' · $'+l.precio+'/L';
+  const inp=document.getElementById('mInput');inp.value=l.done?l.hoy:l.ayer;
+  const ref=document.getElementById('mRef');ref.className='m-ref';
+  ref.textContent=l.done?'Ya registrada con '+l.hoy+' L — puedes corregirla':'Ayer entregaste '+l.ayer+' L';
+  document.getElementById('scrim').classList.add('show');
+  document.getElementById('milkModal').classList.add('show');
+  document.getElementById('scrim').onclick=()=>closeEntrega();
+  const saveBtn=document.querySelector('#milkModal .btn.filled');
+  saveBtn.onclick=()=>saveEntrega(i);
+  inp.onkeydown=e=>{if(e.key==='Enter')saveEntrega(i);};
+  setTimeout(()=>{inp.focus();inp.select();},60);
+}
+function closeEntrega(){document.getElementById('milkModal').classList.remove('show');
+  document.getElementById('scrim').classList.remove('show');
+  document.getElementById('scrim').onclick=()=>closeMilk();
+  const saveBtn=document.querySelector('#milkModal .btn.filled');
+  saveBtn.onclick=()=>saveMilk();
+  document.getElementById('mInput').onkeydown=e=>{if(e.key==='Enter')saveMilk();};}
+function saveEntrega(i){
+  const l=lecheros[i];
+  const v=Math.max(0,parseInt(document.getElementById('mInput').value)||0);
+  const prev={done:l.done,hoy:l.hoy};
+  l.done=true;l.hoy=v;
+  closeEntrega();renderEntregas();
+  snack(l.n+': '+v+' L registrados','Deshacer',()=>{
+    l.done=prev.done;l.hoy=prev.hoy;renderEntregas();});
+}
+let entregaMesIdx=5;
+function renderEntregaMesPicker(){
+  const p=document.getElementById('entregaMesPicker');if(!p)return;p.innerHTML='';
+  MESES_L.forEach((m,i)=>{
+    const b=document.createElement('button');b.className='btn outl small';b.textContent=m;
+    if(i===entregaMesIdx)b.style.cssText='font-weight:700;background:var(--black);color:#fff;border-color:var(--black)';
+    b.onclick=()=>{entregaMesIdx=i;renderEntregaMesPicker();renderEntregaHist();};
+    p.appendChild(b);
+  });
+}
+function renderEntregaHist(){
+  const head=document.getElementById('entregaHistHead'),tb=document.getElementById('entregaHistBody');
+  if(!head||!tb)return;head.innerHTML='';tb.innerHTML='';
+  const tit=document.getElementById('entregaHistTitulo');
+  const n=DIAS_MES[entregaMesIdx];
+  if(tit)tit.textContent='Historial de entregas · '+MESES_L[entregaMesIdx]+' 2026';
+  let h='<tr><th>Día</th>';
+  lecheros.forEach(l=>h+='<th class="r">'+l.n+'</th>');
+  h+='<th class="r" style="font-weight:800">Total</th></tr>';
+  head.innerHTML=h;
+  const totPorLechero=new Array(lecheros.length).fill(0);
+  let gran=0;
+  for(let d=n;d>=1;d--){
+    const tr=document.createElement('tr');
+    const dow=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][new Date(2026,entregaMesIdx,d).getDay()];
+    let cells='<td><b>'+d+'</b> <span class="sub">'+dow+'</span></td>';
+    let diaTotal=0;
+    lecheros.forEach((l,li)=>{
+      const v=entregaDiaVal(l.id,entregaMesIdx,d);
+      const k=entregaDiaKey(l.id,entregaMesIdx,d);
+      if(v===0){cells+='<td class="r"><span class="pending">—</span></td>';}
+      else{
+        totPorLechero[li]+=v;diaTotal+=v;gran+=v;
+        cells+='<td class="r" style="cursor:pointer" onclick="editEntregaDia(this,\''+l.id+'\','+entregaMesIdx+','+d+','+v+',\''+l.n+'\')">'+v+' L</td>';
+      }
+    });
+    cells+='<td class="r" style="font-weight:700">'+(diaTotal?diaTotal+' L':'—')+'</td>';
+    tr.innerHTML=cells;tb.appendChild(tr);
+  }
+  const trT=document.createElement('tr');trT.style.cssText='background:var(--surface);font-weight:700';
+  let tc='<td style="font-weight:700">TOTAL</td>';
+  totPorLechero.forEach(t=>tc+='<td class="r">'+t+' L</td>');
+  tc+='<td class="r" style="font-weight:800">'+gran+' L</td>';
+  trT.innerHTML=tc;tb.appendChild(trT);
+}
+function editEntregaDia(td,lid,mes,dia,oldVal,nombre){
+  if(td.querySelector('input'))return;
+  const inp=document.createElement('input');inp.type='number';inp.step='1';inp.min='0';inp.value=oldVal;
+  inp.style.cssText='width:52px;border:none;border-bottom:2px solid var(--green);background:transparent;font-family:inherit;font-size:13px;font-weight:700;text-align:center;color:var(--ink);outline:none;padding:2px';
+  td.innerHTML='';td.appendChild(inp);inp.focus();inp.select();
+  function save(){
+    const raw=parseInt(inp.value);
+    if(isNaN(raw)||raw<0){renderEntregaHist();return;}
+    const k=entregaDiaKey(lid,mes,dia);
+    const prev=k in entregaOverrides?entregaOverrides[k]:null;
+    entregaOverrides[k]=raw;
+    renderEntregaHist();renderEntregas();
+    snack(nombre+' · día '+dia+' '+MESES_L[mes]+': '+oldVal+' → '+raw+' L','Deshacer',()=>{
+      if(prev!==null)entregaOverrides[k]=prev;else delete entregaOverrides[k];renderEntregaHist();renderEntregas();});
+  }
+  inp.onblur=save;
+  inp.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();inp.blur();}
+    if(e.key==='Escape'){e.preventDefault();renderEntregaHist();}};
+}
+renderEntregas();renderEntregaMesPicker();renderEntregaHist();
+
+/* ===== Producción mensual por vaca (resumen) y diaria (detalle del mes) ===== */
 const mensualData=[
   {num:'042',n:'Lucero',   m:[null,null,12.5,14.8,17.2,18.0], partos:'parió ene'},
   {num:'038',n:'Mona',     m:[14.2,14.0,15.1,14.8,15.5,16.0]},
