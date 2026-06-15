@@ -358,7 +358,40 @@ function saveParto(){
     snack('Parto deshecho');
   });
 }
-renderPartos();
+renderPartos();renderVacias();
+/* ===== Vacas vacías (se muestran en Reproducción) ===== */
+const vacasVacias=[
+  {cow:'033 · Paloma',del:95,diasVacia:132,ultimaPalp:'3 feb 2026',resultado:'vacía',
+   sub:'DEL 95 · 4to parto · ayer 6 L',accion:'Producción muy baja para su etapa — evaluar descarte'},
+  {cow:'029 · Pinta',del:412,diasVacia:150,ultimaPalp:'18 ene 2026',resultado:'vacía',
+   sub:'DEL 412 · lactancia larga · ayer 5 L',accion:'Lactancia extendida sin preñez — evaluar descarte'}
+];
+function renderVacias(){
+  const list=document.getElementById('listVacias');if(!list)return;list.innerHTML='';
+  const kpi=document.getElementById('kpiVacias');
+  if(kpi){kpi.textContent=vacasVacias.length;
+    kpi.classList.toggle('down',vacasVacias.length>0);}
+  const label=list.previousElementSibling;
+  if(label)label.innerHTML='Vacas vacías · <span style="color:var(--red)">'+vacasVacias.length+' requieren decisión</span>';
+  if(vacasVacias.length===0){
+    list.innerHTML='<div class="card flat" style="text-align:center;color:var(--ink-2);font-size:13px;padding:16px">No hay vacas vacías — todas preñadas o servidas ✓</div>';
+    return;}
+  vacasVacias.forEach(v=>{
+    const d=document.createElement('div');d.className='card';d.style.marginBottom='8px';
+    d.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">'+
+      '<div><div class="li-title">'+v.cow+'</div>'+
+      '<div class="li-sub">'+v.sub+'</div></div>'+
+      '<span class="badge bad">vacía '+v.diasVacia+'d</span></div>'+
+      '<div style="font-size:12px;color:var(--ink-2);margin-top:8px;line-height:1.5">'+
+      'Última palpación: <b>'+v.ultimaPalp+'</b> → '+v.resultado+
+      '<br>'+v.accion+'</div>'+
+      '<div style="display:flex;gap:8px;margin-top:10px">'+
+      '<button class="btn filled small" onclick="openPalp(\''+v.cow+'\')">Palpar de nuevo</button>'+
+      '<button class="btn outl small" onclick="openBaja(\''+v.cow+'\')">Dar de baja</button>'+
+      '<button class="btn text small" onclick="openSeca(\''+v.cow+'\')">Secar</button></div>';
+    list.appendChild(d);
+  });
+}
 /* ===== Palpación (la fuente de verdad de la reproducción) ===== */
 const palpCandidatas={
   '027 · Estrella':'celo sin repetir — ¿preñada?',
@@ -408,6 +441,7 @@ function savePalp(){
   const nombre=palp.cow.split('·')[1].trim();
   encolar();
   if(palp.resultado==='vacia'){
+    renderVacias();
     setTimeout(()=>go('scr-repro'),300);
     snack(nombre+': vacía — queda en la lista para servicio');
     return;
@@ -418,13 +452,16 @@ function savePalp(){
   const i=proximosPartos.findIndex(p=>p.cow===palp.cow);
   const prev=i>=0?proximosPartos[i]:null;
   if(i>=0)proximosPartos[i]=nuevo; else{proximosPartos.push(nuevo);porParir++;}
-  renderPartos();
+  const vi=vacasVacias.findIndex(v=>v.cow===palp.cow);
+  const removedVacia=vi>=0?vacasVacias.splice(vi,1)[0]:null;
+  renderPartos();renderVacias();
   setTimeout(()=>go('scr-partos'),300);
   snack(nombre+': preñada '+palp.meses+' meses — parto estimado '+f.corta+' · entra a los próximos partos','Deshacer',()=>{
     const j=proximosPartos.findIndex(p=>p.cow===palp.cow);
     if(j>=0)proximosPartos.splice(j,1);
     if(prev)proximosPartos.push(prev); else porParir--;
-    desencolar();renderPartos();snack('Palpación deshecha');
+    if(removedVacia)vacasVacias.splice(Math.min(vi,vacasVacias.length),0,removedVacia);
+    desencolar();renderPartos();renderVacias();snack('Palpación deshecha');
   });
 }
 /* ===== Enfermedad / tratamiento (activa el retiro de leche) ===== */

@@ -406,7 +406,7 @@
     <div class="kpi-row" style="margin-top:4px">
       <div class="kpi"><div class="k-label">Preñez</div><div class="k-value">73<span class="k-unit">%</span></div></div>
       <div class="kpi"><div class="k-label">Entre partos</div><div class="k-value">14,2<span class="k-unit">m</span></div></div>
-      <div class="kpi"><div class="k-label">Vacías >120d</div><div class="k-value down">2</div></div>
+      <div class="kpi"><div class="k-label">Vacías >120d</div><div class="k-value down" id="kpiVacias">2</div></div>
     </div>
 
     <div class="card" style="display:flex;gap:12px;align-items:center">
@@ -424,6 +424,9 @@
       <div style="flex:1;font-size:13px"><b>Partos:</b> 9 por parir · próximo ~3 jul · registrar parto</div>
       <svg class="ic chev"><use href="#i-chev"/></svg>
     </div>
+
+    <div class="section-label">Vacas vacías · <span style="color:var(--red)">2 requieren decisión</span></div>
+    <div class="list" id="listVacias"></div>
 
     <div class="alert urgent">
       <div class="a-icon"><svg class="ic"><use href="#i-warn"/></svg></div>
