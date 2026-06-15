@@ -195,8 +195,7 @@ function renderMensual(){
         if(v===null){td.innerHTML='<span class="pending">—</span>';td.style.cursor='default';}
         else{suma+=v;dias++;let cls='';
           if(v<avg*0.85)cls=' class="down"';else if(v>avg*1.15)cls=' class="up"';
-          const edited=diaKey(c.num,mensualMes,d) in diaOverrides;
-          td.innerHTML='<span'+cls+'>'+v.toFixed(1)+'</span>'+(edited?'<span style="font-size:8px;color:var(--amber);vertical-align:super"> ✎</span>':'');
+          td.innerHTML='<span'+cls+'>'+v.toFixed(1)+'</span>';
           td.onclick=(function(cow,day,val){return function(e){e.stopPropagation();editDiaCell(this,cow,day,val);};})(c,d,v);
         }
         tr.appendChild(td);
