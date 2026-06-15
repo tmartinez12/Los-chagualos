@@ -103,7 +103,9 @@ function saveMilk(){
   }
 }
 renderMilk();
-/* ===== Producción mensual por vaca ===== */
+/* ===== Producción mensual por vaca (resumen) y diaria (detalle del mes) ===== */
+const MESES_L=['Ene','Feb','Mar','Abr','May','Jun'];
+const DIAS_MES=[31,28,31,30,31,12];   // junio: al día (12 jun)
 const mensualData=[
   {num:'042',n:'Lucero',   m:[null,null,12.5,14.8,17.2,18.0], partos:'parió ene'},
   {num:'038',n:'Mona',     m:[14.2,14.0,15.1,14.8,15.5,16.0]},
@@ -113,69 +115,121 @@ const mensualData=[
   {num:'033',n:'Paloma',   m:[11.0,10.2,9.8,8.5,7.0,6.0],    nota:'bajando — vacía'},
   {num:'029',n:'Pinta',    m:[8.0,7.5,7.0,6.2,5.5,5.0],      nota:'lactancia >400d — vacía'},
 ];
-let mensualVista='promedio';
-function toggleMensual(v){mensualVista=v;renderMensual();
-  document.querySelectorAll('.section-label .btn.outl.small').forEach(b=>{
-    if(b.textContent.includes('Total'))b.style.cssText=v==='total'?'font-weight:700;border-color:var(--ink)':'';
-    if(b.textContent.includes('L/día'))b.style.cssText=v==='promedio'?'font-weight:700;border-color:var(--ink)':'';
-  });}
-function renderMensual(){
-  const tb=document.getElementById('mensualBody');if(!tb)return;tb.innerHTML='';
-  const totales=[0,0,0,0,0,0];const conteos=[0,0,0,0,0,0];
-  mensualData.forEach(c=>{
-    c.m.forEach((v,i)=>{if(v!==null){totales[i]+=v;conteos[i]++;}});
+let mensualVista='promedio';   // 'promedio' | 'total' (solo aplica al resumen)
+let mensualMes=-1;             // -1 = resumen 2026; 0..5 = detalle diario del mes
+/* día concreto, determinista: oscila alrededor del promedio del mes */
+function diaVal(numStr,monthIdx,day){
+  const avg=mensualData.find(c=>c.num===numStr).m[monthIdx];
+  if(avg===null)return null;
+  const seed=parseInt(numStr)*13+monthIdx*101+day*7;
+  const wobble=Math.sin(seed)*0.5+Math.sin(seed*2.3)*0.3;   // -0.8..0.8 aprox
+  return Math.max(0,Math.round((avg+wobble*avg*0.16)*10)/10);
+}
+function toggleMensual(v){mensualVista=v;
+  document.getElementById('btnTotal').style.cssText=v==='total'?'font-weight:700;border-color:var(--ink)':'';
+  document.getElementById('btnProm').style.cssText=v==='promedio'?'font-weight:700;border-color:var(--ink)':'';
+  renderMensual();}
+function renderMesPicker(){
+  const p=document.getElementById('mesPicker');if(!p)return;p.innerHTML='';
+  const items=[{i:-1,t:'Resumen 2026'}].concat(MESES_L.map((m,i)=>({i:i,t:m})));
+  items.forEach(it=>{
+    const b=document.createElement('button');b.className='btn outl small';
+    b.textContent=it.t;
+    if(it.i===mensualMes)b.style.cssText='font-weight:700;background:var(--black);color:#fff;border-color:var(--black)';
+    b.onclick=()=>{mensualMes=it.i;renderMesPicker();renderMensual();};
+    p.appendChild(b);
   });
+}
+function renderMensual(){
+  const head=document.getElementById('mensualHead'),tb=document.getElementById('mensualBody');
+  if(!tb||!head)return;tb.innerHTML='';head.innerHTML='';
+  const tit=document.getElementById('mensualTitulo');
+  const hint=document.getElementById('mensualHint');
+  const btnT=document.getElementById('btnTotal'),btnP=document.getElementById('btnProm');
+  if(mensualMes>=0){   /* ---- vista DIARIA del mes elegido ---- */
+    if(btnT)btnT.style.display='none';if(btnP)btnP.style.display='none';
+    const n=DIAS_MES[mensualMes];
+    if(tit)tit.textContent='Producción diaria · '+MESES_L[mensualMes]+' 2026 (L/día por vaca)';
+    if(hint)hint.textContent='Cada columna es un día · ‹ Resumen 2026 › para volver · toca una vaca para su ficha';
+    let h='<tr><th>Animal</th>';
+    for(let d=1;d<=n;d++)h+='<th class="r" style="padding:8px 6px">'+d+'</th>';
+    h+='<th class="r" style="font-weight:800">Prom</th><th class="r" style="font-weight:800">Total</th></tr>';
+    head.innerHTML=h;
+    const sumDia=new Array(n).fill(0),cntDia=new Array(n).fill(0);
+    mensualData.forEach(c=>{for(let d=1;d<=n;d++){const v=diaVal(c.num,mensualMes,d);
+      if(v!==null){sumDia[d-1]+=v;cntDia[d-1]++;}}});
+    mensualData.forEach(c=>{
+      const avg=c.m[mensualMes];
+      const tr=document.createElement('tr');
+      let cells='<td><div class="cell-animal"><div class="cini">'+c.num+'</div><div><div class="cn">'+c.n+'</div>'+
+        (c.nota?'<div class="cs" style="color:var(--red)">'+c.nota+'</div>':'')+'</div></div></td>';
+      let suma=0,dias=0;
+      for(let d=1;d<=n;d++){const v=diaVal(c.num,mensualMes,d);
+        if(v===null){cells+='<td class="r" style="padding:8px 6px"><span class="pending">—</span></td>';}
+        else{suma+=v;dias++;let cls='';
+          if(v<avg*0.85)cls=' class="down"';else if(v>avg*1.15)cls=' class="up"';
+          cells+='<td class="r" style="padding:8px 6px"><span'+cls+'>'+v.toFixed(1)+'</span></td>';}
+      }
+      const prom=dias?suma/dias:0;
+      cells+='<td class="r" style="font-weight:700">'+(dias?prom.toFixed(1):'—')+'</td>';
+      cells+='<td class="r" style="font-weight:700">'+(dias?Math.round(suma):0)+' L</td>';
+      tr.innerHTML=cells;
+      tr.onclick=()=>snack(c.n+' · '+MESES_L[mensualMes]+': '+(dias?prom.toFixed(1)+' L/día prom · '+Math.round(suma)+' L en el mes':'sin ordeño este mes'));
+      tb.appendChild(tr);
+    });
+    const trT=document.createElement('tr');trT.style.cssText='background:var(--surface);font-weight:700';
+    let tc='<td style="font-weight:700;padding-left:14px">HATO</td>';let gTot=0,gSum=0,gDias=0;
+    for(let d=0;d<n;d++){if(cntDia[d]===0){tc+='<td class="r" style="padding:8px 6px">—</td>';}
+      else{tc+='<td class="r" style="padding:8px 6px">'+Math.round(sumDia[d])+'</td>';gTot+=sumDia[d];gSum+=sumDia[d]/cntDia[d];gDias++;}}
+    tc+='<td class="r" style="font-weight:800">'+(gDias?(gSum/gDias).toFixed(1):'—')+'</td>';
+    tc+='<td class="r" style="font-weight:800">'+Math.round(gTot)+' L</td>';
+    trT.innerHTML=tc;tb.appendChild(trT);
+    return;
+  }
+  /* ---- vista RESUMEN 2026 (mensual) ---- */
+  if(btnT)btnT.style.display='';if(btnP)btnP.style.display='';
+  if(tit)tit.textContent='Producción por vaca · resumen 2026';
+  if(hint)hint.textContent='Toca un mes para ver el detalle día por día · toca una vaca para su ficha completa';
+  let h='<tr><th>Animal</th>';
+  MESES_L.forEach(m=>h+='<th class="r">'+m+'</th>');
+  h+='<th class="r" style="font-weight:800">Prom. 2026</th><th class="r" style="font-weight:800">Total 2026</th></tr>';
+  head.innerHTML=h;
+  const totales=[0,0,0,0,0,0],conteos=[0,0,0,0,0,0];
+  mensualData.forEach(c=>c.m.forEach((v,i)=>{if(v!==null){totales[i]+=v;conteos[i]++;}}));
   mensualData.forEach(c=>{
     const tr=document.createElement('tr');
-    const vals=c.m.map(v=>v!==null?v:null);
-    const activos=vals.filter(v=>v!==null);
+    const activos=c.m.filter(v=>v!==null);
     const prom=activos.length?activos.reduce((a,b)=>a+b,0)/activos.length:0;
-    const total=activos.reduce((a,b)=>a+b,0);
-    const diasMes=[31,28,31,30,31,12];
-    const totalL=vals.map((v,i)=>v!==null?Math.round(v*diasMes[i]):0).reduce((a,b)=>a+b,0);
+    const totalL=c.m.map((v,i)=>v!==null?Math.round(v*DIAS_MES[i]):0).reduce((a,b)=>a+b,0);
     let cells='<td><div class="cell-animal"><div class="cini">'+c.num+'</div><div><div class="cn">'+c.n+'</div>'+
       (c.nota?'<div class="cs" style="color:var(--red)">'+c.nota+'</div>':
-       c.partos?'<div class="cs">'+c.partos+'</div>':'')+
-      '</div></div></td>';
-    vals.forEach((v,i)=>{
+       c.partos?'<div class="cs">'+c.partos+'</div>':'')+'</div></div></td>';
+    c.m.forEach((v,i)=>{
       if(v===null){cells+='<td class="r"><span class="pending">—</span></td>';}
-      else{
-        const val=mensualVista==='total'?Math.round(v*diasMes[i]):v.toFixed(1);
-        const promHato=conteos[i]?totales[i]/conteos[i]:0;
-        let cls='';
-        if(v<promHato*0.65)cls=' class="down"';
-        else if(v>promHato*1.15)cls=' class="up"';
-        cells+='<td class="r"><span'+cls+'>'+(mensualVista==='total'?val:val)+
-          (mensualVista==='promedio'?'':'')+'</span></td>';
-      }
+      else{const promHato=conteos[i]?totales[i]/conteos[i]:0;let cls='';
+        if(v<promHato*0.65)cls=' class="down"';else if(v>promHato*1.15)cls=' class="up"';
+        const val=mensualVista==='total'?Math.round(v*DIAS_MES[i]):v.toFixed(1);
+        cells+='<td class="r"><span'+cls+'>'+val+'</span></td>';}
     });
-    const promVal=mensualVista==='total'?Math.round(totalL/Math.max(1,activos.length)):prom.toFixed(1);
-    cells+='<td class="r" style="font-weight:700">'+promVal+'</td>';
-    cells+='<td class="r" style="font-weight:700">'+(mensualVista==='total'?totalL:Math.round(totalL))+' L</td>';
+    cells+='<td class="r" style="font-weight:700">'+(mensualVista==='total'?Math.round(totalL/Math.max(1,activos.length)):prom.toFixed(1))+'</td>';
+    cells+='<td class="r" style="font-weight:700">'+totalL+' L</td>';
     tr.innerHTML=cells;
     tr.onclick=()=>snack('Ficha de '+c.n+' — curva de lactancia completa, historia y datos por mes');
     tb.appendChild(tr);
   });
-  const trT=document.createElement('tr');
-  trT.style.cssText='background:var(--surface);font-weight:700';
-  let tc='<td style="font-weight:700;padding-left:14px">HATO ('+mensualData.length+' vacas)</td>';
-  const diasMes=[31,28,31,30,31,12];
-  let grandTotal=0;
+  const trT=document.createElement('tr');trT.style.cssText='background:var(--surface);font-weight:700';
+  let tc='<td style="font-weight:700;padding-left:14px">HATO ('+mensualData.length+' vacas)</td>';let grandTotal=0;
   totales.forEach((t,i)=>{
-    if(conteos[i]===0)tc+='<td class="r">—</td>';
-    else{const val=mensualVista==='total'?Math.round(t*diasMes[i]/conteos[i]*conteos[i]):
-      (t/conteos[i]).toFixed(1);
-      const tl=Math.round(t*diasMes[i]/conteos[i]*conteos[i]);
-      grandTotal+=tl;
-      tc+='<td class="r">'+(mensualVista==='total'?Math.round(t*diasMes[i]/conteos[i]*conteos[i]):val)+'</td>';}
+    if(conteos[i]===0){tc+='<td class="r">—</td>';}
+    else{const promMes=t/conteos[i];const tl=Math.round(promMes*DIAS_MES[i]*conteos[i]);grandTotal+=tl;
+      tc+='<td class="r">'+(mensualVista==='total'?tl:promMes.toFixed(1))+'</td>';}
   });
-  tc+='<td class="r" style="font-weight:800">'+(mensualVista==='total'?Math.round(grandTotal/6):
-    (totales.reduce((a,b)=>a+b,0)/conteos.reduce((a,b)=>a+b,0)).toFixed(1))+'</td>';
+  const promAnual=totales.reduce((a,b)=>a+b,0)/conteos.reduce((a,b)=>a+b,0);
+  tc+='<td class="r" style="font-weight:800">'+(mensualVista==='total'?Math.round(grandTotal/6):promAnual.toFixed(1))+'</td>';
   tc+='<td class="r" style="font-weight:800">'+grandTotal+' L</td>';
-  trT.innerHTML=tc;
-  tb.appendChild(trT);
+  trT.innerHTML=tc;tb.appendChild(trT);
 }
-renderMensual();
+renderMesPicker();renderMensual();
 
 /* 32 potreros ordenados por estado: listos → recuperando → recién pastoreados */
 const pots=[];
