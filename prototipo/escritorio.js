@@ -4,6 +4,9 @@ const titles={
   'pg-potreros':['Potreros','32 potreros · ocupación 1 día (máx 2)'],
   'pg-diario':['Diario de la finca','Quién registró qué — y qué falta'],
   'pg-decisiones':['Decisiones del mes','Junio 2026 · la reunión de finca, lista'],
+  'pg-repro':['Reproducción','Monta natural · la palpación manda'],
+  'pg-partos':['Partos','Las palpaciones marcan las fechas'],
+  'pg-sanitario':['Plan sanitario','Calendario anual · protocolos · soporte ICA'],
 };
 function go(id,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));

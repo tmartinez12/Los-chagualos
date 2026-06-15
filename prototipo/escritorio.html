@@ -20,6 +20,7 @@
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></symbol>
   <symbol id="i-hex" viewBox="0 0 24 24"><path d="M12 3l7 4v8l-7 4-7-4V7z"/></symbol>
   <symbol id="i-corn" viewBox="0 0 24 24"><path d="M12 21V8"/><path d="M12 13c0-4-3-6-7-6 0 4 3 6 7 6z"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/></symbol>
+  <symbol id="i-sprout" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14c0-4-3-6-7-6 0 4 3 6 7 6z"/><path d="M12 14c0-4 3-6 7-6 0 4-3 6-7 6z"/></symbol>
   <symbol id="i-coffee" viewBox="0 0 24 24"><path d="M5 9h11v6a5 5 0 0 1-10 0z"/><path d="M16 10h2a2.5 2.5 0 0 1 0 5h-2"/></symbol>
   <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4"/><path d="M5 20h14"/></symbol>
   <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10.5v4"/><path d="M12 17.6v.01"/></symbol>
@@ -42,8 +43,9 @@
       <div class="nav-sec">Unidad · Leche</div>
       <a data-pg="pg-hato" onclick="go('pg-hato',this)"><svg class="ic"><use href="#i-tag"/></svg>Hato</a>
       <a data-pg="pg-potreros" onclick="go('pg-potreros',this)"><svg class="ic"><use href="#i-leaf"/></svg>Potreros</a>
-      <a onclick="snack('Reproducción — misma información del prototipo móvil, en grande')"><svg class="ic"><use href="#i-repeat"/></svg>Reproducción</a>
-      <a onclick="snack('Plan sanitario — calendario anual y protocolos')"><svg class="ic"><use href="#i-shield"/></svg>Plan sanitario</a>
+      <a data-pg="pg-repro" onclick="go('pg-repro',this)"><svg class="ic"><use href="#i-repeat"/></svg>Reproducción</a>
+      <a data-pg="pg-partos" onclick="go('pg-partos',this)"><svg class="ic"><use href="#i-sprout"/></svg>Partos</a>
+      <a data-pg="pg-sanitario" onclick="go('pg-sanitario',this)"><svg class="ic"><use href="#i-shield"/></svg>Plan sanitario</a>
       <div class="nav-sec">Otras unidades</div>
       <a class="dis"><svg class="ic"><use href="#i-coffee"/></svg>Café · próximamente</a>
       <a class="dis"><svg class="ic"><use href="#i-hex"/></svg>Miel · próximamente</a>
@@ -310,6 +312,155 @@
             <div class="d-why">Floración del <b>2 de marzo</b> → pico de cosecha en <b>octubre</b>.
               Histórico de La Loma: ~6 recolectores.</div>
             <button class="btn outl small" onclick="snack('Recordatorio: confirmar recolectores el 15 sep')">Recordármelo en sep</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ REPRODUCCIÓN ============ -->
+      <div class="page" id="pg-repro">
+        <div class="kpis">
+          <div class="card kpi"><div class="k-label">Preñez</div><div class="k-value">73<span class="k-unit">%</span></div><div class="k-trend mut">19 de 26 elegibles</div></div>
+          <div class="card kpi"><div class="k-label">Intervalo entre partos</div><div class="k-value">14,2<span class="k-unit">m</span></div><div class="k-trend up">↓ mejorando</div></div>
+          <div class="card kpi"><div class="k-label">Vacías &gt;120 días</div><div class="k-value down">2</div><div class="k-trend mut">revisar servicio</div></div>
+          <div class="card kpi"><div class="k-label">Próximo parto</div><div class="k-value" style="font-size:20px">~3 jul</div><div class="k-trend mut">011 Violeta</div></div>
+        </div>
+
+        <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:12px">
+          <div>
+            <div class="card" style="display:flex;gap:14px;align-items:center">
+              <div class="cini" style="width:44px;height:44px"><svg class="ic"><use href="#i-repeat"/></svg></div>
+              <div style="flex:1">
+                <div style="font-size:14.5px;font-weight:700">T01 · Sansón — toro activo</div>
+                <div style="font-size:12px;color:var(--ink-2)">6 años · en el hato desde 2021 · <b>23 hijas vivas</b> · monta natural</div>
+              </div>
+              <button class="btn outl small" onclick="snack('Ficha del toro Sansón — 23 hijas en la finca')">Ver ficha</button>
+            </div>
+            <div class="section-label">Regla de los 21 días</div>
+            <div class="card">
+              <div class="chart-sub" style="margin-bottom:10px">El ciclo de la vaca dura ~21 días: si el celo no se repite, probablemente quedó preñada.</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
+                <div><div style="font-weight:600;font-size:13.5px">038 · Mona</div><div style="font-size:12px;color:var(--ink-2)">monta de Sansón vista · 3 jun</div></div>
+                <span class="badge warn">revisar ~24 jun</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <div><div style="font-weight:600;font-size:13.5px">027 · Estrella</div><div style="font-size:12px;color:var(--ink-2)">celo sin repetir desde el 28 may</div></div>
+                <span class="badge ok">¿preñada? → palpar</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="alert urgent">
+              <svg class="ic" style="color:var(--red)"><use href="#i-warn"/></svg>
+              <div style="flex:1">
+                <div class="a-title">Consanguinidad: 4 hijas de Sansón llegan a edad de servicio</div>
+                <div class="a-sub">055 Princesa y 058 Alondra ya tienen el peso. <b>No deben quedar con su padre</b> — rotar/prestar toro o separar el lote.</div>
+                <button class="btn outl small" style="margin-top:10px" onclick="snack('Opciones: rotar/cambiar toro · separar lote de novillas · prestar toro de otra finca')">Ver opciones</button>
+              </div>
+            </div>
+            <div class="section-label">Lista para la próxima palpación (se arma sola)</div>
+            <div class="card">
+              <div style="font-size:13px;line-height:1.9;color:var(--ink-2)">
+                <b style="color:var(--ink)">027 Estrella</b> — celo sin repetir (¿preñada?)<br>
+                <b style="color:var(--ink)">051 Careta</b> — parida hace 121 días, sin celo visto<br>
+                <b style="color:var(--ink)">033 Paloma</b> — vacía hace 132 días<br>
+                <b style="color:var(--ink)">029 Pinta</b> — vacía hace 150 días</div>
+              <div style="display:flex;gap:8px;margin-top:14px">
+                <button class="btn filled small" onclick="snack('Modo palpación: el veterinario revisa estas 4 en orden, resultado en un toque')">Iniciar palpación</button>
+                <button class="btn outl small" onclick="snack('Lista enviada al Dr. Restrepo por WhatsApp')">Enviar al vet</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ PARTOS ============ -->
+      <div class="page" id="pg-partos">
+        <div class="kpis">
+          <div class="card kpi"><div class="k-label">Partos 2026</div><div class="k-value">7</div><div class="k-trend up">6 crías vivas</div></div>
+          <div class="card kpi"><div class="k-label">Por parir</div><div class="k-value">9</div><div class="k-trend mut">de las palpaciones</div></div>
+          <div class="card kpi"><div class="k-label">Próximo</div><div class="k-value" style="font-size:20px">~3 jul</div><div class="k-trend mut">011 Violeta</div></div>
+          <div class="card kpi"><div class="k-label">Mortinatos 2026</div><div class="k-value down">1</div><div class="k-trend mut">de 7 partos</div></div>
+        </div>
+
+        <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:12px">
+          <div>
+            <div class="section-label" style="margin-top:4px">Próximos partos · de las palpaciones</div>
+            <div class="card" style="padding:8px">
+              <table>
+                <thead><tr><th>Vaca</th><th>Preñez</th><th class="r">Parto estimado</th></tr></thead>
+                <tbody>
+                  <tr onclick="snack('Ficha de Violeta — parto ~3 jul')"><td>011 · Violeta</td><td>8,5 meses</td><td class="r"><span class="badge warn">~3 jul</span></td></tr>
+                  <tr onclick="snack('Ficha de Canela — parto ~18 jul')"><td>019 · Canela</td><td>8 meses</td><td class="r">~18 jul</td></tr>
+                  <tr onclick="snack('Ficha de Morena — parto ~2 ago')"><td>045 · Morena</td><td>7,5 meses</td><td class="r">~2 ago</td></tr>
+                  <tr onclick="snack('Ficha de Golondrina — parto ~12 sep')"><td>008 · Golondrina</td><td>7 meses</td><td class="r">~12 sep</td></tr>
+                </tbody>
+              </table>
+              <div style="text-align:center;padding:10px"><button class="btn outl small" onclick="snack('Calendario completo de partos: jul 2 · ago 1 · sep 4 · oct 1 · nov 3 · dic 2')">Ver los 9 próximos partos</button></div>
+            </div>
+          </div>
+          <div>
+            <div class="section-label" style="margin-top:4px">Partos recientes · 2026</div>
+            <div class="card" style="padding:8px">
+              <table>
+                <thead><tr><th>Madre → cría</th><th>Fecha</th><th class="r">Resultado</th></tr></thead>
+                <tbody>
+                  <tr onclick="snack('Cría 064 (hembra) de Lucero · 36 kg')"><td>042 Lucero → 064</td><td>12 ene</td><td class="r"><span class="badge ok">♀ en Terneras</span></td></tr>
+                  <tr onclick="snack('Cría 069 (hembra) de Estrella · 34 kg')"><td>027 Estrella → 069</td><td>28 feb</td><td class="r"><span class="badge ok">♀ en Terneras</span></td></tr>
+                  <tr onclick="snack('Cría de Paloma · nació muerta · parto asistido')"><td>033 Paloma → cría</td><td>20 abr</td><td class="r"><span class="badge bad">mortinato</span></td></tr>
+                </tbody>
+              </table>
+              <div style="text-align:center;padding:10px"><button class="btn outl small" onclick="snack('Historial completo de partos — cada cría con su fecha, sexo, peso y notas; incluye los mortinatos')">Ver historial completo</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ PLAN SANITARIO ============ -->
+      <div class="page" id="pg-sanitario">
+        <div class="grid" style="grid-template-columns:1fr 1fr">
+          <div class="card" style="border:1.5px solid var(--ink);display:flex;align-items:center;gap:14px">
+            <svg class="ic" style="color:var(--ink-2)"><use href="#i-shield"/></svg>
+            <div style="flex:1"><div style="font-size:14.5px;font-weight:700">Próxima: desparasitación + vitaminas</div>
+              <div style="font-size:12px;color:var(--ink-2)">Todo el hato (80) · ~15 jul · en 30 días</div></div>
+            <button class="btn filled small" onclick="snack('Tarea creada para el 15 jul con la lista de los 80 animales')">Crear tarea</button>
+          </div>
+          <div class="alert warn" style="margin:0">
+            <svg class="ic" style="color:var(--amber)"><use href="#i-sprout"/></svg>
+            <div style="flex:1"><div class="a-title">Brucelosis: 2 terneras entran en ventana</div>
+              <div class="a-sub">064 (5 meses) y 071 (4,5 meses) · vacuna única entre los 3 y 8 meses — vacunar este mes</div>
+              <button class="btn outl small" style="margin-top:10px" onclick="snack('Ver terneras 064 y 071 — pendientes de brucelosis')">Ver terneras</button></div>
+          </div>
+        </div>
+
+        <div class="section-label">Calendario 2026</div>
+        <div class="pgrid" style="grid-template-columns:repeat(12,1fr)">
+          <div class="pot ok off"><div class="p-top"><span class="p-name">ENE</span><span class="dot"></span></div><div class="p-cap" style="margin-top:6px">despar. ✓</div></div>
+          <div class="pot off"><div class="p-name">FEB</div><div class="p-cap" style="margin-top:6px">—</div></div>
+          <div class="pot off"><div class="p-name">MAR</div><div class="p-cap" style="margin-top:6px">—</div></div>
+          <div class="pot ok off"><div class="p-top"><span class="p-name">ABR</span><span class="dot"></span></div><div class="p-cap" style="margin-top:6px">despar. ✓</div></div>
+          <div class="pot ok off"><div class="p-top"><span class="p-name">MAY</span><span class="dot"></span></div><div class="p-cap" style="margin-top:6px">aftosa ✓</div></div>
+          <div class="pot warn now"><div class="p-tag">HOY</div><div class="p-top"><span class="p-name">JUN</span><span class="dot"></span></div><div class="p-cap" style="margin-top:6px">brucelosis ×2</div></div>
+          <div class="pot warn"><div class="p-top"><span class="p-name">JUL</span><span class="dot"></span></div><div class="p-cap" style="margin-top:6px">despar. ~15</div></div>
+          <div class="pot off"><div class="p-name">AGO</div><div class="p-cap" style="margin-top:6px">—</div></div>
+          <div class="pot off"><div class="p-name">SEP</div><div class="p-cap" style="margin-top:6px">—</div></div>
+          <div class="pot warn"><div class="p-top"><span class="p-name">OCT</span><span class="dot"></span></div><div class="p-cap" style="margin-top:6px">despar.</div></div>
+          <div class="pot warn"><div class="p-top"><span class="p-name">NOV</span><span class="dot"></span></div><div class="p-cap" style="margin-top:6px">aftosa ICA</div></div>
+          <div class="pot off"><div class="p-name">DIC</div><div class="p-cap" style="margin-top:6px">—</div></div>
+        </div>
+
+        <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:14px">
+          <div class="card">
+            <div class="chart-title" style="font-size:13.5px">Protocolos configurados</div>
+            <div style="font-size:13px;color:var(--ink-2);line-height:1.95;margin-top:8px">
+              Aftosa ICA — mayo / noviembre<br>Brucelosis — terneras de 3 a 8 meses<br>
+              Desparasitación — cada 3 meses<br>Baño garrapaticida — según clima</div>
+          </div>
+          <div class="card">
+            <div class="chart-title" style="font-size:13.5px">Historial · soporte ICA</div>
+            <div style="font-size:13px;color:var(--ink-2);line-height:1.95;margin-top:8px">
+              Último ciclo de aftosa: <b style="color:var(--ink)">mayo 2026 — 80/80 ✓</b><br>
+              Exportable como soporte oficial ICA para trámites.</div>
+            <button class="btn outl small" style="margin-top:12px" onclick="snack('Exportado: soporte_ICA_aftosa_may2026.pdf')"><svg class="ic-s ic"><use href="#i-export"/></svg>Exportar soporte</button>
           </div>
         </div>
       </div>
