@@ -328,9 +328,21 @@ const fichas={
     curva:[[0,50],[60,14],[150,10],[300,7],[412,5]],curvaHoy:{del:412,l:5}},
 };
 let vacaFrom='pg-hato';
+const cowFotos={};   // num → dataURL de la foto subida
+let vacaActual=null;
+function setVacaFoto(input){
+  const f=input.files&&input.files[0];if(!f||!vacaActual)return;
+  const r=new FileReader();
+  r.onload=e=>{cowFotos[vacaActual]=e.target.result;
+    const foto=document.getElementById('vacaFoto'),fimg=document.getElementById('vacaFotoImg');
+    fimg.src=e.target.result;foto.classList.add('has-img');
+    snack('Foto de '+vacaActual+' guardada','Quitar',()=>{
+      delete cowFotos[vacaActual];fimg.removeAttribute('src');foto.classList.remove('has-img');});};
+  r.readAsDataURL(f);
+}
 function goVaca(num,from){
   const cow=fichas[num];if(!cow)return snack('Ficha de '+num+' — próximamente');
-  vacaFrom=from||'pg-hato';
+  vacaFrom=from||'pg-hato';vacaActual=cow.num;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('pg-vaca').classList.add('active');
   document.querySelectorAll('#nav a').forEach(a=>a.classList.remove('active'));
@@ -340,7 +352,11 @@ function goVaca(num,from){
   const backLabels={'pg-hato':'Volver al hato','pg-leche':'Volver a producción','pg-repro':'Volver a reproducción'};
   document.getElementById('vacaBackLabel').textContent=backLabels[vacaFrom]||'Volver';
   document.getElementById('vacaBack').onclick=()=>go(vacaFrom,document.querySelector('[data-pg="'+vacaFrom+'"]'));
-  document.getElementById('vacaIni').textContent=cow.num;
+  /* foto: muestra la guardada para esta vaca, o el placeholder */
+  const foto=document.getElementById('vacaFoto'),fimg=document.getElementById('vacaFotoImg');
+  if(cowFotos[cow.num]){fimg.src=cowFotos[cow.num];foto.classList.add('has-img');}
+  else{fimg.removeAttribute('src');foto.classList.remove('has-img');}
+  document.getElementById('vacaFotoInput').value='';
   document.getElementById('vacaNombre').textContent=cow.num+' · '+cow.n;
   document.getElementById('vacaSub').textContent=cow.raza+' · '+cow.edad+' · '+cow.grupo+' · '+cow.origen;
   const bd=document.getElementById('vacaBadge');

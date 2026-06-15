@@ -180,6 +180,16 @@ td .reg{color:var(--green);font-weight:700}
 tbody tr.done td{background:var(--green-soft)}
 tbody tr.done:hover td{background:#E2F0E2}
 #vacaBack:hover span{text-decoration:underline}
+.cow-photo{width:64px;height:64px;border-radius:14px;background:var(--surface);
+  border:1.5px dashed var(--border);display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:2px;cursor:pointer;flex:none;overflow:hidden;position:relative;
+  transition:border-color .15s}
+.cow-photo:hover{border-color:var(--green)}
+.cow-photo .cow-photo-add{font-size:9px;font-weight:700;color:var(--ink-3);letter-spacing:.3px}
+.cow-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
+.cow-photo.has-img{border-style:solid}
+.cow-photo.has-img img{display:block}
+.cow-photo.has-img svg,.cow-photo.has-img .cow-photo-add{display:none}
 td input[type=number]::-webkit-inner-spin-button,
 td input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 td input[type=number]{-moz-appearance:textfield}

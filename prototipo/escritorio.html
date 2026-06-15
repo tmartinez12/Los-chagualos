@@ -322,7 +322,12 @@
         <div style="display:flex;gap:18px;align-items:flex-start">
           <div style="flex:1;min-width:0">
             <div class="card" style="display:flex;gap:16px;align-items:center;padding:16px 20px">
-              <div class="cini" style="width:52px;height:52px;font-size:16px" id="vacaIni">042</div>
+              <div class="cow-photo" id="vacaFoto" onclick="document.getElementById('vacaFotoInput').click()">
+                <svg class="ic" style="width:26px;height:26px;color:var(--ink-3)"><use href="#i-tag"/></svg>
+                <span class="cow-photo-add">＋ Foto</span>
+                <img id="vacaFotoImg" alt="">
+              </div>
+              <input type="file" id="vacaFotoInput" accept="image/*" style="display:none" onchange="setVacaFoto(this)">
               <div style="flex:1">
                 <div style="font-size:20px;font-weight:700;letter-spacing:-.3px" id="vacaNombre">042 · Lucero</div>
                 <div style="font-size:13px;color:var(--ink-2);margin-top:2px" id="vacaSub">Holstein × Gyr · 5,2 años · En ordeño · Nació en finca</div>
