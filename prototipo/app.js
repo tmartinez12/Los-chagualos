@@ -474,5 +474,56 @@ function saveTrata(){
     if(cd)cd.retiro=prev;renderCows();desencolar();snack('Tratamiento deshecho');
   });
 }
+/* ===== Secado (sale del ordeño → pasa a horras) ===== */
+const secaInfo={
+  '042 · Lucero':'Preñada 6 meses · parto ~12 sep',
+  '038 · Mona':'Servida, por confirmar — palpa antes de secar',
+  '051 · Careta':'DEL 121 · confirma preñez antes de secar',
+  '027 · Estrella':'DEL 64 · muy temprano para secar',
+  '033 · Paloma':'Vacía — el secado no aplica',
+  '029 · Pinta':'Vacía — el secado no aplica'
+};
+const secaNoAplica={'033 · Paloma':1,'029 · Pinta':1};
+const seca={cow:'042 · Lucero'};
+let nHorras=9;
+function secaMarcar(){document.querySelectorAll('#secaCows .chip').forEach(c=>
+  c.classList.toggle('sel',c.textContent.trim().startsWith(seca.cow.split('·')[0].trim())));}
+function openSeca(cow){
+  if(cow)seca.cow=cow;
+  document.getElementById('secaCow').textContent=seca.cow.toUpperCase();
+  document.getElementById('secaInfo').textContent=secaInfo[seca.cow]||'Confirma la preñez antes de secar';
+  secaMarcar();
+  document.getElementById('scrim').classList.add('show');
+  document.getElementById('secaSheet').classList.add('show');
+}
+function closeSeca(){document.getElementById('secaSheet').classList.remove('show');
+  document.getElementById('scrim').classList.remove('show');}
+function secaCow(cow){seca.cow=cow;
+  document.getElementById('secaCow').textContent=cow.toUpperCase();
+  document.getElementById('secaInfo').textContent=secaInfo[cow]||'Confirma la preñez antes de secar';
+  secaMarcar();}
+function saveSeca(){
+  const nombre=seca.cow.split('·')[1].trim();
+  if(secaNoAplica[seca.cow]){closeSeca();
+    snack(nombre+' está vacía — el secado es para vacas preñadas. Confírmalo con palpación.');return;}
+  closeSeca();
+  const idx=cows.findIndex(c=>seca.cow.startsWith(c.num));
+  const removed=idx>=0?cows[idx]:null;
+  if(idx>=0)cows.splice(idx,1);
+  renderCows();
+  const prevSub=grupos.horras.sub, prevHeader=grupos.horras.header;
+  nHorras++;
+  grupos.horras.sub=nHorras+' vacas · 6 paren antes de octubre';
+  grupos.horras.header='<b>'+nHorras+' vacas horras.</b> Ordenadas por fecha de parto; tras parir vuelven al ordeño.';
+  grupos.horras.animales.unshift([seca.cow,'recién secada — '+(secaInfo[seca.cow]||'preñada')]);
+  encolar();
+  setTimeout(()=>openGroup('horras'),300);
+  snack(nombre+' secada · sale del ordeño y pasa a horras · '+(secaInfo[seca.cow]||'se planea su parto'),'Deshacer',()=>{
+    if(removed)cows.splice(Math.min(idx,cows.length),0,removed);
+    renderCows();
+    nHorras--; grupos.horras.sub=prevSub; grupos.horras.header=prevHeader; grupos.horras.animales.shift();
+    desencolar(); openGroup('horras'); snack('Secado deshecho');
+  });
+}
 /* la app arranca en el selector de línea de negocio */
 go('scr-selector');

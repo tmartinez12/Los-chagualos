@@ -487,7 +487,7 @@
       <div class="a-body">
         <div class="a-title">Preñada · 6 meses (palpación 2 may)</div>
         <div class="a-sub">Parto probable ~12 sep · <b>Secar ~12 jul</b></div>
-        <button class="btn outl small mt8" onclick="snack('Secado programado para el 12 jul — se creará la tarea')">Programar secado</button>
+        <button class="btn outl small mt8" onclick="openSeca('042 · Lucero')">Programar secado</button>
       </div>
     </div>
 
@@ -748,7 +748,7 @@
   </div>
 
   <!-- SHEET -->
-  <div class="scrim" id="scrim" onclick="closeSheet();closeMilk();closeParto();closePalp();closeTrata()"></div>
+  <div class="scrim" id="scrim" onclick="closeSheet();closeMilk();closeParto();closePalp();closeTrata();closeSeca()"></div>
   <div class="sheet" id="sheet">
     <div class="handle"></div>
     <h3>Registrar</h3>
@@ -774,7 +774,7 @@
       <button onclick="closeSheet();openPalp()"><svg class="ic"><use href="#i-repeat"/></svg><span class="q-label">Palpación</span></button>
       <button onclick="closeSheet();openParto()"><svg class="ic"><use href="#i-sprout"/></svg><span class="q-label">Parto / nacimiento</span></button>
       <button onclick="closeSheet();openTrata()"><svg class="ic"><use href="#i-cross"/></svg><span class="q-label">Enfermedad / tratamiento</span></button>
-      <button onclick="sheetPick('Secado registrado — la vaca pasa a horra y se planea su parto')"><svg class="ic"><use href="#i-cal"/></svg><span class="q-label">Secado de vaca</span></button>
+      <button onclick="closeSheet();openSeca()"><svg class="ic"><use href="#i-cal"/></svg><span class="q-label">Secado de vaca</span></button>
       <button onclick="sheetPick('Alta registrada: animal comprado — ficha creada')"><svg class="ic"><use href="#i-bag"/></svg><span class="q-label">Alta · compra</span></button>
       <button onclick="sheetPick('Baja registrada — el animal queda en el histórico')"><svg class="ic"><use href="#i-out"/></svg><span class="q-label">Baja · venta/muerte</span></button>
     </div>
@@ -927,6 +927,35 @@
       <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar tratamiento</button>
     <div style="font-size:11px;color:var(--ink-3);margin-top:10px;text-align:center">
       El retiro marca la vaca en el ordeño y avisa que su leche no se vende hasta la fecha.</div>
+  </div>
+
+  <!-- SHEET: registrar secado -->
+  <div class="sheet" id="secaSheet">
+    <div class="handle"></div>
+    <h3>Registrar secado</h3>
+    <div class="m-label" id="secaCow">042 · LUCERO</div>
+    <div class="m-del" id="secaInfo" style="margin-bottom:14px">Preñada 6 meses · parto ~12 sep</div>
+
+    <div class="section-label" style="margin-top:0">Vaca</div>
+    <div class="chips" id="secaCows">
+      <button class="chip sel" onclick="secaCow('042 · Lucero')">042 Lucero</button>
+      <button class="chip" onclick="secaCow('038 · Mona')">038 Mona</button>
+      <button class="chip" onclick="secaCow('051 · Careta')">051 Careta</button>
+      <button class="chip" onclick="secaCow('027 · Estrella')">027 Estrella</button>
+      <button class="chip" onclick="secaCow('033 · Paloma')">033 Paloma</button>
+      <button class="chip" onclick="secaCow('029 · Pinta')">029 Pinta</button>
+    </div>
+
+    <div class="section-label">Fecha de secado</div>
+    <div class="chips">
+      <button class="chip sel">Hoy · 13 jun</button>
+      <button class="chip" onclick="snack('En la app real abre el calendario')">Otra fecha…</button>
+    </div>
+
+    <button class="btn filled" style="width:100%;justify-content:center;margin-top:16px" onclick="saveSeca()">
+      <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar secado</button>
+    <div style="font-size:11px;color:var(--ink-3);margin-top:10px;text-align:center">
+      La vaca sale del ordeño y pasa a horras (secas). Se mantiene su preñez y se planea su próximo parto.</div>
   </div>
 
   <!-- SNACKBAR -->
