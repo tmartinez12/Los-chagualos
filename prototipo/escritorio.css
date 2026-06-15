@@ -180,6 +180,16 @@ td .reg{color:var(--green);font-weight:700}
 tbody tr.done td{background:var(--green-soft)}
 tbody tr.done:hover td{background:#E2F0E2}
 #vacaBack:hover span{text-decoration:underline}
+/* palpación: chips dentro del modal */
+.p-label{font-size:11px;font-weight:700;color:var(--ink-3);letter-spacing:.8px;
+  text-transform:uppercase;margin:16px 0 8px}
+.pchips{display:flex;gap:8px;flex-wrap:wrap}
+.pchip{border:1px solid var(--border);background:var(--card);color:var(--ink-2);cursor:pointer;
+  font-family:inherit;font-size:13px;font-weight:600;border-radius:100px;padding:8px 15px;transition:all .12s}
+.pchip:hover{border-color:var(--ink-3)}
+.pchip.sel{background:var(--black);color:#fff;border-color:var(--black)}
+.p-hint{font-size:12px;color:var(--green);font-weight:600;margin-top:10px;min-height:16px}
+.p-foot{font-size:11px;color:var(--ink-3);line-height:1.5;margin-top:12px;text-align:center}
 .cow-photo{width:64px;height:64px;border-radius:14px;background:var(--surface);
   border:1.5px dashed var(--border);display:flex;flex-direction:column;align-items:center;
   justify-content:center;gap:2px;cursor:pointer;flex:none;overflow:hidden;position:relative;

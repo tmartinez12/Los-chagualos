@@ -578,6 +578,145 @@ function goVaca(num,from){
   }
 }
 
+/* ===== Palpación: la fuente de verdad de la reproducción ===== */
+const MESC=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function fechaParto(meses){           // hoy + lo que falta de gestación (~9 meses)
+  const d=new Date(2026,5,13);
+  d.setMonth(d.getMonth()+Math.max(0,9-meses));
+  const y=d.getFullYear();
+  return {corta:'~'+d.getDate()+' '+MESC[d.getMonth()],
+    larga:d.getDate()+' '+MESC[d.getMonth()]+(y!==2026?' '+String(y).slice(2):'')};
+}
+/* candidatas a palpar (la lista se arma sola) */
+const palpCandidatas=[
+  {cow:'027 · Estrella',motivo:'celo sin repetir — ¿preñada?'},
+  {cow:'051 · Careta',motivo:'parida hace 121 días, sin celo visto'},
+  {cow:'038 · Mona',motivo:'servida 3 jun, por confirmar'},
+  {cow:'033 · Paloma',motivo:'vacía hace 132 días'},
+  {cow:'029 · Pinta',motivo:'vacía hace 150 días'},
+];
+/* próximos partos (salen de las palpaciones) */
+let proximosPartos=[
+  {cow:'011 · Violeta',prenez:'8,5 meses',parto:'~3 jul',badge:'warn'},
+  {cow:'019 · Canela',prenez:'8 meses',parto:'~18 jul'},
+  {cow:'045 · Morena',prenez:'7,5 meses',parto:'~2 ago'},
+  {cow:'008 · Golondrina',prenez:'7 meses',parto:'~12 sep'},
+];
+/* vacas vacías que requieren decisión */
+let vacasVacias=[
+  {cow:'033 · Paloma',num:'033',del:95,sub:'4to parto · Normando',dias:132,ultima:'3 feb 2026',
+   ayer:'6 L',rec:'Producción muy baja para su etapa — evaluar descarte'},
+  {cow:'029 · Pinta',num:'029',del:412,sub:'Lactancia larga · Holstein × Gyr',dias:150,ultima:'18 ene 2026',
+   ayer:'5 L',rec:'Lactancia extendida sin preñez — evaluar descarte'},
+];
+function renderPartos(){
+  const tb=document.getElementById('partosTbody');if(!tb)return;tb.innerHTML='';
+  proximosPartos.forEach(p=>{
+    const tr=document.createElement('tr');
+    const num=p.cow.split('·')[0].trim();
+    tr.onclick=()=>fichas[num]?goVaca(num,'pg-partos'):snack('Ficha de '+p.cow.split('·')[1].trim()+' — parto '+p.parto);
+    tr.innerHTML='<td>'+p.cow+'</td><td>'+p.prenez+'</td>'+
+      '<td class="r">'+(p.badge?'<span class="badge '+p.badge+'">'+p.parto+'</span>':p.parto)+'</td>';
+    tb.appendChild(tr);
+  });
+}
+function renderVacias(){
+  const tb=document.getElementById('vaciasTbody');if(!tb)return;tb.innerHTML='';
+  vacasVacias.forEach(v=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML='<td><div class="cell-animal"><div class="cini">'+v.num+'</div><div><div class="cn">'+
+      v.cow.split('·')[1].trim()+'</div><div class="cs">'+v.sub+'</div></div></div></td>'+
+      '<td class="r">'+v.del+'</td><td class="r"><span class="badge bad">'+v.dias+' d</span></td>'+
+      '<td>'+v.ultima+' → vacía</td><td class="r"><b>'+v.ayer+'</b></td>'+
+      '<td style="color:var(--red);font-size:12px">'+v.rec+'</td>'+
+      '<td class="r"><button class="btn outl small">Palpar</button></td>';
+    tr.querySelector('button').onclick=e=>{e.stopPropagation();openPalp(v.cow);};
+    tb.appendChild(tr);
+  });
+  const lbl=document.getElementById('vaciasLabel');
+  if(lbl)lbl.textContent='Vacas vacías · '+vacasVacias.length+(vacasVacias.length===1?' requiere':' requieren')+' decisión';
+}
+const palp={cow:'027 · Estrella',resultado:'prenada',meses:2};
+function renderPalpCows(){
+  const c=document.getElementById('palpCows');if(!c)return;c.innerHTML='';
+  palpCandidatas.forEach(it=>{
+    const b=document.createElement('button');b.className='pchip';
+    b.textContent=it.cow.replace(' · ',' ');
+    if(it.cow===palp.cow)b.classList.add('sel');
+    b.onclick=()=>palpPickCow(it.cow);
+    c.appendChild(b);
+  });
+}
+function palpInfoText(cow){const f=palpCandidatas.find(x=>x.cow===cow);return f?f.motivo:'Confirma el resultado de la palpación';}
+function palpPickCow(cow){palp.cow=cow;
+  document.getElementById('palpInfo').textContent=palpInfoText(cow);
+  renderPalpCows();}
+function palpRes(btn,val){palp.resultado=val;
+  document.getElementById('palpResPren').classList.toggle('sel',val==='prenada');
+  document.getElementById('palpResVac').classList.toggle('sel',val==='vacia');
+  palpMostrarMeses();}
+function palpMostrarMeses(){
+  document.getElementById('palpMesesWrap').style.display=palp.resultado==='prenada'?'':'none';
+  if(palp.resultado==='prenada')palpActualizarParto();}
+function palpMes(d){palp.meses=Math.max(1,Math.min(9,palp.meses+d));
+  document.getElementById('palpMesesVal').textContent=palp.meses;palpActualizarParto();}
+function palpActualizarParto(){
+  const f=fechaParto(palp.meses);
+  document.getElementById('palpPartoHint').textContent='Parto estimado: '+f.larga;}
+function openPalp(cow){
+  if(cow)palp.cow=cow; else if(!palpCandidatas.find(x=>x.cow===palp.cow))palp.cow=palpCandidatas[0].cow;
+  palp.resultado='prenada';palp.meses=2;
+  document.getElementById('palpInfo').textContent=palpInfoText(palp.cow);
+  document.getElementById('palpMesesVal').textContent=palp.meses;
+  document.getElementById('palpResPren').classList.add('sel');
+  document.getElementById('palpResVac').classList.remove('sel');
+  renderPalpCows();palpMostrarMeses();
+  document.getElementById('palpScrim').classList.add('show');
+  document.getElementById('palpModal').classList.add('show');
+}
+function closePalp(){document.getElementById('palpModal').classList.remove('show');
+  document.getElementById('palpScrim').classList.remove('show');}
+function savePalp(){
+  const cow=palp.cow,nombre=cow.split('·')[1].trim();
+  closePalp();
+  if(palp.resultado==='vacia'){
+    /* si ya estaba en próximos partos, sale */
+    const pi=proximosPartos.findIndex(p=>p.cow===cow);
+    const prevParto=pi>=0?proximosPartos.splice(pi,1)[0]:null;
+    /* si no estaba en vacías, entra */
+    let added=null;
+    if(!vacasVacias.find(v=>v.cow===cow)){
+      const num=cow.split('·')[0].trim();const fi=fichas[num];
+      added={cow:cow,num:num,del:fi?fi.del:'—',sub:fi?(fi.parto+'° parto · '+fi.raza):'—',
+        dias:1,ultima:'13 jun 2026',ayer:fi?fi.ayer+' L':'—',rec:'Recién confirmada vacía — programar servicio'};
+      vacasVacias.push(added);
+    }
+    renderPartos();renderVacias();go('pg-repro',document.querySelector('[data-pg="pg-repro"]'));
+    snack(nombre+': vacía — queda en la lista para servicio','Deshacer',()=>{
+      if(added){const ai=vacasVacias.findIndex(v=>v.cow===cow);if(ai>=0)vacasVacias.splice(ai,1);}
+      if(prevParto)proximosPartos.splice(Math.min(pi,proximosPartos.length),0,prevParto);
+      renderPartos();renderVacias();});
+    return;
+  }
+  /* preñada */
+  const f=fechaParto(palp.meses);
+  const nuevo={cow:cow,prenez:palp.meses+' meses',parto:f.corta,badge:palp.meses>=8?'warn':''};
+  const pi=proximosPartos.findIndex(p=>p.cow===cow);
+  const prevParto=pi>=0?proximosPartos[pi]:null;
+  if(pi>=0)proximosPartos[pi]=nuevo; else proximosPartos.push(nuevo);
+  /* ordenar por mes de parto aproximado para que el próximo quede arriba */
+  const vi=vacasVacias.findIndex(v=>v.cow===cow);
+  const removedVacia=vi>=0?vacasVacias.splice(vi,1)[0]:null;
+  renderPartos();renderVacias();go('pg-partos',document.querySelector('[data-pg="pg-partos"]'));
+  snack(nombre+': preñada '+palp.meses+' meses — parto '+f.corta+' · entra a próximos partos','Deshacer',()=>{
+    const j=proximosPartos.findIndex(p=>p.cow===cow);
+    if(j>=0)proximosPartos.splice(j,1);
+    if(prevParto)proximosPartos.push(prevParto);
+    if(removedVacia)vacasVacias.splice(Math.min(vi,vacasVacias.length),0,removedVacia);
+    renderPartos();renderVacias();});
+}
+renderPartos();renderVacias();
+
 /* 32 potreros ordenados por estado: listos → recuperando → recién pastoreados */
 const pots=[];
 for(let i=1;i<=32;i++){

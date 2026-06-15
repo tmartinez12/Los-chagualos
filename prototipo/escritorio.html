@@ -535,7 +535,7 @@
               </div>
               <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
                 <div><div style="font-weight:600;font-size:13.5px">027 · Estrella</div><div style="font-size:12px;color:var(--ink-2)">celo sin repetir desde el 28 may</div></div>
-                <span class="badge ok">¿preñada? → palpar</span>
+                <span class="badge ok" style="cursor:pointer" onclick="openPalp('027 · Estrella')">¿preñada? → palpar</span>
               </div>
             </div>
           </div>
@@ -556,33 +556,18 @@
                 <b style="color:var(--ink)">033 Paloma</b> — vacía hace 132 días<br>
                 <b style="color:var(--ink)">029 Pinta</b> — vacía hace 150 días</div>
               <div style="display:flex;gap:8px;margin-top:14px">
-                <button class="btn filled small" onclick="snack('Modo palpación: el veterinario revisa estas 4 en orden, resultado en un toque')">Iniciar palpación</button>
+                <button class="btn filled small" onclick="openPalp()">Registrar palpación</button>
                 <button class="btn outl small" onclick="snack('Lista enviada al Dr. Restrepo por WhatsApp')">Enviar al vet</button>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="section-label" style="color:var(--red)">Vacas vacías · 2 requieren decisión</div>
+        <div class="section-label" style="color:var(--red)" id="vaciasLabel">Vacas vacías · 2 requieren decisión</div>
         <div class="card" style="padding:8px">
           <table>
             <thead><tr><th>Animal</th><th class="r">DEL</th><th class="r">Días vacía</th><th>Última palpación</th><th class="r">Ayer</th><th>Recomendación</th><th></th></tr></thead>
-            <tbody>
-              <tr>
-                <td><div class="cell-animal"><div class="cini">033</div><div><div class="cn">Paloma</div><div class="cs">4to parto · Normando</div></div></div></td>
-                <td class="r">95</td><td class="r"><span class="badge bad">132 d</span></td>
-                <td>3 feb 2026 → vacía</td><td class="r"><b>6 L</b></td>
-                <td style="color:var(--red);font-size:12px">Producción muy baja para su etapa — evaluar descarte</td>
-                <td class="r"><button class="btn outl small" onclick="snack('Opciones: palpar de nuevo · dar de baja · secar')">Acción</button></td>
-              </tr>
-              <tr>
-                <td><div class="cell-animal"><div class="cini">029</div><div><div class="cn">Pinta</div><div class="cs">Lactancia larga · Holstein × Gyr</div></div></div></td>
-                <td class="r">412</td><td class="r"><span class="badge bad">150 d</span></td>
-                <td>18 ene 2026 → vacía</td><td class="r"><b>5 L</b></td>
-                <td style="color:var(--red);font-size:12px">Lactancia extendida sin preñez — evaluar descarte</td>
-                <td class="r"><button class="btn outl small" onclick="snack('Opciones: palpar de nuevo · dar de baja · secar')">Acción</button></td>
-              </tr>
-            </tbody>
+            <tbody id="vaciasTbody"></tbody>
           </table>
         </div>
       </div>
@@ -602,12 +587,7 @@
             <div class="card" style="padding:8px">
               <table>
                 <thead><tr><th>Vaca</th><th>Preñez</th><th class="r">Parto estimado</th></tr></thead>
-                <tbody>
-                  <tr onclick="goVaca('011','pg-partos')"><td>011 · Violeta</td><td>8,5 meses</td><td class="r"><span class="badge warn">~3 jul</span></td></tr>
-                  <tr onclick="snack('Ficha de Canela — parto ~18 jul')"><td>019 · Canela</td><td>8 meses</td><td class="r">~18 jul</td></tr>
-                  <tr onclick="snack('Ficha de Morena — parto ~2 ago')"><td>045 · Morena</td><td>7,5 meses</td><td class="r">~2 ago</td></tr>
-                  <tr onclick="snack('Ficha de Golondrina — parto ~12 sep')"><td>008 · Golondrina</td><td>7 meses</td><td class="r">~12 sep</td></tr>
-                </tbody>
+                <tbody id="partosTbody"></tbody>
               </table>
               <div style="text-align:center;padding:10px"><button class="btn outl small" onclick="snack('Calendario completo de partos: jul 2 · ago 1 · sep 4 · oct 1 · nov 3 · dic 2')">Ver los 9 próximos partos</button></div>
             </div>
@@ -716,6 +696,38 @@
     <button class="btn outl" onclick="closeMilk()">Cancelar</button>
     <button class="btn filled" onclick="saveMilk()"><svg class="ic-s ic"><use href="#i-check"/></svg>Guardar</button>
   </div>
+</div>
+
+<!-- MODAL: registrar palpación (fuente de verdad de la reproducción) -->
+<div class="scrim" id="palpScrim" onclick="closePalp()"></div>
+<div class="modal" id="palpModal" style="width:420px">
+  <div class="m-cow">Registrar palpación</div>
+  <div class="m-del" id="palpInfo">celo sin repetir — ¿preñada?</div>
+
+  <div class="p-label">Vaca</div>
+  <div class="pchips" id="palpCows"></div>
+
+  <div class="p-label">Resultado de la palpación</div>
+  <div class="pchips">
+    <button class="pchip sel" id="palpResPren" onclick="palpRes(this,'prenada')">Preñada</button>
+    <button class="pchip" id="palpResVac" onclick="palpRes(this,'vacia')">Vacía</button>
+  </div>
+
+  <div id="palpMesesWrap">
+    <div class="p-label">Meses de preñez</div>
+    <div class="pchips" style="align-items:center">
+      <button class="pchip" onclick="palpMes(-1)" style="font-size:18px;padding:6px 14px">−</button>
+      <span style="font-weight:700;min-width:90px;text-align:center;font-size:15px"><span id="palpMesesVal">2</span> meses</span>
+      <button class="pchip" onclick="palpMes(1)" style="font-size:18px;padding:6px 14px">＋</button>
+    </div>
+    <div class="p-hint" id="palpPartoHint"></div>
+  </div>
+
+  <div class="m-actions">
+    <button class="btn outl" onclick="closePalp()">Cancelar</button>
+    <button class="btn filled" onclick="savePalp()"><svg class="ic-s ic"><use href="#i-check"/></svg>Guardar palpación</button>
+  </div>
+  <div class="p-foot">La palpación manda: si está preñada se calcula el parto (~9 meses de gestación) y entra a próximos partos. Si está vacía, queda en la lista para servicio.</div>
 </div>
 
 <div class="snackbar" id="snackbar"><svg class="ic-s ic"><use href="#i-check"/></svg><span id="snackText"></span><button class="snack-action" id="snackAction" style="display:none"></button></div>
