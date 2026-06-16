@@ -602,6 +602,39 @@ let proximosPartos=[
   {cow:'045 · Morena',prenez:'7,5 meses',parto:'~2 ago'},
   {cow:'008 · Golondrina',prenez:'7 meses',parto:'~12 sep'},
 ];
+/* partos recientes 2026 */
+let partosRecientes=[
+  {madre:'042 Lucero',cria:'064',fecha:'12 ene',sexo:'H',peso:36,tipo:'normal',estado:'viva',grupo:'Terneras'},
+  {madre:'027 Estrella',cria:'069',fecha:'28 feb',sexo:'H',peso:34,tipo:'normal',estado:'viva',grupo:'Terneras'},
+  {madre:'033 Paloma',cria:'—',fecha:'20 abr',sexo:'H',peso:0,tipo:'asistido',estado:'muerta',grupo:null},
+];
+function renderPartosRecientes(){
+  const tb=document.getElementById('partosRecientesTbody');if(!tb)return;tb.innerHTML='';
+  partosRecientes.forEach(p=>{
+    const tr=document.createElement('tr');
+    if(p.estado==='viva'){
+      tr.innerHTML='<td>'+p.madre+' → '+p.cria+'</td><td>'+p.fecha+'</td>'+
+        '<td class="r"><span class="badge ok">'+(p.sexo==='H'?'♀':'♂')+' en '+p.grupo+'</span></td>';
+    }else{
+      tr.innerHTML='<td>'+p.madre+' → cría</td><td>'+p.fecha+'</td>'+
+        '<td class="r"><span class="badge bad">mortinato</span></td>';
+    }
+    tb.appendChild(tr);
+  });
+}
+function renderPartosKpis(){
+  const box=document.getElementById('partosKpis');if(!box)return;
+  const total=partosRecientes.length;
+  const vivas=partosRecientes.filter(p=>p.estado==='viva').length;
+  const mortinatos=total-vivas;
+  const porParir=proximosPartos.length;
+  const prox=proximosPartos.length?proximosPartos[0]:null;
+  box.innerHTML=
+    '<div class="card kpi"><div class="k-label">Partos 2026</div><div class="k-value">'+total+'</div><div class="k-trend up">'+vivas+' crías vivas</div></div>'+
+    '<div class="card kpi"><div class="k-label">Por parir</div><div class="k-value">'+porParir+'</div><div class="k-trend mut">de las palpaciones</div></div>'+
+    '<div class="card kpi"><div class="k-label">Próximo</div><div class="k-value" style="font-size:20px">'+(prox?prox.parto:'—')+'</div><div class="k-trend mut">'+(prox?prox.cow:'sin próximos')+'</div></div>'+
+    '<div class="card kpi"><div class="k-label">Mortinatos 2026</div><div class="k-value'+(mortinatos?' down':'')+'">'+mortinatos+'</div><div class="k-trend mut">de '+total+' partos</div></div>';
+}
 /* vacas vacías que requieren decisión */
 let vacasVacias=[
   {cow:'033 · Paloma',num:'033',del:95,sub:'4to parto · Normando',dias:132,ultima:'3 feb 2026',
@@ -629,8 +662,12 @@ function renderVacias(){
       '<td class="r">'+v.del+'</td><td class="r"><span class="badge bad">'+v.dias+' d</span></td>'+
       '<td>'+v.ultima+' → vacía</td><td class="r"><b>'+v.ayer+'</b></td>'+
       '<td style="color:var(--red);font-size:12px">'+v.rec+'</td>'+
-      '<td class="r"><button class="btn outl small">Palpar</button></td>';
-    tr.querySelector('button').onclick=e=>{e.stopPropagation();openPalp(v.cow);};
+      '<td class="r" style="white-space:nowrap"><button class="btn outl small vPalp">Palpar</button> '+
+      '<button class="btn outl small vSeca">Secar</button> '+
+      '<button class="btn outl small vBaja" style="color:var(--red);border-color:var(--red)">Baja</button></td>';
+    tr.querySelector('.vPalp').onclick=e=>{e.stopPropagation();openPalp(v.cow);};
+    tr.querySelector('.vSeca').onclick=e=>{e.stopPropagation();openSeca(v.cow);};
+    tr.querySelector('.vBaja').onclick=e=>{e.stopPropagation();openBaja(v.cow);};
     tb.appendChild(tr);
   });
   const lbl=document.getElementById('vaciasLabel');
@@ -785,6 +822,9 @@ function savePalp(){
   const p=palp.parsed;if(!p)return;
   const nota=palp.nota.trim();
   closePalp();
+  /* quitar de la lista de candidatas */
+  const ci=palpCandidatas.findIndex(c=>c.cow===cow);
+  const removedCand=ci>=0?palpCandidatas.splice(ci,1)[0]:null;
   /* los tratamientos aplicados quedan en la sanidad del animal, sea cual sea el resultado */
   aplicarTratamientos(num,nombre,p.trat,nota);
   if(p.tipo==='prenada'){
@@ -796,14 +836,15 @@ function savePalp(){
     if(pi>=0)proximosPartos[pi]=nuevo; else proximosPartos.push(nuevo);
     const vi=vacasVacias.findIndex(v=>v.cow===cow);
     const removedVacia=vi>=0?vacasVacias.splice(vi,1)[0]:null;
-    renderPartos();renderVacias();go('pg-partos',document.querySelector('[data-pg="pg-partos"]'));
+    renderPartos();renderPartosKpis();renderVacias();renderPalpLista();go('pg-partos',document.querySelector('[data-pg="pg-partos"]'));
     const trats=p.trat.length?' · Trat: '+p.trat.join(', '):'';
     snack(nombre+': '+nota+' → preñada ~'+p.dias+'d — parto '+f.corta+trats,'Deshacer',()=>{
       const j=proximosPartos.findIndex(pp=>pp.cow===cow);
       if(j>=0)proximosPartos.splice(j,1);
       if(prevParto)proximosPartos.push(prevParto);
       if(removedVacia)vacasVacias.splice(Math.min(vi,vacasVacias.length),0,removedVacia);
-      renderPartos();renderVacias();});
+      if(removedCand)palpCandidatas.splice(Math.min(ci,palpCandidatas.length),0,removedCand);
+      renderPartos();renderPartosKpis();renderVacias();renderPalpLista();});
     return;
   }
   if(p.tipo==='vacia'){
@@ -817,17 +858,24 @@ function savePalp(){
         rec:p.subtipo==='fisiologica'?'Vacía fisiológica — programar servicio':'Vacía — evaluar siguiente paso'};
       vacasVacias.push(added);
     }
-    renderPartos();renderVacias();go('pg-repro',document.querySelector('[data-pg="pg-repro"]'));
+    renderPartos();renderPartosKpis();renderVacias();renderPalpLista();go('pg-repro',document.querySelector('[data-pg="pg-repro"]'));
     snack(nombre+': '+nota+' → vacía — lista para servicio','Deshacer',()=>{
       if(added){const ai=vacasVacias.findIndex(v=>v.cow===cow);if(ai>=0)vacasVacias.splice(ai,1);}
       if(prevParto)proximosPartos.splice(Math.min(pi,proximosPartos.length),0,prevParto);
-      renderPartos();renderVacias();});
+      if(removedCand)palpCandidatas.splice(Math.min(ci,palpCandidatas.length),0,removedCand);
+      renderPartos();renderPartosKpis();renderVacias();renderPalpLista();});
     return;
   }
+  renderPalpLista();
   const trats=p.trat.length?' · tratamiento aplicado: '+p.trat.join(', '):'';
   snack(nombre+': '+nota+' → '+p.label+trats);
 }
-renderPartos();renderVacias();renderTratamientos();
+function renderPalpLista(){
+  const box=document.getElementById('palpListaBox');if(!box)return;
+  if(!palpCandidatas.length){box.innerHTML='<span class="mut">No hay candidatas para palpar</span>';return;}
+  box.innerHTML=palpCandidatas.map(c=>'<b style="color:var(--ink)">'+c.cow.replace(' · ',' ')+'</b> — '+c.motivo).join('<br>');
+}
+renderPartos();renderPartosRecientes();renderPartosKpis();renderVacias();renderPalpLista();renderTratamientos();
 
 /* ===== Hato: tabla con filtros funcionales ===== */
 const hato=[
@@ -1108,15 +1156,20 @@ function saveParto(){
   a.repro='<span class="badge ok">recién parida · DEL 0</span>';
   /* la cría viva entra al hato */
   let cria=null;
+  const criaGrupo=partoState.sexo==='H'?'Ternera':'Macho';
   if(partoState.estado==='viva'){
     const num=String(++criaSeq).padStart(3,'0');
-    const grupo=partoState.sexo==='H'?'Ternera':'Macho';
-    cria={num,n:'(cría de '+nombre+')',raza:a.raza,grupo,edad:'0 m',
+    cria={num,n:'(cría de '+nombre+')',raza:a.raza,grupo:criaGrupo,edad:'0 m',
       repro:'<span class="badge ok">recién nacid'+(partoState.sexo==='H'?'a':'o')+' · '+partoState.peso+' kg</span>',
       del:'—',ayer:'—',var:'—',vc:'',tags:[]};
     hato.unshift(cria);
   }
-  renderHatoFiltros();renderHato();renderPartos();
+  /* registrar en partos recientes */
+  const reciente={madre:partoState.num+' '+nombre,cria:cria?cria.num:'—',fecha:'13 jun',
+    sexo:partoState.sexo,peso:partoState.peso,tipo:partoState.tipo,
+    estado:partoState.estado,grupo:partoState.estado==='viva'?(criaGrupo==='Ternera'?'Terneras':'Machos'):null};
+  partosRecientes.push(reciente);
+  renderHatoFiltros();renderHato();renderPartos();renderPartosRecientes();renderPartosKpis();
   go('pg-partos',navFor('pg-partos'));
   const msg=partoState.estado==='viva'
     ? 'Parto de '+nombre+' · cría '+cria.num+' ('+sexoTxt+', '+partoState.peso+' kg) creada en '+cria.grupo+' · '+nombre+' al ordeño en DEL 0'
@@ -1125,7 +1178,8 @@ function saveParto(){
     Object.assign(a,prevMadre);
     if(cria){const ci=hato.indexOf(cria);if(ci>=0)hato.splice(ci,1);criaSeq--;}
     if(prevParto)proximosPartos.splice(Math.min(pi,proximosPartos.length),0,prevParto);
-    renderHatoFiltros();renderHato();renderPartos();});
+    const ri=partosRecientes.indexOf(reciente);if(ri>=0)partosRecientes.splice(ri,1);
+    renderHatoFiltros();renderHato();renderPartos();renderPartosRecientes();renderPartosKpis();});
 }
 
 /* --- alta (compra / ingreso) --- */

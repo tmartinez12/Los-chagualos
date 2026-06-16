@@ -502,11 +502,7 @@
             </div>
             <div class="section-label">Lista para la próxima palpación (se arma sola)</div>
             <div class="card">
-              <div style="font-size:13px;line-height:1.9;color:var(--ink-2)">
-                <b style="color:var(--ink)">027 Estrella</b> — celo sin repetir (¿preñada?)<br>
-                <b style="color:var(--ink)">051 Careta</b> — parida hace 121 días, sin celo visto<br>
-                <b style="color:var(--ink)">033 Paloma</b> — vacía hace 132 días<br>
-                <b style="color:var(--ink)">029 Pinta</b> — vacía hace 150 días</div>
+              <div id="palpListaBox" style="font-size:13px;line-height:1.9;color:var(--ink-2)"></div>
               <div style="display:flex;gap:8px;margin-top:14px">
                 <button class="btn filled small" onclick="openPalp()">Registrar palpación</button>
                 <button class="btn outl small" onclick="snack('Lista enviada al Dr. Restrepo por WhatsApp')">Enviar al vet</button>
@@ -528,12 +524,7 @@
       <div class="page" id="pg-partos">
         <button class="btn filled" style="margin-bottom:14px" onclick="openParto()">
           <svg class="ic-s ic"><use href="#i-sprout"/></svg>Registrar parto</button>
-        <div class="kpis">
-          <div class="card kpi"><div class="k-label">Partos 2026</div><div class="k-value">7</div><div class="k-trend up">6 crías vivas</div></div>
-          <div class="card kpi"><div class="k-label">Por parir</div><div class="k-value">9</div><div class="k-trend mut">de las palpaciones</div></div>
-          <div class="card kpi"><div class="k-label">Próximo</div><div class="k-value" style="font-size:20px">~3 jul</div><div class="k-trend mut">011 Violeta</div></div>
-          <div class="card kpi"><div class="k-label">Mortinatos 2026</div><div class="k-value down">1</div><div class="k-trend mut">de 7 partos</div></div>
-        </div>
+        <div class="kpis" id="partosKpis"></div>
 
         <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:12px">
           <div>
@@ -551,13 +542,8 @@
             <div class="card" style="padding:8px">
               <table>
                 <thead><tr><th>Madre → cría</th><th>Fecha</th><th class="r">Resultado</th></tr></thead>
-                <tbody>
-                  <tr onclick="snack('Cría 064 (hembra) de Lucero · 36 kg')"><td>042 Lucero → 064</td><td>12 ene</td><td class="r"><span class="badge ok">♀ en Terneras</span></td></tr>
-                  <tr onclick="snack('Cría 069 (hembra) de Estrella · 34 kg')"><td>027 Estrella → 069</td><td>28 feb</td><td class="r"><span class="badge ok">♀ en Terneras</span></td></tr>
-                  <tr onclick="snack('Cría de Paloma · nació muerta · parto asistido')"><td>033 Paloma → cría</td><td>20 abr</td><td class="r"><span class="badge bad">mortinato</span></td></tr>
-                </tbody>
+                <tbody id="partosRecientesTbody"></tbody>
               </table>
-              <div style="text-align:center;padding:10px"><button class="btn outl small" onclick="snack('Historial completo de partos — cada cría con su fecha, sexo, peso y notas; incluye los mortinatos')">Ver historial completo</button></div>
             </div>
           </div>
         </div>
