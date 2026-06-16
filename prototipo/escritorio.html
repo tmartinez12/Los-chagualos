@@ -614,21 +614,8 @@
         <button class="btn filled" style="margin-bottom:14px" onclick="snack('Registrar enfermedad o tratamiento — selecciona el animal, el problema y el tratamiento')">
           <svg class="ic-s ic"><use href="#i-shield"/></svg>Registrar enfermedad o tratamiento</button>
 
-        <div class="section-label" style="margin-top:0">En tratamiento ahora · <span style="color:var(--red)">1</span></div>
-        <div class="card" style="margin-bottom:14px">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px">
-            <div class="cell-animal" style="display:flex;gap:10px;align-items:center">
-              <div class="cini">017</div>
-              <div><div class="cn">Azucena</div>
-                <div class="cs">Mastitis · antibiótico (3er día de 5) · <b style="color:var(--red)">retiro de leche hasta sáb 14</b></div></div>
-            </div>
-            <span class="badge bad">retiro 2 d</span>
-          </div>
-          <div style="display:flex;gap:8px;margin-top:12px">
-            <button class="btn outl small" onclick="snack('Tratamiento marcado como terminado — el retiro de leche se levanta el sáb 14')">Marcar terminado</button>
-            <button class="btn outl small" onclick="snack('Historia clínica de Azucena — tratamientos, dosis y retiros')">Ver historia</button>
-          </div>
-        </div>
+        <div class="section-label" style="margin-top:0">En tratamiento ahora · <span style="color:var(--red)" id="tratCount">1</span></div>
+        <div id="tratActivos" style="margin-bottom:14px"></div>
 
         <div class="section-label">Vacunas</div>
         <div class="grid" style="grid-template-columns:1fr 1fr">
@@ -718,8 +705,9 @@
   <div id="palpInterp" style="margin-top:10px;min-height:48px"></div>
 
   <div id="palpExtraWrap" style="display:none">
-    <div class="p-label">Tratamiento recomendado</div>
+    <div class="p-label">Tratamiento aplicado</div>
     <div class="pchips" id="palpTratChips"></div>
+    <div class="p-hint" style="color:var(--ink-2);font-weight:500">Queda registrado en la sanidad del animal.</div>
   </div>
 
   <div class="m-actions">

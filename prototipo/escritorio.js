@@ -636,6 +636,49 @@ function renderVacias(){
   const lbl=document.getElementById('vaciasLabel');
   if(lbl)lbl.textContent='Vacas vacías · '+vacasVacias.length+(vacasVacias.length===1?' requiere':' requieren')+' decisión';
 }
+
+/* ===== Tratamientos / sanidad del animal ===== */
+let tratamientos=[
+  {num:'017',n:'Azucena',desc:'Mastitis · antibiótico (3er día de 5)',
+   retiro:'retiro de leche hasta sáb 14',badge:'retiro 2 d',badgeCls:'bad'},
+];
+function renderTratamientos(){
+  const cont=document.getElementById('tratActivos');if(!cont)return;cont.innerHTML='';
+  tratamientos.forEach((t,i)=>{
+    const card=document.createElement('div');card.className='card';card.style.cssText='margin-bottom:10px';
+    card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px">'+
+      '<div class="cell-animal" style="display:flex;gap:10px;align-items:center">'+
+        '<div class="cini">'+t.num+'</div>'+
+        '<div><div class="cn">'+t.n+'</div><div class="cs">'+t.desc+
+        (t.retiro?' · <b style="color:var(--red)">'+t.retiro+'</b>':'')+'</div></div>'+
+      '</div>'+
+      (t.badge?'<span class="badge '+(t.badgeCls||'')+'">'+t.badge+'</span>':'')+'</div>';
+    const acts=document.createElement('div');acts.style.cssText='display:flex;gap:8px;margin-top:12px';
+    const bFin=document.createElement('button');bFin.className='btn outl small';bFin.textContent='Marcar terminado';
+    bFin.onclick=()=>{const removed=tratamientos.splice(i,1)[0];renderTratamientos();
+      snack(removed.n+': tratamiento marcado como terminado','Deshacer',()=>{
+        tratamientos.splice(Math.min(i,tratamientos.length),0,removed);renderTratamientos();});};
+    const bVer=document.createElement('button');bVer.className='btn outl small';bVer.textContent='Ver ficha';
+    bVer.onclick=()=>fichas[t.num]?goVaca(t.num,'pg-sanitario'):snack('Ficha de '+t.n);
+    acts.appendChild(bFin);acts.appendChild(bVer);card.appendChild(acts);
+    cont.appendChild(card);
+  });
+  const cnt=document.getElementById('tratCount');if(cnt)cnt.textContent=tratamientos.length;
+  const lbl=cnt?cnt.parentElement:null;
+  if(lbl)lbl.style.color=tratamientos.length?'':'var(--ink-3)';
+}
+/* aplica los tratamientos detectados en la palpación: quedan en sanidad y en la ficha */
+function aplicarTratamientos(num,nombre,trats,contexto){
+  if(!trats||!trats.length)return;
+  const desc='Aplicado en palpación: '+trats.join(', ')+(contexto?' ('+contexto+')':'');
+  tratamientos.push({num:num,n:nombre,desc:desc,retiro:'',badge:'aplicado hoy',badgeCls:'ok'});
+  /* queda en la historia clínica de la ficha del animal */
+  const fi=fichas[num];
+  if(fi){fi.historia.unshift({fecha:'13 JUN 2026',
+    texto:'Tratamiento: <b>'+trats.join(', ')+'</b>',
+    sub:contexto?'En palpación · '+contexto:'Aplicado en palpación'});}
+  renderTratamientos();
+}
 const palp={cow:'027 · Estrella',nota:'',parsed:null};
 function renderPalpCows(){
   const c=document.getElementById('palpCows');if(!c)return;c.innerHTML='';
@@ -677,7 +720,7 @@ function parsePalpNota(raw){
   if(s.includes('VENCO'))
     return {tipo:'observacion',label:'Involución uterina / cérvix — confirmar con veterinario',trat:parseTrat(s)};
   const trat=parseTrat(s);
-  if(trat.length)return {tipo:'tratamiento',label:'Tratamiento recomendado',trat};
+  if(trat.length)return {tipo:'tratamiento',label:'Tratamiento aplicado',trat};
   return {tipo:'otro',label:'Anotación registrada: "'+raw.trim()+'"',trat:[]};
 }
 function parseTrat(s){
@@ -738,9 +781,12 @@ function closePalp(){document.getElementById('palpModal').classList.remove('show
   document.getElementById('palpScrim').classList.remove('show');}
 function savePalp(){
   const cow=palp.cow,nombre=cow.split('·')[1].trim();
+  const num=cow.split('·')[0].trim();
   const p=palp.parsed;if(!p)return;
   const nota=palp.nota.trim();
   closePalp();
+  /* los tratamientos aplicados quedan en la sanidad del animal, sea cual sea el resultado */
+  aplicarTratamientos(num,nombre,p.trat,nota);
   if(p.tipo==='prenada'){
     const meses=Math.round(p.meses);
     const f=fechaParto(meses);
@@ -778,10 +824,10 @@ function savePalp(){
       renderPartos();renderVacias();});
     return;
   }
-  const trats=p.trat.length?' · Trat: '+p.trat.join(', '):'';
+  const trats=p.trat.length?' · tratamiento aplicado: '+p.trat.join(', '):'';
   snack(nombre+': '+nota+' → '+p.label+trats);
 }
-renderPartos();renderVacias();
+renderPartos();renderVacias();renderTratamientos();
 
 /* 32 potreros ordenados por estado: listos → recuperando → recién pastoreados */
 const pots=[];
