@@ -44,9 +44,8 @@ function renderLecheKpis(){
   const total=done.reduce((s,c)=>s+c.v,0);
   const ayerTotal=milkCows.reduce((s,c)=>s+c.ayer,0);
   const allDone=done.length===milkCows.length;
-  const entDone=typeof lecheros!=='undefined'?lecheros.filter(l=>l.done):[];
-  const entTotal=entDone.reduce((s,l)=>s+l.hoy,0);
-  const entCount=typeof lecheros!=='undefined'?lecheros.length:0;
+  let entDone=[],entTotal=0,entCount=0;
+  try{entDone=lecheros.filter(l=>l.done);entTotal=entDone.reduce((s,l)=>s+l.hoy,0);entCount=lecheros.length;}catch(e){}
 
   const trendOrdenio=allDone
     ?(total>ayerTotal?'<span class="up">↑ '+(total-ayerTotal)+' L vs ayer</span>':
