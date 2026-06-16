@@ -829,6 +829,111 @@ function savePalp(){
 }
 renderPartos();renderVacias();renderTratamientos();
 
+/* ===== Hato: tabla con filtros funcionales ===== */
+const hato=[
+  /* En ordeño (26 representadas con muestra) */
+  {num:'042',n:'Lucero',raza:'Holstein × Gyr',grupo:'En ordeño',edad:'5,2 a',repro:'<span class="badge warn">preñada 6 m</span> <span class="sub">secar ~12 jul</span>',del:152,ayer:18,var:'+1',vc:'up',tags:['prenada']},
+  {num:'038',n:'Mona',raza:'Gyrolando',grupo:'En ordeño',edad:'4,1 a',repro:'<span class="badge">servida · por palpar</span>',del:98,ayer:16,var:'= ayer',vc:'mut',tags:[]},
+  {num:'051',n:'Careta',raza:'Holstein × Gyr',grupo:'En ordeño',edad:'3,2 a',repro:'<span class="badge">1er parto · vacía</span>',del:121,ayer:14,var:'+2',vc:'up',tags:['vacia']},
+  {num:'027',n:'Estrella',raza:'Gyrolando',grupo:'En ordeño',edad:'3,8 a',repro:'<span class="badge ok">celo sin repetir</span>',del:64,ayer:13,var:'= ayer',vc:'mut',tags:[]},
+  {num:'017',n:'Azucena',raza:'Holstein',grupo:'En ordeño',edad:'8 a',repro:'<span class="badge bad">retiro 2 días más</span>',del:201,ayer:11,var:'= ayer',vc:'mut',tags:['tratamiento','prenada']},
+  {num:'033',n:'Paloma',raza:'Normando',grupo:'En ordeño',edad:'6,5 a',repro:'<span class="badge bad">vacía 132 días</span>',del:95,ayer:6,var:'-3',vc:'down',tags:['vacia']},
+  {num:'029',n:'Pinta',raza:'Holstein × Gyr',grupo:'En ordeño',edad:'7 a',repro:'<span class="badge bad">vacía 150 días</span>',del:412,ayer:5,var:'-1',vc:'down',tags:['vacia']},
+  {num:'015',n:'Mariposa',raza:'Gyrolando',grupo:'En ordeño',edad:'5 a',repro:'<span class="badge warn">preñada 4 m</span>',del:180,ayer:10,var:'= ayer',vc:'mut',tags:['prenada']},
+  {num:'023',n:'Candelaria',raza:'Holstein',grupo:'En ordeño',edad:'6 a',repro:'<span class="badge warn">preñada 3 m</span>',del:142,ayer:12,var:'+1',vc:'up',tags:['prenada']},
+  {num:'035',n:'Rocío',raza:'Normando',grupo:'En ordeño',edad:'4,5 a',repro:'<span class="badge warn">preñada 5 m</span>',del:110,ayer:14,var:'= ayer',vc:'mut',tags:['prenada']},
+  {num:'040',n:'Nieve',raza:'Holstein × Gyr',grupo:'En ordeño',edad:'3,5 a',repro:'<span class="badge warn">preñada 2 m</span>',del:88,ayer:15,var:'+1',vc:'up',tags:['prenada']},
+  {num:'046',n:'Esperanza',raza:'Gyrolando',grupo:'En ordeño',edad:'5,8 a',repro:'<span class="badge warn">preñada 7 m</span> <span class="sub">secar ~jul</span>',del:195,ayer:9,var:'-1',vc:'down',tags:['prenada']},
+  /* Horras (9) */
+  {num:'011',n:'Violeta',raza:'Gyrolando',grupo:'Horra',edad:'7 a',repro:'<span class="badge ok">preñada 8,5 m · parto ~3 jul</span>',del:'—',ayer:'—',var:'—',vc:'',tags:['prenada']},
+  {num:'019',n:'Canela',raza:'Holstein × Gyr',grupo:'Horra',edad:'6 a',repro:'<span class="badge ok">preñada 8 m · parto ~18 jul</span>',del:'—',ayer:'—',var:'—',vc:'',tags:['prenada']},
+  {num:'045',n:'Morena',raza:'Normando',grupo:'Horra',edad:'5,5 a',repro:'<span class="badge">preñada 7,5 m · parto ~2 ago</span>',del:'—',ayer:'—',var:'—',vc:'',tags:['prenada']},
+  {num:'008',n:'Golondrina',raza:'Holstein',grupo:'Horra',edad:'9 a',repro:'<span class="badge">preñada 7 m · parto ~12 sep</span>',del:'—',ayer:'—',var:'—',vc:'',tags:['prenada']},
+  {num:'036',n:'Cereza',raza:'Gyrolando',grupo:'Horra',edad:'4 a',repro:'<span class="badge">preñada 7 m · parto ~15 sep</span>',del:'—',ayer:'—',var:'—',vc:'',tags:['prenada']},
+  {num:'041',n:'Garza',raza:'Holstein × Gyr',grupo:'Horra',edad:'5,2 a',repro:'<span class="badge">preñada 6,5 m · parto ~28 sep</span>',del:'—',ayer:'—',var:'—',vc:'',tags:['prenada']},
+  {num:'014',n:'Nube',raza:'Gyrolando',grupo:'Horra',edad:'6,8 a',repro:'<span class="badge">preñada 6 m · parto ~10 oct</span>',del:'—',ayer:'—',var:'—',vc:'',tags:['prenada']},
+  {num:'048',n:'Flor',raza:'Normando',grupo:'Horra',edad:'3,8 a',repro:'<span class="badge">preñada 5,5 m · parto ~25 oct</span>',del:'—',ayer:'—',var:'—',vc:'',tags:['prenada']},
+  {num:'022',n:'Luna',raza:'Holstein',grupo:'Horra',edad:'7,5 a',repro:'<span class="badge">preñada 5 m · parto ~8 nov</span>',del:'—',ayer:'—',var:'—',vc:'',tags:['prenada']},
+  /* Novillas (14 — muestra) */
+  {num:'055',n:'Princesa',raza:'Gyrolando',grupo:'Novilla',edad:'2,1 a',repro:'<span class="badge warn">lista para servicio · hija de Sansón</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
+  {num:'058',n:'Alondra',raza:'Holstein × Gyr',grupo:'Novilla',edad:'2 a',repro:'<span class="badge warn">lista para servicio</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
+  {num:'061',n:'Café',raza:'Normando',grupo:'Novilla',edad:'1,9 a',repro:'<span class="sub">318 kg · le faltan ~12 kg</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
+  {num:'063',n:'Dalia',raza:'Gyrolando',grupo:'Novilla',edad:'1,7 a',repro:'<span class="sub">295 kg</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
+  {num:'067',n:'Sirena',raza:'Holstein',grupo:'Novilla',edad:'1,5 a',repro:'<span class="sub">275 kg</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
+  /* Levante (18 — muestra) */
+  {num:'066',n:'Esmeralda',raza:'Gyrolando',grupo:'Levante',edad:'14 m',repro:'<span class="sub">218 kg · 480 g/día</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
+  {num:'068',n:'Perla',raza:'Holstein × Gyr',grupo:'Levante',edad:'13 m',repro:'<span class="sub">201 kg · 470 g/día</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
+  {num:'070',n:'Coral',raza:'Normando',grupo:'Levante',edad:'11 m',repro:'<span class="sub">178 kg · 490 g/día</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
+  /* Terneras (11 — muestra) */
+  {num:'064',n:'(cría de Lucero)',raza:'Holstein × Gyr',grupo:'Ternera',edad:'5 m',repro:'<span class="badge warn">destete próximo</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
+  {num:'071',n:'(cría de Canela)',raza:'Holstein × Gyr',grupo:'Ternera',edad:'4,5 m',repro:'<span class="badge warn">destete próximo</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
+  {num:'073',n:'(cría de Morena)',raza:'Normando',grupo:'Ternera',edad:'3 m',repro:'',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
+  /* Machos (2) */
+  {num:'T01',n:'Sansón',raza:'Toro · Gyr',grupo:'Macho',edad:'6 a',repro:'<span class="badge">toro activo · 23 hijas</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
+  {num:'T02',n:'Torete',raza:'Gyr',grupo:'Macho',edad:'11 m',repro:'<span class="sub">venta programada ago</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
+];
+const hatoGrupos=['En ordeño','Horra','Novilla','Levante','Ternera','Macho'];
+const hatoFiltrosEstado=[
+  {id:'todas',label:null},
+  {id:'prenada',label:'Preñadas',test:a=>a.tags.includes('prenada')},
+  {id:'vacia',label:'Vacías',test:a=>a.tags.includes('vacia')},
+  {id:'tratamiento',label:'En tratamiento',test:a=>a.tags.includes('tratamiento')},
+];
+let hatoFiltro='todas';
+function contarFiltro(id){
+  const f=hatoFiltrosEstado.find(x=>x.id===id);
+  return f&&f.test?hato.filter(f.test).length:hato.length;
+}
+function renderHatoFiltros(){
+  const cont=document.getElementById('hatoFiltros');if(!cont)return;cont.innerHTML='';
+  /* grupos */
+  hatoGrupos.forEach(g=>{
+    const cnt=hato.filter(a=>a.grupo===g).length;
+    const b=document.createElement('span');b.className='badge';b.style.cursor='pointer';
+    b.textContent=g+' ('+cnt+')';
+    if(hatoFiltro===g)b.style.cssText='cursor:pointer;background:var(--black);color:#fff;border-color:var(--black)';
+    b.onclick=()=>{hatoFiltro=hatoFiltro===g?'todas':g;renderHatoFiltros();renderHato();};
+    cont.appendChild(b);
+  });
+  /* separador visual */
+  const sep=document.createElement('span');sep.style.cssText='width:1px;height:18px;background:var(--border);margin:0 2px';
+  cont.appendChild(sep);
+  /* estados */
+  hatoFiltrosEstado.forEach(f=>{
+    if(f.id==='todas')return;
+    const cnt=contarFiltro(f.id);
+    const b=document.createElement('span');b.className='badge';b.style.cursor='pointer';
+    b.textContent=f.label+' ('+cnt+')';
+    if(hatoFiltro===f.id)b.style.cssText='cursor:pointer;background:var(--black);color:#fff;border-color:var(--black)';
+    b.onclick=()=>{hatoFiltro=hatoFiltro===f.id?'todas':f.id;renderHatoFiltros();renderHato();};
+    cont.appendChild(b);
+  });
+}
+function renderHato(){
+  const tb=document.getElementById('hatoTbody');if(!tb)return;tb.innerHTML='';
+  let filtered;
+  const grupoMatch=hatoGrupos.find(g=>g===hatoFiltro);
+  if(grupoMatch){filtered=hato.filter(a=>a.grupo===grupoMatch);}
+  else{const f=hatoFiltrosEstado.find(x=>x.id===hatoFiltro);
+    filtered=f&&f.test?hato.filter(f.test):hato;}
+  const res=document.getElementById('hatoResumen');
+  if(res)res.textContent=filtered.length+' de '+hato.length+' animales'+(hatoFiltro!=='todas'?' · filtro: '+(grupoMatch||hatoFiltrosEstado.find(x=>x.id===hatoFiltro).label):'');
+  filtered.forEach(a=>{
+    const tr=document.createElement('tr');
+    tr.onclick=()=>fichas[a.num]?goVaca(a.num,'pg-hato'):snack('Ficha de '+a.n);
+    const varHtml=a.var==='—'?'—':a.var.startsWith('+')?'<span class="up">↑ '+a.var+'</span>':
+      a.var.startsWith('-')?'<span class="down">↓ '+a.var+'</span>':'<span class="mut">'+a.var+'</span>';
+    tr.innerHTML='<td><div class="cell-animal"><div class="cini">'+a.num+'</div><div><div class="cn">'+a.n+'</div><div class="cs">'+a.raza+'</div></div></div></td>'+
+      '<td>'+a.grupo+'</td><td class="r">'+a.edad+'</td>'+
+      '<td>'+a.repro+'</td>'+
+      '<td class="r">'+(a.del||'—')+'</td><td class="r">'+(a.ayer==='—'?'—':'<b>'+a.ayer+' L</b>')+'</td>'+
+      '<td class="r">'+varHtml+'</td>'+
+      '<td class="r"><svg class="ic-s ic" style="color:var(--ink-3)"><use href="#i-dots"/></svg></td>';
+    tb.appendChild(tr);
+  });
+}
+renderHatoFiltros();renderHato();
+
 /* 32 potreros ordenados por estado: listos → recuperando → recién pastoreados */
 const pots=[];
 for(let i=1;i<=32;i++){

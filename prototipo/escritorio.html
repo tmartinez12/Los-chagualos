@@ -252,13 +252,10 @@
 
       <!-- ============ HATO (tabla) ============ -->
       <div class="page" id="pg-hato">
-        <div class="card" style="padding:10px 14px;display:flex;gap:10px;align-items:center;margin-bottom:12px">
-          <span style="font-size:13px;color:var(--ink-2)">80 animales · 26 en ordeño · 19 preñadas</span>
+        <div class="card" style="padding:10px 14px;display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+          <span style="font-size:13px;color:var(--ink-2)" id="hatoResumen">80 animales · 26 en ordeño · 19 preñadas</span>
           <div class="spacer" style="flex:1"></div>
-          <span class="badge sel" style="background:var(--black);color:#fff;border-color:var(--black)">Todas (80)</span>
-          <span class="badge" style="cursor:pointer" onclick="snack('Filtro: 19 preñadas')">Preñadas</span>
-          <span class="badge" style="cursor:pointer" onclick="snack('Filtro: 5 vacías >120 DEL')">Vacías</span>
-          <span class="badge" style="cursor:pointer" onclick="snack('Filtro: 1 en tratamiento')">En tratamiento</span>
+          <div id="hatoFiltros" style="display:flex;gap:6px;flex-wrap:wrap"></div>
           <button class="btn outl small" onclick="snack('Exportado: inventario_hato_jun2026.xlsx')"><svg class="ic-s ic"><use href="#i-export"/></svg>Exportar</button>
         </div>
         <div class="card" style="padding:8px">
@@ -267,54 +264,8 @@
               <th>Animal</th><th>Grupo</th><th class="r">Edad</th><th>Estado reproductivo</th>
               <th class="r">DEL</th><th class="r">Ayer</th><th class="r">Var.</th><th></th>
             </tr></thead>
-            <tbody>
-              <tr onclick="goVaca('042','pg-hato')">
-                <td><div class="cell-animal"><div class="cini">042</div><div><div class="cn">Lucero</div><div class="cs">Holstein × Gyr</div></div></div></td>
-                <td>En ordeño</td><td class="r">5,2 a</td>
-                <td><span class="badge warn">preñada 6 m</span> <span class="sub">secar ~12 jul</span></td>
-                <td class="r">152</td><td class="r"><b>18 L</b></td><td class="r up">↑ +1</td>
-                <td class="r"><svg class="ic-s ic" style="color:var(--ink-3)"><use href="#i-dots"/></svg></td></tr>
-              <tr onclick="goVaca('038','pg-hato')">
-                <td><div class="cell-animal"><div class="cini">038</div><div><div class="cn">Mona</div><div class="cs">Gyrolando</div></div></div></td>
-                <td>En ordeño</td><td class="r">4,1 a</td>
-                <td><span class="badge">servida · por palpar</span></td>
-                <td class="r">98</td><td class="r"><b>16 L</b></td><td class="r mut">= ayer</td>
-                <td class="r"><svg class="ic-s ic" style="color:var(--ink-3)"><use href="#i-dots"/></svg></td></tr>
-              <tr onclick="goVaca('017','pg-hato')">
-                <td><div class="cell-animal"><div class="cini">017</div><div><div class="cn">Azucena</div><div class="cs">Holstein</div></div></div></td>
-                <td>En ordeño</td><td class="r">8 a</td>
-                <td><span class="badge bad">retiro 2 días más</span></td>
-                <td class="r">201</td><td class="r"><b>11 L</b></td><td class="r mut">= ayer</td>
-                <td class="r"><svg class="ic-s ic" style="color:var(--ink-3)"><use href="#i-dots"/></svg></td></tr>
-              <tr onclick="goVaca('033','pg-hato')">
-                <td><div class="cell-animal"><div class="cini">033</div><div><div class="cn">Paloma</div><div class="cs">Normando</div></div></div></td>
-                <td>En ordeño</td><td class="r">6,5 a</td>
-                <td><span class="badge bad">vacía 132 días</span></td>
-                <td class="r">95</td><td class="r"><b>6 L</b></td><td class="r down">↓ −3</td>
-                <td class="r"><svg class="ic-s ic" style="color:var(--ink-3)"><use href="#i-dots"/></svg></td></tr>
-              <tr onclick="goVaca('011','pg-hato')">
-                <td><div class="cell-animal"><div class="cini">011</div><div><div class="cn">Violeta</div><div class="cs">Gyrolando</div></div></div></td>
-                <td>Horra</td><td class="r">7 a</td>
-                <td><span class="badge ok">preñada 8,5 m · parto ~3 jul</span></td>
-                <td class="r">—</td><td class="r">—</td><td class="r">—</td>
-                <td class="r"><svg class="ic-s ic" style="color:var(--ink-3)"><use href="#i-dots"/></svg></td></tr>
-              <tr onclick="goVaca('055','pg-hato')">
-                <td><div class="cell-animal"><div class="cini">055</div><div><div class="cn">Princesa</div><div class="cs">Gyrolando</div></div></div></td>
-                <td>Novilla</td><td class="r">2,1 a</td>
-                <td><span class="badge warn">lista para servicio · hija de Sansón</span></td>
-                <td class="r">—</td><td class="r">—</td><td class="r">—</td>
-                <td class="r"><svg class="ic-s ic" style="color:var(--ink-3)"><use href="#i-dots"/></svg></td></tr>
-              <tr onclick="goVaca('T01','pg-hato')">
-                <td><div class="cell-animal"><div class="cini">T01</div><div><div class="cn">Sansón</div><div class="cs">Toro · Gyr</div></div></div></td>
-                <td>Macho</td><td class="r">6 a</td>
-                <td><span class="badge">toro activo · 23 hijas</span></td>
-                <td class="r">—</td><td class="r">—</td><td class="r">—</td>
-                <td class="r"><svg class="ic-s ic" style="color:var(--ink-3)"><use href="#i-dots"/></svg></td></tr>
-            </tbody>
+            <tbody id="hatoTbody"></tbody>
           </table>
-          <div style="text-align:center;padding:12px">
-            <button class="btn outl small" onclick="snack('Tabla completa de los 80, con orden por cualquier columna')">Ver los 73 restantes</button>
-          </div>
         </div>
       </div>
 
