@@ -44,8 +44,9 @@ function renderLecheKpis(){
   const total=done.reduce((s,c)=>s+c.v,0);
   const ayerTotal=milkCows.reduce((s,c)=>s+c.ayer,0);
   const allDone=done.length===milkCows.length;
-  const entDone=lecheros.filter(l=>l.done);
+  const entDone=typeof lecheros!=='undefined'?lecheros.filter(l=>l.done):[];
   const entTotal=entDone.reduce((s,l)=>s+l.hoy,0);
+  const entCount=typeof lecheros!=='undefined'?lecheros.length:0;
 
   const trendOrdenio=allDone
     ?(total>ayerTotal?'<span class="up">↑ '+(total-ayerTotal)+' L vs ayer</span>':
@@ -64,8 +65,8 @@ function renderLecheKpis(){
       '<div class="k-value">'+(done.length?(total/done.length).toFixed(1):'—')+'</div>'+
       '<div class="k-trend mut">'+milkCows.length+' vacas en muestra</div></div>'+
     '<div class="card kpi"><div class="k-label">Entregas hoy</div>'+
-      '<div class="k-value">'+(entDone.length===lecheros.length?entTotal+'<span class="k-unit"> L</span>':entDone.length+'<span class="k-unit"> de '+lecheros.length+'</span>')+'</div>'+
-      '<div class="k-trend">'+(entDone.length===lecheros.length?'<span class="up">balance cuadra ✓</span>':'<span class="mut">pendientes</span>')+'</div></div>';
+      '<div class="k-value">'+(entCount&&entDone.length===entCount?entTotal+'<span class="k-unit"> L</span>':entDone.length+'<span class="k-unit"> de '+entCount+'</span>')+'</div>'+
+      '<div class="k-trend">'+(entCount&&entDone.length===entCount?'<span class="up">balance cuadra ✓</span>':'<span class="mut">pendientes</span>')+'</div></div>';
 }
 
 /* ===== Registrar leche por vaca ===== */
