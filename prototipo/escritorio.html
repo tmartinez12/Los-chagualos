@@ -88,23 +88,9 @@
 
         <div class="grid" style="grid-template-columns:1.4fr 1fr;margin-top:12px">
           <div class="card chart-card">
-            <div class="chart-title">La leche subió 8% en junio</div>
-            <div class="chart-sub">Litros/día vs lluvia · los eventos explican la curva</div>
-            <svg class="chart" viewBox="0 0 560 150" style="width:100%">
-              <g fill="#E2E4D8">
-                <rect x="20" y="120" width="9" height="22" rx="2"/><rect x="135" y="108" width="9" height="34" rx="2"/>
-                <rect x="260" y="96" width="9" height="46" rx="2"/><rect x="382" y="126" width="9" height="16" rx="2"/>
-                <rect x="466" y="111" width="9" height="31" rx="2"/>
-              </g>
-              <polyline points="18,88 70,82 122,85 175,66 228,70 280,52 332,58 385,48 437,45 490,36 540,30"
-                fill="none" stroke="#2F7E33" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-              <circle cx="540" cy="30" r="4.5" fill="#2F7E33"/>
-              <g font-family="Work Sans,sans-serif" font-size="11">
-                <line x1="280" y1="52" x2="280" y2="22" stroke="#A8ACA0" stroke-dasharray="2,2"/>
-                <text x="286" y="20" fill="#70756A" font-weight="600">entró silo</text>
-                <text x="498" y="18" fill="#16181B" font-weight="700">184 L</text>
-              </g>
-            </svg>
+            <div class="chart-title">Producción vs DEL · cada punto es una vaca</div>
+            <div class="chart-sub">Las que están debajo de la curva esperada necesitan atención</div>
+            <svg id="scatterInicio" viewBox="0 0 560 180" style="width:100%"></svg>
           </div>
           <div>
             <div class="alert urgent" style="margin-bottom:8px">
@@ -156,23 +142,9 @@
 
         <div class="grid" style="grid-template-columns:1.4fr 1fr;margin-top:12px">
           <div class="card chart-card">
-            <div class="chart-title">Producción diaria · últimos 7 días</div>
-            <div class="chart-sub">Litros/día vs lluvia · los eventos explican la curva</div>
-            <svg class="chart" viewBox="0 0 560 150" style="width:100%">
-              <g fill="#E2E4D8">
-                <rect x="20" y="120" width="9" height="22" rx="2"/><rect x="135" y="108" width="9" height="34" rx="2"/>
-                <rect x="260" y="96" width="9" height="46" rx="2"/><rect x="382" y="126" width="9" height="16" rx="2"/>
-                <rect x="466" y="111" width="9" height="31" rx="2"/>
-              </g>
-              <polyline points="18,88 70,82 122,85 175,66 228,70 280,52 332,58 385,48 437,45 490,36 540,30"
-                fill="none" stroke="#2F7E33" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-              <circle cx="540" cy="30" r="4.5" fill="#2F7E33"/>
-              <g font-family="Work Sans,sans-serif" font-size="11">
-                <line x1="280" y1="52" x2="280" y2="22" stroke="#A8ACA0" stroke-dasharray="2,2"/>
-                <text x="286" y="20" fill="#70756A" font-weight="600">entró silo</text>
-                <text x="498" y="18" fill="#16181B" font-weight="700">184 L</text>
-              </g>
-            </svg>
+            <div class="chart-title">Producción vs DEL · cada punto es una vaca</div>
+            <div class="chart-sub">Las que están debajo de la curva esperada necesitan atención</div>
+            <svg id="scatterLeche" viewBox="0 0 560 180" style="width:100%"></svg>
           </div>
           <div>
             <div class="alert info" style="margin-bottom:8px">

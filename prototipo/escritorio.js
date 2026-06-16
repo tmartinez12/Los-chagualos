@@ -104,6 +104,54 @@ function saveMilk(){
 }
 renderMilk();
 
+/* ===== Scatter: Producción vs DEL ===== */
+function renderScatter(svgId){
+  const svg=document.getElementById(svgId);if(!svg)return;
+  const cows=milkCows.map(c=>({num:c.num,n:c.n,del:parseInt(c.del.replace(/DEL (\d+).*/,'$1')),
+    l:c.done?c.v:c.ayer,prenada:c.estado&&c.estado.includes('preñada'),
+    vacia:c.estado&&c.estado.includes('vacía'),retiro:c.estado&&c.estado.includes('retiro')}));
+  const pad={l:45,r:15,t:12,b:28},w=560,h=180;
+  const pw=w-pad.l-pad.r,ph=h-pad.t-pad.b;
+  const maxDel=Math.max(450,...cows.map(c=>c.del+20));
+  const maxL=Math.max(22,...cows.map(c=>c.l+2));
+  function x(del){return pad.l+del/maxDel*pw;}
+  function y(l){return pad.t+(1-l/maxL)*ph;}
+  let out='';
+  // grid lines
+  for(let v=5;v<=maxL;v+=5)out+='<line x1="'+pad.l+'" y1="'+y(v)+'" x2="'+(w-pad.r)+'" y2="'+y(v)+'" stroke="#E7E7DF" stroke-width="0.7"/>';
+  for(let d=0;d<=maxDel;d+=60)out+='<line x1="'+x(d)+'" y1="'+pad.t+'" x2="'+x(d)+'" y2="'+(h-pad.b)+'" stroke="#E7E7DF" stroke-width="0.7"/>';
+  // axes
+  out+='<line x1="'+pad.l+'" y1="'+(h-pad.b)+'" x2="'+(w-pad.r)+'" y2="'+(h-pad.b)+'" stroke="#A8ACA0" stroke-width="1"/>';
+  out+='<line x1="'+pad.l+'" y1="'+pad.t+'" x2="'+pad.l+'" y2="'+(h-pad.b)+'" stroke="#A8ACA0" stroke-width="1"/>';
+  // axis labels
+  out+='<g font-family="Work Sans,sans-serif" font-size="9.5" fill="#A8ACA0">';
+  for(let d=0;d<=maxDel;d+=60)out+='<text x="'+x(d)+'" y="'+(h-pad.b+14)+'" text-anchor="middle">'+d+'</text>';
+  for(let v=5;v<=maxL;v+=5)out+='<text x="'+(pad.l-6)+'" y="'+(y(v)+3)+'" text-anchor="end">'+v+'</text>';
+  out+='<text x="'+(w/2)+'" y="'+(h-2)+'" text-anchor="middle" font-weight="600" fill="#70756A">DEL (días en leche)</text>';
+  out+='<text x="12" y="'+(h/2)+'" text-anchor="middle" font-weight="600" fill="#70756A" transform="rotate(-90,12,'+(h/2)+')">Litros/día</text>';
+  out+='</g>';
+  // expected curve (typical: peak ~18L at DEL 60, then decline)
+  const curvaPts=[];
+  for(let d=0;d<=maxDel;d+=5){
+    const expected=d<30?10+d*0.27:18*Math.exp(-0.002*(d-60));
+    curvaPts.push(x(d)+','+y(Math.min(expected,maxL)));
+  }
+  out+='<polyline points="'+curvaPts.join(' ')+'" fill="none" stroke="#A8ACA0" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/>';
+  // dots
+  cows.forEach(c=>{
+    const cx=x(c.del),cy=y(c.l);
+    const col=c.vacia?'var(--red)':c.retiro?'var(--red)':c.prenada?'var(--green)':'var(--ink-2)';
+    const expected=c.del<30?10+c.del*0.27:18*Math.exp(-0.002*(c.del-60));
+    const below=c.l<expected*0.7;
+    const r=below?6:4.5;
+    out+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="'+col+'" opacity="0.85" style="cursor:pointer"'+
+      ' onclick="goVaca(\''+c.num+'\',\'pg-leche\')"><title>'+c.num+' '+c.n+' · DEL '+c.del+' · '+c.l+' L</title></circle>';
+    out+='<text x="'+cx+'" y="'+(cy-r-3)+'" font-family="Work Sans,sans-serif" font-size="'+(below?'9.5':'8')+'" font-weight="'+(below?'700':'500')+'" fill="'+(below?col:'#70756A')+'" text-anchor="middle">'+c.num+'</text>';
+  });
+  svg.innerHTML=out;
+}
+renderScatter('scatterInicio');renderScatter('scatterLeche');
+
 /* ===== Entregas a lecheros ===== */
 const MESES_L=['Ene','Feb','Mar','Abr','May','Jun'];
 const DIAS_MES=[31,28,31,30,31,12];
