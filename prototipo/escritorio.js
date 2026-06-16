@@ -934,6 +934,250 @@ function renderHato(){
 }
 renderHatoFiltros();renderHato();
 
+/* ===== Flujos de registro (tratamiento, secado, parto, alta, baja) ===== */
+function fechaDias(dias){const d=new Date(2026,5,13);d.setDate(d.getDate()+dias);return d.getDate()+' '+MESC[d.getMonth()];}
+function navFor(id){return document.querySelector('[data-pg="'+id+'"]');}
+function openReg(title,sub){
+  document.getElementById('regTitle').textContent=title;
+  document.getElementById('regSub').textContent=sub||'';
+  document.getElementById('regActions').style.display='';
+  document.getElementById('regSaveBtn').disabled=false;
+  document.getElementById('regScrim').classList.add('show');
+  document.getElementById('regModal').classList.add('show');
+}
+function closeReg(){document.getElementById('regModal').classList.remove('show');
+  document.getElementById('regScrim').classList.remove('show');}
+function regLabel(text){const d=document.createElement('div');d.className='p-label';d.textContent=text;return d;}
+function regChips(items,current,onPick){
+  const wrap=document.createElement('div');wrap.className='pchips';
+  items.forEach(it=>{
+    const b=document.createElement('button');b.className='pchip';b.textContent=it.label;
+    if(it.val===current)b.classList.add('sel');
+    b.onclick=()=>{onPick(it.val);[...wrap.children].forEach(c=>c.classList.toggle('sel',c===b));};
+    wrap.appendChild(b);
+  });
+  return wrap;
+}
+function regStepper(getVal,setVal,min,max,unit){
+  const wrap=document.createElement('div');wrap.className='pchips';wrap.style.alignItems='center';
+  const minus=document.createElement('button');minus.className='pchip';minus.style.cssText='font-size:18px;padding:6px 14px';minus.textContent='−';
+  const val=document.createElement('span');val.style.cssText='font-weight:700;min-width:90px;text-align:center;font-size:15px';
+  const plus=document.createElement('button');plus.className='pchip';plus.style.cssText='font-size:18px;padding:6px 14px';plus.textContent='＋';
+  function paint(){val.textContent=getVal()+' '+unit;}
+  minus.onclick=()=>{setVal(Math.max(min,getVal()-1));paint();};
+  plus.onclick=()=>{setVal(Math.min(max,getVal()+1));paint();};
+  paint();wrap.appendChild(minus);wrap.appendChild(val);wrap.appendChild(plus);
+  return wrap;
+}
+function regHint(text,color){const d=document.createElement('div');d.className='p-hint';
+  d.style.cssText='font-weight:500;color:'+(color||'var(--ink-2)');d.textContent=text;return d;}
+function nombreDe(num){const a=hato.find(x=>x.num===num);return a?a.n:num;}
+
+/* --- menú de registro rápido --- */
+function openMenuRegistro(){
+  openReg('¿Qué quieres registrar?','');
+  const body=document.getElementById('regBody');body.innerHTML='';
+  document.getElementById('regActions').style.display='none';
+  const opts=[
+    ['🥛 Leche del ordeño',()=>{closeReg();go('pg-leche',navFor('pg-leche'));}],
+    ['🚚 Entrega a lechero',()=>{closeReg();go('pg-leche',navFor('pg-leche'));}],
+    ['🔬 Palpación',()=>{closeReg();openPalp();}],
+    ['💊 Enfermedad / tratamiento',()=>{closeReg();openTrata();}],
+    ['🐄 Parto',()=>{closeReg();openParto();}],
+    ['🌾 Secar vaca',()=>{closeReg();openSeca();}],
+    ['＋ Alta de animal',()=>{closeReg();openAlta();}],
+    ['↧ Dar de baja',()=>{closeReg();openBaja();}],
+  ];
+  const wrap=document.createElement('div');wrap.style.cssText='display:flex;flex-direction:column;gap:8px;margin-top:8px';
+  opts.forEach(([label,fn])=>{const b=document.createElement('button');b.className='btn outl';
+    b.style.cssText='justify-content:flex-start;width:100%';b.textContent=label;b.onclick=fn;wrap.appendChild(b);});
+  body.appendChild(wrap);
+}
+
+/* --- tratamiento (standalone) --- */
+const tratState={};
+function openTrata(cow){
+  const cands=hato.filter(a=>a.grupo==='En ordeño');
+  tratState.num=cow?(''+cow).split('·')[0].trim():cands[0].num;
+  tratState.problema='Mastitis';tratState.medicina='Antibiótico';tratState.retiro=4;
+  tratState.added=false;
+  openReg('Registrar enfermedad / tratamiento','Queda en la sanidad del animal y activa el retiro de leche');
+  const body=document.getElementById('regBody');body.innerHTML='';
+  body.appendChild(regLabel('Animal'));
+  body.appendChild(regChips(cands.map(a=>({val:a.num,label:a.num+' '+a.n})),tratState.num,v=>tratState.num=v));
+  body.appendChild(regLabel('Problema'));
+  body.appendChild(regChips(['Mastitis','Cojera','Fiebre','Parásitos','Herida','Otro'].map(p=>({val:p,label:p})),tratState.problema,v=>tratState.problema=v));
+  body.appendChild(regLabel('Medicamento'));
+  body.appendChild(regChips(['Antibiótico','Antiinflamatorio','Vitaminas','Desparasitante','Otro'].map(m=>({val:m,label:m})),tratState.medicina,v=>tratState.medicina=v));
+  body.appendChild(regLabel('Días de retiro de leche'));
+  body.appendChild(regStepper(()=>tratState.retiro,v=>tratState.retiro=v,0,10,'días'));
+  document.getElementById('regSaveBtn').onclick=saveTrata;
+}
+function saveTrata(){
+  const a=hato.find(x=>x.num===tratState.num);const nombre=a?a.n:tratState.num;
+  closeReg();
+  const conRetiro=tratState.retiro>0;
+  const trat={num:tratState.num,n:nombre,desc:tratState.problema+' · '+tratState.medicina.toLowerCase(),
+    retiro:conRetiro?'retiro de leche hasta '+fechaDias(tratState.retiro):'',
+    badge:conRetiro?'retiro '+tratState.retiro+'d':'sin retiro',badgeCls:conRetiro?'bad':'ok'};
+  tratamientos.push(trat);
+  let addedTag=false;
+  if(a&&!a.tags.includes('tratamiento')){a.tags.push('tratamiento');addedTag=true;}
+  const fi=fichas[tratState.num];let histAdded=false;
+  if(fi){fi.historia.unshift({fecha:'13 JUN 2026',texto:'Tratamiento: <b>'+tratState.problema+'</b> · '+tratState.medicina.toLowerCase(),
+    sub:conRetiro?'Retiro de leche '+tratState.retiro+' días':'Sin retiro de leche'});histAdded=true;}
+  renderTratamientos();renderHatoFiltros();renderHato();
+  go('pg-sanitario',navFor('pg-sanitario'));
+  const retiroTxt=conRetiro?' · retiro '+tratState.retiro+'d (hasta '+fechaDias(tratState.retiro)+')':' · sin retiro';
+  snack(nombre+': '+tratState.problema.toLowerCase()+' · '+tratState.medicina.toLowerCase()+retiroTxt,'Deshacer',()=>{
+    const i=tratamientos.indexOf(trat);if(i>=0)tratamientos.splice(i,1);
+    if(a&&addedTag){const ti=a.tags.indexOf('tratamiento');if(ti>=0)a.tags.splice(ti,1);}
+    if(fi&&histAdded)fi.historia.shift();
+    renderTratamientos();renderHatoFiltros();renderHato();});
+}
+
+/* --- secado (ordeño → horra) --- */
+const secaState={};
+function openSeca(cow){
+  const cands=hato.filter(a=>a.grupo==='En ordeño');
+  const pref=hato.find(a=>a.grupo==='En ordeño'&&a.tags.includes('prenada'));
+  secaState.num=cow?(''+cow).split('·')[0].trim():(pref||cands[0]).num;
+  openReg('Secar vaca','Sale del ordeño y pasa a horras. El secado es para vacas preñadas.');
+  const body=document.getElementById('regBody');body.innerHTML='';
+  body.appendChild(regLabel('Vaca en ordeño'));
+  body.appendChild(regChips(cands.map(a=>({val:a.num,label:a.num+' '+a.n})),secaState.num,v=>{secaState.num=v;pintaSecaInfo();}));
+  const info=regHint('','var(--ink-2)');info.id='secaInfoBox';body.appendChild(info);
+  pintaSecaInfo();
+  document.getElementById('regSaveBtn').onclick=saveSeca;
+}
+function pintaSecaInfo(){
+  const a=hato.find(x=>x.num===secaState.num);const box=document.getElementById('secaInfoBox');if(!box||!a)return;
+  const prenada=a.tags.includes('prenada');
+  box.textContent=prenada?'Preñada — lista para secar. Su DEL y producción se cierran.':'⚠ No figura preñada — confirma con palpación antes de secar.';
+  box.style.color=prenada?'var(--green)':'var(--red)';
+}
+function saveSeca(){
+  const a=hato.find(x=>x.num===secaState.num);if(!a)return;const nombre=a.n;
+  if(!a.tags.includes('prenada')){closeReg();
+    snack(nombre+' no figura preñada — el secado es para vacas preñadas. Confírmalo con palpación.');return;}
+  closeReg();
+  const prev={grupo:a.grupo,del:a.del,ayer:a.ayer,var:a.var,vc:a.vc,repro:a.repro};
+  a.grupo='Horra';a.del='—';a.ayer='—';a.var='—';a.vc='';
+  a.repro=a.repro.replace(/<span class="sub">[^<]*<\/span>/,'').trim()+' <span class="sub">recién secada</span>';
+  hatoFiltro='Horra';renderHatoFiltros();renderHato();
+  go('pg-hato',navFor('pg-hato'));
+  snack(nombre+' secada · sale del ordeño y pasa a horras','Deshacer',()=>{
+    Object.assign(a,prev);renderHatoFiltros();renderHato();});
+}
+
+/* --- parto --- */
+const partoState={};
+let criaSeq=73;
+function openParto(cow){
+  const cands=hato.filter(a=>a.grupo==='Horra');
+  if(!cands.length){snack('No hay vacas horras (preñadas próximas) para registrar parto');return;}
+  partoState.num=cow?(''+cow).split('·')[0].trim():cands[0].num;
+  partoState.sexo='H';partoState.tipo='normal';partoState.estado='viva';partoState.peso=38;
+  openReg('Registrar parto','La cría entra al hato y la madre vuelve al ordeño en DEL 0');
+  const body=document.getElementById('regBody');body.innerHTML='';
+  body.appendChild(regLabel('Madre (horra)'));
+  body.appendChild(regChips(cands.map(a=>({val:a.num,label:a.num+' '+a.n})),partoState.num,v=>partoState.num=v));
+  body.appendChild(regLabel('Sexo de la cría'));
+  body.appendChild(regChips([{val:'H',label:'♀ Hembra'},{val:'M',label:'♂ Macho'}],partoState.sexo,v=>partoState.sexo=v));
+  body.appendChild(regLabel('Tipo de parto'));
+  body.appendChild(regChips([{val:'normal',label:'Normal'},{val:'asistido',label:'Asistido'}],partoState.tipo,v=>partoState.tipo=v));
+  body.appendChild(regLabel('Estado de la cría'));
+  body.appendChild(regChips([{val:'viva',label:'Viva'},{val:'muerta',label:'Mortinato'}],partoState.estado,v=>partoState.estado=v));
+  body.appendChild(regLabel('Peso al nacer'));
+  body.appendChild(regStepper(()=>partoState.peso,v=>partoState.peso=v,20,60,'kg'));
+  document.getElementById('regSaveBtn').onclick=saveParto;
+}
+function saveParto(){
+  const a=hato.find(x=>x.num===partoState.num);if(!a)return;const nombre=a.n;
+  closeReg();
+  const sexoTxt=partoState.sexo==='H'?'♀ hembra':'♂ macho';
+  const tipoTxt=partoState.tipo==='asistido'?'parto asistido':'parto normal';
+  /* snapshot de la madre + parto próximo */
+  const prevMadre={grupo:a.grupo,del:a.del,ayer:a.ayer,var:a.var,vc:a.vc,repro:a.repro,tags:a.tags.slice()};
+  const pi=proximosPartos.findIndex(p=>p.cow.split('·')[0].trim()===partoState.num);
+  const prevParto=pi>=0?proximosPartos[pi]:null;
+  if(pi>=0)proximosPartos.splice(pi,1);
+  /* la madre vuelve al ordeño en DEL 0 */
+  a.grupo='En ordeño';a.del=0;a.ayer=0;a.var='—';a.vc='';
+  a.tags=a.tags.filter(t=>t!=='prenada');
+  a.repro='<span class="badge ok">recién parida · DEL 0</span>';
+  /* la cría viva entra al hato */
+  let cria=null;
+  if(partoState.estado==='viva'){
+    const num=String(++criaSeq).padStart(3,'0');
+    const grupo=partoState.sexo==='H'?'Ternera':'Macho';
+    cria={num,n:'(cría de '+nombre+')',raza:a.raza,grupo,edad:'0 m',
+      repro:'<span class="badge ok">recién nacid'+(partoState.sexo==='H'?'a':'o')+' · '+partoState.peso+' kg</span>',
+      del:'—',ayer:'—',var:'—',vc:'',tags:[]};
+    hato.unshift(cria);
+  }
+  renderHatoFiltros();renderHato();renderPartos();
+  go('pg-partos',navFor('pg-partos'));
+  const msg=partoState.estado==='viva'
+    ? 'Parto de '+nombre+' · cría '+cria.num+' ('+sexoTxt+', '+partoState.peso+' kg) creada en '+cria.grupo+' · '+nombre+' al ordeño en DEL 0'
+    : 'Parto de '+nombre+' · la cría nació muerta — queda en el historial · '+nombre+' al ordeño en DEL 0';
+  snack(msg,'Deshacer',()=>{
+    Object.assign(a,prevMadre);
+    if(cria){const ci=hato.indexOf(cria);if(ci>=0)hato.splice(ci,1);criaSeq--;}
+    if(prevParto)proximosPartos.splice(Math.min(pi,proximosPartos.length),0,prevParto);
+    renderHatoFiltros();renderHato();renderPartos();});
+}
+
+/* --- alta (compra / ingreso) --- */
+const altaState={};
+const altaGrupoMap={'Novilla':'Novilla','Vaca en ordeño':'En ordeño','Ternera':'Ternera','Levante':'Levante','Toro':'Macho'};
+let altaSeq=80;
+function openAlta(){
+  altaState.tipo='Novilla';
+  openReg('Alta de animal','Registra un animal que entra al hato (compra o traslado)');
+  const body=document.getElementById('regBody');body.innerHTML='';
+  body.appendChild(regLabel('Tipo de animal'));
+  body.appendChild(regChips(Object.keys(altaGrupoMap).map(t=>({val:t,label:t})),altaState.tipo,v=>altaState.tipo=v));
+  body.appendChild(regHint('Se crea con la ficha por completar; luego se editan raza, edad y procedencia.'));
+  document.getElementById('regSaveBtn').onclick=saveAlta;
+}
+function saveAlta(){
+  closeReg();
+  const grupo=altaGrupoMap[altaState.tipo];
+  const num=grupo==='Macho'?'T0'+(Math.floor(Math.random()*9)+3):String(++altaSeq).padStart(3,'0');
+  const nuevo={num,n:'(compra)',raza:'por definir',grupo,edad:'—',
+    repro:'<span class="badge">ficha por completar</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]};
+  hato.unshift(nuevo);
+  hatoFiltro=grupo;renderHatoFiltros();renderHato();
+  go('pg-hato',navFor('pg-hato'));
+  snack('Alta: '+num+' ('+altaState.tipo.toLowerCase()+') — entró al hato en '+grupo,'Deshacer',()=>{
+    const i=hato.indexOf(nuevo);if(i>=0)hato.splice(i,1);if(grupo!=='Macho')altaSeq--;
+    renderHatoFiltros();renderHato();});
+}
+
+/* --- baja (venta / muerte / descarte / pérdida) --- */
+const bajaState={};
+function openBaja(cow){
+  bajaState.num=cow?(''+cow).split('·')[0].trim():hato[0].num;
+  bajaState.motivo='Venta';
+  openReg('Dar de baja','Sale del hato; su historia se conserva en el histórico');
+  const body=document.getElementById('regBody');body.innerHTML='';
+  body.appendChild(regLabel('Animal'));
+  body.appendChild(regChips(hato.map(a=>({val:a.num,label:a.num+' '+a.n})),bajaState.num,v=>bajaState.num=v));
+  body.appendChild(regLabel('Motivo'));
+  body.appendChild(regChips(['Venta','Muerte','Descarte','Pérdida'].map(m=>({val:m,label:m})),bajaState.motivo,v=>bajaState.motivo=v));
+  document.getElementById('regSaveBtn').onclick=saveBaja;
+}
+function saveBaja(){
+  const idx=hato.findIndex(x=>x.num===bajaState.num);if(idx<0)return;
+  const a=hato[idx];const nombre=a.n;
+  closeReg();
+  hato.splice(idx,1);renderHatoFiltros();renderHato();
+  go('pg-hato',navFor('pg-hato'));
+  snack(nombre+': baja por '+bajaState.motivo.toLowerCase()+' — sale del hato, su historia se conserva','Deshacer',()=>{
+    hato.splice(Math.min(idx,hato.length),0,a);renderHatoFiltros();renderHato();});
+}
+
 /* 32 potreros ordenados por estado: listos → recuperando → recién pastoreados */
 const pots=[];
 for(let i=1;i<=32;i++){

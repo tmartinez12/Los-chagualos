@@ -64,7 +64,7 @@
       </div>
       <div class="spacer"></div>
       <button class="btn outl" onclick="snack('Exportando resumen de la semana (PDF)…')"><svg class="ic-s ic"><use href="#i-export"/></svg>Exportar</button>
-      <button class="btn filled" onclick="snack('Registro rápido — igual que el botón + del celular')">＋ Registrar</button>
+      <button class="btn filled" onclick="openMenuRegistro()">＋ Registrar</button>
       <div class="avatar">T</div>
     </div>
 
@@ -256,6 +256,7 @@
           <span style="font-size:13px;color:var(--ink-2)" id="hatoResumen">80 animales · 26 en ordeño · 19 preñadas</span>
           <div class="spacer" style="flex:1"></div>
           <div id="hatoFiltros" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+          <button class="btn outl small" onclick="openAlta()">＋ Alta</button>
           <button class="btn outl small" onclick="snack('Exportado: inventario_hato_jun2026.xlsx')"><svg class="ic-s ic"><use href="#i-export"/></svg>Exportar</button>
         </div>
         <div class="card" style="padding:8px">
@@ -525,6 +526,8 @@
 
       <!-- ============ PARTOS ============ -->
       <div class="page" id="pg-partos">
+        <button class="btn filled" style="margin-bottom:14px" onclick="openParto()">
+          <svg class="ic-s ic"><use href="#i-sprout"/></svg>Registrar parto</button>
         <div class="kpis">
           <div class="card kpi"><div class="k-label">Partos 2026</div><div class="k-value">7</div><div class="k-trend up">6 crías vivas</div></div>
           <div class="card kpi"><div class="k-label">Por parir</div><div class="k-value">9</div><div class="k-trend mut">de las palpaciones</div></div>
@@ -562,7 +565,7 @@
 
       <!-- ============ PLAN SANITARIO ============ -->
       <div class="page" id="pg-sanitario">
-        <button class="btn filled" style="margin-bottom:14px" onclick="snack('Registrar enfermedad o tratamiento — selecciona el animal, el problema y el tratamiento')">
+        <button class="btn filled" style="margin-bottom:14px" onclick="openTrata()">
           <svg class="ic-s ic"><use href="#i-shield"/></svg>Registrar enfermedad o tratamiento</button>
 
         <div class="section-label" style="margin-top:0">En tratamiento ahora · <span style="color:var(--red)" id="tratCount">1</span></div>
@@ -666,6 +669,18 @@
     <button class="btn filled" id="palpSaveBtn" onclick="savePalp()" disabled><svg class="ic-s ic"><use href="#i-check"/></svg>Guardar palpación</button>
   </div>
   <div class="p-foot">Escribe la anotación tal como la dice el veterinario. El sistema la interpreta automáticamente.</div>
+</div>
+
+<!-- MODAL genérico: registro rápido (tratamiento, secado, parto, alta, baja, menú) -->
+<div class="scrim" id="regScrim" onclick="closeReg()"></div>
+<div class="modal" id="regModal" style="width:460px">
+  <div class="m-cow" id="regTitle">Registrar</div>
+  <div class="m-del" id="regSub"></div>
+  <div id="regBody" style="margin-top:6px"></div>
+  <div class="m-actions" id="regActions">
+    <button class="btn outl" onclick="closeReg()">Cancelar</button>
+    <button class="btn filled" id="regSaveBtn"><svg class="ic-s ic"><use href="#i-check"/></svg>Guardar</button>
+  </div>
 </div>
 
 <div class="snackbar" id="snackbar"><svg class="ic-s ic"><use href="#i-check"/></svg><span id="snackText"></span><button class="snack-action" id="snackAction" style="display:none"></button></div>
