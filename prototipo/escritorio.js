@@ -29,6 +29,45 @@ function snack(msg,accionLabel,accionFn){const sb=document.getElementById('snack
   sb.classList.add('show');
   clearTimeout(snackTimer);snackTimer=setTimeout(()=>sb.classList.remove('show'),accionLabel?5200:2600);}
 
+/* ===== Tabs de producción ===== */
+function switchLecheTab(id,btn){
+  document.querySelectorAll('.ltab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ltab').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+/* ===== KPIs dinámicos de producción ===== */
+function renderLecheKpis(){
+  const box=document.getElementById('lecheKpis');if(!box)return;
+  const done=milkCows.filter(c=>c.done);
+  const total=done.reduce((s,c)=>s+c.v,0);
+  const ayerTotal=milkCows.reduce((s,c)=>s+c.ayer,0);
+  const allDone=done.length===milkCows.length;
+  const entDone=lecheros.filter(l=>l.done);
+  const entTotal=entDone.reduce((s,l)=>s+l.hoy,0);
+
+  const trendOrdenio=allDone
+    ?(total>ayerTotal?'<span class="up">↑ '+(total-ayerTotal)+' L vs ayer</span>':
+      total<ayerTotal?'<span class="down">↓ '+(ayerTotal-total)+' L vs ayer</span>':
+      '<span class="mut">= que ayer</span>')
+    :'<span class="mut">registrando…</span>';
+
+  box.innerHTML=
+    '<div class="card kpi"><div class="k-label">Ordeño hoy</div>'+
+      '<div class="k-value">'+(allDone?total+'<span class="k-unit"> L</span>':done.length+'<span class="k-unit"> de '+milkCows.length+'</span>')+'</div>'+
+      '<div class="k-trend">'+trendOrdenio+'</div></div>'+
+    '<div class="card kpi"><div class="k-label">Total registrado</div>'+
+      '<div class="k-value">'+total+' <span class="k-unit">L</span></div>'+
+      '<div class="k-trend mut">de ~'+ayerTotal+' L esperados</div></div>'+
+    '<div class="card kpi"><div class="k-label">L/vaca·día</div>'+
+      '<div class="k-value">'+(done.length?(total/done.length).toFixed(1):'—')+'</div>'+
+      '<div class="k-trend mut">'+milkCows.length+' vacas en muestra</div></div>'+
+    '<div class="card kpi"><div class="k-label">Entregas hoy</div>'+
+      '<div class="k-value">'+(entDone.length===lecheros.length?entTotal+'<span class="k-unit"> L</span>':entDone.length+'<span class="k-unit"> de '+lecheros.length+'</span>')+'</div>'+
+      '<div class="k-trend">'+(entDone.length===lecheros.length?'<span class="up">balance cuadra ✓</span>':'<span class="mut">pendientes</span>')+'</div></div>';
+}
+
 /* ===== Registrar leche por vaca ===== */
 const milkCows=[
   {num:'042',n:'Lucero',  del:'DEL 152 · 3er parto',          ayer:18},
@@ -66,9 +105,7 @@ function renderMilk(){
       '<td class="sub"'+(c.notaRed?' style="color:var(--red)"':'')+'>'+(c.nota||'')+'</td>';
     tb.appendChild(tr);
   });
-  const done=milkCows.filter(c=>c.done);
-  const prog=document.getElementById('milkProg');
-  if(prog)prog.textContent=done.length+' de '+milkCows.length+' · Σ '+done.reduce((s,c)=>s+c.v,0)+' L';
+  renderLecheKpis();
 }
 function openMilk(i){mi=i;const c=milkCows[i];
   document.getElementById('mCow').textContent=c.num+' · '+c.n.toUpperCase();
@@ -215,6 +252,7 @@ function renderEntregas(){
         let t=0;for(let d=1;d<=DIAS_MES[5];d++)t+=entregaDiaVal(l.id,5,d);
         if(l.done)t+=l.hoy;return s+t*l.precio;},0))/1e6).toFixed(2)+'M</div>';
   }
+  renderLecheKpis();
 }
 function openEntrega(i){
   const l=lecheros[i];

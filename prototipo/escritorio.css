@@ -200,6 +200,15 @@ tbody tr.done:hover td{background:#E2F0E2}
 .cow-photo.has-img{border-style:solid}
 .cow-photo.has-img img{display:block}
 .cow-photo.has-img svg,.cow-photo.has-img .cow-photo-add{display:none}
+/* tabs producción */
+.ltab{background:none;border:none;font-family:inherit;font-size:13px;font-weight:600;
+  color:var(--ink-3);padding:10px 18px;cursor:pointer;border-bottom:2px solid transparent;
+  margin-bottom:-2px;transition:all .15s}
+.ltab:hover{color:var(--ink-2)}
+.ltab.active{color:var(--ink);border-bottom-color:var(--black)}
+.ltab-panel{display:none}
+.ltab-panel.active{display:block}
+
 td input[type=number]::-webkit-inner-spin-button,
 td input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 td input[type=number]{-moz-appearance:textfield}

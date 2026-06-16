@@ -119,45 +119,10 @@
 
       <!-- ============ LECHE (producción) ============ -->
       <div class="page" id="pg-leche">
-        <div class="kpis">
-          <div class="card kpi"><div class="k-label">Leche hoy</div>
-            <div class="k-value">184 <span class="k-unit">L</span></div>
-            <div class="k-trend up">↑ 8% vs ayer</div></div>
-          <div class="card kpi"><div class="k-label">Promedio 7 días</div>
-            <div class="k-value">171 <span class="k-unit">L</span></div>
-            <div class="k-trend mut">26 vacas en ordeño</div></div>
-          <div class="card kpi"><div class="k-label">L/vaca·día</div>
-            <div class="k-value">11,4</div>
-            <div class="k-trend up">↑ vs mayo</div></div>
-          <div class="card kpi"><div class="k-label">Entregado hoy</div>
-            <div class="k-value">170 <span class="k-unit">L</span></div>
-            <div class="k-trend up">balance cuadra ✓</div></div>
-        </div>
+        <!-- NIVEL 1: Tarea principal — registro del ordeño -->
+        <div class="kpis" id="lecheKpis"></div>
 
-        <div class="grid" style="grid-template-columns:1.4fr 1fr;margin-top:12px">
-          <div class="card chart-card">
-            <div class="chart-title">Producción vs DEL · cada punto es una vaca</div>
-            <div class="chart-sub">Las que están debajo de la curva esperada necesitan atención</div>
-            <svg id="scatterLeche" viewBox="0 0 560 180" style="width:100%"></svg>
-          </div>
-          <div>
-            <div class="alert info" style="margin-bottom:8px">
-              <div style="flex:1"><div class="a-title">Retiro de leche: 017 Azucena — faltan 2 días</div>
-                <div class="a-sub">Mastitis · antibiótico · no vender su leche hasta el sáb 14</div></div>
-            </div>
-            <div class="alert urgent">
-              <div style="flex:1"><div class="a-title">2 vacas requieren atención</div>
-                <div class="a-sub"><b>033 Paloma</b> — 6 L a DEL 95, muy bajo ·
-                  <b>029 Pinta</b> — 5 L a DEL 412, lactancia muy larga</div></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="section-label" style="display:flex;justify-content:space-between;align-items:baseline">
-          <span>Ordeño de hoy · toca una vaca para registrar</span>
-          <span style="font-weight:700;color:var(--ink);text-transform:none;letter-spacing:0" id="milkProg">0 de 7 · Σ 0 L</span>
-        </div>
-        <div class="card" style="padding:8px">
+        <div class="card" style="padding:8px;margin-top:12px">
           <table>
             <thead><tr>
               <th>Animal</th><th class="r">Ayer</th><th class="r">Hoy</th><th class="r">Var.</th>
@@ -170,50 +135,77 @@
           </div>
         </div>
 
-        <div class="section-label" style="display:flex;justify-content:space-between;align-items:baseline">
-          <span>Entregas a los lecheros · hoy</span>
-          <span id="entregaProg" style="font-weight:700;color:var(--ink);text-transform:none;letter-spacing:0">0 de 2 · Σ 0 L</span>
+        <!-- NIVEL 2: Análisis visual — scatter con leyenda -->
+        <div class="card" style="margin-top:14px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <div>
+              <div class="chart-title">Producción vs DEL · cada punto es una vaca</div>
+              <div class="chart-sub">Las que están debajo de la curva necesitan atención</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;font-size:11px;font-weight:600">
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block"></span> Preñada</span>
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:var(--red);display:inline-block"></span> Vacía / retiro</span>
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:var(--ink-2);display:inline-block"></span> Normal</span>
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:16px;height:0;border-top:1.5px dashed var(--ink-3);display:inline-block"></span> Esperada</span>
+            </div>
+          </div>
+          <svg id="scatterLeche" viewBox="0 0 560 180" style="width:100%"></svg>
         </div>
-        <div class="grid" style="grid-template-columns:1fr 1fr">
-          <div class="card" style="padding:8px">
+
+        <!-- NIVEL 3: Tabs — Entregas / Histórico producción -->
+        <div style="display:flex;gap:0;margin-top:18px;border-bottom:2px solid var(--border)">
+          <button class="ltab active" data-tab="tab-entregas" onclick="switchLecheTab('tab-entregas',this)">Entregas a lecheros</button>
+          <button class="ltab" data-tab="tab-hist" onclick="switchLecheTab('tab-hist',this)">Histórico producción</button>
+        </div>
+
+        <!-- Tab: Entregas -->
+        <div class="ltab-panel active" id="tab-entregas">
+          <div class="section-label" style="display:flex;justify-content:space-between;align-items:baseline;margin-top:14px">
+            <span>Hoy</span>
+            <span id="entregaProg" style="font-weight:700;color:var(--ink);text-transform:none;letter-spacing:0">0 de 2 · Σ 0 L</span>
+          </div>
+          <div class="grid" style="grid-template-columns:1fr 1fr">
+            <div class="card" style="padding:8px">
+              <table>
+                <thead><tr><th>Lechero</th><th>Frecuencia</th><th class="r">Ayer</th><th class="r">Hoy</th><th class="r">Junio acum.</th><th class="r">$ Junio</th></tr></thead>
+                <tbody id="entregaTbody"></tbody>
+              </table>
+            </div>
+            <div class="card" id="entregaBalance"></div>
+          </div>
+          <div class="section-label" style="display:flex;justify-content:space-between;align-items:baseline">
+            <span id="entregaHistTitulo">Historial · Junio 2026</span>
+            <button class="btn outl small" onclick="snack('Exportado: entregas_'+(entregaMesIdx<0?'2026':MESES_L[entregaMesIdx].toLowerCase()+'2026')+'.xlsx')"><svg class="ic-s ic"><use href="#i-export"/></svg></button>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="entregaMesPicker"></div>
+          <div class="card" style="padding:8px;overflow-x:auto">
             <table>
-              <thead><tr><th>Lechero</th><th>Frecuencia</th><th class="r">Ayer</th><th class="r">Hoy</th><th class="r">Junio acum.</th><th class="r">$ Junio</th></tr></thead>
-              <tbody id="entregaTbody"></tbody>
+              <thead id="entregaHistHead"></thead>
+              <tbody id="entregaHistBody"></tbody>
             </table>
           </div>
-          <div class="card" id="entregaBalance">
+        </div>
+
+        <!-- Tab: Histórico producción -->
+        <div class="ltab-panel" id="tab-hist">
+          <div class="section-label" style="display:flex;justify-content:space-between;align-items:baseline;margin-top:14px">
+            <span id="mensualTitulo">Producción por vaca · resumen 2026</span>
+            <span style="text-transform:none;letter-spacing:0">
+              <button class="btn outl small" id="btnTotal" onclick="toggleMensual('total')">Total L</button>
+              <button class="btn outl small" id="btnProm" onclick="toggleMensual('promedio')" style="font-weight:700;border-color:var(--ink)">L/día prom.</button>
+              <button class="btn outl small" onclick="snack('Exportado: produccion_'+(mensualMes<0?'2026':MESES_L[mensualMes].toLowerCase()+'2026')+'.xlsx')"><svg class="ic-s ic"><use href="#i-export"/></svg></button>
+            </span>
           </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="mesPicker"></div>
+          <div class="card" style="padding:8px;overflow-x:auto">
+            <table id="tblMensual">
+              <thead id="mensualHead"></thead>
+              <tbody id="mensualBody"></tbody>
+            </table>
+          </div>
+          <div style="font-size:11.5px;color:var(--ink-3);margin-top:8px" id="mensualHint">
+            Toca un mes para ver el detalle día por día · toca una vaca para su ficha completa</div>
         </div>
-
-        <div class="section-label" style="display:flex;justify-content:space-between;align-items:baseline">
-          <span id="entregaHistTitulo">Historial de entregas · Junio 2026</span>
-          <button class="btn outl small" onclick="snack('Exportado: entregas_'+(entregaMesIdx<0?'2026':MESES_L[entregaMesIdx].toLowerCase()+'2026')+'.xlsx')"><svg class="ic-s ic"><use href="#i-export"/></svg></button>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="entregaMesPicker"></div>
-        <div class="card" style="padding:8px;overflow-x:auto">
-          <table>
-            <thead id="entregaHistHead"></thead>
-            <tbody id="entregaHistBody"></tbody>
-          </table>
-        </div>
-
-        <div class="section-label" style="display:flex;justify-content:space-between;align-items:baseline">
-          <span id="mensualTitulo">Producción por vaca · resumen 2026</span>
-          <span style="text-transform:none;letter-spacing:0">
-            <button class="btn outl small" id="btnTotal" onclick="toggleMensual('total')">Total L</button>
-            <button class="btn outl small" id="btnProm" onclick="toggleMensual('promedio')" style="font-weight:700;border-color:var(--ink)">L/día prom.</button>
-            <button class="btn outl small" onclick="snack('Exportado: produccion_'+(mensualMes<0?'2026':MESES_L[mensualMes].toLowerCase()+'2026')+'.xlsx')"><svg class="ic-s ic"><use href="#i-export"/></svg></button>
-          </span>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="mesPicker"></div>
-        <div class="card" style="padding:8px;overflow-x:auto">
-          <table id="tblMensual">
-            <thead id="mensualHead"></thead>
-            <tbody id="mensualBody"></tbody>
-          </table>
-        </div>
-        <div style="font-size:11.5px;color:var(--ink-3);margin-top:8px" id="mensualHint">
-          Toca un mes para ver el detalle día por día · toca una vaca para su ficha completa</div>
       </div>
 
       <!-- ============ HATO (tabla) ============ -->
