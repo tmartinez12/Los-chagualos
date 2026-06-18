@@ -1103,10 +1103,23 @@ function renderHato(){
   if(grupoMatch){filtered=hato.filter(a=>a.grupo===grupoMatch);}
   else{const f=hatoFiltrosEstado.find(x=>x.id===hatoFiltro);
     filtered=f&&f.test?hato.filter(f.test):hato;}
+  /* búsqueda por número o nombre */
+  const buscarInp=document.getElementById('hatoBuscar');
+  const q=buscarInp?buscarInp.value.trim().toLowerCase():'';
+  const clearBtn=document.getElementById('hatoBuscarClear');
+  if(clearBtn)clearBtn.style.display=q?'':'none';
+  if(q)filtered=filtered.filter(a=>a.num.toLowerCase().includes(q)||a.n.toLowerCase().includes(q));
   if(hatoSort.key){filtered=filtered.slice().sort((x,y)=>cmpVals(hatoVal(x,hatoSort.key),hatoVal(y,hatoSort.key),hatoSort.dir));}
   paintSortArrows('hs-',hatoSort);
   const res=document.getElementById('hatoResumen');
-  if(res)res.textContent=filtered.length+' de '+hato.length+' animales'+(hatoFiltro!=='todas'?' · filtro: '+(grupoMatch||hatoFiltrosEstado.find(x=>x.id===hatoFiltro).label):'');
+  if(res){
+    if(q)res.textContent=filtered.length+(filtered.length===1?' resultado':' resultados')+' para "'+q+'"';
+    else res.textContent=filtered.length+' de '+hato.length+' animales'+(hatoFiltro!=='todas'?' · filtro: '+(grupoMatch||hatoFiltrosEstado.find(x=>x.id===hatoFiltro).label):'');
+  }
+  if(!filtered.length){
+    tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--ink-3)">Sin resultados'+(q?' para "'+q+'"':'')+'</td></tr>';
+    return;
+  }
   filtered.forEach(a=>{
     const tr=document.createElement('tr');
     tr.onclick=()=>fichas[a.num]?goVaca(a.num,'pg-hato'):snack('Ficha de '+a.n);

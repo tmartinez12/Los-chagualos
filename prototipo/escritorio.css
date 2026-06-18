@@ -200,6 +200,18 @@ tbody tr.done:hover td{background:#E2F0E2}
 .cow-photo.has-img{border-style:solid}
 .cow-photo.has-img img{display:block}
 .cow-photo.has-img svg,.cow-photo.has-img .cow-photo-add{display:none}
+/* búsqueda de hato */
+.hato-search{display:flex;align-items:center;gap:7px;background:var(--surface);
+  border:1px solid var(--border);border-radius:100px;padding:6px 12px;min-width:240px;
+  transition:border-color .15s}
+.hato-search:focus-within{border-color:var(--ink-3)}
+.hato-search svg{color:var(--ink-3)}
+.hato-search input{border:none;background:none;outline:none;font-family:inherit;font-size:13px;
+  color:var(--ink);flex:1;min-width:0}
+.hato-search button{border:none;background:none;cursor:pointer;color:var(--ink-3);
+  font-size:13px;padding:0 2px;line-height:1}
+.hato-search button:hover{color:var(--ink)}
+
 /* encabezados ordenables */
 th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
 th.sortable:hover{color:var(--ink)}

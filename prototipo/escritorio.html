@@ -215,6 +215,12 @@
       <!-- ============ HATO (tabla) ============ -->
       <div class="page" id="pg-hato">
         <div class="card" style="padding:10px 14px;display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+          <div class="hato-search">
+            <svg class="ic-s ic"><use href="#i-tag"/></svg>
+            <input type="text" id="hatoBuscar" placeholder="Buscar por número o nombre…" autocomplete="off"
+              oninput="renderHato()">
+            <button id="hatoBuscarClear" onclick="document.getElementById('hatoBuscar').value='';renderHato();document.getElementById('hatoBuscar').focus()" style="display:none">✕</button>
+          </div>
           <span style="font-size:13px;color:var(--ink-2)" id="hatoResumen">80 animales · 26 en ordeño · 19 preñadas</span>
           <div class="spacer" style="flex:1"></div>
           <div id="hatoFiltros" style="display:flex;gap:6px;flex-wrap:wrap"></div>
