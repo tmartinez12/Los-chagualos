@@ -9,13 +9,59 @@ const titles={
   'pg-partos':['Partos','Las palpaciones marcan las fechas'],
   'pg-sanitario':['Plan sanitario','Calendario anual · protocolos · soporte ICA'],
 };
+let currentPg='pg-inicio';
+/* subtítulo dinámico: refleja el estado real en vez de un valor fijo */
+function subFor(id){
+  try{
+    if(id==='pg-inicio'){
+      const done=milkCows.filter(c=>c.done);
+      return 'Jueves 12 de junio · '+(done.length?'ordeño en curso: '+done.length+'/'+milkCows.length+' de la muestra':'ordeño pendiente');
+    }
+    if(id==='pg-leche'){
+      const done=milkCows.filter(c=>c.done);
+      const tot=done.reduce((s,c)=>s+c.v,0);
+      return done.length+'/'+milkCows.length+' de la muestra registradas · '+tot+' L';
+    }
+    if(id==='pg-hato'){
+      const ordeño=hato.filter(a=>a.grupo==='En ordeño').length;
+      const prenadas=hato.filter(a=>a.tags.includes('prenada')).length;
+      return hato.length+' animales · '+ordeño+' en ordeño · '+prenadas+' preñadas';
+    }
+    if(id==='pg-partos'){
+      return partosRecientes.length+' partos en 2026 · '+proximosPartos.length+' por parir';
+    }
+    if(id==='pg-repro'){
+      return vacasVacias.length+' vacías por decidir · '+palpCandidatas.length+' por palpar';
+    }
+  }catch(e){}
+  return titles[id][1];
+}
 function go(id,el){
+  currentPg=id;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('active',a.dataset.pg===id));
   document.getElementById('pgTitle').textContent=titles[id][0];
-  document.getElementById('pgSub').textContent=titles[id][1];
+  document.getElementById('pgSub').textContent=subFor(id);
   document.querySelector('.content').scrollTop=0;
+}
+/* refresca el subtítulo si estamos en la página afectada */
+function refreshHeader(){
+  if(titles[currentPg])document.getElementById('pgSub').textContent=subFor(currentPg);
+}
+/* badges del sidebar: reflejan pendientes reales y se actualizan al registrar */
+function setNavBadge(id,n){
+  const el=document.getElementById(id);if(!el)return;
+  if(n>0){el.textContent=n;el.style.display='';}else{el.style.display='none';}
+}
+function renderNavBadges(){
+  try{
+    const milkPend=milkCows.filter(c=>!c.done).length;
+    const entPend=lecheros.filter(l=>!l.done).length;
+    setNavBadge('navBadgeLeche',milkPend+entPend);
+    setNavBadge('navBadgeRepro',vacasVacias.length);
+    setNavBadge('navBadgeSan',tratamientos.length);
+  }catch(e){}
 }
 let snackTimer;
 function snack(msg,accionLabel,accionFn){const sb=document.getElementById('snackbar');
@@ -66,6 +112,8 @@ function renderLecheKpis(){
     '<div class="card kpi"><div class="k-label">Entregas hoy</div>'+
       '<div class="k-value">'+(entCount&&entDone.length===entCount?entTotal+'<span class="k-unit"> L</span>':entDone.length+'<span class="k-unit"> de '+entCount+'</span>')+'</div>'+
       '<div class="k-trend">'+(entCount&&entDone.length===entCount?'<span class="up">balance cuadra ✓</span>':'<span class="mut">pendientes</span>')+'</div></div>';
+  if(typeof refreshHeader==='function')refreshHeader();
+  if(typeof renderNavBadges==='function')renderNavBadges();
 }
 
 /* ===== Registrar leche por vaca ===== */
@@ -750,6 +798,7 @@ function renderPartosKpis(){
     '<div class="card kpi"><div class="k-label">Por parir</div><div class="k-value">'+porParir+'</div><div class="k-trend mut">de las palpaciones</div></div>'+
     '<div class="card kpi"><div class="k-label">Próximo</div><div class="k-value" style="font-size:20px">'+(prox?prox.parto:'—')+'</div><div class="k-trend mut">'+(prox?prox.cow:'sin próximos')+'</div></div>'+
     '<div class="card kpi"><div class="k-label">Mortinatos 2026</div><div class="k-value'+(mortinatos?' down':'')+'">'+mortinatos+'</div><div class="k-trend mut">de '+total+' partos</div></div>';
+  refreshHeader();
 }
 /* vacas vacías que requieren decisión */
 let vacasVacias=[
@@ -788,6 +837,7 @@ function renderVacias(){
   });
   const lbl=document.getElementById('vaciasLabel');
   if(lbl)lbl.textContent='Vacas vacías · '+vacasVacias.length+(vacasVacias.length===1?' requiere':' requieren')+' decisión';
+  refreshHeader();renderNavBadges();
 }
 
 /* ===== Tratamientos / sanidad del animal ===== */
@@ -819,6 +869,7 @@ function renderTratamientos(){
   const cnt=document.getElementById('tratCount');if(cnt)cnt.textContent=tratamientos.length;
   const lbl=cnt?cnt.parentElement:null;
   if(lbl)lbl.style.color=tratamientos.length?'':'var(--ink-3)';
+  renderNavBadges();
 }
 /* aplica los tratamientos detectados en la palpación: quedan en sanidad y en la ficha */
 function aplicarTratamientos(num,nombre,trats,contexto){
@@ -1133,6 +1184,7 @@ function renderHato(){
       '<td class="r"><svg class="ic-s ic" style="color:var(--ink-3)"><use href="#i-dots"/></svg></td>';
     tb.appendChild(tr);
   });
+  refreshHeader();
 }
 renderHatoFiltros();renderHato();
 
