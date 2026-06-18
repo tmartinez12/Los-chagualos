@@ -125,8 +125,12 @@
         <div class="card" style="padding:8px;margin-top:12px">
           <table>
             <thead><tr>
-              <th>Animal</th><th class="r">Ayer</th><th class="r">Hoy</th><th class="r">Var.</th>
-              <th class="r">DEL</th><th>Estado</th><th>Nota</th>
+              <th class="sortable" onclick="sortMilk('animal')">Animal<span class="sort-ar" id="ms-animal"></span></th>
+              <th class="r sortable" onclick="sortMilk('ayer')">Ayer<span class="sort-ar" id="ms-ayer"></span></th>
+              <th class="r sortable" onclick="sortMilk('hoy')">Hoy<span class="sort-ar" id="ms-hoy"></span></th>
+              <th class="r sortable" onclick="sortMilk('var')">Var.<span class="sort-ar" id="ms-var"></span></th>
+              <th class="r sortable" onclick="sortMilk('del')">DEL<span class="sort-ar" id="ms-del"></span></th>
+              <th>Estado</th><th>Nota</th>
             </tr></thead>
             <tbody id="milkTbody"></tbody>
           </table>
@@ -220,8 +224,14 @@
         <div class="card" style="padding:8px">
           <table>
             <thead><tr>
-              <th>Animal</th><th>Grupo</th><th class="r">Edad</th><th>Estado reproductivo</th>
-              <th class="r">DEL</th><th class="r">Ayer</th><th class="r">Var.</th><th></th>
+              <th class="sortable" onclick="sortHato('animal')">Animal<span class="sort-ar" id="hs-animal"></span></th>
+              <th class="sortable" onclick="sortHato('grupo')">Grupo<span class="sort-ar" id="hs-grupo"></span></th>
+              <th class="r sortable" onclick="sortHato('edad')">Edad<span class="sort-ar" id="hs-edad"></span></th>
+              <th>Estado reproductivo</th>
+              <th class="r sortable" onclick="sortHato('del')">DEL<span class="sort-ar" id="hs-del"></span></th>
+              <th class="r sortable" onclick="sortHato('ayer')">Ayer<span class="sort-ar" id="hs-ayer"></span></th>
+              <th class="r sortable" onclick="sortHato('var')">Var.<span class="sort-ar" id="hs-var"></span></th>
+              <th></th>
             </tr></thead>
             <tbody id="hatoTbody"></tbody>
           </table>

@@ -86,9 +86,39 @@ milkCows[1].estado='<span class="badge">servida</span>';milkCows[1].nota='por co
 milkCows[2].nota='1er parto';milkCows[3].nota='pico de lactancia';
 milkCows.forEach(c=>{c.done=false;c.v=null;});
 let mi=-1;
+/* ordenamiento de la tabla de ordeño */
+let milkSort={key:null,dir:1};
+function milkVal(c,key){
+  switch(key){
+    case 'animal':return parseInt(c.num);
+    case 'ayer':return c.ayer;
+    case 'hoy':return c.done?c.v:null;
+    case 'var':return c.done?c.v-c.ayer:null;
+    case 'del':return parseInt(c.del.replace(/DEL (\d+).*/,'$1'));
+  }
+  return null;
+}
+function sortMilk(key){
+  milkSort.dir=milkSort.key===key?-milkSort.dir:1;
+  milkSort.key=key;
+  renderMilk();
+}
+function cmpVals(a,b,dir){
+  if(a===null||a===undefined||(typeof a==='number'&&isNaN(a)))return 1;   // nulos al final
+  if(b===null||b===undefined||(typeof b==='number'&&isNaN(b)))return -1;
+  if(a<b)return -dir;if(a>b)return dir;return 0;
+}
+function paintSortArrows(prefix,sort){
+  ['animal','ayer','hoy','var','del','grupo','edad'].forEach(k=>{
+    const el=document.getElementById(prefix+k);if(el)el.textContent=sort.key===k?(sort.dir>0?'▲':'▼'):'';
+  });
+}
 function renderMilk(){
   const tb=document.getElementById('milkTbody');if(!tb)return;tb.innerHTML='';
-  milkCows.forEach((c,i)=>{
+  let rows=milkCows.map((c,i)=>({c,i}));
+  if(milkSort.key)rows.sort((x,y)=>cmpVals(milkVal(x.c,milkSort.key),milkVal(y.c,milkSort.key),milkSort.dir));
+  paintSortArrows('ms-',milkSort);
+  rows.forEach(({c,i})=>{
     const tr=document.createElement('tr');
     if(c.done)tr.className='done';
     tr.onclick=()=>openMilk(i);
@@ -1043,6 +1073,29 @@ function renderHatoFiltros(){
     cont.appendChild(b);
   });
 }
+let hatoSort={key:null,dir:1};
+function edadAnios(s){
+  if(!s||s==='—')return null;
+  const m=s.replace(',','.').match(/([\d.]+)/);if(!m)return null;
+  const n=parseFloat(m[1]);
+  return s.includes('m')&&!s.includes('a')?n/12:n;
+}
+function hatoVal(a,key){
+  switch(key){
+    case 'animal':return parseInt(a.num);
+    case 'grupo':return a.grupo;
+    case 'edad':return edadAnios(a.edad);
+    case 'del':return a.del==='—'||a.del===undefined?null:parseInt(a.del);
+    case 'ayer':return a.ayer==='—'?null:a.ayer;
+    case 'var':return (a.var==='—'||a.var==='= ayer')?null:parseInt(a.var.replace('+',''));
+  }
+  return null;
+}
+function sortHato(key){
+  hatoSort.dir=hatoSort.key===key?-hatoSort.dir:1;
+  hatoSort.key=key;
+  renderHato();
+}
 function renderHato(){
   const tb=document.getElementById('hatoTbody');if(!tb)return;tb.innerHTML='';
   let filtered;
@@ -1050,6 +1103,8 @@ function renderHato(){
   if(grupoMatch){filtered=hato.filter(a=>a.grupo===grupoMatch);}
   else{const f=hatoFiltrosEstado.find(x=>x.id===hatoFiltro);
     filtered=f&&f.test?hato.filter(f.test):hato;}
+  if(hatoSort.key){filtered=filtered.slice().sort((x,y)=>cmpVals(hatoVal(x,hatoSort.key),hatoVal(y,hatoSort.key),hatoSort.dir));}
+  paintSortArrows('hs-',hatoSort);
   const res=document.getElementById('hatoResumen');
   if(res)res.textContent=filtered.length+' de '+hato.length+' animales'+(hatoFiltro!=='todas'?' · filtro: '+(grupoMatch||hatoFiltrosEstado.find(x=>x.id===hatoFiltro).label):'');
   filtered.forEach(a=>{
