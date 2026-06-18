@@ -358,7 +358,7 @@ function saveParto(){
     snack('Parto deshecho');
   });
 }
-renderPartos();renderVacias();
+renderPartos();
 /* ===== Vacas vacías (se muestran en Reproducción) ===== */
 const vacasVacias=[
   {cow:'033 · Paloma',del:95,diasVacia:132,ultimaPalp:'3 feb 2026',resultado:'vacía',
@@ -392,6 +392,7 @@ function renderVacias(){
     list.appendChild(d);
   });
 }
+renderVacias();   // init: tras declarar vacasVacias y renderVacias (evita TDZ)
 /* ===== Palpación (la fuente de verdad de la reproducción) ===== */
 const palpCandidatas={
   '027 · Estrella':'celo sin repetir — ¿preñada?',
