@@ -205,7 +205,7 @@ function keyClear(){const el=document.getElementById('milkNum');
 function saveMilk(){
   if(ci<0)return;
   const v=parseInt(document.getElementById('milkNum').textContent)||0;
-  const c=cows[ci];const drop=!c.done&&c.ayer>0&&v<=c.ayer*0.75;
+  const c=cows[ci];const drop=!c.done&&LCRules.esBajonLeche(c.ayer,v);
   c.done=true;c.v=v;renderCows();closeMilk();encolar();
   if(drop)snack('Atención: '+c.n+' bajó '+(c.ayer-v)+' L vs ayer — ¿mastitis, celo, comida?');
   else snack(c.n+': '+v+' L guardados (en cola offline)');
@@ -400,14 +400,9 @@ const palpCandidatas={
   '029 · Pinta':'vacía hace 150 días'
 };
 const palp={cow:'027 · Estrella',resultado:'prenada',meses:2};
-const MESC=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-function fechaParto(meses){            // hoy + lo que falta de gestación (~9 meses)
-  const d=new Date(2026,5,13);
-  d.setMonth(d.getMonth()+Math.max(0,9-meses));
-  const y=d.getFullYear(), mes=MESC[d.getMonth()];
-  return {corta:'~'+d.getDate()+' '+mes, mes:mes,
-    larga:d.getDate()+' '+mes+(y!==2026?' '+String(y).slice(2):'')};
-}
+/* reglas puras compartidas (core/rules.js) */
+const MESC=LCRules.MESC;
+const fechaParto=LCRules.fechaParto;
 function palpMostrarMeses(){document.getElementById('palpMesesWrap').style.display=
   palp.resultado==='prenada'?'':'none';}
 function palpMarcarVaca(){document.querySelectorAll('#palpCows .chip').forEach(c=>
@@ -465,8 +460,7 @@ function savePalp(){
   });
 }
 /* ===== Enfermedad / tratamiento (activa el retiro de leche) ===== */
-function fechaDias(dias){const d=new Date(2026,5,13);d.setDate(d.getDate()+dias);
-  return d.getDate()+' '+MESC[d.getMonth()];}
+const fechaDias=LCRules.fechaDias;
 const trata={cow:'033 · Paloma',problema:'Mastitis',medicina:'Antibiótico',retiro:4};
 function trataMarcarVaca(){document.querySelectorAll('#trataCows .chip').forEach(c=>
   c.classList.toggle('sel',c.textContent.trim().startsWith(trata.cow.split('·')[0].trim())));}

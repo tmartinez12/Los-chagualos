@@ -206,7 +206,7 @@ function saveMilk(){
   const c=milkCows[mi];
   const v=Math.max(0,Math.min(60,parseInt(document.getElementById('mInput').value)||0));
   const prev={done:c.done,v:c.v};
-  const drop=!c.done&&c.ayer>0&&v<=c.ayer*0.75;
+  const drop=!c.done&&LCRules.esBajonLeche(c.ayer,v);
   c.done=true;c.v=v;
   closeMilk();renderMilk();
   if(drop)snack('Atención: '+c.n+' bajó '+(c.ayer-v)+' L vs ayer — ¿mastitis, celo, comida?','Deshacer',()=>{
@@ -759,14 +759,9 @@ function goVaca(num,from){
 }
 
 /* ===== Palpación: la fuente de verdad de la reproducción ===== */
-const MESC=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-function fechaParto(meses){           // hoy + lo que falta de gestación (~9 meses)
-  const d=new Date(2026,5,13);
-  d.setMonth(d.getMonth()+Math.max(0,9-meses));
-  const y=d.getFullYear();
-  return {corta:'~'+d.getDate()+' '+MESC[d.getMonth()],
-    larga:d.getDate()+' '+MESC[d.getMonth()]+(y!==2026?' '+String(y).slice(2):'')};
-}
+/* reglas puras compartidas (core/rules.js) */
+const MESC=LCRules.MESC;
+const fechaParto=LCRules.fechaParto;
 /* candidatas a palpar (la lista se arma sola) */
 const palpCandidatas=[
   {cow:'027 · Estrella',motivo:'celo sin repetir — ¿preñada?'},
@@ -912,45 +907,8 @@ function renderPalpCows(){
     c.appendChild(b);
   });
 }
-function parsePalpNota(raw){
-  const s=raw.toUpperCase().trim().replace(/\s+/g,' ');
-  if(!s)return null;
-  let m=s.match(/P(?:T)?[\s+]*(\d+)(?:\s*DIAS?)?/);
-  if(m){const dias=parseInt(m[1]);const meses=Math.round(dias/30*10)/10;
-    return {tipo:'prenada',dias,meses,label:'Preñada ~'+dias+' días (~'+meses.toFixed(1)+' meses)',trat:parseTrat(s)};}
-  if(s.includes('PROXIMA'))return {tipo:'prenada',dias:240,meses:8,label:'Próxima a parir (~8+ meses)',trat:parseTrat(s)};
-  if(s==='VF'||s.includes('VACIA F')||s.includes('V.FISIOLOG'))
-    return {tipo:'vacia',subtipo:'fisiologica',label:'Vacía fisiológica — lista para servicio',trat:parseTrat(s)};
-  if(s.includes('VO FRIO')||s.includes('FRIO'))
-    return {tipo:'observacion',subtipo:'frio',label:'Ovarios inactivos ("fríos") — sin actividad reproductiva',trat:parseTrat(s)};
-  if(s==='VO'||s.includes('V.OBS')||s.includes('VACIA OBS'))
-    return {tipo:'observacion',label:'En observación — reevaluar en próxima visita',trat:parseTrat(s)};
-  if(s.includes('V CELO')||s==='CELO')
-    return {tipo:'celo',label:'En celo — servir o programar servicio',trat:parseTrat(s)};
-  if(s.includes('R-SERVIDA')||s.includes('RECIEN SERVIDA'))
-    return {tipo:'servida',label:'Recién servida — esperar para confirmar preñez',trat:parseTrat(s)};
-  if(s.includes('RECIEN PARIDA')||s.includes('R-PARIDA'))
-    return {tipo:'parida',label:'Recién parida — involución uterina en curso',trat:parseTrat(s)};
-  if(s==='CL'||s.includes('CUERPO LUTEO'))
-    return {tipo:'servida',label:'Cuerpo lúteo presente — posible preñez temprana, confirmar',trat:parseTrat(s)};
-  if(s.includes('V.NORMAL')||s==='NORMAL')
-    return {tipo:'vacia',subtipo:'normal',label:'Aparato reproductor normal — vacía, lista para servicio',trat:parseTrat(s)};
-  if(s.includes('COD'))
-    return {tipo:'observacion',subtipo:'quiste',label:'Posible quiste ovárico — confirmar con veterinario',trat:parseTrat(s)};
-  if(s.includes('VENCO'))
-    return {tipo:'observacion',label:'Involución uterina / cérvix — confirmar con veterinario',trat:parseTrat(s)};
-  const trat=parseTrat(s);
-  if(trat.length)return {tipo:'tratamiento',label:'Tratamiento aplicado',trat};
-  return {tipo:'otro',label:'Anotación registrada: "'+raw.trim()+'"',trat:[]};
-}
-function parseTrat(s){
-  const t=[];
-  if(s.includes('FOSFOSAN')||s.includes('PQ/'))t.push('Fosfosan (suplemento mineral)');
-  if(s.includes('ANTRIPAN'))t.push('Antripan');
-  if(s.includes('VITAMINA A')||s.includes('VIT A'))t.push('Vitamina A');
-  else if(s.includes('VITAMINA')||s.includes('VIT '))t.push('Vitaminas');
-  return t;
-}
+const parsePalpNota=LCRules.parsePalpNota;
+const parseTrat=LCRules.parseTrat;
 const interpCol={prenada:'var(--green)',vacia:'var(--red)',observacion:'var(--amber)',
   celo:'var(--green)',servida:'var(--amber)',parida:'var(--ink-2)',tratamiento:'var(--amber)',otro:'var(--ink-2)'};
 const interpTag={prenada:'✓ Preñada',vacia:'✗ Vacía',observacion:'⊘ Observación',
@@ -1205,7 +1163,7 @@ function renderHato(){
 renderHatoFiltros();renderHato();
 
 /* ===== Flujos de registro (tratamiento, secado, parto, alta, baja) ===== */
-function fechaDias(dias){const d=new Date(2026,5,13);d.setDate(d.getDate()+dias);return d.getDate()+' '+MESC[d.getMonth()];}
+const fechaDias=LCRules.fechaDias;
 function navFor(id){return document.querySelector('[data-pg="'+id+'"]');}
 function openReg(title,sub){
   document.getElementById('regTitle').textContent=title;
