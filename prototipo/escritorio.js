@@ -184,6 +184,7 @@ function renderMilk(){
     tb.appendChild(tr);
   });
   renderLecheKpis();
+  if(typeof renderScatters==='function')renderScatters();
 }
 function openMilk(i){mi=i;const c=milkCows[i];
   document.getElementById('mCow').textContent=c.num+' · '+c.n.toUpperCase();
@@ -219,12 +220,23 @@ function saveMilk(){
 }
 renderMilk();
 
-/* ===== Scatter: Producción vs DEL ===== */
+/* ===== Scatter: Producción vs DEL (todas las vacas en ordeño del hato) ===== */
+function scatterCows(){
+  let cows=[];
+  try{
+    cows=hato.filter(a=>a.grupo==='En ordeño'&&a.del!=='—'&&a.del!==undefined&&a.ayer!=='—').map(a=>{
+      // si la vaca ya tiene ordeño registrado hoy en la muestra, usa ese valor
+      const m=milkCows.find(c=>c.num===a.num&&c.done);
+      return {num:a.num,n:a.n,del:parseInt(a.del),l:m?m.v:a.ayer,
+        prenada:a.tags.includes('prenada'),vacia:a.tags.includes('vacia'),retiro:a.tags.includes('tratamiento')};
+    });
+  }catch(e){ /* hato aún no definido en la carga inicial */ }
+  return cows;
+}
 function renderScatter(svgId){
   const svg=document.getElementById(svgId);if(!svg)return;
-  const cows=milkCows.map(c=>({num:c.num,n:c.n,del:parseInt(c.del.replace(/DEL (\d+).*/,'$1')),
-    l:c.done?c.v:c.ayer,prenada:c.estado&&c.estado.includes('preñada'),
-    vacia:c.estado&&c.estado.includes('vacía'),retiro:c.estado&&c.estado.includes('retiro')}));
+  const cows=scatterCows();
+  if(!cows.length){svg.innerHTML='';return;}
   const pad={l:45,r:15,t:12,b:28},w=560,h=180;
   const pw=w-pad.l-pad.r,ph=h-pad.t-pad.b;
   const maxDel=Math.max(450,...cows.map(c=>c.del+20));
@@ -264,8 +276,12 @@ function renderScatter(svgId){
     out+='<text x="'+cx+'" y="'+(cy-r-3)+'" font-family="Work Sans,sans-serif" font-size="'+(below?'9.5':'8')+'" font-weight="'+(below?'700':'500')+'" fill="'+(below?col:'#70756A')+'" text-anchor="middle">'+c.num+'</text>';
   });
   svg.innerHTML=out;
+  // título con el conteo real de vacas en ordeño
+  const titleId=svgId==='scatterInicio'?'scatterInicioTitle':'scatterLecheTitle';
+  const t=document.getElementById(titleId);
+  if(t)t.textContent='Producción vs DEL · '+cows.length+' vacas en ordeño';
 }
-renderScatter('scatterInicio');renderScatter('scatterLeche');
+function renderScatters(){renderScatter('scatterInicio');renderScatter('scatterLeche');}
 
 /* ===== Entregas a lecheros ===== */
 const MESES_L=['Ene','Feb','Mar','Abr','May','Jun'];
@@ -1184,7 +1200,7 @@ function renderHato(){
       '<td class="r"><svg class="ic-s ic" style="color:var(--ink-3)"><use href="#i-dots"/></svg></td>';
     tb.appendChild(tr);
   });
-  refreshHeader();
+  refreshHeader();renderScatters();
 }
 renderHatoFiltros();renderHato();
 
