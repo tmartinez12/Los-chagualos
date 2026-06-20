@@ -321,6 +321,11 @@ function saveParto(){
   if(idx>=0)proximosPartos.splice(idx,1);
   if(porParir>0)porParir--;
   partos2026++;
+  // la madre sale de horras y vuelve al ordeño (DEL 0)
+  const numMadre=parto.cow.split('·')[0].trim();
+  const hIdx=grupos.horras.animales.findIndex(a=>a[0].split('·')[0].trim()===numMadre);
+  const removedHorra=hIdx>=0?grupos.horras.animales[hIdx]:null;
+  if(hIdx>=0){grupos.horras.animales.splice(hIdx,1);nHorras--;subHorras();}
   let deshacerCria=()=>{}, msg;
   if(parto.estado==='viva'){
     const num=String(++criaNum).padStart(3,'0');
@@ -353,6 +358,7 @@ function saveParto(){
     partosRecientes.shift();
     partos2026--; porParir=prevPorParir;
     if(removed)proximosPartos.splice(Math.min(idx,proximosPartos.length),0,removed);
+    if(removedHorra){grupos.horras.animales.splice(Math.min(hIdx,grupos.horras.animales.length),0,removedHorra);nHorras++;subHorras();}
     deshacerCria(); desencolar();
     renderPartos();
     snack('Parto deshecho');

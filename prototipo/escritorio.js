@@ -124,7 +124,7 @@ const milkCows=[
   {num:'027',n:'Estrella',del:'DEL 64 · pico de lactancia',   ayer:13},
   {num:'017',n:'Azucena', del:'DEL 201 · retiro 2 días más',  ayer:11, retiro:2,
     estado:'<span class="badge bad">retiro 2d</span>', nota:'no vender su leche'},
-  {num:'033',n:'Paloma',  del:'DEL 95 · 4to parto',           ayer:9,
+  {num:'033',n:'Paloma',  del:'DEL 95 · 4to parto',           ayer:6,
     estado:'<span class="badge bad">vacía 132d</span>', nota:'producción muy baja', notaRed:1},
   {num:'029',n:'Pinta',   del:'DEL 412 · lactancia larga',    ayer:5,
     estado:'<span class="badge bad">vacía 150d</span>', nota:'evaluar descarte', notaRed:1}
@@ -134,6 +134,9 @@ milkCows[1].estado='<span class="badge">servida</span>';milkCows[1].nota='por co
 milkCows[2].nota='1er parto';milkCows[3].nota='pico de lactancia';
 milkCows.forEach(c=>{c.done=false;c.v=null;});
 let mi=-1;
+/* el scatter depende de `hato`, que se declara más abajo en el archivo.
+   Esta bandera evita leerlo antes de tiempo en los renders de la carga inicial. */
+let scatterListo=false;
 /* ordenamiento de la tabla de ordeño */
 let milkSort={key:null,dir:1};
 function milkVal(c,key){
@@ -187,9 +190,14 @@ function renderMilk(){
   if(typeof renderScatters==='function')renderScatters();
 }
 function openMilk(i){mi=i;const c=milkCows[i];
+  /* el #milkModal se comparte con las entregas: al abrir una vaca, re-fijamos
+     siempre las acciones de leche por si quedó configurado para una entrega */
+  document.getElementById('scrim').onclick=()=>closeMilk();
+  const saveBtn=document.querySelector('#milkModal .btn.filled');if(saveBtn)saveBtn.onclick=()=>saveMilk();
   document.getElementById('mCow').textContent=c.num+' · '+c.n.toUpperCase();
   document.getElementById('mDel').textContent=c.del;
   const inp=document.getElementById('mInput');inp.value=c.done?c.v:c.ayer;
+  inp.onkeydown=e=>{if(e.key==='Enter')saveMilk();};
   const ref=document.getElementById('mRef');
   if(c.retiro){ref.className='m-ref warn';
     ref.textContent='⛔ En retiro '+c.retiro+' días — registra su leche, pero no se vende';}
@@ -281,7 +289,7 @@ function renderScatter(svgId){
   const t=document.getElementById(titleId);
   if(t)t.textContent='Producción vs DEL · '+cows.length+' vacas en ordeño';
 }
-function renderScatters(){renderScatter('scatterInicio');renderScatter('scatterLeche');}
+function renderScatters(){if(!scatterListo)return;renderScatter('scatterInicio');renderScatter('scatterLeche');}
 
 /* ===== Entregas a lecheros ===== */
 const MESES_L=['Ene','Feb','Mar','Abr','May','Jun'];
@@ -884,15 +892,22 @@ function renderTratamientos(){
 }
 /* aplica los tratamientos detectados en la palpación: quedan en sanidad y en la ficha */
 function aplicarTratamientos(num,nombre,trats,contexto){
-  if(!trats||!trats.length)return;
+  if(!trats||!trats.length)return null;
   const desc='Aplicado en palpación: '+trats.join(', ')+(contexto?' ('+contexto+')':'');
-  tratamientos.push({num:num,n:nombre,desc:desc,retiro:'',badge:'aplicado hoy',badgeCls:'ok'});
+  const reg={num:num,n:nombre,desc:desc,retiro:'',badge:'aplicado hoy',badgeCls:'ok'};
+  tratamientos.push(reg);
   /* queda en la historia clínica de la ficha del animal */
-  const fi=fichas[num];
+  const fi=fichas[num];let histAdded=false;
   if(fi){fi.historia.unshift({fecha:'13 JUN 2026',
     texto:'Tratamiento: <b>'+trats.join(', ')+'</b>',
-    sub:contexto?'En palpación · '+contexto:'Aplicado en palpación'});}
+    sub:contexto?'En palpación · '+contexto:'Aplicado en palpación'});histAdded=true;}
   renderTratamientos();
+  /* función para deshacer lo aplicado (revierte sanidad + historia) */
+  return function(){
+    const i=tratamientos.indexOf(reg);if(i>=0)tratamientos.splice(i,1);
+    if(fi&&histAdded)fi.historia.shift();
+    renderTratamientos();
+  };
 }
 const palp={cow:'027 · Estrella',nota:'',parsed:null};
 function renderPalpCows(){
@@ -941,7 +956,8 @@ function renderPalpInterp(){
   }else{extra.style.display='none';}
 }
 function openPalp(cow){
-  if(cow)palp.cow=cow; else if(!palpCandidatas.find(x=>x.cow===palp.cow))palp.cow=palpCandidatas[0].cow;
+  if(cow)palp.cow=cow;
+  else if(!palpCandidatas.find(x=>x.cow===palp.cow)&&palpCandidatas.length)palp.cow=palpCandidatas[0].cow;
   palp.nota='';palp.parsed=null;
   const info=palpCandidatas.find(x=>x.cow===palp.cow);
   document.getElementById('palpInfo').textContent=info?info.motivo:'Confirma el resultado de la palpación';
@@ -967,7 +983,7 @@ function savePalp(){
   const ci=palpCandidatas.findIndex(c=>c.cow===cow);
   const removedCand=ci>=0?palpCandidatas.splice(ci,1)[0]:null;
   /* los tratamientos aplicados quedan en la sanidad del animal, sea cual sea el resultado */
-  aplicarTratamientos(num,nombre,p.trat,nota);
+  const undoTrat=aplicarTratamientos(num,nombre,p.trat,nota);
   if(p.tipo==='prenada'){
     const meses=Math.round(p.meses);
     const f=fechaParto(meses);
@@ -985,6 +1001,7 @@ function savePalp(){
       if(prevParto)proximosPartos.push(prevParto);
       if(removedVacia)vacasVacias.splice(Math.min(vi,vacasVacias.length),0,removedVacia);
       if(removedCand)palpCandidatas.splice(Math.min(ci,palpCandidatas.length),0,removedCand);
+      if(undoTrat)undoTrat();
       renderPartos();renderPartosKpis();renderVacias();renderPalpLista();});
     return;
   }
@@ -1004,6 +1021,7 @@ function savePalp(){
       if(added){const ai=vacasVacias.findIndex(v=>v.cow===cow);if(ai>=0)vacasVacias.splice(ai,1);}
       if(prevParto)proximosPartos.splice(Math.min(pi,proximosPartos.length),0,prevParto);
       if(removedCand)palpCandidatas.splice(Math.min(ci,palpCandidatas.length),0,removedCand);
+      if(undoTrat)undoTrat();
       renderPartos();renderPartosKpis();renderVacias();renderPalpLista();});
     return;
   }
@@ -1061,6 +1079,7 @@ const hato=[
   {num:'T01',n:'Sansón',raza:'Toro · Gyr',grupo:'Macho',edad:'6 a',repro:'<span class="badge">toro activo · 23 hijas</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
   {num:'T02',n:'Torete',raza:'Gyr',grupo:'Macho',edad:'11 m',repro:'<span class="sub">venta programada ago</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
 ];
+scatterListo=true;   // `hato` ya está definido: el scatter puede leerlo sin riesgo
 const hatoGrupos=['En ordeño','Horra','Novilla','Levante','Ternera','Macho'];
 const hatoFiltrosEstado=[
   {id:'todas',label:null},
@@ -1153,7 +1172,7 @@ function renderHato(){
     tr.innerHTML='<td><div class="cell-animal"><div class="cini">'+a.num+'</div><div><div class="cn">'+a.n+'</div><div class="cs">'+a.raza+'</div></div></div></td>'+
       '<td>'+a.grupo+'</td><td class="r">'+a.edad+'</td>'+
       '<td>'+a.repro+'</td>'+
-      '<td class="r">'+(a.del||'—')+'</td><td class="r">'+(a.ayer==='—'?'—':'<b>'+a.ayer+' L</b>')+'</td>'+
+      '<td class="r">'+(a.del===''||a.del==null||a.del==='—'?'—':a.del)+'</td><td class="r">'+(a.ayer==='—'?'—':'<b>'+a.ayer+' L</b>')+'</td>'+
       '<td class="r">'+varHtml+'</td>'+
       '<td class="r"><svg class="ic-s ic" style="color:var(--ink-3)"><use href="#i-dots"/></svg></td>';
     tb.appendChild(tr);
