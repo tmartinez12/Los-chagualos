@@ -80,26 +80,20 @@
             <div class="k-trend up">balance cuadra ✓</div></div>
         </div>
 
-        <div class="grid" style="grid-template-columns:1.4fr 1fr;margin-top:12px">
-          <div class="card chart-card">
-            <div class="chart-title" id="scatterInicioTitle">Producción vs DEL · cada punto es una vaca</div>
-            <div class="chart-sub">Las que están debajo de la curva esperada necesitan atención</div>
-            <svg id="scatterInicio" viewBox="0 0 560 180" style="width:100%"></svg>
+        <div class="section-label">Requiere atención hoy</div>
+        <div class="grid" style="margin-top:4px">
+          <div class="alert urgent">
+            <div style="flex:1"><div class="a-title">Hato: día 2 en el potrero 7 — mover hoy</div>
+              <div class="a-sub">Sugerido: P4 · 35 días de descanso · Pedro aún no registra el movimiento</div>
+              <button class="btn outl small" style="margin-top:8px" onclick="go('pg-potreros')">Ver potreros</button></div>
           </div>
-          <div>
-            <div class="alert urgent" style="margin-bottom:8px">
-              <div style="flex:1"><div class="a-title">Hato: día 2 en el potrero 7 — mover hoy</div>
-                <div class="a-sub">Sugerido: P4 · 35 días de descanso · Pedro aún no registra el movimiento</div>
-                <button class="btn outl small" style="margin-top:8px" onclick="go('pg-potreros')">Ver potreros</button></div>
-            </div>
-            <div class="alert warn" style="margin-bottom:8px">
-              <div style="flex:1"><div class="a-title">Vaca 042 “Lucero”: programar secado</div>
-                <div class="a-sub">Preñada 7 meses · parto ~12 sep</div></div>
-            </div>
-            <div class="alert info">
-              <div style="flex:1"><div class="a-title">Retiro de leche: vaca 017 — faltan 2 días</div>
-                <div class="a-sub">No vender su leche hasta el sáb 14</div></div>
-            </div>
+          <div class="alert warn">
+            <div style="flex:1"><div class="a-title">Vaca 042 “Lucero”: programar secado</div>
+              <div class="a-sub">Preñada 7 meses · parto ~12 sep</div></div>
+          </div>
+          <div class="alert info">
+            <div style="flex:1"><div class="a-title">Retiro de leche: vaca 017 — faltan 2 días</div>
+              <div class="a-sub">No vender su leche hasta el sáb 14</div></div>
           </div>
         </div>
 

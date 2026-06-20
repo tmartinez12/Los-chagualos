@@ -289,7 +289,7 @@ function renderScatter(svgId){
   const t=document.getElementById(titleId);
   if(t)t.textContent='Producción vs DEL · '+cows.length+' vacas en ordeño';
 }
-function renderScatters(){if(!scatterListo)return;renderScatter('scatterInicio');renderScatter('scatterLeche');}
+function renderScatters(){if(!scatterListo)return;renderScatter('scatterLeche');}
 
 /* ===== Entregas a lecheros ===== */
 const MESES_L=['Ene','Feb','Mar','Abr','May','Jun'];
