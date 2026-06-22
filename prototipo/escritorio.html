@@ -231,7 +231,7 @@
           <svg class="ic-s ic"><use href="#i-back"/></svg>
           <span id="vacaBackLabel">Volver al hato</span>
         </button>
-        <div style="display:flex;gap:18px;align-items:flex-start">
+        <div class="vaca-cols">
           <div style="flex:1;min-width:0">
             <div class="card" style="display:flex;gap:16px;align-items:center;padding:16px 20px">
               <div class="cow-photo" id="vacaFoto" onclick="document.getElementById('vacaFotoInput').click()">
@@ -247,14 +247,15 @@
               <div id="vacaBadge"></div>
             </div>
             <div id="vacaAlerta" style="margin-top:10px"></div>
-            <div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-top:12px" id="vacaKpis"></div>
+            <div class="kpis" style="margin-top:12px" id="vacaKpis"></div>
+            <div class="card" id="vacaGenea" style="margin-top:12px;font-size:13px;color:var(--ink-2);line-height:1.6"></div>
             <div class="card" style="margin-top:12px" id="vacaCurvaCard">
               <div class="chart-title" style="font-size:13.5px">Curva de lactancia (eje en DEL)</div>
               <div class="chart-sub" id="vacaCurvaSub">Pico en DEL 40-60 · hoy va en DEL 152</div>
               <svg id="vacaCurva" viewBox="0 0 560 90" style="width:100%"></svg>
             </div>
           </div>
-          <div style="width:320px;flex:none">
+          <div class="vaca-side">
             <div class="card" style="display:flex;gap:10px;align-items:center;padding:12px 14px" id="vacaSanidad">
               <svg class="ic-s ic" style="color:var(--green)"><use href="#i-shield"/></svg>
               <div style="font-size:12.5px;color:var(--ink-2)">
@@ -264,7 +265,7 @@
             <div class="card">
               <div class="feed" id="vacaHistoria" style="padding-left:20px"></div>
             </div>
-            <button class="btn filled" style="width:100%;justify-content:center;margin-top:12px" onclick="snack('Registrar evento en '+document.getElementById('vacaNombre').textContent)">
+            <button class="btn filled" style="width:100%;justify-content:center;margin-top:12px" onclick="openMenuVaca()">
               ＋ Registrar evento</button>
           </div>
         </div>

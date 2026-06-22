@@ -715,10 +715,14 @@ function goVaca(num,from){
     '<div class="a-sub">'+cow.repro.sub+'</div></div></div>';
   const kpis=document.getElementById('vacaKpis');
   kpis.innerHTML=
-    '<div class="card kpi"><div class="k-label">Ayer · DEL</div><div class="k-value">'+cow.ayer+' L <span class="k-unit">· DEL '+cow.del+'</span></div></div>'+
+    '<div class="card kpi"><div class="k-label">Producción ayer</div><div class="k-value">'+cow.ayer+' <span class="k-unit">L</span></div></div>'+
+    '<div class="card kpi"><div class="k-label">DEL</div><div class="k-value">'+cow.del+' <span class="k-unit">días</span></div></div>'+
     '<div class="card kpi"><div class="k-label">Peso</div><div class="k-value" style="font-size:20px">'+cow.peso+'</div></div>'+
-    '<div class="card kpi"><div class="k-label">Partos · crías</div><div class="k-value" style="font-size:20px">'+cow.parto+(cow.crias.length?' · ('+cow.crias.join(', ')+')':' · sin crías')+'</div></div>'+
-    '<div class="card kpi"><div class="k-label">Madre · padre</div><div class="k-value" style="font-size:20px">'+cow.madre+' · '+cow.padre+'</div></div>';
+    '<div class="card kpi"><div class="k-label">Partos</div><div class="k-value">'+cow.parto+'</div></div>';
+  /* genealogía y crías: datos de familia, fuera de los KPIs */
+  document.getElementById('vacaGenea').innerHTML=
+    '<b style="color:var(--ink)">Madre:</b> '+cow.madre+' &nbsp;·&nbsp; <b style="color:var(--ink)">Padre:</b> '+cow.padre+
+    '<br><b style="color:var(--ink)">Crías:</b> '+(cow.crias.length?cow.crias.join(', '):'sin crías registradas');
   /* curva de lactancia */
   const svg=document.getElementById('vacaCurva');
   const maxDel=Math.max(cow.del+30,180);
@@ -1234,6 +1238,26 @@ function openMenuRegistro(){
     ['🌾 Secar vaca',()=>{closeReg();openSeca();}],
     ['＋ Alta de animal',()=>{closeReg();openAlta();}],
     ['↧ Dar de baja',()=>{closeReg();openBaja();}],
+  ];
+  const wrap=document.createElement('div');wrap.style.cssText='display:flex;flex-direction:column;gap:8px;margin-top:8px';
+  opts.forEach(([label,fn])=>{const b=document.createElement('button');b.className='btn outl';
+    b.style.cssText='justify-content:flex-start;width:100%';b.textContent=label;b.onclick=fn;wrap.appendChild(b);});
+  body.appendChild(wrap);
+}
+
+/* --- menú de registro enfocado en la vaca de la ficha --- */
+function openMenuVaca(){
+  const num=vacaActual;if(!num)return;const cow=fichas[num];if(!cow)return;
+  const ref=num+' · '+cow.n;
+  openReg('Registrar en '+ref,'Evento clínico o reproductivo de este animal');
+  const body=document.getElementById('regBody');body.innerHTML='';
+  document.getElementById('regActions').style.display='none';
+  const opts=[
+    ['🔬 Palpación',()=>{closeReg();openPalp(ref);}],
+    ['💊 Enfermedad / tratamiento',()=>{closeReg();openTrata(ref);}],
+    ['🌾 Secar',()=>{closeReg();openSeca(ref);}],
+    ['🐄 Parto',()=>{closeReg();openParto(ref);}],
+    ['↧ Dar de baja',()=>{closeReg();openBaja(ref);}],
   ];
   const wrap=document.createElement('div');wrap.style.cssText='display:flex;flex-direction:column;gap:8px;margin-top:8px';
   opts.forEach(([label,fn])=>{const b=document.createElement('button');b.className='btn outl';
