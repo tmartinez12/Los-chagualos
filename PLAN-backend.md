@@ -52,11 +52,23 @@ Supabase Auth nativo es email/teléfono/OAuth, no PIN. Camino propuesto:
 - Tener en cuenta la **política de red** del entorno remoto para probar contra
   el backend real.
 
+## Datos iniciales: base vacía + importación desde Excel
+
+La base **arranca vacía** (sin datos de demo / sin seed). Tatiana la llena
+después importando sus Excel.
+
+- Se preparan **plantillas Excel/CSV** (una por tabla: animales, lecheros,
+  partos, tratamientos, potreros…) con las columnas exactas del esquema.
+- Importación vía el editor de tablas de Supabase (Excel → CSV → subir), o con
+  un pequeño script de importación si se prefiere.
+- El modelo canónico (`core/model.js`) define las columnas; las plantillas
+  salen de ahí.
+
 ## Orden de construcción propuesto (cuando se retome)
 1. **Esquema SQL (DDL)** derivado de `model.js` — tablas, FKs, enums, índices.
    *(No requiere la nube; se verifica con un Postgres local efímero.)*
 2. **RLS + `profiles` + Edge Function `login-pin`** (auth por PIN, roles).
-3. **Seed SQL** — carga los datos canónicos actuales como arranque/demo.
+3. **Plantillas Excel/CSV** por tabla + guía de importación. *(Reemplaza al seed.)*
 4. **`core/store.js`** — capa offline-first (local + outbox + sync worker).
 5. **Cablear las UIs** a `store.js` (Fase 2-3 del plan de arquitectura).
 
