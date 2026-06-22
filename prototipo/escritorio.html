@@ -38,8 +38,6 @@
     </div>
     <div class="nav" id="nav">
       <a class="active" data-pg="pg-inicio" onclick="go('pg-inicio',this)"><svg class="ic"><use href="#i-home"/></svg>Inicio</a>
-      <a data-pg="pg-diario" onclick="go('pg-diario',this)"><svg class="ic"><use href="#i-book"/></svg>Diario de la finca<span class="badge bad">2</span></a>
-      <a data-pg="pg-decisiones" onclick="go('pg-decisiones',this)"><svg class="ic"><use href="#i-bulb"/></svg>Decisiones<span class="badge">4</span></a>
       <div class="nav-sec">Unidad · Leche</div>
       <a data-pg="pg-leche" onclick="go('pg-leche',this)"><svg class="ic"><use href="#i-drop"/></svg>Producción<span class="badge" id="navBadgeLeche" style="display:none"></span></a>
       <a data-pg="pg-hato" onclick="go('pg-hato',this)"><svg class="ic"><use href="#i-tag"/></svg>Hato</a>
@@ -97,18 +95,6 @@
           </div>
         </div>
 
-        <div class="section-label">Hoy en la finca (Diario)</div>
-        <div class="card">
-          <div class="feed" style="padding-bottom:0">
-            <div class="f-item"><span class="f-time">6:48</span>
-              <span class="f-text"><span class="who">Pedro</span> registró el ordeño: 184 L (26 vacas) · <span class="sub">2 novedades: Paloma bajó 3 L</span></span></div>
-            <div class="f-item"><span class="f-time">7:15</span>
-              <span class="f-text"><span class="who">Pedro</span> registró la entrega a Don José: 120 L</span></div>
-            <div class="f-item miss"><span class="f-time">—</span>
-              <span class="f-text" style="color:var(--red);font-weight:600">Falta: mover el hato (día 2 en P7) · lluvia de hoy sin registrar</span></div>
-          </div>
-          <button class="btn outl small" style="margin-top:12px" onclick="go('pg-diario')">Ver diario completo</button>
-        </div>
       </div>
 
       <!-- ============ LECHE (producción) ============ -->
@@ -324,104 +310,6 @@
         </div>
       </div>
 
-      <!-- ============ DIARIO ============ -->
-      <div class="page" id="pg-diario">
-        <div class="grid" style="grid-template-columns:1.5fr 1fr">
-          <div class="card">
-            <div class="chart-title">Hoy · jueves 12 de junio</div>
-            <div class="chart-sub">Todo lo que el equipo registró, en orden</div>
-            <div class="feed">
-              <div class="f-item"><span class="f-time">6:48</span>
-                <span class="f-text"><span class="who">Pedro</span> registró el ordeño: <b>184 L</b> (26 vacas)
-                  · <span class="sub">novedad: Paloma bajó 3 L · celo visto en Mona</span></span></div>
-              <div class="f-item"><span class="f-time">7:15</span>
-                <span class="f-text"><span class="who">Pedro</span> entregó <b>120 L</b> a Don José</span></div>
-              <div class="f-item"><span class="f-time">8:02</span>
-                <span class="f-text"><span class="who">María</span> revisó el apiario 1 · <span class="sub">colmena 4 con celdas reales — sugiere dividir</span></span></div>
-              <div class="f-item"><span class="f-time">9:30</span>
-                <span class="f-text"><span class="who">Tú</span> programaste el secado de Lucero (12 jul)</span></div>
-              <div class="f-item miss"><span class="f-time">—</span>
-                <span class="f-text" style="color:var(--red);font-weight:600">Falta hoy: mover el hato · lluvia sin registrar</span></div>
-            </div>
-            <div class="section-label">Esta semana · pendientes del equipo</div>
-            <div style="font-size:13px;color:var(--ink-2);line-height:1.9">
-              <span class="badge bad">apiario 2</span> sin revisión hace 9 días (María)<br>
-              <span class="badge warn">peso de levante</span> el pesaje mensual vence el sábado (Pedro)<br>
-              <span class="badge ok">café</span> al día — última labor: desyerbe lote La Loma (Jorge, mar)</div>
-          </div>
-          <div>
-            <div class="card" style="margin-bottom:12px">
-              <div class="chart-title" style="font-size:13.5px">El equipo</div>
-              <div style="margin-top:10px;display:flex;flex-direction:column;gap:12px;font-size:13px">
-                <div style="display:flex;align-items:center;gap:10px"><div class="cini">P</div>
-                  <div style="flex:1"><b>Pedro</b> · unidad leche<br><span class="sub" style="font-size:11.5px;color:var(--ink-2)">celular propio · hoy: 2 registros</span></div>
-                  <span class="badge ok">activo</span></div>
-                <div style="display:flex;align-items:center;gap:10px"><div class="cini">M</div>
-                  <div style="flex:1"><b>María</b> · unidad miel<br><span class="sub" style="font-size:11.5px;color:var(--ink-2)">dispositivo compartido · hoy: 1 registro</span></div>
-                  <span class="badge ok">activo</span></div>
-                <div style="display:flex;align-items:center;gap:10px"><div class="cini">J</div>
-                  <div style="flex:1"><b>Jorge</b> · café y maíz<br><span class="sub" style="font-size:11.5px;color:var(--ink-2)">celular propio · sin registros hoy</span></div>
-                  <span class="badge">sin actividad</span></div>
-              </div>
-            </div>
-            <div class="card">
-              <div class="chart-title" style="font-size:13.5px">Resumen de la semana</div>
-              <div style="font-size:12.5px;color:var(--ink-2);line-height:2;margin-top:8px">
-                Registros del equipo: <b style="color:var(--ink)">41</b><br>
-                Días con rutina completa: <b style="color:var(--ink)">5 de 6</b><br>
-                Leche entregada: <b style="color:var(--ink)">1.176 L</b> · <b style="color:var(--ink)">$2,3 M</b></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ============ DECISIONES ============ -->
-      <div class="page" id="pg-decisiones">
-        <div class="kpis" style="margin-bottom:12px">
-          <div class="card kpi"><div class="k-label">Litros/vaca·día</div><div class="k-value">11,4</div>
-            <div class="k-trend up">↑ vs mayo</div></div>
-          <div class="card kpi"><div class="k-label">DEL promedio</div><div class="k-value">164</div>
-            <div class="k-trend mut">sano: &lt;200</div></div>
-          <div class="card kpi"><div class="k-label">Costo/L</div><div class="k-value" style="font-size:20px">$1.180</div>
-            <div class="k-trend up">↓ 6%</div></div>
-          <div class="card kpi"><div class="k-label">Preñez</div><div class="k-value">73<span class="k-unit">%</span></div>
-            <div class="k-trend mut">19 de 26 elegibles</div></div>
-        </div>
-        <div class="grid" style="grid-template-columns:1fr 1fr">
-          <div class="dec">
-            <div class="d-title" style="color:var(--red)">Revisar descarte: 029 Pinta y 033 Paloma</div>
-            <div class="d-why">Pinta da <b>5 L a DEL 412</b> y Paloma <b>6 L a DEL 95</b>; vacías hace
-              <b>150 y 132 días</b>. Venderlas libera pasto para 2 novillas próximas a parir.</div>
-            <button class="btn filled small" onclick="snack('Marcadas para revisión de descarte')">Revisar</button>
-          </div>
-          <div class="dec">
-            <div class="d-title">Sembrar maíz esta semana</div>
-            <div class="d-why">Quedan <b>45 días de silo</b> y el ciclo tarda <b>~120 días</b>.
-              Sembrando ya, el bache es de solo ~25 días.</div>
-            <button class="btn filled small" onclick="snack('Tarea creada para Jorge: preparar lote La Esquina')">Crear tarea para Jorge</button>
-          </div>
-          <div class="dec">
-            <div class="d-title" style="color:var(--red)">Consanguinidad: 4 hijas de Sansón llegan a servicio</div>
-            <div class="d-why">Princesa y Alondra ya tienen el peso. <b>No deben quedar con su padre</b> —
-              rotar toro, separar lote o prestar toro.</div>
-            <button class="btn outl small" onclick="snack('Opciones de manejo del toro')">Ver opciones</button>
-          </div>
-          <div class="dec">
-            <div class="d-title">Café: contratar recolectores para ~15 oct</div>
-            <div class="d-why">Floración del <b>2 de marzo</b> → pico de cosecha en <b>octubre</b>.
-              Histórico de La Loma: ~6 recolectores.</div>
-            <button class="btn outl small" onclick="snack('Recordatorio: confirmar recolectores el 15 sep')">Recordármelo en sep</button>
-          </div>
-          <div class="dec" style="border-left:3px solid var(--green)">
-            <div class="d-title">Cuentas del mes por lechero</div>
-            <div class="d-why">Junio a la fecha: <b>Don José $5,4M</b> (2.770 L) ·
-              <b>La María $1,9M</b> (980 L) — a precio fijo de $1.950/L.
-              Total por cobrar: <b>$7,3M</b>.</div>
-            <button class="btn outl small" onclick="snack('Exportado: cuentas_junio.pdf — una hoja por lechero')"><svg class="ic-s ic"><use href="#i-export"/></svg>Exportar cuentas</button>
-          </div>
-        </div>
-      </div>
-
       <!-- ============ REPRODUCCIÓN ============ -->
       <div class="page" id="pg-repro">
         <div class="kpis">
@@ -464,8 +352,8 @@
               <svg class="ic" style="color:var(--amber)"><use href="#i-warn"/></svg>
               <div style="flex:1">
                 <div class="a-title">Consanguinidad: 4 hijas de Sansón llegan a servicio</div>
-                <div class="a-sub">No deben quedar con su padre. La decisión y las opciones están en Decisiones del mes.</div>
-                <button class="btn outl small" style="margin-top:10px" onclick="go('pg-decisiones')">Ver en Decisiones</button>
+                <div class="a-sub">055 Princesa y 058 Alondra ya tienen el peso. <b>No deben quedar con su padre</b> — rotar/prestar toro o separar el lote.</div>
+                <button class="btn outl small" style="margin-top:10px" onclick="snack('Opciones: rotar/cambiar toro · separar lote de novillas · prestar toro de otra finca')">Ver opciones</button>
               </div>
             </div>
             <div class="section-label">Lista para la próxima palpación (se arma sola)</div>

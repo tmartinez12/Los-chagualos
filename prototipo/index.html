@@ -164,15 +164,6 @@
       </div>
     </div>
 
-    <div class="section-label">Más de la finca</div>
-    <div class="list">
-      <div class="list-item" onclick="go('scr-decisiones')">
-        <div class="li-leading"><svg class="ic"><use href="#i-bulb"/></svg></div>
-        <div class="li-body"><div class="li-title">Decisiones del mes</div>
-          <div class="li-sub">4 recomendaciones con datos para revisar</div></div>
-        <div class="li-trail"><span class="badge">4</span></div>
-      </div>
-    </div>
 
   </div>
 
@@ -520,92 +511,6 @@
     </div>
     <button class="btn filled mt12" style="width:100%;justify-content:center" onclick="openSheet()">
       ＋ Registrar evento en esta vaca</button>
-  </div>
-
-  <!-- ============ DECISIONES ============ -->
-  <div class="screen" id="scr-decisiones">
-    <div class="kpi-row" style="margin-top:4px">
-      <div class="kpi"><div class="k-label">L/vaca·día</div><div class="k-value">11,4</div>
-        <div class="k-trend up">↑ vs may</div></div>
-      <div class="kpi"><div class="k-label">DEL prom.</div><div class="k-value">164</div>
-        <div class="k-trend mut">sano &lt;200</div></div>
-      <div class="kpi"><div class="k-label">Costo/L</div><div class="k-value" style="font-size:19px">$1.180</div>
-        <div class="k-trend up">↓ 6%</div></div>
-    </div>
-
-    <div class="card chart-card">
-      <div class="chart-title">La leche subió 8% en junio</div>
-      <div class="chart-sub">Litros/día vs lluvia · los eventos explican la curva</div>
-      <svg class="chart" viewBox="0 0 320 100">
-        <g fill="#E2E4D8">
-          <rect x="12" y="80" width="6" height="14" rx="2"/><rect x="78" y="72" width="6" height="22" rx="2"/>
-          <rect x="148" y="64" width="6" height="30" rx="2"/><rect x="218" y="84" width="6" height="10" rx="2"/>
-          <rect x="266" y="74" width="6" height="20" rx="2"/>
-        </g>
-        <polyline points="10,58 40,54 70,56 100,44 130,46 160,34 190,38 220,32 250,30 280,24 308,20"
-          fill="none" stroke="#2F7E33" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="308" cy="20" r="4" fill="#2F7E33"/>
-        <g font-family="Work Sans,sans-serif" font-size="9">
-          <line x1="160" y1="34" x2="160" y2="14" stroke="#A8ACA0" stroke-dasharray="2,2"/>
-          <text x="164" y="12" fill="#70756A" font-weight="600">entró silo</text>
-          <text x="282" y="12" fill="#16181B" font-weight="700">184 L</text>
-        </g>
-      </svg>
-    </div>
-
-    <div class="dec urgent">
-      <div class="d-head">
-        <div class="d-icon"><svg class="ic"><use href="#i-warn"/></svg></div>
-        <div class="d-title">Revisar descarte: 029 Pinta y 033 Paloma</div>
-      </div>
-      <div class="d-why">Pinta da <b>5 L a DEL 412</b> (lactancia ya muy larga) y Paloma <b>6 L a DEL 95</b>
-        (muy bajo para su etapa); están <b>vacías hace 150 y 132 días</b> y el costo de mantenerlas supera
-        su leche. Venderlas libera pasto para 2 novillas próximas a parir.</div>
-      <div class="d-actions">
-        <button class="btn filled small" onclick="snack('Marcadas para revisión de descarte')">Revisar</button>
-        <button class="btn text small" onclick="snack('Recordatorio pospuesto')">Después</button>
-      </div>
-    </div>
-
-    <div class="dec">
-      <div class="d-head">
-        <div class="d-icon"><svg class="ic"><use href="#i-leaf"/></svg></div>
-        <div class="d-title">Sembrar maíz esta semana</div>
-      </div>
-      <div class="d-why">Quedan <b>45 días de silo</b> (consumo: 290 kg/día) y el ciclo tarda <b>~120 días</b>.
-        Sembrando ya, el bache se cubre con solo ~25 días de concentrado comprado.</div>
-      <div class="fuel"><div class="f-fill"></div></div>
-      <div class="f-cap">Silo: 45 días restantes</div>
-      <div class="d-actions mt8">
-        <button class="btn filled small" onclick="snack('Tarea creada: preparar lote La Esquina para siembra')">Crear tarea de siembra</button>
-      </div>
-    </div>
-
-    <div class="dec good">
-      <div class="d-head">
-        <div class="d-icon"><svg class="ic"><use href="#i-check"/></svg></div>
-        <div class="d-title">Cuentas del mes por lechero</div>
-      </div>
-      <div class="d-why">Junio a la fecha: <b>Don José $5,4M</b> (2.770 L) ·
-        <b>La María $1,9M</b> (980 L) — a precio fijo de $1.950/L.
-        Total por cobrar: <b>$7,3M</b>.</div>
-      <div class="d-actions">
-        <button class="btn outl small" onclick="snack('Exportado: cuentas_junio.pdf — una hoja por lechero')">Exportar cuentas</button>
-      </div>
-    </div>
-
-    <div class="dec">
-      <div class="d-head">
-        <div class="d-icon"><svg class="ic"><use href="#i-cal"/></svg></div>
-        <div class="d-title">Café: contratar recolectores para ~15 oct</div>
-      </div>
-      <div class="d-why">La floración principal fue el <b>2 de marzo</b> → pico de cosecha proyectado en
-        <b>octubre</b> (~32 semanas). Histórico del lote La Loma: 3.800 kg de cereza en el primer pase
-        → se necesitan <b>~6 recolectores</b>.</div>
-      <div class="d-actions">
-        <button class="btn outl small" onclick="snack('Recordatorio: confirmar recolectores el 15 sep')">Recordármelo en sep</button>
-      </div>
-    </div>
   </div>
 
   <!-- ============ PLAN SANITARIO ============ -->

@@ -5,7 +5,6 @@ const titles={
   'scr-potreros':['Potreros','12 potreros · ocupación 1 día (máx 2)'],
   'scr-hato':['Hato','80 animales · 26 en ordeño'],
   'scr-vaca':['Ficha del animal','Se consulta mucho, se edita poco'],
-  'scr-decisiones':['Decisiones del mes','Junio 2026 · 4 recomendaciones'],
   'scr-sanitario':['Sanidad','Tratamientos, retiros y vacunas'],
   'scr-repro':['Reproducción','Monta natural · la palpación manda'],
   'scr-partos':['Partos','Las palpaciones marcan las fechas'],
@@ -85,7 +84,7 @@ function openGroup(k){const g=grupos[k];
   go('scr-grupo');}
 /* pestañas de primer nivel y a qué pestaña pertenece cada pantalla hija */
 const TABS=['scr-inicio','scr-ordeno','scr-hato','scr-sanitario','scr-repro'];
-const tabPadre={'scr-potreros':'scr-inicio','scr-decisiones':'scr-inicio',
+const tabPadre={'scr-potreros':'scr-inicio',
   'scr-partos':'scr-repro','scr-vaca':'scr-hato','scr-grupo':'scr-hato'};
 let histStack=['scr-selector'];
 function go(id,navBtn){
