@@ -687,6 +687,49 @@ function setVacaFoto(input){
       delete cowFotos[vacaActual];fimg.removeAttribute('src');foto.classList.remove('has-img');});};
   r.readAsDataURL(f);
 }
+/* Dibuja la curva de lactancia en #vacaCurva: ejes, gridlines, curva típica
+   de referencia, curva de esta vaca (modelo de Wood) y marcas de pico y hoy. */
+function renderVacaCurva(del,ayer){
+  const svg=document.getElementById('vacaCurva');if(!svg)return;
+  const W=560,H=150,ml=38,mr=14,mt=12,mb=26,pw=W-ml-mr,ph=H-mt-mb;
+  const maxDia=Math.ceil(Math.max(del+20,180)/60)*60;
+  const cowC=LCRules.curvaLactancia({delActual:del,lActual:ayer,maxDia});
+  const tipica=LCRules.curvaLactancia({picoL:18,maxDia});
+  const maxL=Math.max(5,Math.ceil(Math.max(cowC.picoL,18,ayer)/5)*5);
+  const X=t=>ml+t/maxDia*pw, Y=l=>mt+(1-l/maxL)*ph;
+  const path=c=>c.puntos.map((p,i)=>(i?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1)).join(' ');
+  let o='';
+  o+='<g font-family="Work Sans,sans-serif" font-size="9" fill="#A8ACA0">';
+  for(let l=0;l<=maxL;l+=5){const y=Y(l);
+    o+='<line x1="'+ml+'" y1="'+y+'" x2="'+(W-mr)+'" y2="'+y+'" stroke="#EEF0E4" stroke-width="1"/>';
+    o+='<text x="'+(ml-6)+'" y="'+(y+3)+'" text-anchor="end">'+l+'</text>';}
+  for(let d=0;d<=maxDia;d+=60){const x=X(d);
+    o+='<line x1="'+x+'" y1="'+mt+'" x2="'+x+'" y2="'+(mt+ph)+'" stroke="#F4F5EE" stroke-width="1"/>';
+    o+='<text x="'+x+'" y="'+(H-9)+'" text-anchor="middle">'+d+'</text>';}
+  o+='<text x="'+(ml+pw/2)+'" y="'+H+'" text-anchor="middle" font-weight="600" fill="#70756A">DEL · días en leche</text>';
+  o+='<text x="10" y="'+(mt+ph/2)+'" text-anchor="middle" font-weight="600" fill="#70756A" transform="rotate(-90,10,'+(mt+ph/2)+')">L/día</text>';
+  o+='</g>';
+  // curva típica del hato (referencia)
+  o+='<path d="'+path(tipica)+'" fill="none" stroke="#C7CBBC" stroke-width="1.6" stroke-dasharray="4,3"/>';
+  // curva de esta vaca
+  o+='<path d="'+path(cowC)+'" fill="none" stroke="#2F7E33" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+  // marca del pico
+  const px=X(cowC.picoDia),py=Y(cowC.picoL);
+  o+='<circle cx="'+px+'" cy="'+py+'" r="2.6" fill="#2F7E33" opacity="0.5"/>';
+  o+='<text x="'+px+'" y="'+(py-6)+'" font-family="Work Sans,sans-serif" font-size="9" fill="#70756A" text-anchor="middle">pico ~'+Math.round(cowC.picoL)+' L</text>';
+  // hoy
+  const hx=X(del),hy=Y(ayer);
+  o+='<circle cx="'+hx+'" cy="'+hy+'" r="4.5" fill="#2F7E33"/>';
+  const ta=hx>W-90?'end':'start',dx=hx>W-90?-7:7;
+  o+='<text x="'+(hx+dx)+'" y="'+(hy-7)+'" font-family="Work Sans,sans-serif" font-size="10" font-weight="700" fill="#16181B" text-anchor="'+ta+'">hoy: '+ayer+' L</text>';
+  // leyenda
+  o+='<g font-family="Work Sans,sans-serif" font-size="8.5">'+
+     '<line x1="'+(ml+6)+'" y1="'+(mt+4)+'" x2="'+(ml+22)+'" y2="'+(mt+4)+'" stroke="#2F7E33" stroke-width="2.5"/>'+
+     '<text x="'+(ml+26)+'" y="'+(mt+7)+'" fill="#70756A">esta vaca</text>'+
+     '<line x1="'+(ml+86)+'" y1="'+(mt+4)+'" x2="'+(ml+102)+'" y2="'+(mt+4)+'" stroke="#C7CBBC" stroke-width="1.6" stroke-dasharray="4,3"/>'+
+     '<text x="'+(ml+106)+'" y="'+(mt+7)+'" fill="#70756A">típica del hato</text></g>';
+  svg.innerHTML=o;
+}
 function goVaca(num,from){
   const cow=fichas[num];if(!cow)return snack('Ficha de '+num+' — próximamente');
   vacaFrom=from||'pg-hato';vacaActual=cow.num;
@@ -723,20 +766,9 @@ function goVaca(num,from){
   document.getElementById('vacaGenea').innerHTML=
     '<b style="color:var(--ink)">Madre:</b> '+cow.madre+' &nbsp;·&nbsp; <b style="color:var(--ink)">Padre:</b> '+cow.padre+
     '<br><b style="color:var(--ink)">Crías:</b> '+(cow.crias.length?cow.crias.join(', '):'sin crías registradas');
-  /* curva de lactancia */
-  const svg=document.getElementById('vacaCurva');
-  const maxDel=Math.max(cow.del+30,180);
-  const pts=cow.curva.map(p=>{const x=20+p[0]/maxDel*520;const y=80-p[1]/25*60;return x+','+y;}).join(' ');
-  const hx=20+cow.curvaHoy.del/maxDel*520,hy=80-cow.curvaHoy.l/25*60;
-  svg.innerHTML='<polyline points="'+pts+'" fill="none" stroke="#2F7E33" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'+
-    '<circle cx="'+hx+'" cy="'+hy+'" r="4.5" fill="#2F7E33"/>'+
-    '<g font-family="Work Sans,sans-serif" font-size="10" fill="#A8ACA0">'+
-    '<text x="20" y="88">DEL 0</text><text x="'+(20+60/maxDel*520)+'" y="88">60</text>'+
-    '<text x="'+(20+120/maxDel*520)+'" y="88">120</text><text x="'+(20+180/maxDel*520)+'" y="88">180</text>'+
-    (maxDel>240?'<text x="'+(20+240/maxDel*520)+'" y="88">240</text>':'')+
-    (maxDel>360?'<text x="'+(20+360/maxDel*520)+'" y="88">360</text>':'')+
-    '<text x="'+(hx+6)+'" y="'+(hy-6)+'" fill="#16181B" font-weight="700">hoy: '+cow.ayer+' L</text></g>';
-  document.getElementById('vacaCurvaSub').textContent='Hoy va en DEL '+cow.del+' · '+cow.parto+(cow.parto===1?'er':'°')+' parto';
+  /* curva de lactancia (modelo de Wood) */
+  renderVacaCurva(cow.del,cow.ayer);
+  document.getElementById('vacaCurvaSub').textContent='Hoy va en DEL '+cow.del+' · pico típico ~DEL 55 · '+cow.parto+(cow.parto===1?'er':'°')+' parto';
   /* sanidad */
   const san=document.getElementById('vacaSanidad');
   san.innerHTML='<svg class="ic-s ic" style="color:var('+(cow.sanOk?'--green':'--red')+')"><use href="#i-shield"/></svg>'+

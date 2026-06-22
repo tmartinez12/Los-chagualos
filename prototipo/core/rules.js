@@ -91,5 +91,28 @@
     return { tipo:'otro', label:'Anotación registrada: "' + raw.trim() + '"', trat:[] };
   }
 
-  return { MESC, fechaParto, fechaDias, esBajonLeche, parseTrat, parsePalpNota };
+  /* Curva de lactancia — modelo de Wood: y(t) = a · t^b · e^(-c·t).
+   * Pico en t = b/c. Se ancla de dos formas:
+   *  - por el punto de hoy: {delActual, lActual} → la curva pasa por ahí.
+   *  - por un pico típico: {picoL} → curva de referencia del hato.
+   * Devuelve puntos muestreados, día y valor del pico, y la función valorEn(t). */
+  function curvaLactancia(o) {
+    o = o || {};
+    const tp = o.picoDia || 55;
+    const b = (o.b != null ? o.b : 0.20);
+    const c = b / tp;
+    const maxDia = o.maxDia || 180;
+    const base = t => Math.pow(Math.max(t, 0.5), b) * Math.exp(-c * Math.max(t, 0.5));
+    let a;
+    if (o.picoL != null) a = o.picoL / base(tp);
+    else a = (o.lActual || 0) / base(Math.max(1, o.delActual || 1));
+    const valorEn = t => a * base(t);
+    const step = Math.max(2, Math.round(maxDia / 120));
+    const puntos = [];
+    for (let t = 1; t <= maxDia; t += step) puntos.push([t, valorEn(t)]);
+    if (puntos.length && puntos[puntos.length - 1][0] < maxDia) puntos.push([maxDia, valorEn(maxDia)]);
+    return { puntos, picoDia: tp, picoL: valorEn(tp), maxDia, valorEn };
+  }
+
+  return { MESC, fechaParto, fechaDias, esBajonLeche, parseTrat, parsePalpNota, curvaLactancia };
 });
