@@ -279,12 +279,10 @@ function renderScatter(svgId){
   cows.forEach(c=>{
     const cx=x(c.del),cy=y(c.l);
     const col=c.vacia?'var(--red)':c.retiro?'var(--red)':c.prenada?'var(--green)':'var(--ink-2)';
-    const expected=c.del<30?10+c.del*0.27:18*Math.exp(-0.002*(c.del-60));
-    const below=c.l<expected*0.7;
-    const r=below?6:4.5;
+    const r=4.5;   // todos los círculos del mismo tamaño; el color distingue el estado
     out+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="'+col+'" opacity="0.85" style="cursor:pointer"'+
       ' onclick="goVaca(\''+c.num+'\',\'pg-leche\')"><title>'+c.num+' '+c.n+' · DEL '+c.del+' · '+c.l+' L</title></circle>';
-    out+='<text x="'+cx+'" y="'+(cy-r-3)+'" font-family="Work Sans,sans-serif" font-size="'+(below?'9.5':'8')+'" font-weight="'+(below?'700':'500')+'" fill="'+(below?col:'#70756A')+'" text-anchor="middle">'+c.num+'</text>';
+    out+='<text x="'+cx+'" y="'+(cy-r-3)+'" font-family="Work Sans,sans-serif" font-size="8" font-weight="500" fill="#70756A" text-anchor="middle">'+c.num+'</text>';
   });
   svg.innerHTML=out;
   // título con el conteo real de vacas en ordeño
