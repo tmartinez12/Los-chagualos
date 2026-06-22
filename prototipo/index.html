@@ -469,24 +469,21 @@
     </div>
 
     <div class="statgrid">
-      <div class="stat"><div class="s-label">Ayer · DEL</div><div class="s-value">18 L · DEL 152</div></div>
+      <div class="stat"><div class="s-label">Producción ayer</div><div class="s-value">18 L</div></div>
+      <div class="stat"><div class="s-label">DEL</div><div class="s-value">152 días</div></div>
       <div class="stat"><div class="s-label">Peso (abr)</div><div class="s-value">480 kg</div></div>
-      <div class="stat"><div class="s-label">Partos · crías</div><div class="s-value">3 · (038, 051, 064)</div></div>
-      <div class="stat"><div class="s-label">Madre · padre</div><div class="s-value">017 · Sansón</div></div>
+      <div class="stat"><div class="s-label">Partos</div><div class="s-value">3</div></div>
+    </div>
+
+    <div class="card flat" style="font-size:13px;color:var(--ink-2);line-height:1.6;margin-top:8px">
+      <b style="color:var(--ink)">Madre:</b> 017 Azucena &nbsp;·&nbsp; <b style="color:var(--ink)">Padre:</b> Sansón<br>
+      <b style="color:var(--ink)">Crías:</b> 038 Mona, 051 Careta, 064
     </div>
 
     <div class="card chart-card mt12">
-      <div class="chart-title" style="font-size:13.5px">Curva de lactancia (eje en DEL)</div>
-      <div class="chart-sub">Pico en DEL 40-60 · hoy va en DEL 152</div>
-      <svg class="chart" viewBox="0 0 320 70">
-        <polyline points="10,52 55,30 90,20 130,22 170,26 210,29 250,31 290,33"
-          fill="none" stroke="#2F7E33" stroke-width="2.5" stroke-linecap="round"/>
-        <circle cx="200" cy="28" r="4" fill="#2F7E33"/>
-        <g font-family="Work Sans,sans-serif" font-size="9" fill="#A8ACA0">
-          <text x="10" y="66">DEL 0</text><text x="85" y="66">60</text><text x="160" y="66">120</text><text x="235" y="66">180</text><text x="290" y="66">240</text>
-          <text x="186" y="15" fill="#16181B" font-weight="700">hoy: 18 L</text>
-        </g>
-      </svg>
+      <div class="chart-title" style="font-size:13.5px">Curva de lactancia</div>
+      <div class="chart-sub">Pico típico ~DEL 55 · hoy va en DEL 152</div>
+      <svg id="vacaCurvaM" class="chart" viewBox="0 0 320 130"></svg>
     </div>
 
     <div class="card flat" style="display:flex;gap:10px;align-items:center;padding:12px 14px">

@@ -116,6 +116,31 @@ function entrarModulo(m){
   go('scr-inicio',1);   // entra al módulo Leche, en el Dashboard
 }
 function openCow(){go('scr-vaca');}
+/* Curva de lactancia (modelo de Wood) de la ficha · misma lógica que escritorio */
+function renderFichaCurva(del,ayer){
+  const svg=document.getElementById('vacaCurvaM');if(!svg||!window.LCRules)return;
+  const W=320,H=130,ml=30,mr=10,mt=12,mb=22,pw=W-ml-mr,ph=H-mt-mb;
+  const maxDia=Math.ceil(Math.max(del+20,180)/60)*60;
+  const cowC=LCRules.curvaLactancia({delActual:del,lActual:ayer,maxDia});
+  const tipica=LCRules.curvaLactancia({picoL:18,maxDia});
+  const maxL=Math.max(5,Math.ceil(Math.max(cowC.picoL,18,ayer)/5)*5);
+  const X=t=>ml+t/maxDia*pw, Y=l=>mt+(1-l/maxL)*ph;
+  const path=c=>c.puntos.map((p,i)=>(i?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1)).join(' ');
+  let o='<g font-family="Work Sans,sans-serif" font-size="8.5" fill="#A8ACA0">';
+  for(let l=0;l<=maxL;l+=5){const y=Y(l);
+    o+='<line x1="'+ml+'" y1="'+y+'" x2="'+(W-mr)+'" y2="'+y+'" stroke="#EEF0E4" stroke-width="1"/>';
+    o+='<text x="'+(ml-5)+'" y="'+(y+3)+'" text-anchor="end">'+l+'</text>';}
+  for(let d=0;d<=maxDia;d+=60){const x=X(d);
+    o+='<text x="'+x+'" y="'+(H-7)+'" text-anchor="middle">'+d+'</text>';}
+  o+='<text x="'+(ml+pw/2)+'" y="'+H+'" text-anchor="middle" font-weight="600" fill="#70756A">DEL</text></g>';
+  o+='<path d="'+path(tipica)+'" fill="none" stroke="#C7CBBC" stroke-width="1.5" stroke-dasharray="4,3"/>';
+  o+='<path d="'+path(cowC)+'" fill="none" stroke="#2F7E33" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+  const hx=X(del),hy=Y(ayer),ta=hx>W-70?'end':'start',dx=hx>W-70?-6:6;
+  o+='<circle cx="'+hx+'" cy="'+hy+'" r="4" fill="#2F7E33"/>';
+  o+='<text x="'+(hx+dx)+'" y="'+(hy-6)+'" font-family="Work Sans,sans-serif" font-size="9.5" font-weight="700" fill="#16181B" text-anchor="'+ta+'">hoy: '+ayer+' L</text>';
+  svg.innerHTML=o;
+}
+renderFichaCurva(152,18);   // ficha (estática) = Lucero 042
 /* rutina de la mañana */
 const rutina={ordeno:false,entregas:false,hato:false};
 const rutinaIcono={ordeno:'i-drop',entregas:'i-truck',hato:'i-pin'};
