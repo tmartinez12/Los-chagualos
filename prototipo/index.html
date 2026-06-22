@@ -362,7 +362,7 @@
       <div style="display:flex;gap:8px;margin-top:12px">
         <button class="btn text small" style="flex:1;justify-content:center"
           onclick="snack('Lista completa de los 80, con scroll — cada animal abre su ficha')">Ver la lista completa</button>
-        <button class="btn outl small" onclick="openAlta()">＋ Agregar</button>
+        <button class="btn outl small" onclick="openNuevaVaca()">＋ Vaca nueva</button>
         <button class="btn outl small" onclick="snack('Exportado: inventario_hato_jun2026.xlsx')"><svg class="ic-s ic"><use href="#i-export"/></svg></button>
       </div>
     </div>
@@ -663,7 +663,7 @@
       <button onclick="closeSheet();openParto()"><svg class="ic"><use href="#i-sprout"/></svg><span class="q-label">Parto / nacimiento</span></button>
       <button onclick="closeSheet();openTrata()"><svg class="ic"><use href="#i-cross"/></svg><span class="q-label">Enfermedad / tratamiento</span></button>
       <button onclick="closeSheet();openSeca()"><svg class="ic"><use href="#i-cal"/></svg><span class="q-label">Secado de vaca</span></button>
-      <button onclick="closeSheet();openAlta()"><svg class="ic"><use href="#i-bag"/></svg><span class="q-label">Alta · compra</span></button>
+      <button onclick="closeSheet();openNuevaVaca()"><svg class="ic"><use href="#i-bag"/></svg><span class="q-label">Vaca nueva</span></button>
       <button onclick="closeSheet();openBaja()"><svg class="ic"><use href="#i-out"/></svg><span class="q-label">Baja · venta/muerte</span></button>
     </div>
   </div>
@@ -847,10 +847,26 @@
   </div>
 
   <!-- SHEET: registrar alta (compra) -->
+  <!-- SHEET: vaca nueva · ¿de dónde viene? -->
+  <div class="sheet" id="nuevaSheet">
+    <div class="handle"></div>
+    <h3>Registrar vaca nueva</h3>
+    <div class="m-del" style="margin-bottom:14px">¿De dónde viene el animal?</div>
+    <button class="btn outl" style="width:100%;justify-content:flex-start;flex-direction:column;align-items:flex-start;gap:2px;padding:12px 14px;margin-bottom:8px" onclick="closeNueva();openAlta()">
+      <span style="font-weight:700">🛒 Comprada</span>
+      <span style="font-size:11.5px;color:var(--ink-2)">Entra de otra finca o feria</span>
+    </button>
+    <button class="btn outl" style="width:100%;justify-content:flex-start;flex-direction:column;align-items:flex-start;gap:2px;padding:12px 14px" onclick="closeNueva();openParto()">
+      <span style="font-weight:700">🐄 Nacida en la finca</span>
+      <span style="font-size:11.5px;color:var(--ink-2)">Se registra como el parto de su madre</span>
+    </button>
+  </div>
+
+  <!-- SHEET: vaca comprada -->
   <div class="sheet" id="altaSheet">
     <div class="handle"></div>
-    <h3>Registrar alta · compra</h3>
-    <div class="m-del" style="margin-bottom:14px">Se crea la ficha y el animal entra al hato.</div>
+    <h3>Vaca comprada</h3>
+    <div class="m-del" style="margin-bottom:14px">Entra al hato; completas la ficha después.</div>
 
     <div class="section-label" style="margin-top:0">Tipo de animal</div>
     <div class="chips">
@@ -860,10 +876,31 @@
       <button class="chip" onclick="altaPick(this,'tipo','Toro')">Toro</button>
     </div>
 
+    <div class="section-label">Raza</div>
+    <div class="chips">
+      <button class="chip sel" onclick="altaPick(this,'raza','Holstein × Gyr')">Holstein × Gyr</button>
+      <button class="chip" onclick="altaPick(this,'raza','Gyrolando')">Gyrolando</button>
+      <button class="chip" onclick="altaPick(this,'raza','Holstein')">Holstein</button>
+      <button class="chip" onclick="altaPick(this,'raza','Normando')">Normando</button>
+    </div>
+
+    <div class="section-label">Edad aproximada</div>
+    <div class="chips" style="align-items:center">
+      <button class="chip" onclick="altaEdad(-1)">−</button>
+      <span style="font-weight:700;min-width:84px;text-align:center;font-size:15px"><span id="altaEdadVal">2</span> años</span>
+      <button class="chip" onclick="altaEdad(1)">＋</button>
+    </div>
+
+    <div class="section-label">Procedencia · valor (opcional)</div>
+    <input id="altaProc" placeholder="Finca o vendedor" oninput="alta.procedencia=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-bottom:8px">
+    <input id="altaValor" type="number" inputmode="numeric" placeholder="Valor de compra $" oninput="alta.valor=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
+
     <button class="btn filled" style="width:100%;justify-content:center;margin-top:16px" onclick="saveAlta()">
-      <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar alta</button>
+      <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar compra</button>
     <div style="font-size:11px;color:var(--ink-3);margin-top:10px;text-align:center">
-      Se le asigna el número siguiente disponible; completas la ficha (raza, edad, peso) después.</div>
+      Se le asigna el número siguiente disponible.</div>
   </div>
 
   <!-- SHEET: registrar baja -->

@@ -609,27 +609,39 @@ function incGrupo(g,d){
   else if(g==='horras'){nHorras+=d;subHorras();}
   else if(g==='bajas'){nBajas+=d;subBajas();}
 }
+/* --- Vaca nueva: ¿comprada o nacida? --- */
+function openNuevaVaca(){document.getElementById('scrim').classList.add('show');
+  document.getElementById('nuevaSheet').classList.add('show');}
+function closeNueva(){document.getElementById('nuevaSheet').classList.remove('show');
+  document.getElementById('scrim').classList.remove('show');}
 /* --- Alta (compra) --- */
 const altaGrupo={'Vaca en ordeño':'ordeno','Novilla':'novillas','Ternera':'terneras','Toro':'machos'};
-const alta={tipo:'Novilla'};
+const alta={tipo:'Novilla',raza:'Holstein × Gyr',edad:2,procedencia:'',valor:''};
 let altaSeq=79, toroSeq=2;
-function openAlta(){alta.tipo='Novilla';
-  document.querySelectorAll('#altaSheet .chips')[0].querySelectorAll('.chip')
-    .forEach(c=>c.classList.toggle('sel',c.textContent.trim()==='Novilla'));
+function openAlta(){alta.tipo='Novilla';alta.raza='Holstein × Gyr';alta.edad=2;alta.procedencia='';alta.valor='';
+  const grupos2=document.querySelectorAll('#altaSheet .chips');
+  grupos2[0].querySelectorAll('.chip').forEach(c=>c.classList.toggle('sel',c.textContent.trim()==='Novilla'));
+  grupos2[1].querySelectorAll('.chip').forEach(c=>c.classList.toggle('sel',c.textContent.trim()==='Holstein × Gyr'));
+  document.getElementById('altaEdadVal').textContent=alta.edad;
+  const p=document.getElementById('altaProc');if(p)p.value='';
+  const v=document.getElementById('altaValor');if(v)v.value='';
   document.getElementById('scrim').classList.add('show');
   document.getElementById('altaSheet').classList.add('show');}
 function closeAlta(){document.getElementById('altaSheet').classList.remove('show');
   document.getElementById('scrim').classList.remove('show');}
 function altaPick(btn,campo,val){alta[campo]=val;
   [...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));}
+function altaEdad(d){alta.edad=Math.max(0,Math.min(15,alta.edad+d));
+  document.getElementById('altaEdadVal').textContent=alta.edad;}
 function saveAlta(){
   closeAlta();
   const g=altaGrupo[alta.tipo];
   const num=g==='machos'?'T0'+(++toroSeq):String(++altaSeq).padStart(3,'0');
-  grupos[g].animales.unshift([num+' · (compra)',alta.tipo+' comprada · ficha por completar',0]);
+  grupos[g].animales.unshift([num+' · (compra)',alta.raza+' · '+alta.edad+' años · '+alta.tipo.toLowerCase()+' comprada',0]);
   incGrupo(g,1);encolar();
   setTimeout(()=>openGroup(g),300);
-  snack('Alta: '+num+' ('+alta.tipo.toLowerCase()+') — entró al hato, en '+grupos[g].nombre,'Deshacer',()=>{
+  const extra=(alta.procedencia?' · '+alta.procedencia:'')+(alta.valor?' · $'+alta.valor:'');
+  snack('Compra: '+num+' ('+alta.tipo.toLowerCase()+', '+alta.raza+')'+extra+' — entró al hato','Deshacer',()=>{
     grupos[g].animales.shift();incGrupo(g,-1);
     if(g==='machos')toroSeq--;else altaSeq--;
     desencolar();openGroup(g);snack('Alta deshecha');
