@@ -172,18 +172,21 @@ function renderMilk(){
   rows.forEach(({c,i})=>{
     const tr=document.createElement('tr');
     if(c.done)tr.className='done';
-    tr.onclick=()=>openMilk(i);
     let hoy,varCell;
     if(c.done){
-      hoy='<span class="reg">'+c.v+' L ✓</span>';
+      hoy='<span class="reg">'+c.v+' L ✓</span><span class="edit-ic" title="Corregir">✎</span>';
       const d=c.v-c.ayer;
       varCell=d>0?'<span class="up">↑ +'+d+'</span>':d<0?'<span class="down">↓ '+d+'</span>':'<span class="mut">= ayer</span>';
-    }else{hoy='<span class="pending">— pend.</span>';varCell='<span class="mut">—</span>';}
-    tr.innerHTML='<td><div class="cell-animal"><div class="cini">'+c.num+'</div><div><div class="cn">'+c.n+'</div></div></div></td>'+
+    }else{hoy='<button class="btn outl small reg-btn">Registrar</button>';varCell='<span class="mut">—</span>';}
+    tr.innerHTML='<td><div class="cell-animal cell-link"><div class="cini">'+c.num+'</div><div><div class="cn">'+c.n+'</div></div></div></td>'+
       '<td class="r">'+c.ayer+'</td><td class="r">'+hoy+'</td><td class="r">'+varCell+'</td>'+
       '<td class="r">'+c.del.replace(/DEL (\d+).*/,'$1')+'</td>'+
       '<td>'+(c.estado||'')+'</td>'+
       '<td class="sub"'+(c.notaRed?' style="color:var(--red)"':'')+'>'+(c.nota||'')+'</td>';
+    /* ver: el animal lleva a su ficha · registrar/corregir: acción explícita */
+    const link=tr.querySelector('.cell-link');if(link)link.onclick=()=>goVaca(c.num,'pg-leche');
+    const act=tr.querySelector('.reg-btn')||tr.querySelector('.edit-ic');
+    if(act)act.onclick=e=>{e.stopPropagation();openMilk(i);};
     tb.appendChild(tr);
   });
   renderLecheKpis();
@@ -323,14 +326,14 @@ function renderEntregas(){
     for(let d=1;d<=DIAS_MES[5];d++){const v=entregaDiaVal(l.id,5,d);acumL+=v;acumP+=v*l.precio;}
     if(l.done){
       totalHoy+=l.hoy;
-      hoyCell='<span class="reg">'+l.hoy+' L ✓</span>';
-    }else{hoyCell='<span class="pending">— pend.</span>';}
+      hoyCell='<span class="reg">'+l.hoy+' L ✓</span><span class="edit-ic" title="Corregir">✎</span>';
+    }else{hoyCell='<button class="btn outl small reg-btn">Registrar</button>';}
     totalAyer+=l.ayer;
     tr.innerHTML='<td><b>'+l.n+'</b></td><td>'+l.freq+'</td><td class="r">'+l.ayer+'</td>'+
       '<td class="r">'+hoyCell+'</td><td class="r">'+(acumL+(l.done?l.hoy:0))+' L</td>'+
       '<td class="r">$'+((acumP+(l.done?l.hoy*l.precio:0))/1e6).toFixed(1)+'M</td>';
-    tr.style.cursor='pointer';
-    tr.onclick=()=>openEntrega(i);
+    const act=tr.querySelector('.reg-btn')||tr.querySelector('.edit-ic');
+    if(act)act.onclick=e=>{e.stopPropagation();openEntrega(i);};
     tb.appendChild(tr);
   });
   const done=lecheros.filter(l=>l.done);
@@ -419,7 +422,7 @@ function renderEntregaHist(){
       if(v===0){cells+='<td class="r"><span class="pending">—</span></td>';}
       else{
         totPorLechero[li]+=v;diaTotal+=v;gran+=v;
-        cells+='<td class="r" style="cursor:pointer" onclick="editEntregaDia(this,\''+l.id+'\','+entregaMesIdx+','+d+','+v+',\''+l.n+'\')">'+v+' L</td>';
+        cells+='<td class="r editable" title="Corregir" onclick="editEntregaDia(this,\''+l.id+'\','+entregaMesIdx+','+d+','+v+',\''+l.n+'\')">'+v+' L</td>';
       }
     });
     cells+='<td class="r" style="font-weight:700">'+(diaTotal?diaTotal+' L':'—')+'</td>';
@@ -543,6 +546,7 @@ function renderMensual(){
         if(v===null){td.innerHTML='<span class="pending">—</span>';td.style.cursor='default';}
         else{suma+=v;dias++;let cls='';
           if(v<avg*0.85)cls=' class="down"';else if(v>avg*1.15)cls=' class="up"';
+          td.className='r editable';td.title='Corregir';
           td.innerHTML='<span'+cls+'>'+v.toFixed(1)+'</span>';
           td.onclick=(function(cow,day,val){return function(e){e.stopPropagation();editDiaCell(this,cow,day,val);};})(c,d,v);
         }

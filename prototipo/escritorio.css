@@ -212,6 +212,19 @@ tbody tr.done:hover td{background:#E2F0E2}
   font-size:13px;padding:0 2px;line-height:1}
 .hato-search button:hover{color:var(--ink)}
 
+/* separar ver de registrar: acciones explícitas en las tablas */
+.reg-btn{padding:4px 12px;font-size:12px}
+.cell-link{cursor:pointer}
+.cell-link:hover .cn{text-decoration:underline}
+.edit-ic{color:var(--ink-3);cursor:pointer;font-size:12px;margin-left:7px;
+  opacity:0;transition:opacity .12s}
+tr:hover .edit-ic{opacity:1}
+.edit-ic:hover{color:var(--ink)}
+/* celdas corregibles del histórico: subrayado punteado como pista */
+td.editable{cursor:pointer;text-decoration:underline dotted var(--ink-3);
+  text-underline-offset:3px}
+td.editable:hover{background:var(--green-soft)}
+
 /* encabezados ordenables */
 th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
 th.sortable:hover{color:var(--ink)}
