@@ -1300,9 +1300,10 @@ function fmtFechaCorta(iso){if(!iso)return '—';const d=new Date(iso+'T00:00:00
         prenez:(String(m).replace('.',','))+' meses',parto:'~'+fmtFechaCorta(a.prenez.partoEstimado),
         badge:m>=8?'warn':undefined};});
     /* candidatas a palpar: servidas (confirmar) y vacías de largo */
-    palpCandidatas=animales.filter(a=>a.estadoRepro==='servida'||(a.estadoRepro==='vacia'&&a.diasVacia))
+    palpCandidatas=animales.filter(a=>a.estadoRepro==='servida'||a.estadoRepro==='vacia')
       .map(a=>({cow:refPunto(a.id),
-        motivo:a.estadoRepro==='servida'?'servida, por confirmar':'vacía hace '+a.diasVacia+' días'}));
+        motivo:a.estadoRepro==='servida'?'servida, por confirmar'
+          :'vacía'+(a.diasVacia?' hace '+a.diasVacia+' días':', confirmar estado')}));
     /* vacas vacías que requieren decisión */
     vacasVacias=animales.filter(a=>a.estadoRepro==='vacia'&&a.diasVacia&&a.diasVacia>=120)
       .map(a=>({cow:refPunto(a.id),num:a.id,del:a.del,
@@ -1312,8 +1313,10 @@ function fmtFechaCorta(iso){if(!iso)return '—';const d=new Date(iso+'T00:00:00
         rec:a.del>300?'Lactancia extendida sin preñez — evaluar descarte':'Producción muy baja para su etapa — evaluar descarte'}));
     /* partos recientes desde la tabla partos */
     if(partos&&partos.length){
+      const GP={ternera:'Terneras',macho:'Machos'};
       partosRecientes=partos.map(p=>{
-        const criaGrupo=p.cria_id&&porId[p.cria_id]?(GRUPO_DISPLAY[porId[p.cria_id].grupo]||'Terneras'):'Terneras';
+        const criaGrupo=p.cria_id&&porId[p.cria_id]?(GP[porId[p.cria_id].grupo]||'Terneras')
+          :(p.sexo_cria==='M'?'Machos':'Terneras');
         return {madre:ref(p.madre_id),cria:p.cria_id||'—',fecha:fmtFechaCorta(p.fecha),
           sexo:p.sexo_cria,peso:p.peso_kg||0,tipo:p.tipo,
           estado:p.estado_cria,grupo:p.estado_cria==='viva'?criaGrupo:null};
