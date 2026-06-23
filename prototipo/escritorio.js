@@ -115,7 +115,7 @@ function renderLecheKpis(){
 }
 
 /* ===== Registrar leche por vaca ===== */
-const milkCows=[
+let milkCows=[
   {num:'042',n:'Lucero',  del:'DEL 152 · 3er parto',          ayer:18},
   {num:'038',n:'Mona',    del:'DEL 98 · servida, por palpar', ayer:16},
   {num:'051',n:'Careta',  del:'DEL 121 · 1er parto',          ayer:14},
@@ -228,6 +228,34 @@ function saveMilk(){
   }
 }
 renderMilk();
+
+/* ===== Cableado a Supabase: tabla de ordeño (con respaldo local) ===== */
+function ordinalParto(n){const m={1:'1er',2:'2do',3:'3er',4:'4to',5:'5to',6:'6to',7:'7mo',8:'8vo',9:'9no'};return (m[n]||n+'to')+' parto';}
+function animalAMilk(a){
+  const ctx=a.del>300?'lactancia larga':(a.partos?ordinalParto(a.partos):'');
+  const delTxt='DEL '+(a.del==null?'—':a.del)+(ctx?' · '+ctx:'');
+  const retiroD=a.retiroLecheHasta?diasHasta(a.retiroLecheHasta):null;
+  let estado='',nota='',notaRed=0;
+  if(retiroD!=null&&retiroD>=0){estado='<span class="badge bad">retiro '+retiroD+'d</span>';nota='no vender su leche';}
+  else if(a.estadoRepro==='prenada'&&a.prenez){estado='<span class="badge warn">preñada '+a.prenez.meses+'m</span>';
+    if(a.secarEstimado){const d=new Date(a.secarEstimado+'T00:00:00');nota='secar ~'+d.getDate()+' '+LCRules.MESC[d.getMonth()];}}
+  else if(a.estadoRepro==='servida'){estado='<span class="badge">servida</span>';nota='por confirmar palp.';}
+  else if(a.estadoRepro==='vacia'){estado='<span class="badge bad">vacía'+(a.diasVacia?' '+a.diasVacia+'d':'')+'</span>';
+    if(a.leche&&a.leche.ayer!=null&&a.leche.ayer<7){nota=a.del>300?'evaluar descarte':'producción muy baja';notaRed=1;}}
+  const row={num:a.id,n:a.nombre,del:delTxt,ayer:(a.leche&&a.leche.ayer!=null?a.leche.ayer:0),
+    estado,nota,notaRed,done:false,v:null};
+  if(retiroD!=null&&retiroD>=0)row.retiro=retiroD;
+  return row;
+}
+(async function cargarMilkDesdeSupabase(){
+  if(typeof LCStore==='undefined')return;
+  try{
+    const animales=await LCStore.getAnimales('ordeño');
+    if(!animales||!animales.length)return;
+    milkCows=animales.map(animalAMilk);
+    renderMilk();
+  }catch(e){console.warn('Ordeño: usando datos locales:',e.message||e);}
+})();
 
 /* ===== Scatter: Producción vs DEL (todas las vacas en ordeño del hato) ===== */
 function scatterCows(){
