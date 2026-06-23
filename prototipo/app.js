@@ -79,7 +79,7 @@ function openGroup(k){const g=grupos[k];
       d.onclick=()=>snack('La lista completa, con scroll, en la app real');}
     else{d.innerHTML='<div class="li-body"><div class="li-title">'+a[0]+'</div>'+
       '<div class="li-sub">'+a[1]+'</div></div><svg class="ic chev"><use href="#i-chev"/></svg>';
-      d.onclick=a[2]?openCow:()=>snack('Ficha de '+a[0]+' — misma estructura que la de Lucero');}
+      d.onclick=a[2]?(()=>openCow(numDe(a[0]))):()=>snack('Ficha de '+a[0]+' — misma estructura que la de Lucero');}
     list.appendChild(d);});
   go('scr-grupo');}
 /* pestañas de primer nivel y a qué pestaña pertenece cada pantalla hija */
@@ -115,7 +115,67 @@ function entrarModulo(m){
   if(m!=='leche'){snack('Esa línea aún no está disponible');return;}
   go('scr-inicio',1);   // entra al módulo Leche, en el Dashboard
 }
-function openCow(){go('scr-vaca');}
+function openCow(num){if(num)renderFicha(num);go('scr-vaca');}
+/* Ficha por-animal: rellena scr-vaca con datos reales de la base (cache). */
+const GRUPO_DISPLAY_M={'ordeño':'En ordeño','horra':'Horra','novilla':'Novilla','levante':'Levante','ternera':'Ternera','macho':'Macho','baja':'Baja'};
+function origenM(a){return a.origen==='comprado'?'Comprada':a.origen==='nacido_finca'?'Nació en finca':'';}
+function deriveReproFichaM(a){
+  const retiroD=a.retiroLecheHasta?diasHastaM(a.retiroLecheHasta):null;
+  if(retiroD!=null&&retiroD>=0)return {cls:'bad',title:'Retiro de leche · '+retiroD+(retiroD===1?' día':' días')+' más',sub:'No vender su leche hasta terminar el retiro'};
+  if(a.estadoRepro==='prenada'&&a.prenez){const m=a.prenez.meses;let sub='';
+    if(a.prenez.partoEstimado)sub='Parto probable ~'+fmtFechaCortaM(a.prenez.partoEstimado);
+    if(a.secarEstimado)sub+=(sub?' · ':'')+'Secar ~'+fmtFechaCortaM(a.secarEstimado);
+    return {cls:'warn',title:'Preñada · '+m+' meses',sub:sub||'Gestación en curso',secar:true};}
+  if(a.estadoRepro==='servida')return {cls:'',title:'Servida · por palpar',sub:'Confirmar preñez en la próxima palpación'};
+  if(a.estadoRepro==='vacia')return {cls:'bad',title:'Vacía'+(a.diasVacia?' '+a.diasVacia+' días':''),sub:a.diasVacia>120?'Evaluar descarte o tratamiento reproductivo':'Esperar para servicio'};
+  if(a.grupo==='novilla')return {cls:'',title:a.listaServicio?'Novilla lista para servicio':'Novilla en desarrollo',sub:a.pesoKg?a.pesoKg+' kg':''};
+  if(a.grupo==='macho'&&a.rolToro)return {cls:'',title:'Toro reproductor activo',sub:a.hijasVivas?a.hijasVivas+' hijas vivas':''};
+  return {cls:'',title:GRUPO_DISPLAY_M[a.grupo]||a.grupo,sub:''};
+}
+function renderFicha(num){
+  const a=animalesPorIdM[num];
+  if(!a){snack('Ficha de '+num+' — sincroniza primero');return false;}
+  document.getElementById('vmNombre').textContent=a.id+' · '+a.nombre;
+  document.getElementById('vmSub').textContent=[a.raza,edadTextoM(a),GRUPO_DISPLAY_M[a.grupo],origenM(a)].filter(Boolean).join(' · ');
+  /* alerta reproductiva/sanitaria */
+  const r=deriveReproFichaM(a);const al=document.getElementById('vmAlerta');
+  al.className='alert '+(r.cls==='bad'?'urgent':r.cls==='warn'?'warn':'info');
+  al.innerHTML='<div class="a-icon"><svg class="ic"><use href="#i-cal"/></svg></div>'+
+    '<div class="a-body"><div class="a-title">'+r.title+'</div>'+(r.sub?'<div class="a-sub">'+r.sub+'</div>':'')+
+    (r.secar?'<button class="btn outl small mt8" onclick="openSeca(\''+a.id+' · '+a.nombre+'\')">Programar secado</button>':'')+'</div>';
+  /* stats */
+  const ayer=(a.leche&&a.leche.ayer!=null)?a.leche.ayer:0;
+  document.getElementById('vmStats').innerHTML=
+    '<div class="stat"><div class="s-label">Producción ayer</div><div class="s-value">'+ayer+' L</div></div>'+
+    '<div class="stat"><div class="s-label">DEL</div><div class="s-value">'+(a.del==null?'—':a.del+' días')+'</div></div>'+
+    '<div class="stat"><div class="s-label">Peso</div><div class="s-value">'+(a.pesoKg?a.pesoKg+' kg':'—')+'</div></div>'+
+    '<div class="stat"><div class="s-label">Partos</div><div class="s-value">'+(a.partos||0)+'</div></div>';
+  /* genealogía */
+  const madre=a.madreId?(animalesPorIdM[a.madreId]?a.madreId+' '+animalesPorIdM[a.madreId].nombre:a.madreId):'—';
+  const padre=a.padreId?(a.padreId==='T01'?'Sansón':(animalesPorIdM[a.padreId]?a.padreId+' '+animalesPorIdM[a.padreId].nombre:a.padreId)):'—';
+  const crias=Object.values(animalesPorIdM).filter(x=>x.madreId===a.id).map(x=>x.id+' '+x.nombre);
+  document.getElementById('vmGenea').innerHTML='<b style="color:var(--ink)">Madre:</b> '+madre+
+    ' &nbsp;·&nbsp; <b style="color:var(--ink)">Padre:</b> '+padre+
+    '<br><b style="color:var(--ink)">Crías:</b> '+(crias.length?crias.join(', '):'sin crías registradas');
+  /* curva */
+  renderFichaCurva(a.del||0,ayer);
+  document.getElementById('vmCurvaSub').textContent='Pico típico ~DEL 55 · hoy va en DEL '+(a.del==null?'—':a.del);
+  /* sanidad */
+  const retiroD=a.retiroLecheHasta?diasHastaM(a.retiroLecheHasta):null;const sanOk=!(retiroD!=null&&retiroD>=0);
+  document.getElementById('vmSanidad').innerHTML='<svg class="ic-s ic" style="color:var('+(sanOk?'--green':'--red')+')"><use href="#i-shield"/></svg>'+
+    '<div style="font-size:12.5px;color:var(--ink-2)"><b style="color:var(--ink)">'+(sanOk?'Sanidad al día':'Retiro de leche activo')+'</b> — '+
+    (sanOk?'sin tratamientos ni retiros activos':'no vender su leche hasta '+fmtFechaCortaM(a.retiroLecheHasta))+'</div>';
+  /* historia básica */
+  const ev=[];
+  if(a.prenez&&a.prenez.ultimaPalpacion)ev.push(['Palpación: <b>preñada '+a.prenez.meses+' meses</b>',a.prenez.ultimaPalpacion]);
+  if(!sanOk)ev.push(['Tratamiento con retiro de leche',null]);
+  if(a.partos)ev.push([a.partos+(a.partos===1?'er':'°')+' parto registrado',null]);
+  const hist=document.getElementById('vmHistoria');
+  hist.innerHTML=ev.length?ev.map((e,i)=>'<div class="tl-item"'+(i===ev.length-1?' style="padding-bottom:0"':'')+'>'+
+    '<div class="tl-date">'+(e[1]?fmtFechaCortaM(e[1]).toUpperCase()+' 2026':'—')+'</div>'+
+    '<div class="tl-text">'+e[0]+'</div></div>').join(''):'<div class="tl-item" style="padding-bottom:0"><div class="tl-text" style="color:var(--ink-2)">Sin eventos registrados todavía</div></div>';
+  return true;
+}
 /* Curva de lactancia (modelo de Wood) de la ficha · misma lógica que escritorio */
 function renderFichaCurva(del,ayer){
   const svg=document.getElementById('vacaCurvaM');if(!svg||!window.LCRules)return;
@@ -235,7 +295,7 @@ let animalesPorIdM={};
     /* reconstruir los grupos del hato desde la base */
     Object.keys(grupos).forEach(k=>{grupos[k].animales=[];});
     all.forEach(a=>{const k=GRUPO_KEY[a.grupo];if(!k||!grupos[k])return;
-      grupos[k].animales.push([a.id+' · '+a.nombre,subAnimalM(a),a.id==='042'?1:0]);});
+      grupos[k].animales.push([a.id+' · '+a.nombre,subAnimalM(a),1]);});
     Object.keys(grupos).forEach(k=>{const n=grupos[k].animales.length;
       grupos[k].sub=n+' '+GRUPO_LABEL[k];
       grupos[k].header='<b>'+n+' '+GRUPO_LABEL[k]+'.</b>';});
