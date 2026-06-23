@@ -41,6 +41,7 @@ function go(id,el){
   document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('active',a.dataset.pg===id));
   document.getElementById('pgTitle').textContent=titles[id][0];
   document.getElementById('pgSub').textContent=subFor(id);
+  if(id==='pg-inicio')renderInicio();
   document.querySelector('.content').scrollTop=0;
 }
 /* refresca el subtítulo si estamos en la página afectada */
@@ -60,6 +61,49 @@ function renderNavBadges(){
     setNavBadge('navBadgeRepro',vacasVacias.length);
     setNavBadge('navBadgeSan',tratamientos.length);
   }catch(e){}
+}
+/* Dashboard de inicio: KPIs y alertas derivadas del estado real. */
+function renderInicio(){
+  const kp=document.getElementById('inicioKpis');
+  if(kp){
+    let doneM=[],lecheHoy=0,ayerM=0,allM=false;
+    try{doneM=milkCows.filter(c=>c.done);lecheHoy=doneM.reduce((s,c)=>s+c.v,0);
+      ayerM=milkCows.reduce((s,c)=>s+(typeof c.ayer==='number'?c.ayer:0),0);
+      allM=milkCows.length&&doneM.length===milkCows.length;}catch(e){}
+    let doneE=[],entHoy=0,allE=false;
+    try{doneE=lecheros.filter(l=>l.done);entHoy=doneE.reduce((s,l)=>s+l.hoy,0);
+      allE=lecheros.length&&doneE.length===lecheros.length;}catch(e){}
+    const trendM=allM?(lecheHoy>ayerM?'<div class="k-trend up">↑ '+(lecheHoy-ayerM)+' L vs ayer</div>':
+        lecheHoy<ayerM?'<div class="k-trend down">↓ '+(ayerM-lecheHoy)+' L vs ayer</div>':'<div class="k-trend mut">= que ayer</div>')
+      :'<div class="k-trend mut">registrando…</div>';
+    kp.innerHTML=
+      '<div class="card kpi"><div class="k-label">Leche hoy</div>'+
+        '<div class="k-value">'+(allM?lecheHoy+' <span class="k-unit">L</span>':doneM.length+'<span class="k-unit"> de '+milkCows.length+'</span>')+'</div>'+trendM+'</div>'+
+      '<div class="card kpi"><div class="k-label">Entregado a lecheros</div>'+
+        '<div class="k-value">'+(allE?entHoy+' <span class="k-unit">L</span>':doneE.length+'<span class="k-unit"> de '+lecheros.length+'</span>')+'</div>'+
+        '<div class="k-trend '+(allE?'up':'mut')+'">'+(allE?'balance cuadra ✓':'entregas pendientes')+'</div></div>';
+  }
+  const al=document.getElementById('inicioAlertas');
+  if(al){
+    const alertas=[];
+    try{const occ=pots.find(p=>p.d<0);const sug=pots.find(p=>p.sugerido);
+      if(occ)alertas.push({cls:'urgent',title:'Hato: día '+Math.abs(occ.d)+' en el potrero '+occ.n+' — mover hoy',
+        sub:sug?'Sugerido: P'+sug.n+' · '+sug.d+' días de descanso':'Revisar potreros disponibles',btn:'Ver potreros',pg:'pg-potreros'});
+    }catch(e){}
+    try{Object.values(animalesPorId).filter(a=>a.grupo==='ordeño'&&a.prenez&&a.prenez.meses>=7).slice(0,2).forEach(a=>{
+      alertas.push({cls:'warn',title:'Vaca '+a.id+' "'+a.nombre+'": programar secado',
+        sub:'Preñada '+a.prenez.meses+' meses — secar ~2 meses antes del parto'});});
+    }catch(e){}
+    try{Object.values(animalesPorId).filter(a=>a.retiroLecheHasta&&diasHasta(a.retiroLecheHasta)>=0).slice(0,2).forEach(a=>{
+      const d=diasHasta(a.retiroLecheHasta);
+      alertas.push({cls:'info',title:'Retiro de leche: vaca '+a.id+(d===1?' — falta 1 día':' — faltan '+d+' días'),
+        sub:'No vender su leche hasta '+fmtFechaCorta(a.retiroLecheHasta)});});
+    }catch(e){}
+    if(alertas.length)al.innerHTML=alertas.map(a=>'<div class="alert '+a.cls+'"><div style="flex:1">'+
+      '<div class="a-title">'+a.title+'</div><div class="a-sub">'+a.sub+'</div>'+
+      (a.btn?'<button class="btn outl small" style="margin-top:8px" onclick="go(\''+a.pg+'\')">'+a.btn+'</button>':'')+
+      '</div></div>').join('');
+  }
 }
 let snackTimer;
 function snack(msg,accionLabel,accionFn){const sb=document.getElementById('snackbar');
@@ -264,7 +308,7 @@ function animalAMilk(a){
     try{const hoy=await LCStore.getOrdenosFecha();
       milkCows.forEach(c=>{if(hoy[c.num]!=null){c.done=true;c.v=hoy[c.num];}});
     }catch(_){/* sin ordeños hoy o sin conexión: sigue sin marcar */}
-    renderMilk();
+    renderMilk();renderInicio();
   }catch(e){console.warn('Ordeño: usando datos locales:',e.message||e);}
 })();
 
@@ -360,7 +404,7 @@ function lecheroAFila(l,precio){
     try{const hoy=await LCStore.getEntregasFecha();
       lecheros.forEach(l=>{if(hoy[l.id]!=null){l.done=true;l.hoy=hoy[l.id];}});
     }catch(_){/* sin entregas hoy */}
-    renderEntregas();
+    renderEntregas();renderInicio();
   }catch(e){console.warn('Lecheros: usando datos locales:',e.message||e);}
 })();
 const entregaOverrides={};
@@ -1502,7 +1546,7 @@ let animalesPorId={};   // cache id→animal (forma canónica) para fichas y gen
     if(typeof criaSeq!=='undefined'&&maxNum>criaSeq)criaSeq=maxNum;
     if(typeof altaSeq!=='undefined'&&maxNum>altaSeq)altaSeq=maxNum;
     hato=animales.filter(a=>a.grupo!=='baja').map(animalAFila);
-    renderHatoFiltros();renderHato();
+    renderHatoFiltros();renderHato();renderInicio();
     if(typeof snack==='function')snack('Hato actualizado desde la base ('+hato.length+')');
   }catch(e){console.warn('Hato: usando datos locales (Supabase no disponible):',e.message||e);}
 })();
@@ -1892,12 +1936,13 @@ function renderPotreros(){
   });
 }
 renderPotreros();
+renderInicio();   /* pintado inicial del dashboard (los cargadores lo refinan) */
 (async function cargarPotrerosDesdeSupabase(){
   if(typeof LCStore==='undefined')return;
   try{
     const ps=await LCStore.getPotreros();
     if(!ps||!ps.length)return;
     pots=ps.map(p=>({n:p.numero,d:p.dias_descanso,sugerido:!!p.sugerido_siguiente}));
-    renderPotreros();
+    renderPotreros();renderInicio();
   }catch(e){console.warn('Potreros: usando datos locales:',e.message||e);}
 })();
