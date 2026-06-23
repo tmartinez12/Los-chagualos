@@ -937,6 +937,7 @@ function goVaca(num,from){
     '<div class="card kpi"><div class="k-label">Partos</div><div class="k-value">'+cow.parto+'</div></div>';
   /* genealogía y crías: datos de familia, fuera de los KPIs */
   document.getElementById('vacaGenea').innerHTML=
+    '<b style="color:var(--ink)">Nacimiento:</b> '+fmtNacimiento(animalesPorId[cow.num])+'<br>'+
     '<b style="color:var(--ink)">Madre:</b> '+cow.madre+' &nbsp;·&nbsp; <b style="color:var(--ink)">Padre:</b> '+cow.padre+
     '<br><b style="color:var(--ink)">Crías:</b> '+(cow.crias.length?cow.crias.join(', '):'sin crías registradas');
   /* curva de lactancia (modelo de Wood) */
@@ -1487,6 +1488,12 @@ function isoHoy(){return isoDe(HOY_LC);}
 function isoMasDias(n){const d=new Date(HOY_LC.getTime());d.setDate(d.getDate()+(n||0));return isoDe(d);}
 /* fecha estimada de parto: hoy + lo que falta de gestación (~9 meses) */
 function isoParto(meses){const d=new Date(HOY_LC.getTime());d.setMonth(d.getMonth()+Math.max(0,Math.round(9-meses)));return isoDe(d);}
+/* fecha de nacimiento: exacta si se conoce; si no, estimada desde la edad */
+function fmtNacimiento(a){
+  if(a&&a.nacimiento){const d=new Date(a.nacimiento+'T00:00:00');return d.getDate()+' '+LCRules.MESC[d.getMonth()]+' '+d.getFullYear();}
+  if(a&&a.edadAnios!=null){const d=new Date(HOY_LC.getTime());d.setMonth(d.getMonth()-Math.round(a.edadAnios*12));return '~'+LCRules.MESC[d.getMonth()]+' '+d.getFullYear()+' (estimada)';}
+  return '—';
+}
 const HOY_LC=new Date(2026,5,13);
 function fmtEdad(a){
   const n=a.edadAnios;if(n==null)return '—';

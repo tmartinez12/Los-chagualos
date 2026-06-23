@@ -119,6 +119,11 @@ function openCow(num){if(num)renderFicha(num);go('scr-vaca');}
 /* Ficha por-animal: rellena scr-vaca con datos reales de la base (cache). */
 const GRUPO_DISPLAY_M={'ordeño':'En ordeño','horra':'Horra','novilla':'Novilla','levante':'Levante','ternera':'Ternera','macho':'Macho','baja':'Baja'};
 function origenM(a){return a.origen==='comprado'?'Comprada':a.origen==='nacido_finca'?'Nació en finca':'';}
+function fmtNacimientoM(a){
+  if(a&&a.nacimiento){const d=new Date(a.nacimiento+'T00:00:00');return d.getDate()+' '+MESC[d.getMonth()]+' '+d.getFullYear();}
+  if(a&&a.edadAnios!=null){const d=new Date(HOY_LC.getTime());d.setMonth(d.getMonth()-Math.round(a.edadAnios*12));return '~'+MESC[d.getMonth()]+' '+d.getFullYear()+' (estimada)';}
+  return '—';
+}
 function deriveReproFichaM(a){
   const retiroD=a.retiroLecheHasta?diasHastaM(a.retiroLecheHasta):null;
   if(retiroD!=null&&retiroD>=0)return {cls:'bad',title:'Retiro de leche · '+retiroD+(retiroD===1?' día':' días')+' más',sub:'No vender su leche hasta terminar el retiro'};
@@ -154,7 +159,8 @@ function renderFicha(num){
   const madre=a.madreId?(animalesPorIdM[a.madreId]?a.madreId+' '+animalesPorIdM[a.madreId].nombre:a.madreId):'—';
   const padre=a.padreId?(a.padreId==='T01'?'Sansón':(animalesPorIdM[a.padreId]?a.padreId+' '+animalesPorIdM[a.padreId].nombre:a.padreId)):'—';
   const crias=Object.values(animalesPorIdM).filter(x=>x.madreId===a.id).map(x=>x.id+' '+x.nombre);
-  document.getElementById('vmGenea').innerHTML='<b style="color:var(--ink)">Madre:</b> '+madre+
+  document.getElementById('vmGenea').innerHTML='<b style="color:var(--ink)">Nacimiento:</b> '+fmtNacimientoM(a)+'<br>'+
+    '<b style="color:var(--ink)">Madre:</b> '+madre+
     ' &nbsp;·&nbsp; <b style="color:var(--ink)">Padre:</b> '+padre+
     '<br><b style="color:var(--ink)">Crías:</b> '+(crias.length?crias.join(', '):'sin crías registradas');
   /* curva */
