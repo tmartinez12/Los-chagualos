@@ -1073,7 +1073,7 @@ function renderPalpLista(){
 renderPartos();renderPartosRecientes();renderPartosKpis();renderVacias();renderPalpLista();renderTratamientos();
 
 /* ===== Hato: tabla con filtros funcionales ===== */
-const hato=[
+let hato=[
   /* En ordeño (26 representadas con muestra) */
   {num:'042',n:'Lucero',raza:'Holstein × Gyr',grupo:'En ordeño',edad:'5,2 a',repro:'<span class="badge warn">preñada 6 m</span> <span class="sub">secar ~12 jul</span>',del:152,ayer:18,var:'+1',vc:'up',tags:['prenada']},
   {num:'038',n:'Mona',raza:'Gyrolando',grupo:'En ordeño',edad:'4,1 a',repro:'<span class="badge">servida · por palpar</span>',del:98,ayer:16,var:'= ayer',vc:'mut',tags:[]},
@@ -1216,6 +1216,71 @@ function renderHato(){
   refreshHeader();renderScatters();
 }
 renderHatoFiltros();renderHato();
+
+/* ===== Cableado a Supabase: el hato lee de la base (con respaldo local) =====
+ * Convierte un animal en forma canónica (core/model) a la fila que la tabla
+ * del hato espera (con presentación derivada: grupo, edad, badges, tags).   */
+const GRUPO_DISPLAY={'ordeño':'En ordeño','horra':'Horra','novilla':'Novilla',
+  'levante':'Levante','ternera':'Ternera','macho':'Macho','baja':'Baja'};
+const HOY_LC=new Date(2026,5,13);
+function fmtEdad(a){
+  const n=a.edadAnios;if(n==null)return '—';
+  const enMeses=a.grupo==='levante'||a.grupo==='ternera'||(a.grupo==='macho'&&n<1.5)||n<1;
+  if(enMeses)return Math.round(n*12)+' m';
+  return (n%1===0?String(n):n.toFixed(1).replace('.',','))+' a';
+}
+function diasHasta(iso){if(!iso)return null;const d=new Date(iso+'T00:00:00');return Math.round((d-HOY_LC)/86400000);}
+function deriveRepro(a){
+  /* retiro de leche por tratamiento (prioridad: alerta sanitaria) */
+  if(a.retiroLecheHasta){const d=diasHasta(a.retiroLecheHasta);
+    if(d!=null&&d>=0)return '<span class="badge bad">retiro '+d+(d===1?' día':' días')+' más</span>';}
+  /* preñada */
+  if(a.estadoRepro==='prenada'&&a.prenez){
+    const m=a.prenez.meses;const mTxt=(m%1===0?String(m):String(m).replace('.',','))+' m';
+    let cls=m>=8?'ok':(m>=6?'warn':'');
+    let extra='';
+    if(a.prenez.partoEstimado){const d=new Date(a.prenez.partoEstimado+'T00:00:00');extra=' · parto ~'+d.getDate()+' '+LCRules.MESC[d.getMonth()];}
+    else if(a.secarEstimado){const d=new Date(a.secarEstimado+'T00:00:00');extra='</span> <span class="sub">secar ~'+d.getDate()+' '+LCRules.MESC[d.getMonth()];}
+    return '<span class="badge '+cls+'">preñada '+mTxt+extra+'</span>';
+  }
+  if(a.estadoRepro==='servida')return '<span class="badge">servida · por palpar</span>';
+  if(a.estadoRepro==='vacia'){
+    if(a.diasVacia)return '<span class="badge bad">vacía '+a.diasVacia+' días</span>';
+    return '<span class="badge">1er parto · vacía</span>';}
+  if(a.grupo==='novilla')return a.listaServicio
+    ?'<span class="badge warn">lista para servicio</span>'
+    :(a.pesoKg?'<span class="sub">'+a.pesoKg+' kg</span>':'');
+  if(a.grupo==='levante'){const g=a.gananciaDiaG?' · '+a.gananciaDiaG+' g/día':'';
+    return a.pesoKg?'<span class="sub">'+a.pesoKg+' kg'+g+'</span>':'';}
+  if(a.grupo==='ternera')return a.desteteProximo?'<span class="badge warn">destete próximo</span>':'';
+  if(a.grupo==='macho')return a.rolToro
+    ?'<span class="badge">toro activo'+(a.hijasVivas?' · '+a.hijasVivas+' hijas':'')+'</span>'
+    :(a.ventaProgramada?'<span class="sub">venta programada</span>':'');
+  return '';
+}
+function deriveTags(a){
+  const t=[];
+  if(a.estadoRepro==='prenada')t.push('prenada');
+  if(a.estadoRepro==='vacia')t.push('vacia');
+  if(a.retiroLecheHasta&&diasHasta(a.retiroLecheHasta)>=0)t.push('tratamiento');
+  return t;
+}
+function animalAFila(a){
+  return {num:a.id,n:a.nombre,raza:a.raza,grupo:GRUPO_DISPLAY[a.grupo]||a.grupo,
+    edad:fmtEdad(a),repro:deriveRepro(a),
+    del:(a.del==null?'—':a.del),ayer:(a.leche&&a.leche.ayer!=null?a.leche.ayer:'—'),
+    var:'—',vc:'',tags:deriveTags(a)};
+}
+(async function cargarHatoDesdeSupabase(){
+  if(typeof LCStore==='undefined')return;
+  try{
+    const animales=await LCStore.getAnimales();
+    if(!animales||!animales.length)return; /* base vacía: conservo respaldo local */
+    hato=animales.filter(a=>a.grupo!=='baja').map(animalAFila);
+    renderHatoFiltros();renderHato();
+    if(typeof snack==='function')snack('Hato actualizado desde la base ('+hato.length+')');
+  }catch(e){console.warn('Hato: usando datos locales (Supabase no disponible):',e.message||e);}
+})();
 
 /* ===== Flujos de registro (tratamiento, secado, parto, alta, baja) ===== */
 const fechaDias=LCRules.fechaDias;
