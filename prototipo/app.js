@@ -195,6 +195,48 @@ const cows=[
   {num:'029', n:'Pinta',   del:'DEL 412 · lactancia larga', ayer:5}
 ];
 cows.forEach(c=>{c.done=false;c.v=null;});
+/* ===== Helpers compartidos para derivar desde Supabase ===== */
+const HOY_LC=new Date(2026,5,13);
+function diasHastaM(iso){if(!iso)return null;const d=new Date(iso+'T00:00:00');return Math.round((d-HOY_LC)/86400000);}
+function ordinalPartoM(n){const m={1:'1er',2:'2do',3:'3er',4:'4to',5:'5to',6:'6to',7:'7mo',8:'8vo',9:'9no'};return (m[n]||n+'to')+' parto';}
+function isoDeM(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+dd;}
+function isoHoyM(){return isoDeM(HOY_LC);}
+function isoMasDiasM(n){const d=new Date(HOY_LC.getTime());d.setDate(d.getDate()+(n||0));return isoDeM(d);}
+function isoPartoM(meses){const d=new Date(HOY_LC.getTime());d.setMonth(d.getMonth()+Math.max(0,Math.round(9-meses)));return isoDeM(d);}
+function numDe(cow){return (''+cow).split('·')[0].trim();}
+/* cache de todos los animales (genealogía/raza + sincronizar contador de IDs) */
+let animalesPorIdM={};
+(async function cacheAnimalesMovil(){
+  if(typeof LCStore==='undefined')return;
+  try{
+    const all=await LCStore.getAnimales();if(!all||!all.length)return;
+    all.forEach(a=>animalesPorIdM[a.id]=a);
+    const maxNum=Math.max(0,...all.map(a=>parseInt(a.id,10)).filter(n=>!isNaN(n)));
+    if(typeof criaNum!=='undefined'&&maxNum>criaNum)criaNum=maxNum;
+    if(typeof altaSeq!=='undefined'&&maxNum>altaSeq)altaSeq=maxNum;
+  }catch(e){console.warn('Cache animales móvil:',e.message||e);}
+})();
+/* animal canónico (BD) → tarjeta de ordeño de la móvil */
+function animalACow(a){
+  const ctx=a.del>300?'lactancia larga':(a.del>=40&&a.del<=80?'pico de lactancia':(a.partos?ordinalPartoM(a.partos):''));
+  const retiroD=a.retiroLecheHasta?diasHastaM(a.retiroLecheHasta):null;
+  const c={num:a.id,n:a.nombre,del:'DEL '+(a.del==null?'—':a.del)+(ctx?' · '+ctx:''),
+    ayer:(a.leche&&a.leche.ayer!=null?a.leche.ayer:0),done:false,v:null};
+  if(retiroD!=null&&retiroD>=0)c.retiro=retiroD;
+  return c;
+}
+(async function cargarCowsDesdeSupabase(){
+  if(typeof LCStore==='undefined')return;
+  try{
+    const animales=await LCStore.getAnimales('ordeño');
+    if(!animales||!animales.length)return;
+    cows.length=0;animales.forEach(a=>cows.push(animalACow(a)));
+    try{const hoy=await LCStore.getOrdenosFecha();
+      cows.forEach(c=>{if(hoy[c.num]!=null){c.done=true;c.v=hoy[c.num];}});
+    }catch(_){/* sin ordeños hoy */}
+    renderCows();
+  }catch(e){console.warn('Ordeño móvil: usando datos locales:',e.message||e);}
+})();
 let ci=-1,typing=false;
 function renderCows(){
   const g=document.getElementById('cowGrid');g.innerHTML='';
@@ -231,6 +273,10 @@ function saveMilk(){
   const v=parseInt(document.getElementById('milkNum').textContent)||0;
   const c=cows[ci];const drop=!c.done&&LCRules.esBajonLeche(c.ayer,v);
   c.done=true;c.v=v;renderCows();closeMilk();encolar();
+  if(typeof LCStore!=='undefined'){
+    LCStore.registrarOrdeno(c.num,v).then(()=>desencolar()).catch(e=>{
+      console.warn('Ordeño no guardado en la base:',e.message||e);});
+  }
   if(drop)snack('Atención: '+c.n+' bajó '+(c.ayer-v)+' L vs ayer — ¿mastitis, celo, comida?');
   else snack(c.n+': '+v+' L guardados (en cola offline)');
   if(cows.every(x=>x.done)){markRutina('ordeno');
@@ -350,9 +396,9 @@ function saveParto(){
   const hIdx=grupos.horras.animales.findIndex(a=>a[0].split('·')[0].trim()===numMadre);
   const removedHorra=hIdx>=0?grupos.horras.animales[hIdx]:null;
   if(hIdx>=0){grupos.horras.animales.splice(hIdx,1);nHorras--;subHorras();}
-  let deshacerCria=()=>{}, msg;
+  let deshacerCria=()=>{}, msg, criaIdNueva=null;
   if(parto.estado==='viva'){
-    const num=String(++criaNum).padStart(3,'0');
+    const num=String(++criaNum).padStart(3,'0');criaIdNueva=num;
     // la cría viva entra sola al Hato: hembra → Terneras, macho → Machos
     const grupo=parto.sexo==='H'?'terneras':'machos';
     const destino=parto.sexo==='H'?'Terneras':'Machos';
@@ -376,6 +422,19 @@ function saveParto(){
     msg='Parto de '+nombre+' · la cría nació muerta — queda en el historial · '+nombre+' al ordeño en DEL 0';
   }
   encolar();
+  if(typeof LCStore!=='undefined'){
+    const madreRaza=(animalesPorIdM[numMadre]||{}).raza||null;
+    Promise.resolve()
+      .then(()=>{ if(criaIdNueva)return LCStore.insertAnimal({id:criaIdNueva,nombre:'Cría de '+nombre,
+        raza:madreRaza,grupo:parto.sexo==='H'?'ternera':'macho',sexo:parto.sexo,
+        edadAnios:0,origen:'nacido_finca',madreId:numMadre,pesoKg:parto.peso}); })
+      .then(()=>LCStore.registrarParto({madreId:numMadre,criaId:criaIdNueva,fecha:isoHoyM(),
+        sexo:parto.sexo,pesoKg:parto.peso,tipo:parto.tipo,estadoCria:parto.estado}))
+      .then(()=>LCStore.updateAnimalCampos(numMadre,{grupo:'ordeño',del:0,estado_repro:null,
+        prenez_meses:null,parto_estimado:null,ultima_palpacion:null,dias_vacia:null,leche_ayer:0}))
+      .then(()=>desencolar())
+      .catch(e=>console.warn('Parto móvil no guardado:',e.message||e));
+  }
   renderPartos();
   setTimeout(()=>go('scr-partos'),300);
   snack(msg,'Deshacer',()=>{
@@ -465,7 +524,17 @@ function palpMes(d){palp.meses=Math.max(1,Math.min(9,palp.meses+d));
 function savePalp(){
   closePalp();
   const nombre=palp.cow.split('·')[1].trim();
+  const numPalp=numDe(palp.cow);
   encolar();
+  if(typeof LCStore!=='undefined'){
+    const esPren=palp.resultado!=='vacia';
+    const campos=esPren
+      ?{estado_repro:'prenada',prenez_meses:palp.meses,parto_estimado:isoPartoM(palp.meses),ultima_palpacion:isoHoyM(),dias_vacia:null}
+      :{estado_repro:'vacia',prenez_meses:null,parto_estimado:null,ultima_palpacion:isoHoyM(),dias_vacia:1};
+    LCStore.registrarPalpacion({animalId:numPalp,resultado:palp.resultado,prenezMeses:esPren?palp.meses:null})
+      .then(()=>LCStore.updateAnimalCampos(numPalp,campos)).then(()=>desencolar())
+      .catch(e=>console.warn('Palpación móvil no guardada:',e.message||e));
+  }
   if(palp.resultado==='vacia'){
     renderVacias();
     setTimeout(()=>go('scr-repro'),300);
@@ -527,6 +596,12 @@ function saveTrata(){
   const prev=cd?cd.retiro:undefined;
   if(cd)cd.retiro=trata.retiro||undefined;
   renderCows();encolar();
+  if(typeof LCStore!=='undefined'){
+    LCStore.registrarTratamiento({animalId:numDe(trata.cow),problema:trata.problema,
+      medicamento:trata.medicina,diasRetiro:trata.retiro,
+      retiroLecheHasta:trata.retiro>0?isoMasDiasM(trata.retiro):null})
+      .then(()=>desencolar()).catch(e=>console.warn('Tratamiento móvil no guardado:',e.message||e));
+  }
   setTimeout(()=>go('scr-ordeno'),300);
   const base='Tratamiento de '+trata.problema.toLowerCase()+' en '+nombre+' ('+trata.medicina.toLowerCase()+')';
   const msg=trata.retiro>0
@@ -579,6 +654,10 @@ function saveSeca(){
   grupos.horras.header='<b>'+nHorras+' vacas horras.</b> Ordenadas por fecha de parto; tras parir vuelven al ordeño.';
   grupos.horras.animales.unshift([seca.cow,'recién secada — '+(secaInfo[seca.cow]||'preñada')]);
   encolar();
+  if(typeof LCStore!=='undefined'){
+    LCStore.updateAnimalCampos(numDe(seca.cow),{grupo:'horra',del:null,leche_ayer:null,secar_estimado:null})
+      .then(()=>desencolar()).catch(e=>console.warn('Secado móvil no guardado:',e.message||e));
+  }
   setTimeout(()=>openGroup('horras'),300);
   snack(nombre+' secada · sale del ordeño y pasa a horras · '+(secaInfo[seca.cow]||'se planea su parto'),'Deshacer',()=>{
     if(removed)cows.splice(Math.min(idx,cows.length),0,removed);
@@ -639,12 +718,21 @@ function saveAlta(){
   const num=g==='machos'?'T0'+(++toroSeq):String(++altaSeq).padStart(3,'0');
   grupos[g].animales.unshift([num+' · (compra)',alta.raza+' · '+alta.edad+' años · '+alta.tipo.toLowerCase()+' comprada',0]);
   incGrupo(g,1);encolar();
+  if(typeof LCStore!=='undefined'){
+    const GM={ordeno:'ordeño',novillas:'novilla',terneras:'ternera',machos:'macho'};
+    LCStore.insertAnimal({id:num,nombre:'(compra)',raza:alta.raza,grupo:GM[g]||'novilla',
+      sexo:g==='machos'?'M':'H',edadAnios:alta.edad,origen:'comprado',
+      procedencia:alta.procedencia||null,
+      valorCompra:alta.valor?parseInt(String(alta.valor).replace(/\D/g,'')):null})
+      .then(()=>desencolar()).catch(e=>console.warn('Compra móvil no guardada:',e.message||e));
+  }
   setTimeout(()=>openGroup(g),300);
   const extra=(alta.procedencia?' · '+alta.procedencia:'')+(alta.valor?' · $'+alta.valor:'');
   snack('Compra: '+num+' ('+alta.tipo.toLowerCase()+', '+alta.raza+')'+extra+' — entró al hato','Deshacer',()=>{
     grupos[g].animales.shift();incGrupo(g,-1);
     if(g==='machos')toroSeq--;else altaSeq--;
     desencolar();openGroup(g);snack('Alta deshecha');
+    if(typeof LCStore!=='undefined')LCStore.deleteAnimal(num).catch(()=>{});
   });
 }
 /* --- Baja (venta / muerte / descarte / pérdida) --- */
@@ -679,11 +767,18 @@ function saveBaja(){
   nBajas++;subBajas();
   grupos.bajas.animales.unshift([baja.cow,baja.motivo.toUpperCase()+' · 13 jun · registrada']);
   encolar();
+  const numBaja=numDe(baja.cow);
+  if(typeof LCStore!=='undefined'){
+    LCStore.darDeBaja(numBaja,{motivo:baja.motivo,fecha:isoHoyM()})
+      .then(()=>desencolar()).catch(e=>console.warn('Baja móvil no guardada:',e.message||e));
+  }
   setTimeout(()=>openGroup('bajas'),300);
   snack(nombre+': baja por '+baja.motivo.toLowerCase()+' — sale del hato, su historia se conserva','Deshacer',()=>{
     if(removed){cows.splice(Math.min(idx,cows.length),0,removed);renderCows();incGrupo('ordeno',1);}
     nBajas--;subBajas();grupos.bajas.animales.shift();
     desencolar();openGroup('bajas');snack('Baja deshecha');
+    if(typeof LCStore!=='undefined')LCStore.updateAnimalCampos(numBaja,
+      {grupo:(animalesPorIdM[numBaja]||{}).grupo||'ordeño',baja_motivo:null,baja_fecha:null,baja_valor:null,baja_nota:null}).catch(()=>{});
   });
 }
 /* la app arranca en el selector de línea de negocio */
