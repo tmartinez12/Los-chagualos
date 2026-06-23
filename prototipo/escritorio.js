@@ -1149,6 +1149,18 @@ function savePalp(){
   const removedCand=ci>=0?palpCandidatas.splice(ci,1)[0]:null;
   /* los tratamientos aplicados quedan en la sanidad del animal, sea cual sea el resultado */
   const undoTrat=aplicarTratamientos(num,nombre,p.trat,nota);
+  /* persistir la palpación y el nuevo estado reproductivo en Supabase */
+  if(typeof LCStore!=='undefined'){
+    const campos={ultima_palpacion:isoHoy()};let prenezMeses=null;
+    if(p.tipo==='prenada'){const m=Math.round(p.meses);prenezMeses=m;
+      campos.estado_repro='prenada';campos.prenez_meses=m;campos.parto_estimado=isoParto(m);campos.dias_vacia=null;}
+    else if(p.tipo==='vacia'){campos.estado_repro='vacia';campos.prenez_meses=null;campos.parto_estimado=null;campos.dias_vacia=1;}
+    LCStore.registrarPalpacion({animalId:num,resultado:nota,
+      motivo:removedCand?removedCand.motivo:null,prenezMeses:prenezMeses})
+      .then(()=>LCStore.updateAnimalCampos(num,campos))
+      .catch(e=>{console.warn('Palpación no guardada en la base:',e.message||e);
+        snack('⚠ Palpación guardada local, falta sincronizar');});
+  }
   if(p.tipo==='prenada'){
     const meses=Math.round(p.meses);
     const f=fechaParto(meses);
@@ -1400,6 +1412,8 @@ const GRUPO_MODELO={'En ordeño':'ordeño','Horra':'horra','Novilla':'novilla',
 function isoDe(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+dd;}
 function isoHoy(){return isoDe(HOY_LC);}
 function isoMasDias(n){const d=new Date(HOY_LC.getTime());d.setDate(d.getDate()+(n||0));return isoDe(d);}
+/* fecha estimada de parto: hoy + lo que falta de gestación (~9 meses) */
+function isoParto(meses){const d=new Date(HOY_LC.getTime());d.setMonth(d.getMonth()+Math.max(0,Math.round(9-meses)));return isoDe(d);}
 const HOY_LC=new Date(2026,5,13);
 function fmtEdad(a){
   const n=a.edadAnios;if(n==null)return '—';
@@ -1626,8 +1640,16 @@ function saveSeca(){
   a.repro=a.repro.replace(/<span class="sub">[^<]*<\/span>/,'').trim()+' <span class="sub">recién secada</span>';
   hatoFiltro='Horra';renderHatoFiltros();renderHato();
   go('pg-hato',navFor('pg-hato'));
+  if(typeof LCStore!=='undefined'){
+    LCStore.updateAnimalCampos(secaState.num,{grupo:'horra',del:null,leche_ayer:null,secar_estimado:null}).catch(e=>{
+      console.warn('Secado no guardado en la base:',e.message||e);
+      snack('⚠ Secado guardado local, falta sincronizar');});
+  }
   snack(nombre+' secada · sale del ordeño y pasa a horras','Deshacer',()=>{
-    Object.assign(a,prev);renderHatoFiltros();renderHato();});
+    Object.assign(a,prev);renderHatoFiltros();renderHato();
+    if(typeof LCStore!=='undefined')LCStore.updateAnimalCampos(secaState.num,
+      {grupo:'ordeño',del:(typeof prev.del==='number'?prev.del:null),
+       leche_ayer:(typeof prev.ayer==='number'?prev.ayer:null)}).catch(()=>{});});
 }
 
 /* --- parto --- */
@@ -1685,16 +1707,18 @@ function saveParto(){
   go('pg-partos',navFor('pg-partos'));
   if(typeof LCStore!=='undefined'){
     const criaId=cria?cria.num:null;
-    LCStore.registrarParto({madreId:partoState.num,criaId:criaId,fecha:isoHoy(),
-      sexo:partoState.sexo,pesoKg:partoState.peso,tipo:partoState.tipo,estadoCria:partoState.estado})
+    /* ORDEN IMPORTANTE: la cría debe existir antes que el parto, porque
+       partos.cria_id la referencia por llave foránea. */
+    Promise.resolve()
+      .then(()=>{ if(cria)return LCStore.insertAnimal({id:cria.num,nombre:'Cría de '+nombre,
+          raza:a.raza,grupo:partoState.sexo==='H'?'ternera':'macho',sexo:partoState.sexo,
+          edadAnios:0,origen:'nacido_finca',madreId:partoState.num,pesoKg:partoState.peso}); })
+      .then(()=>LCStore.registrarParto({madreId:partoState.num,criaId:criaId,fecha:isoHoy(),
+        sexo:partoState.sexo,pesoKg:partoState.peso,tipo:partoState.tipo,estadoCria:partoState.estado}))
       .then(()=>{ /* la madre vuelve al ordeño en DEL 0 */
         return LCStore.updateAnimalCampos(partoState.num,{grupo:'ordeño',del:0,
           estado_repro:null,prenez_meses:null,parto_estimado:null,ultima_palpacion:null,
           dias_vacia:null,leche_ayer:0});})
-      .then(()=>{ /* la cría viva entra al hato */
-        if(cria)return LCStore.insertAnimal({id:cria.num,nombre:'Cría de '+nombre,
-          raza:a.raza,grupo:partoState.sexo==='H'?'ternera':'macho',sexo:partoState.sexo,
-          edadAnios:0,origen:'nacido_finca',madreId:partoState.num,pesoKg:partoState.peso});})
       .catch(e=>{console.warn('Parto no guardado completo en la base:',e.message||e);
         snack('⚠ Parto guardado local, falta sincronizar');});
   }
@@ -1778,7 +1802,8 @@ function saveCompra(){
   const val=compraState.valor?' · $'+compraState.valor:'';
   snack('Compra: '+num+' ('+compraState.tipo.toLowerCase()+', '+compraState.raza+')'+proc+val+' — entró al hato','Deshacer',()=>{
     const i=hato.indexOf(nuevo);if(i>=0)hato.splice(i,1);if(grupo!=='Macho')altaSeq--;
-    renderHatoFiltros();renderHato();});
+    renderHatoFiltros();renderHato();
+    if(typeof LCStore!=='undefined')LCStore.deleteAnimal(num).catch(()=>{});});
 }
 
 /* --- baja (venta / muerte / descarte / pérdida) --- */
@@ -1806,7 +1831,9 @@ function saveBaja(){
       snack('⚠ Baja guardada local, falta sincronizar');});
   }
   snack(nombre+': baja por '+bajaState.motivo.toLowerCase()+' — sale del hato, su historia se conserva','Deshacer',()=>{
-    hato.splice(Math.min(idx,hato.length),0,a);renderHatoFiltros();renderHato();});
+    hato.splice(Math.min(idx,hato.length),0,a);renderHatoFiltros();renderHato();
+    if(typeof LCStore!=='undefined')LCStore.updateAnimalCampos(bajaState.num,
+      {grupo:GRUPO_MODELO[a.grupo]||'ordeño',baja_motivo:null,baja_fecha:null,baja_valor:null,baja_nota:null}).catch(()=>{});});
 }
 
 /* 32 potreros ordenados por estado: listos → recuperando → recién pastoreados */

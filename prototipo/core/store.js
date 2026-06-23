@@ -136,6 +136,12 @@
     return data;
   }
 
+  async function deleteAnimal(id) {
+    const { error } = await client().from('animales').delete().eq('id', id);
+    if (error) throw error;
+    return true;
+  }
+
   const MOTIVO_BAJA = { 'Venta': 'venta', 'Muerte': 'muerte', 'Descarte': 'descarte', 'Pérdida': 'perdida' };
   async function darDeBaja(id, baja) {
     return updateAnimalCampos(id, {
@@ -160,6 +166,17 @@
     if (t.retiroLecheHasta) {
       await updateAnimalCampos(t.animalId, { retiro_leche_hasta: t.retiroLecheHasta }).catch(() => {});
     }
+    return data;
+  }
+
+  async function registrarPalpacion(p) {
+    const fila = {
+      animal_id: p.animalId, fecha: p.fecha || new Date().toISOString().slice(0, 10),
+      motivo: p.motivo || null, resultado: p.resultado || null,
+      prenez_meses: p.prenezMeses != null ? p.prenezMeses : null,
+    };
+    const { data, error } = await client().from('palpaciones').insert(fila).select().single();
+    if (error) throw error;
     return data;
   }
 
@@ -268,7 +285,7 @@
     registrarOrdeno, getOrdenosFecha,
     getTarifa, registrarEntrega, getEntregasFecha,
     getProduccionMensual, getPartos,
-    updateAnimalCampos, darDeBaja, registrarTratamiento, registrarParto,
+    updateAnimalCampos, darDeBaja, deleteAnimal, registrarTratamiento, registrarParto, registrarPalpacion,
     ping,
   };
 });
