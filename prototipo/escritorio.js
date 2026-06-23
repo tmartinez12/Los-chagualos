@@ -800,8 +800,50 @@ function renderVacaCurva(del,ayer){
      '<text x="'+(ml+106)+'" y="'+(mt+7)+'" fill="#70756A">típica del hato</text></g>';
   svg.innerHTML=o;
 }
+function fmtEdadLarga(a){
+  const n=a.edadAnios;if(n==null)return '—';
+  const enMeses=a.grupo==='levante'||a.grupo==='ternera'||(a.grupo==='macho'&&n<1.5)||n<1;
+  if(enMeses)return Math.round(n*12)+' meses';
+  return (n%1===0?String(n):n.toFixed(1).replace('.',','))+' años';
+}
+function nombreRef(id){const x=animalesPorId[id];return x?(id+' '+x.nombre):id;}
+function deriveReproFicha(a){
+  const retiroD=a.retiroLecheHasta?diasHasta(a.retiroLecheHasta):null;
+  if(retiroD!=null&&retiroD>=0)return {badge:'bad',text:'Retiro de leche · '+retiroD+(retiroD===1?' día':' días')+' más',sub:'No vender su leche hasta terminar el retiro'};
+  if(a.estadoRepro==='prenada'&&a.prenez){
+    const m=a.prenez.meses;let sub='';
+    if(a.prenez.partoEstimado){const d=new Date(a.prenez.partoEstimado+'T00:00:00');sub='Parto probable ~'+d.getDate()+' '+LCRules.MESC[d.getMonth()];}
+    if(a.secarEstimado){const d=new Date(a.secarEstimado+'T00:00:00');sub+=(sub?' · ':'')+'Secar ~'+d.getDate()+' '+LCRules.MESC[d.getMonth()];}
+    return {badge:m>=8?'ok':'warn',text:'Preñada · '+m+' meses',sub:sub||'Gestación en curso'};
+  }
+  if(a.estadoRepro==='servida')return {badge:'',text:'Servida · por palpar',sub:'Confirmar preñez en la próxima palpación'};
+  if(a.estadoRepro==='vacia')return {badge:'bad',text:'Vacía'+(a.diasVacia?' '+a.diasVacia+' días':''),sub:a.diasVacia>120?'Evaluar descarte o tratamiento reproductivo':'Esperar para servicio'};
+  if(a.grupo==='novilla')return {badge:a.listaServicio?'warn':'',text:a.listaServicio?'Novilla lista para servicio':'Novilla en desarrollo',sub:a.pesoKg?a.pesoKg+' kg':''};
+  if(a.grupo==='macho'&&a.rolToro)return {badge:'',text:'Toro reproductor activo',sub:(a.hijasVivas?a.hijasVivas+' hijas vivas':'')};
+  return {badge:'',text:a.grupo,sub:''};
+}
+function buildFichaBasica(a){
+  const crias=Object.values(animalesPorId).filter(x=>x.madreId===a.id).map(x=>x.id+' '+x.nombre);
+  const retiroD=a.retiroLecheHasta?diasHasta(a.retiroLecheHasta):null;
+  const sanOk=!(retiroD!=null&&retiroD>=0);
+  const historia=[];
+  if(a.prenez&&a.prenez.ultimaPalpacion){const d=new Date(a.prenez.ultimaPalpacion+'T00:00:00');
+    historia.push({fecha:d.getDate()+' '+LCRules.MESC[d.getMonth()].toUpperCase()+' '+d.getFullYear(),texto:'Palpación: <b>preñada '+a.prenez.meses+' meses</b>'});}
+  if(!sanOk)historia.push({fecha:'EN CURSO',texto:'Tratamiento con retiro de leche',miss:true});
+  if(a.partos)historia.push({fecha:'—',texto:a.partos+(a.partos===1?'er':'°')+' parto registrado'});
+  return {num:a.id,n:a.nombre,raza:a.raza||'—',edad:fmtEdadLarga(a),grupo:GRUPO_DISPLAY[a.grupo]||a.grupo,
+    origen:a.origen==='comprado'?'Comprada':a.origen==='nacido_finca'?'Nació en finca':'—',
+    del:(a.del==null?0:a.del),parto:a.partos||0,ayer:(a.leche&&a.leche.ayer!=null?a.leche.ayer:0),
+    peso:a.pesoKg?a.pesoKg+' kg':'—',
+    madre:a.madreId?nombreRef(a.madreId):'—',padre:a.padreId?(a.padreId==='T01'?'Sansón':nombreRef(a.padreId)):'—',
+    crias:crias,repro:deriveReproFicha(a),
+    sanidad:sanOk?'Sanidad al día — sin retiros activos':'Retiro de leche activo — no vender su leche',sanOk:sanOk,
+    historia:historia};
+}
 function goVaca(num,from){
-  const cow=fichas[num];if(!cow)return snack('Ficha de '+num+' — próximamente');
+  let cow=fichas[num];
+  if(!cow&&animalesPorId[num])cow=buildFichaBasica(animalesPorId[num]);
+  if(!cow)return snack('Ficha de '+num+' — próximamente');
   vacaFrom=from||'pg-hato';vacaActual=cow.num;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('pg-vaca').classList.add('active');
@@ -1341,11 +1383,13 @@ function animalAFila(a){
     del:(a.del==null?'—':a.del),ayer:(a.leche&&a.leche.ayer!=null?a.leche.ayer:'—'),
     var:'—',vc:'',tags:deriveTags(a)};
 }
+let animalesPorId={};   // cache id→animal (forma canónica) para fichas y genealogía
 (async function cargarHatoDesdeSupabase(){
   if(typeof LCStore==='undefined')return;
   try{
     const animales=await LCStore.getAnimales();
     if(!animales||!animales.length)return; /* base vacía: conservo respaldo local */
+    animales.forEach(a=>{animalesPorId[a.id]=a;});
     hato=animales.filter(a=>a.grupo!=='baja').map(animalAFila);
     renderHatoFiltros();renderHato();
     if(typeof snack==='function')snack('Hato actualizado desde la base ('+hato.length+')');
