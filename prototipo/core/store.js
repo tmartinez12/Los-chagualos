@@ -260,6 +260,28 @@
     return data || [];
   }
 
+  async function getTratamientos(soloActivos) {
+    let q = client().from('tratamientos')
+      .select('id, animal_id, problema, medicamento, inicio, dias_retiro, retiro_leche_hasta, activo, animales(nombre)')
+      .order('inicio', { ascending: false });
+    if (soloActivos) q = q.eq('activo', true);
+    const { data, error } = await q;
+    if (error) throw error;
+    return data || [];
+  }
+
+  async function terminarTratamiento(id) {
+    const { error } = await client().from('tratamientos').update({ activo: false }).eq('id', id);
+    if (error) throw error;
+    return true;
+  }
+
+  async function reactivarTratamiento(id) {
+    const { error } = await client().from('tratamientos').update({ activo: true }).eq('id', id);
+    if (error) throw error;
+    return true;
+  }
+
   async function getPartos() {
     const { data, error } = await client()
       .from('partos')
@@ -284,7 +306,7 @@
     insertAnimal, updateAnimal,
     registrarOrdeno, getOrdenosFecha,
     getTarifa, registrarEntrega, getEntregasFecha,
-    getProduccionMensual, getPartos,
+    getProduccionMensual, getPartos, getTratamientos, terminarTratamiento, reactivarTratamiento,
     updateAnimalCampos, darDeBaja, deleteAnimal, registrarTratamiento, registrarParto, registrarPalpacion,
     ping,
   };

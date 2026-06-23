@@ -1029,6 +1029,24 @@ let tratamientos=[
   {num:'017',n:'Azucena',desc:'Mastitis · antibiótico (3er día de 5)',
    retiro:'retiro de leche hasta sáb 14',badge:'retiro 2 d',badgeCls:'bad'},
 ];
+/* derivación tratamiento canónico (BD) → tarjeta de la UI */
+function tratamientoAFila(t){
+  const desc=(t.problema||'')+(t.medicamento?' · '+t.medicamento.toLowerCase():'');
+  const retiroD=t.retiro_leche_hasta?Math.round((new Date(t.retiro_leche_hasta+'T00:00:00')-HOY_LC)/86400000):null;
+  const conRetiro=retiroD!=null&&retiroD>=0;
+  return {id:t.id,num:t.animal_id,n:(t.animales&&t.animales.nombre)||t.animal_id,desc:desc,
+    retiro:conRetiro?'retiro de leche hasta '+fmtFechaCorta(t.retiro_leche_hasta):'',
+    badge:conRetiro?'retiro '+retiroD+'d':'sin retiro',badgeCls:conRetiro?'bad':'ok'};
+}
+(async function cargarTratamientosDesdeSupabase(){
+  if(typeof LCStore==='undefined')return;
+  try{
+    const ts=await LCStore.getTratamientos(true);
+    if(!ts)return;
+    tratamientos=ts.map(tratamientoAFila);
+    renderTratamientos();
+  }catch(e){console.warn('Tratamientos: usando datos locales:',e.message||e);}
+})();
 function renderTratamientos(){
   const cont=document.getElementById('tratActivos');if(!cont)return;cont.innerHTML='';
   tratamientos.forEach((t,i)=>{
@@ -1043,10 +1061,12 @@ function renderTratamientos(){
     const acts=document.createElement('div');acts.style.cssText='display:flex;gap:8px;margin-top:12px';
     const bFin=document.createElement('button');bFin.className='btn outl small';bFin.textContent='Marcar terminado';
     bFin.onclick=()=>{const removed=tratamientos.splice(i,1)[0];renderTratamientos();
+      if(typeof LCStore!=='undefined'&&removed.id)LCStore.terminarTratamiento(removed.id).catch(()=>{});
       snack(removed.n+': tratamiento marcado como terminado','Deshacer',()=>{
-        tratamientos.splice(Math.min(i,tratamientos.length),0,removed);renderTratamientos();});};
+        tratamientos.splice(Math.min(i,tratamientos.length),0,removed);renderTratamientos();
+        if(typeof LCStore!=='undefined'&&removed.id)LCStore.reactivarTratamiento(removed.id).catch(()=>{});});};
     const bVer=document.createElement('button');bVer.className='btn outl small';bVer.textContent='Ver ficha';
-    bVer.onclick=()=>fichas[t.num]?goVaca(t.num,'pg-sanitario'):snack('Ficha de '+t.n);
+    bVer.onclick=()=>goVaca(t.num,'pg-sanitario');
     acts.appendChild(bFin);acts.appendChild(bVer);card.appendChild(acts);
     cont.appendChild(card);
   });
@@ -1061,6 +1081,12 @@ function aplicarTratamientos(num,nombre,trats,contexto){
   const desc='Aplicado en palpación: '+trats.join(', ')+(contexto?' ('+contexto+')':'');
   const reg={num:num,n:nombre,desc:desc,retiro:'',badge:'aplicado hoy',badgeCls:'ok'};
   tratamientos.push(reg);
+  /* persistir en la BD (sanidad lee de Supabase); el undo abajo es solo local */
+  if(typeof LCStore!=='undefined'){
+    LCStore.registrarTratamiento({animalId:num,problema:'Aplicado en palpación',
+      medicamento:trats.join(', '),diasRetiro:0,retiroLecheHasta:null})
+      .then(r=>{if(r&&r.id)reg.id=r.id;}).catch(()=>{});
+  }
   /* queda en la historia clínica de la ficha del animal */
   const fi=fichas[num];let histAdded=false;
   if(fi){fi.historia.unshift({fecha:'13 JUN 2026',
