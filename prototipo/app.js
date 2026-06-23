@@ -207,12 +207,12 @@ function renderFichaCurva(del,ayer){
   svg.innerHTML=o;
 }
 renderFichaCurva(152,18);   // ficha (estática) = Lucero 042
-/* rutina de la mañana */
-const rutina={ordeno:false,entregas:false,hato:false};
+/* rutina de la mañana (Potreros oculto por ahora → sin el paso "mover el hato") */
+const rutina={ordeno:false,entregas:false};
 const rutinaIcono={ordeno:'i-drop',entregas:'i-truck',hato:'i-pin'};
-function pintaRutina(){const n=Object.values(rutina).filter(Boolean).length;
-  document.getElementById('rutinaProg').textContent=n+' de 3'+(n===3?' · día completo':'');}
-function markRutina(k){if(rutina[k])return;rutina[k]=true;
+function pintaRutina(){const n=Object.values(rutina).filter(Boolean).length,total=Object.keys(rutina).length;
+  document.getElementById('rutinaProg').textContent=n+' de '+total+(n===total?' · día completo':'');}
+function markRutina(k){if(!(k in rutina)||rutina[k])return;rutina[k]=true;
   const el=document.getElementById('rut-'+k);
   if(el){el.style.background='var(--green-soft)';el.style.color='var(--green)';
     el.innerHTML='<svg class="ic"><use href="#i-check"/></svg>';}

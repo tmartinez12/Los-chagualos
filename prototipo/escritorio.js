@@ -1,3 +1,5 @@
+/* Bandera para ocultar Potreros por ahora (poner true para reactivarlo). */
+const POTREROS_VISIBLE=false;
 const titles={
   'pg-inicio':['Buenos días, Tatiana','Jueves 12 de junio · lluvia ayer: 12 mm'],
   'pg-leche':['Producción de leche','26 vacas en ordeño · hoy 184 L'],
@@ -86,7 +88,7 @@ function renderInicio(){
   const al=document.getElementById('inicioAlertas');
   if(al){
     const alertas=[];
-    try{const occ=pots.find(p=>p.d<0);const sug=pots.find(p=>p.sugerido);
+    if(POTREROS_VISIBLE)try{const occ=pots.find(p=>p.d<0);const sug=pots.find(p=>p.sugerido);
       if(occ)alertas.push({cls:'urgent',title:'Hato: día '+Math.abs(occ.d)+' en el potrero '+occ.n+' — mover hoy',
         sub:sug?'Sugerido: P'+sug.n+' · '+sug.d+' días de descanso':'Revisar potreros disponibles',btn:'Ver potreros',pg:'pg-potreros'});
     }catch(e){}
