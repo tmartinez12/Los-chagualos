@@ -332,12 +332,37 @@ function renderScatters(){if(!scatterListo)return;renderScatter('scatterLeche');
 /* ===== Entregas a lecheros ===== */
 const MESES_L=['Ene','Feb','Mar','Abr','May','Jun'];
 const DIAS_MES=[31,28,31,30,31,12];
-const lecheros=[
+let lecheros=[
   {id:'jose',n:'Don José',freq:'Diario',precio:1950,diasSemana:[0,1,2,3,4,5,6],
    ayer:120,hoy:null,done:false},
   {id:'maria',n:'Quesería La María',freq:'Lun · Mié · Vie',precio:1950,diasSemana:[1,3,5],
    ayer:50,hoy:null,done:false},
 ];
+/* derivación lechero canónico (BD) → fila de la UI */
+const DOW_ABBR=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+function freqDisplay(l){
+  const d=l.dias_semana||[];
+  if(d.length>=7)return 'Diario';
+  if(!d.length)return l.frecuencia||'';
+  return d.slice().sort((a,b)=>a-b).map(x=>DOW_ABBR[x]).join(' · ');
+}
+function lecheroAFila(l,precio){
+  return {id:l.id,n:l.nombre,freq:freqDisplay(l),precio:precio||1950,
+    diasSemana:l.dias_semana||[],ayer:l.base_litros||0,hoy:null,done:false};
+}
+(async function cargarLecherosDesdeSupabase(){
+  if(typeof LCStore==='undefined')return;
+  try{
+    const [ls,tarifa]=await Promise.all([LCStore.getLecheros(),LCStore.getTarifa().catch(()=>null)]);
+    if(!ls||!ls.length)return;
+    const precio=tarifa?tarifa.precio_litro:1950;
+    lecheros=ls.map(l=>lecheroAFila(l,precio));
+    try{const hoy=await LCStore.getEntregasFecha();
+      lecheros.forEach(l=>{if(hoy[l.id]!=null){l.done=true;l.hoy=hoy[l.id];}});
+    }catch(_){/* sin entregas hoy */}
+    renderEntregas();
+  }catch(e){console.warn('Lecheros: usando datos locales:',e.message||e);}
+})();
 const entregaOverrides={};
 function entregaDiaKey(lid,m,d){return lid+'-'+m+'-'+d;}
 function entregaDiaVal(lid,mesIdx,dia){
@@ -421,6 +446,12 @@ function saveEntrega(i){
   const prev={done:l.done,hoy:l.hoy};
   l.done=true;l.hoy=v;
   closeEntrega();renderEntregas();
+  if(typeof LCStore!=='undefined'){
+    LCStore.registrarEntrega(l.id,v,l.precio).catch(e=>{
+      console.warn('No se pudo guardar la entrega en la base:',e.message||e);
+      snack('⚠ '+l.n+': guardado local, falta sincronizar');
+    });
+  }
   snack(l.n+': '+v+' L registrados','Deshacer',()=>{
     l.done=prev.done;l.hoy=prev.hoy;renderEntregas();});
 }

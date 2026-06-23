@@ -153,6 +153,40 @@
     return map;
   }
 
+  async function getTarifa() {
+    const { data, error } = await client()
+      .from('tarifa').select('precio_litro, moneda')
+      .order('vigente_desde', { ascending: false }).limit(1);
+    if (error) throw error;
+    return (data && data[0]) || { precio_litro: 1950, moneda: 'COP' };
+  }
+
+  /* --- Registro de entrega a lechero --------------------------------------- *
+   * UNIQUE(lechero_id, fecha) permite corregir (upsert) sin duplicar.        */
+  async function registrarEntrega(lecheroId, litros, precioLitro, fecha) {
+    const fila = {
+      lechero_id: lecheroId, litros: litros,
+      precio_litro: precioLitro, total: litros * precioLitro,
+    };
+    if (fecha) fila.fecha = fecha;
+    const { data, error } = await client()
+      .from('entregas')
+      .upsert(fila, { onConflict: 'lechero_id,fecha' })
+      .select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async function getEntregasFecha(fecha) {
+    let q = client().from('entregas').select('lechero_id, litros');
+    q = q.eq('fecha', fecha || new Date().toISOString().slice(0, 10));
+    const { data, error } = await q;
+    if (error) throw error;
+    const map = {};
+    (data || []).forEach(r => { map[r.lechero_id] = r.litros; });
+    return map;
+  }
+
   /* --- Diagnóstico: ping de conexión ---------------------------------------- */
   async function ping() {
     const { count, error } = await client()
@@ -167,6 +201,7 @@
     getAnimales, getAnimal, getLecheros, getPotreros,
     insertAnimal, updateAnimal,
     registrarOrdeno, getOrdenosFecha,
+    getTarifa, registrarEntrega, getEntregasFecha,
     ping,
   };
 });
