@@ -204,6 +204,24 @@ function isoHoyM(){return isoDeM(HOY_LC);}
 function isoMasDiasM(n){const d=new Date(HOY_LC.getTime());d.setDate(d.getDate()+(n||0));return isoDeM(d);}
 function isoPartoM(meses){const d=new Date(HOY_LC.getTime());d.setMonth(d.getMonth()+Math.max(0,Math.round(9-meses)));return isoDeM(d);}
 function numDe(cow){return (''+cow).split('·')[0].trim();}
+function fmtFechaCortaM(iso){if(!iso)return '—';const d=new Date(iso+'T00:00:00');return d.getDate()+' '+MESC[d.getMonth()];}
+function edadTextoM(a){const n=a.edadAnios;if(n==null)return '';
+  const enMeses=a.grupo==='levante'||a.grupo==='ternera'||(a.grupo==='macho'&&n<1.5)||n<1;
+  return enMeses?Math.round(n*12)+' meses':((n%1===0?String(n):n.toFixed(1).replace('.',','))+' años');}
+function subAnimalM(a){
+  switch(a.grupo){
+    case 'ordeño':return 'DEL '+(a.del==null?'—':a.del)+' · ayer '+((a.leche&&a.leche.ayer!=null)?a.leche.ayer:0)+' L';
+    case 'horra':return a.prenez?('preñada '+a.prenez.meses+' meses'+(a.prenez.partoEstimado?' · parto ~'+fmtFechaCortaM(a.prenez.partoEstimado):'')):'horra';
+    case 'novilla':return edadTextoM(a)+(a.pesoKg?' · '+a.pesoKg+' kg':'')+(a.listaServicio?' · lista para servicio':'');
+    case 'levante':return edadTextoM(a)+(a.pesoKg?' · '+a.pesoKg+' kg':'')+(a.gananciaDiaG?' · '+a.gananciaDiaG+' g/día':'');
+    case 'ternera':return edadTextoM(a)+(a.desteteProximo?' · destete próximo':'');
+    case 'macho':return a.rolToro?('Toro · '+edadTextoM(a)+(a.sanidadAlDia?' · sanidad al día':'')):(edadTextoM(a)+(a.ventaProgramada?' · venta programada':''));
+    case 'baja':return a.baja?((a.baja.motivo||'').toUpperCase()+(a.baja.fecha?' · '+fmtFechaCortaM(a.baja.fecha):'')+(a.baja.nota?' · '+a.baja.nota:'')):'baja';
+  }
+  return '';
+}
+const GRUPO_KEY={'ordeño':'ordeno','horra':'horras','novilla':'novillas','levante':'levante','ternera':'terneras','macho':'machos','baja':'bajas'};
+const GRUPO_LABEL={ordeno:'vacas en ordeño',horras:'vacas horras',novillas:'novillas',levante:'hembras de levante',terneras:'terneras',machos:'machos',bajas:'bajas en 2026'};
 /* cache de todos los animales (genealogía/raza + sincronizar contador de IDs) */
 let animalesPorIdM={};
 (async function cacheAnimalesMovil(){
@@ -214,7 +232,14 @@ let animalesPorIdM={};
     const maxNum=Math.max(0,...all.map(a=>parseInt(a.id,10)).filter(n=>!isNaN(n)));
     if(typeof criaNum!=='undefined'&&maxNum>criaNum)criaNum=maxNum;
     if(typeof altaSeq!=='undefined'&&maxNum>altaSeq)altaSeq=maxNum;
-  }catch(e){console.warn('Cache animales móvil:',e.message||e);}
+    /* reconstruir los grupos del hato desde la base */
+    Object.keys(grupos).forEach(k=>{grupos[k].animales=[];});
+    all.forEach(a=>{const k=GRUPO_KEY[a.grupo];if(!k||!grupos[k])return;
+      grupos[k].animales.push([a.id+' · '+a.nombre,subAnimalM(a),a.id==='042'?1:0]);});
+    Object.keys(grupos).forEach(k=>{const n=grupos[k].animales.length;
+      grupos[k].sub=n+' '+GRUPO_LABEL[k];
+      grupos[k].header='<b>'+n+' '+GRUPO_LABEL[k]+'.</b>';});
+  }catch(e){console.warn('Cache/hato móvil:',e.message||e);}
 })();
 /* animal canónico (BD) → tarjeta de ordeño de la móvil */
 function animalACow(a){
@@ -302,7 +327,13 @@ function confirmMove(){
   });
 }
 function registrarEntrega(){markRutina('entregas');encolar();
-  snack('Entrega registrada — el balance del día cuadra');}
+  snack('Entrega registrada — el balance del día cuadra');
+  if(typeof LCStore!=='undefined'){
+    Promise.all([LCStore.getLecheros(),LCStore.getTarifa().catch(()=>null)]).then(([ls,tar])=>{
+      const precio=tar?tar.precio_litro:1950;
+      return Promise.all((ls||[]).map(l=>LCStore.registrarEntrega(l.id,l.base_litros||0,precio)));
+    }).then(()=>desencolar()).catch(e=>console.warn('Entrega móvil no guardada:',e.message||e));
+  }}
 /* sincronización offline: cuántos registros faltan por subir */
 let pendientes=3;
 function updateSync(){const c=document.getElementById('syncChip');if(!c)return;
@@ -493,6 +524,45 @@ const palp={cow:'027 · Estrella',resultado:'prenada',meses:2};
 /* reglas puras compartidas (core/rules.js) */
 const MESC=LCRules.MESC;
 const fechaParto=LCRules.fechaParto;
+/* ===== Cableado a Supabase: reproducción (móvil) ===== */
+(async function cargarReproMovil(){
+  if(typeof LCStore==='undefined')return;
+  try{
+    const [animales,partosDB]=await Promise.all([LCStore.getAnimales(),LCStore.getPartos()]);
+    if(!animales||!animales.length)return;
+    const porId={};animales.forEach(a=>porId[a.id]=a);
+    const refP=id=>porId[id]?(id+' · '+porId[id].nombre):id;
+    /* próximos partos */
+    proximosPartos=animales.filter(a=>a.estadoRepro==='prenada'&&a.prenez&&a.prenez.partoEstimado)
+      .sort((x,y)=>x.prenez.partoEstimado<y.prenez.partoEstimado?-1:1)
+      .map(a=>{const m=a.prenez.meses;const f=fmtFechaCortaM(a.prenez.partoEstimado);
+        return {cow:refP(a.id),sub:'Preñada '+String(m).replace('.',',')+' meses · parto ~'+f,
+          short:'~'+f,badge:MESC[new Date(a.prenez.partoEstimado+'T00:00:00').getMonth()],bw:m>=8?'warn':''};});
+    porParir=proximosPartos.length;
+    /* partos recientes */
+    if(partosDB&&partosDB.length){
+      partosRecientes=partosDB.map(p=>{
+        const viva=p.estado_cria==='viva';const sx=p.sexo_cria==='H'?'♀ hembra':'♂ macho';
+        return {t:refP(p.madre_id)+' → cría'+(p.cria_id?' '+p.cria_id:''),
+          s:fmtFechaCortaM(p.fecha)+' · '+sx+' · '+(viva?'viva':'nació muerto')+' · '+(p.peso_kg||0)+' kg · parto '+p.tipo,
+          badge:viva?('en '+(p.sexo_cria==='H'?'Terneras':'Machos')):'mortinato',bw:viva?'ok':'bad'};});
+      partos2026=partosRecientes.length;
+    }
+    /* vacías que requieren decisión */
+    vacasVacias.length=0;
+    animales.filter(a=>a.estadoRepro==='vacia'&&a.diasVacia&&a.diasVacia>=120).forEach(a=>{
+      vacasVacias.push({cow:refP(a.id),del:a.del,diasVacia:a.diasVacia,
+        ultimaPalp:fmtFechaCortaM(a.ultimaPalpacion),resultado:'vacía',
+        sub:'DEL '+(a.del==null?'—':a.del)+' · '+ordinalPartoM(a.partos)+' · ayer '+((a.leche&&a.leche.ayer!=null)?a.leche.ayer:0)+' L',
+        accion:a.del>300?'Lactancia extendida sin preñez — evaluar descarte':'Producción muy baja para su etapa — evaluar descarte'});});
+    /* candidatas a palpar (objeto cow→motivo) */
+    Object.keys(palpCandidatas).forEach(k=>delete palpCandidatas[k]);
+    animales.filter(a=>a.estadoRepro==='servida'||a.estadoRepro==='vacia').forEach(a=>{
+      palpCandidatas[refP(a.id)]=a.estadoRepro==='servida'?'servida, por confirmar'
+        :'vacía'+(a.diasVacia?' hace '+a.diasVacia+' días':', confirmar estado');});
+    renderPartos();renderVacias();
+  }catch(e){console.warn('Reproducción móvil: usando datos locales:',e.message||e);}
+})();
 function palpMostrarMeses(){document.getElementById('palpMesesWrap').style.display=
   palp.resultado==='prenada'?'':'none';}
 function palpMarcarVaca(){document.querySelectorAll('#palpCows .chip').forEach(c=>
