@@ -128,6 +128,53 @@
     return animalFromDB(data);
   }
 
+  /* Update PARCIAL: solo toca las columnas dadas (snake_case). No usar
+   * animalToDB aquí porque rellenaría con null y borraría otras columnas.  */
+  async function updateAnimalCampos(id, campos) {
+    const { data, error } = await client().from('animales').update(campos).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  const MOTIVO_BAJA = { 'Venta': 'venta', 'Muerte': 'muerte', 'Descarte': 'descarte', 'Pérdida': 'perdida' };
+  async function darDeBaja(id, baja) {
+    return updateAnimalCampos(id, {
+      grupo: 'baja',
+      baja_motivo: MOTIVO_BAJA[baja.motivo] || baja.motivo,
+      baja_fecha: baja.fecha || new Date().toISOString().slice(0, 10),
+      baja_valor: baja.valor || null,
+      baja_nota: baja.nota || null,
+    });
+  }
+
+  async function registrarTratamiento(t) {
+    const fila = {
+      id: t.id || ('T-' + Date.now()), animal_id: t.animalId,
+      problema: t.problema, medicamento: t.medicamento || null,
+      inicio: t.inicio || new Date().toISOString().slice(0, 10),
+      dias_retiro: t.diasRetiro || 0, retiro_leche_hasta: t.retiroLecheHasta || null,
+      activo: true,
+    };
+    const { data, error } = await client().from('tratamientos').insert(fila).select().single();
+    if (error) throw error;
+    if (t.retiroLecheHasta) {
+      await updateAnimalCampos(t.animalId, { retiro_leche_hasta: t.retiroLecheHasta }).catch(() => {});
+    }
+    return data;
+  }
+
+  async function registrarParto(p) {
+    const fila = {
+      id: p.id || ('P-' + Date.now()), madre_id: p.madreId, cria_id: p.criaId || null,
+      fecha: p.fecha || new Date().toISOString().slice(0, 10),
+      sexo_cria: p.sexo, peso_kg: p.pesoKg || null,
+      tipo: p.tipo || 'normal', estado_cria: p.estadoCria || 'viva',
+    };
+    const { data, error } = await client().from('partos').insert(fila).select().single();
+    if (error) throw error;
+    return data;
+  }
+
   /* --- Registro de ordeño --------------------------------------------------- *
    * turno fijo 'dia' (total del día) para que el UNIQUE(animal,fecha,turno)
    * permita corregir (upsert) sin duplicar. fecha omitida = CURRENT_DATE.     */
@@ -221,6 +268,7 @@
     registrarOrdeno, getOrdenosFecha,
     getTarifa, registrarEntrega, getEntregasFecha,
     getProduccionMensual, getPartos,
+    updateAnimalCampos, darDeBaja, registrarTratamiento, registrarParto,
     ping,
   };
 });

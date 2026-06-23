@@ -1391,6 +1391,11 @@ renderHatoFiltros();renderHato();
  * del hato espera (con presentación derivada: grupo, edad, badges, tags).   */
 const GRUPO_DISPLAY={'ordeño':'En ordeño','horra':'Horra','novilla':'Novilla',
   'levante':'Levante','ternera':'Ternera','macho':'Macho','baja':'Baja'};
+/* inverso: display de la UI → valor del modelo/BD */
+const GRUPO_MODELO={'En ordeño':'ordeño','Horra':'horra','Novilla':'novilla',
+  'Levante':'levante','Ternera':'ternera','Macho':'macho','Baja':'baja'};
+function isoHoy(){return new Date().toISOString().slice(0,10);}
+function isoMasDias(n){const d=new Date();d.setDate(d.getDate()+(n||0));return d.toISOString().slice(0,10);}
 const HOY_LC=new Date(2026,5,13);
 function fmtEdad(a){
   const n=a.edadAnios;if(n==null)return '—';
@@ -1567,6 +1572,13 @@ function saveTrata(){
     sub:conRetiro?'Retiro de leche '+tratState.retiro+' días':'Sin retiro de leche'});histAdded=true;}
   renderTratamientos();renderHatoFiltros();renderHato();
   go('pg-sanitario',navFor('pg-sanitario'));
+  if(typeof LCStore!=='undefined'){
+    LCStore.registrarTratamiento({animalId:tratState.num,problema:tratState.problema,
+      medicamento:tratState.medicina,diasRetiro:tratState.retiro,
+      retiroLecheHasta:conRetiro?isoMasDias(tratState.retiro):null}).catch(e=>{
+      console.warn('Tratamiento no guardado en la base:',e.message||e);
+      snack('⚠ Tratamiento guardado local, falta sincronizar');});
+  }
   const retiroTxt=conRetiro?' · retiro '+tratState.retiro+'d (hasta '+fechaDias(tratState.retiro)+')':' · sin retiro';
   snack(nombre+': '+tratState.problema.toLowerCase()+' · '+tratState.medicina.toLowerCase()+retiroTxt,'Deshacer',()=>{
     const i=tratamientos.indexOf(trat);if(i>=0)tratamientos.splice(i,1);
@@ -1662,6 +1674,20 @@ function saveParto(){
   partosRecientes.push(reciente);
   renderHatoFiltros();renderHato();renderPartos();renderPartosRecientes();renderPartosKpis();
   go('pg-partos',navFor('pg-partos'));
+  if(typeof LCStore!=='undefined'){
+    const criaId=cria?cria.num:null;
+    LCStore.registrarParto({madreId:partoState.num,criaId:criaId,fecha:isoHoy(),
+      sexo:partoState.sexo,pesoKg:partoState.peso,tipo:partoState.tipo,estadoCria:partoState.estado})
+      .then(()=>{ /* la madre vuelve al ordeño en DEL 0 */
+        return LCStore.updateAnimalCampos(partoState.num,{grupo:'ordeño',del:0,
+          estado_repro:'lactando',prenez_meses:null,parto_estimado:null,leche_ayer:0});})
+      .then(()=>{ /* la cría viva entra al hato */
+        if(cria)return LCStore.insertAnimal({id:cria.num,nombre:'Cría de '+nombre,
+          raza:a.raza,grupo:partoState.sexo==='H'?'ternera':'macho',sexo:partoState.sexo,
+          edadAnios:0,origen:'nacido_finca',madreId:partoState.num,pesoKg:partoState.peso});})
+      .catch(e=>{console.warn('Parto no guardado completo en la base:',e.message||e);
+        snack('⚠ Parto guardado local, falta sincronizar');});
+  }
   const msg=partoState.estado==='viva'
     ? 'Parto de '+nombre+' · cría '+cria.num+' ('+sexoTxt+', '+partoState.peso+' kg) creada en '+cria.grupo+' · '+nombre+' al ordeño en DEL 0'
     : 'Parto de '+nombre+' · la cría nació muerta — queda en el historial · '+nombre+' al ordeño en DEL 0';
@@ -1729,6 +1755,15 @@ function saveCompra(){
   hato.unshift(nuevo);
   hatoFiltro=grupo;renderHatoFiltros();renderHato();
   go('pg-hato',navFor('pg-hato'));
+  if(typeof LCStore!=='undefined'){
+    LCStore.insertAnimal({id:num,nombre:'(compra)',raza:compraState.raza,
+      grupo:GRUPO_MODELO[grupo]||'novilla',sexo:grupo==='Macho'?'M':'H',
+      edadAnios:compraState.edad,origen:'comprado',
+      procedencia:compraState.procedencia||null,
+      valorCompra:compraState.valor?parseInt(String(compraState.valor).replace(/\D/g,'')):null
+    }).catch(e=>{console.warn('Compra no guardada en la base:',e.message||e);
+      snack('⚠ Compra guardada local, falta sincronizar');});
+  }
   const proc=compraState.procedencia?' · '+compraState.procedencia:'';
   const val=compraState.valor?' · $'+compraState.valor:'';
   snack('Compra: '+num+' ('+compraState.tipo.toLowerCase()+', '+compraState.raza+')'+proc+val+' — entró al hato','Deshacer',()=>{
@@ -1755,6 +1790,11 @@ function saveBaja(){
   closeReg();
   hato.splice(idx,1);renderHatoFiltros();renderHato();
   go('pg-hato',navFor('pg-hato'));
+  if(typeof LCStore!=='undefined'){
+    LCStore.darDeBaja(bajaState.num,{motivo:bajaState.motivo,fecha:isoHoy()}).catch(e=>{
+      console.warn('Baja no guardada en la base:',e.message||e);
+      snack('⚠ Baja guardada local, falta sincronizar');});
+  }
   snack(nombre+': baja por '+bajaState.motivo.toLowerCase()+' — sale del hato, su historia se conserva','Deshacer',()=>{
     hato.splice(Math.min(idx,hato.length),0,a);renderHatoFiltros();renderHato();});
 }
