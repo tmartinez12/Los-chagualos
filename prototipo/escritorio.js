@@ -996,7 +996,7 @@ function renderPartos(){
   proximosPartos.forEach(p=>{
     const tr=document.createElement('tr');
     const num=p.cow.split('·')[0].trim();
-    tr.onclick=()=>fichas[num]?goVaca(num,'pg-partos'):snack('Ficha de '+p.cow.split('·')[1].trim()+' — parto '+p.parto);
+    tr.onclick=()=>goVaca(num,'pg-partos');
     tr.innerHTML='<td>'+p.cow+'</td><td>'+p.prenez+'</td>'+
       '<td class="r">'+(p.badge?'<span class="badge '+p.badge+'">'+p.parto+'</span>':p.parto)+'</td>';
     tb.appendChild(tr);
@@ -1371,7 +1371,7 @@ function renderHato(){
   }
   filtered.forEach(a=>{
     const tr=document.createElement('tr');
-    tr.onclick=()=>fichas[a.num]?goVaca(a.num,'pg-hato'):snack('Ficha de '+a.n);
+    tr.onclick=()=>goVaca(a.num,'pg-hato');
     const varHtml=a.var==='—'?'—':a.var.startsWith('+')?'<span class="up">↑ '+a.var+'</span>':
       a.var.startsWith('-')?'<span class="down">↓ '+a.var+'</span>':'<span class="mut">'+a.var+'</span>';
     tr.innerHTML='<td><div class="cell-animal"><div class="cini">'+a.num+'</div><div><div class="cn">'+a.n+'</div><div class="cs">'+a.raza+'</div></div></div></td>'+
@@ -1394,8 +1394,12 @@ const GRUPO_DISPLAY={'ordeño':'En ordeño','horra':'Horra','novilla':'Novilla',
 /* inverso: display de la UI → valor del modelo/BD */
 const GRUPO_MODELO={'En ordeño':'ordeño','Horra':'horra','Novilla':'novilla',
   'Levante':'levante','Ternera':'ternera','Macho':'macho','Baja':'baja'};
-function isoHoy(){return new Date().toISOString().slice(0,10);}
-function isoMasDias(n){const d=new Date();d.setDate(d.getDate()+(n||0));return d.toISOString().slice(0,10);}
+/* "Hoy" del prototipo = 2026-06-13 (igual que HOY_LC, que se usa al LEER/derivar
+   días de retiro y vacía). Anclamos las escrituras a esta misma base para que
+   diasHasta() lea consistente. Formateo local para evitar corrimientos de zona. */
+function isoDe(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+dd;}
+function isoHoy(){return isoDe(HOY_LC);}
+function isoMasDias(n){const d=new Date(HOY_LC.getTime());d.setDate(d.getDate()+(n||0));return isoDe(d);}
 const HOY_LC=new Date(2026,5,13);
 function fmtEdad(a){
   const n=a.edadAnios;if(n==null)return '—';
@@ -1452,6 +1456,11 @@ let animalesPorId={};   // cache id→animal (forma canónica) para fichas y gen
     const animales=await LCStore.getAnimales();
     if(!animales||!animales.length)return; /* base vacía: conservo respaldo local */
     animales.forEach(a=>{animalesPorId[a.id]=a;});
+    /* evitar colisión de IDs: los contadores de cría/compra arrancan tras el
+       mayor ID numérico que ya exista en la base */
+    const maxNum=Math.max(0,...animales.map(a=>parseInt(a.id,10)).filter(n=>!isNaN(n)));
+    if(typeof criaSeq!=='undefined'&&maxNum>criaSeq)criaSeq=maxNum;
+    if(typeof altaSeq!=='undefined'&&maxNum>altaSeq)altaSeq=maxNum;
     hato=animales.filter(a=>a.grupo!=='baja').map(animalAFila);
     renderHatoFiltros();renderHato();
     if(typeof snack==='function')snack('Hato actualizado desde la base ('+hato.length+')');
@@ -1680,7 +1689,8 @@ function saveParto(){
       sexo:partoState.sexo,pesoKg:partoState.peso,tipo:partoState.tipo,estadoCria:partoState.estado})
       .then(()=>{ /* la madre vuelve al ordeño en DEL 0 */
         return LCStore.updateAnimalCampos(partoState.num,{grupo:'ordeño',del:0,
-          estado_repro:'lactando',prenez_meses:null,parto_estimado:null,leche_ayer:0});})
+          estado_repro:null,prenez_meses:null,parto_estimado:null,ultima_palpacion:null,
+          dias_vacia:null,leche_ayer:0});})
       .then(()=>{ /* la cría viva entra al hato */
         if(cria)return LCStore.insertAnimal({id:cria.num,nombre:'Cría de '+nombre,
           raza:a.raza,grupo:partoState.sexo==='H'?'ternera':'macho',sexo:partoState.sexo,
