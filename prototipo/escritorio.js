@@ -1625,12 +1625,14 @@ function openMenuRegistro(){
 
 /* --- menú de registro enfocado en la vaca de la ficha --- */
 function openMenuVaca(){
-  const num=vacaActual;if(!num)return;const cow=fichas[num];if(!cow)return;
+  const num=vacaActual;if(!num)return;
+  const cow=fichas[num]||(animalesPorId[num]?buildFichaBasica(animalesPorId[num]):null);if(!cow)return;
   const ref=num+' · '+cow.n;
   openReg('Registrar en '+ref,'Evento clínico o reproductivo de este animal');
   const body=document.getElementById('regBody');body.innerHTML='';
   document.getElementById('regActions').style.display='none';
   const opts=[
+    ['✏️ Editar datos',()=>{closeReg();openEditarVaca(num);}],
     ['🔬 Palpación',()=>{closeReg();openPalp(ref);}],
     ['💊 Enfermedad / tratamiento',()=>{closeReg();openTrata(ref);}],
     ['🌾 Secar',()=>{closeReg();openSeca(ref);}],
@@ -1641,6 +1643,45 @@ function openMenuVaca(){
   opts.forEach(([label,fn])=>{const b=document.createElement('button');b.className='btn outl';
     b.style.cssText='justify-content:flex-start;width:100%';b.textContent=label;b.onclick=fn;wrap.appendChild(b);});
   body.appendChild(wrap);
+}
+
+/* --- editar datos de la vaca (ficha) --- */
+const editState={};
+function openEditarVaca(num){
+  const a=animalesPorId[num];
+  if(!a){snack('No tengo los datos de '+num+' desde la base — sincroniza primero');return;}
+  editState.num=num;
+  editState.nombre=a.nombre||'';editState.raza=a.raza||'';
+  editState.nacimiento=a.nacimiento||'';editState.peso=(a.pesoKg!=null?a.pesoKg:'');
+  openReg('Editar datos de '+num,'Cambia la información básica del animal');
+  const body=document.getElementById('regBody');body.innerHTML='';
+  body.appendChild(regTexto('Nombre','Nombre del animal',v=>editState.nombre=v,'text',editState.nombre));
+  body.appendChild(regTexto('Raza','Ej. Holstein × Gyr',v=>editState.raza=v,'text',editState.raza));
+  body.appendChild(regTexto('Fecha de nacimiento','',v=>editState.nacimiento=v,'date',editState.nacimiento));
+  body.appendChild(regTexto('Peso (kg)','',v=>editState.peso=v,'number',editState.peso));
+  body.appendChild(regHint('Para cambios reproductivos (preñez, secado, parto) usa los registros del menú.'));
+  document.getElementById('regSaveBtn').onclick=guardarEditarVaca;
+}
+function guardarEditarVaca(){
+  const num=editState.num,a=animalesPorId[num];if(!a)return;
+  const nombre=(editState.nombre||'').trim()||a.nombre;
+  const raza=(editState.raza||'').trim()||null;
+  const nacimiento=editState.nacimiento||null;
+  const peso=(editState.peso!==''&&editState.peso!=null)?parseFloat(editState.peso):null;
+  closeReg();
+  /* persistir en la base */
+  const campos={nombre:nombre,raza:raza,nacimiento:nacimiento};
+  if(peso!=null&&!isNaN(peso)){campos.peso_kg=peso;campos.fecha_peso=isoHoy();}
+  /* actualizar caché, ficha curada y fila del hato para reflejarlo de inmediato */
+  Object.assign(a,{nombre:nombre,raza:raza,nacimiento:nacimiento});
+  if(peso!=null&&!isNaN(peso)){a.pesoKg=peso;a.fechaPeso=isoHoy();}
+  if(fichas[num]){fichas[num].n=nombre;fichas[num].raza=raza;if(peso!=null&&!isNaN(peso))fichas[num].peso=peso+' kg';}
+  const h=hato.find(x=>x.num===num);if(h){h.n=nombre;h.raza=raza;}
+  goVaca(num,vacaFrom);renderHato();
+  if(typeof LCStore!=='undefined')LCStore.updateAnimalCampos(num,campos).catch(e=>{
+    console.warn('Edición no guardada en la base:',e.message||e);
+    snack('⚠ '+num+': cambios guardados local, falta sincronizar');});
+  snack(num+' actualizado');
 }
 
 /* --- tratamiento (standalone) --- */
@@ -1821,10 +1862,11 @@ const altaGrupoMap={'Novilla':'Novilla','Vaca en ordeño':'En ordeño','Ternera'
 let altaSeq=80;
 const compraState={};
 /* helper: campo de texto/número dentro del modal de registro */
-function regTexto(label,ph,onInput,type){
+function regTexto(label,ph,onInput,type,value){
   const wrap=document.createElement('div');
   wrap.appendChild(regLabel(label));
   const inp=document.createElement('input');inp.type=type||'text';inp.placeholder=ph||'';
+  if(value!=null&&value!=='')inp.value=value;
   inp.style.cssText='width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);padding:10px 12px;outline:none';
   inp.oninput=()=>onInput(inp.value);
   wrap.appendChild(inp);return wrap;

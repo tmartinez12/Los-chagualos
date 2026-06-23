@@ -137,9 +137,11 @@ function deriveReproFichaM(a){
   if(a.grupo==='macho'&&a.rolToro)return {cls:'',title:'Toro reproductor activo',sub:a.hijasVivas?a.hijasVivas+' hijas vivas':''};
   return {cls:'',title:GRUPO_DISPLAY_M[a.grupo]||a.grupo,sub:''};
 }
+let fichaActualM=null;
 function renderFicha(num){
   const a=animalesPorIdM[num];
   if(!a){snack('Ficha de '+num+' — sincroniza primero');return false;}
+  fichaActualM=num;
   document.getElementById('vmNombre').textContent=a.id+' · '+a.nombre;
   document.getElementById('vmSub').textContent=[a.raza,edadTextoM(a),GRUPO_DISPLAY_M[a.grupo],origenM(a)].filter(Boolean).join(' · ');
   /* alerta reproductiva/sanitaria */
@@ -181,6 +183,45 @@ function renderFicha(num){
     '<div class="tl-date">'+(e[1]?fmtFechaCortaM(e[1]).toUpperCase()+' 2026':'—')+'</div>'+
     '<div class="tl-text">'+e[0]+'</div></div>').join(''):'<div class="tl-item" style="padding-bottom:0"><div class="tl-text" style="color:var(--ink-2)">Sin eventos registrados todavía</div></div>';
   return true;
+}
+/* ===== Editar datos de la vaca (ficha móvil) ===== */
+const editM={};
+function openEditVaca(){
+  const num=fichaActualM;const a=num&&animalesPorIdM[num];
+  if(!a){snack('Abre una ficha primero');return;}
+  editM.num=num;editM.nombre=a.nombre||'';editM.raza=a.raza||'';
+  editM.nacimiento=a.nacimiento||'';editM.peso=(a.pesoKg!=null?a.pesoKg:'');
+  document.getElementById('editCow').textContent=(a.id+' · '+a.nombre).toUpperCase();
+  document.getElementById('editNombre').value=editM.nombre;
+  document.getElementById('editRaza').value=editM.raza;
+  document.getElementById('editNac').value=editM.nacimiento||'';
+  document.getElementById('editPeso').value=editM.peso;
+  document.getElementById('scrim').classList.add('show');
+  document.getElementById('editSheet').classList.add('show');
+}
+function closeEdit(){document.getElementById('editSheet').classList.remove('show');
+  document.getElementById('scrim').classList.remove('show');}
+function saveEditVaca(){
+  const num=editM.num,a=animalesPorIdM[num];if(!a)return;
+  const nombre=(editM.nombre||'').trim()||a.nombre;
+  const raza=(editM.raza||'').trim()||null;
+  const nacimiento=editM.nacimiento||null;
+  const peso=(editM.peso!==''&&editM.peso!=null)?parseFloat(editM.peso):null;
+  closeEdit();
+  const campos={nombre:nombre,raza:raza,nacimiento:nacimiento};
+  if(peso!=null&&!isNaN(peso)){campos.peso_kg=peso;campos.fecha_peso=isoHoyM();}
+  Object.assign(a,{nombre:nombre,raza:raza,nacimiento:nacimiento});
+  if(peso!=null&&!isNaN(peso)){a.pesoKg=peso;a.fechaPeso=isoHoyM();}
+  /* refrescar la entrada del hato (nombre/sub) si existe */
+  const k=GRUPO_KEY[a.grupo];
+  if(k&&grupos[k]){const e=grupos[k].animales.find(x=>numDe(x[0])===num);
+    if(e){e[0]=a.id+' · '+a.nombre;e[1]=subAnimalM(a);}}
+  renderFicha(num);encolar();
+  if(typeof LCStore!=='undefined'){
+    LCStore.updateAnimalCampos(num,campos).then(()=>desencolar()).catch(e=>{
+      console.warn('Edición móvil no guardada:',e.message||e);snack('⚠ '+num+': guardado local, falta sincronizar');});
+  }
+  snack(num+' actualizado');
 }
 /* Curva de lactancia (modelo de Wood) de la ficha · misma lógica que escritorio */
 function renderFichaCurva(del,ayer){

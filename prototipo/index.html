@@ -453,10 +453,11 @@
   <div class="screen" id="scr-vaca">
     <div class="cow-hero">
       <div class="cow-photo"><svg class="ic-l ic"><use href="#i-tag"/></svg></div>
-      <div>
+      <div style="flex:1">
         <h2 id="vmNombre">042 · Lucero</h2>
         <div class="c-sub" id="vmSub">Holstein × Gyr · 5,2 años · En ordeño · Nació en finca</div>
       </div>
+      <button class="btn outl small" onclick="openEditVaca()">✏️ Editar</button>
     </div>
 
     <div class="alert warn" id="vmAlerta">
@@ -636,7 +637,7 @@
   </div>
 
   <!-- SHEET -->
-  <div class="scrim" id="scrim" onclick="closeSheet();closeMilk();closeParto();closePalp();closeTrata();closeSeca();closeAlta();closeBaja()"></div>
+  <div class="scrim" id="scrim" onclick="closeSheet();closeMilk();closeParto();closePalp();closeTrata();closeSeca();closeAlta();closeBaja();closeEdit()"></div>
   <div class="sheet" id="sheet">
     <div class="handle"></div>
     <h3>Registrar</h3>
@@ -901,6 +902,29 @@
       <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar compra</button>
     <div style="font-size:11px;color:var(--ink-3);margin-top:10px;text-align:center">
       Se le asigna el número siguiente disponible.</div>
+  </div>
+
+  <!-- SHEET: editar datos de la vaca -->
+  <div class="sheet" id="editSheet">
+    <div class="handle"></div>
+    <h3>Editar datos</h3>
+    <div class="m-label" id="editCow">042 · LUCERO</div>
+    <div class="section-label" style="margin-top:8px">Nombre</div>
+    <input id="editNombre" placeholder="Nombre del animal" oninput="editM.nombre=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
+    <div class="section-label">Raza</div>
+    <input id="editRaza" placeholder="Ej. Holstein × Gyr" oninput="editM.raza=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
+    <div class="section-label">Fecha de nacimiento</div>
+    <input id="editNac" type="date" oninput="editM.nacimiento=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
+    <div class="section-label">Peso (kg)</div>
+    <input id="editPeso" type="number" inputmode="numeric" placeholder="kg" oninput="editM.peso=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
+    <button class="btn filled" style="width:100%;justify-content:center;margin-top:16px" onclick="saveEditVaca()">
+      <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar cambios</button>
+    <div style="font-size:11px;color:var(--ink-3);margin-top:10px;text-align:center">
+      Para preñez, secado o parto usa los registros del menú ＋.</div>
   </div>
 
   <!-- SHEET: registrar baja -->
