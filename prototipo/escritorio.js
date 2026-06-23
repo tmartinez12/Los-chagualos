@@ -1659,29 +1659,41 @@ function saveBaja(){
 }
 
 /* 32 potreros ordenados por estado: listos → recuperando → recién pastoreados */
-const pots=[];
+let pots=[];
 for(let i=1;i<=32;i++){
   let d;
   if(i===7)d=-2;            // hato aquí
   else if(i===8)d=1; else if(i===9)d=3; else if(i===14)d=2; else if(i===21)d=4;
   else d=5+((i*7)%31);
-  pots.push({n:i,d:d});
+  pots.push({n:i,d:d,sugerido:i===4});
 }
 function stateOf(p){if(p.d<0)return'now';if(p.d<=5)return'bad';if(p.d<25)return'warn';return'ok';}
-const order={ok:0,warn:1,bad:2,now:3};
-pots.sort((a,b)=>{const s=order[stateOf(a)]-order[stateOf(b)];return s!==0?s:b.d-a.d;});
-const grid=document.getElementById('pgrid');
-pots.forEach(p=>{
-  const st=stateOf(p);
-  const div=document.createElement('div');
-  div.className='pot '+(st==='now'?'bad now':st)+(st==='bad'?' off':'');
-  const cap=st==='now'?'día de ocupación':st==='ok'?'listo':st==='warn'?'recuperando':'recién pastoreado';
-  const days=st==='now'?'2º':p.d;
-  div.innerHTML=(st==='now'?'<div class="p-tag">HATO AQUÍ</div>':'')+
-    (p.n===4?'<div class="p-tag">SUGERIDO</div>':'')+
-    '<div class="p-top"><span class="p-name">P'+p.n+'</span><span class="dot"></span></div>'+
-    '<div class="p-days">'+days+'</div><div class="p-cap">'+cap+'</div>';
-  if(p.n===4){div.classList.add('suggested');}
-  div.onclick=()=>snack('Potrero '+p.n+': '+(st==='now'?'el hato está aquí (día 2)':p.d+' días de descanso · '+cap));
-  grid.appendChild(div);
-});
+const orderPot={ok:0,warn:1,bad:2,now:3};
+function renderPotreros(){
+  const grid=document.getElementById('pgrid');if(!grid)return;grid.innerHTML='';
+  const lista=pots.slice().sort((a,b)=>{const s=orderPot[stateOf(a)]-orderPot[stateOf(b)];return s!==0?s:b.d-a.d;});
+  lista.forEach(p=>{
+    const st=stateOf(p);
+    const div=document.createElement('div');
+    div.className='pot '+(st==='now'?'bad now':st)+(st==='bad'?' off':'');
+    const cap=st==='now'?'día de ocupación':st==='ok'?'listo':st==='warn'?'recuperando':'recién pastoreado';
+    const days=st==='now'?'2º':p.d;
+    div.innerHTML=(st==='now'?'<div class="p-tag">HATO AQUÍ</div>':'')+
+      (p.sugerido?'<div class="p-tag">SUGERIDO</div>':'')+
+      '<div class="p-top"><span class="p-name">P'+p.n+'</span><span class="dot"></span></div>'+
+      '<div class="p-days">'+days+'</div><div class="p-cap">'+cap+'</div>';
+    if(p.sugerido){div.classList.add('suggested');}
+    div.onclick=()=>snack('Potrero '+p.n+': '+(st==='now'?'el hato está aquí (día 2)':p.d+' días de descanso · '+cap));
+    grid.appendChild(div);
+  });
+}
+renderPotreros();
+(async function cargarPotrerosDesdeSupabase(){
+  if(typeof LCStore==='undefined')return;
+  try{
+    const ps=await LCStore.getPotreros();
+    if(!ps||!ps.length)return;
+    pots=ps.map(p=>({n:p.numero,d:p.dias_descanso,sugerido:!!p.sugerido_siguiente}));
+    renderPotreros();
+  }catch(e){console.warn('Potreros: usando datos locales:',e.message||e);}
+})();
