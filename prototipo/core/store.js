@@ -187,6 +187,24 @@
     return map;
   }
 
+  async function getProduccionMensual() {
+    const { data, error } = await client()
+      .from('produccion_mensual')
+      .select('animal_id, mes, litros_dia, animales(nombre)')
+      .order('animal_id');
+    if (error) throw error;
+    return data || [];
+  }
+
+  async function getPartos() {
+    const { data, error } = await client()
+      .from('partos')
+      .select('id, madre_id, cria_id, fecha, sexo_cria, peso_kg, tipo, estado_cria')
+      .order('fecha', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  }
+
   /* --- Diagnóstico: ping de conexión ---------------------------------------- */
   async function ping() {
     const { count, error } = await client()
@@ -202,6 +220,7 @@
     insertAnimal, updateAnimal,
     registrarOrdeno, getOrdenosFecha,
     getTarifa, registrarEntrega, getEntregasFecha,
+    getProduccionMensual, getPartos,
     ping,
   };
 });

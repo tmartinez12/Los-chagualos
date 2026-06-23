@@ -522,7 +522,7 @@ function editEntregaDia(td,lid,mes,dia,oldVal,nombre){
 renderEntregas();renderEntregaMesPicker();renderEntregaHist();
 
 /* ===== Producción mensual por vaca (resumen) y diaria (detalle del mes) ===== */
-const mensualData=[
+let mensualData=[
   {num:'042',n:'Lucero',   m:[null,null,12.5,14.8,17.2,18.0], partos:'parió ene'},
   {num:'038',n:'Mona',     m:[14.2,14.0,15.1,14.8,15.5,16.0]},
   {num:'051',n:'Careta',   m:[null,null,10.2,12.0,13.6,14.0], partos:'parió feb, 1er parto'},
@@ -678,6 +678,23 @@ function renderMensual(){
   trT.innerHTML=tc;tb.appendChild(trT);
 }
 renderMesPicker();renderMensual();
+/* ===== Cableado a Supabase: producción mensual ===== */
+(async function cargarMensualDesdeSupabase(){
+  if(typeof LCStore==='undefined')return;
+  try{
+    const filas=await LCStore.getProduccionMensual();
+    if(!filas||!filas.length)return;
+    const meses=['2026-01','2026-02','2026-03','2026-04','2026-05','2026-06'];
+    const porAnimal={};
+    filas.forEach(f=>{
+      if(!porAnimal[f.animal_id])porAnimal[f.animal_id]={num:f.animal_id,
+        n:(f.animales&&f.animales.nombre)||f.animal_id,m:[null,null,null,null,null,null]};
+      const i=meses.indexOf(f.mes);if(i>=0)porAnimal[f.animal_id].m[i]=f.litros_dia;
+    });
+    mensualData=Object.values(porAnimal);
+    renderMensual();
+  }catch(e){console.warn('Producción mensual: usando datos locales:',e.message||e);}
+})();
 
 /* ===== Ficha de vaca ===== */
 const fichas={
@@ -919,7 +936,7 @@ function goVaca(num,from){
 const MESC=LCRules.MESC;
 const fechaParto=LCRules.fechaParto;
 /* candidatas a palpar (la lista se arma sola) */
-const palpCandidatas=[
+let palpCandidatas=[
   {cow:'027 · Estrella',motivo:'celo sin repetir — ¿preñada?'},
   {cow:'051 · Careta',motivo:'parida hace 121 días, sin celo visto'},
   {cow:'038 · Mona',motivo:'servida 3 jun, por confirmar'},
@@ -1183,6 +1200,46 @@ function renderPalpLista(){
   box.innerHTML=palpCandidatas.map(c=>'<b style="color:var(--ink)">'+c.cow.replace(' · ',' ')+'</b> — '+c.motivo).join('<br>');
 }
 renderPartos();renderPartosRecientes();renderPartosKpis();renderVacias();renderPalpLista();renderTratamientos();
+/* ===== Cableado a Supabase: reproducción y partos ===== */
+function fmtFechaCorta(iso){if(!iso)return '—';const d=new Date(iso+'T00:00:00');return d.getDate()+' '+LCRules.MESC[d.getMonth()];}
+(async function cargarReproDesdeSupabase(){
+  if(typeof LCStore==='undefined')return;
+  try{
+    const [animales,partos]=await Promise.all([LCStore.getAnimales(),LCStore.getPartos()]);
+    if(!animales||!animales.length)return;
+    const porId={};animales.forEach(a=>porId[a.id]=a);
+    const ref=id=>porId[id]?(id+' '+porId[id].nombre):id;
+    const refPunto=id=>porId[id]?(id+' · '+porId[id].nombre):id;
+    /* próximos partos: preñadas con fecha estimada, más cercanas primero */
+    proximosPartos=animales
+      .filter(a=>a.estadoRepro==='prenada'&&a.prenez&&a.prenez.partoEstimado)
+      .sort((x,y)=>x.prenez.partoEstimado<y.prenez.partoEstimado?-1:1)
+      .map(a=>{const m=a.prenez.meses;return {cow:refPunto(a.id),
+        prenez:(String(m).replace('.',','))+' meses',parto:'~'+fmtFechaCorta(a.prenez.partoEstimado),
+        badge:m>=8?'warn':undefined};});
+    /* candidatas a palpar: servidas (confirmar) y vacías de largo */
+    palpCandidatas=animales.filter(a=>a.estadoRepro==='servida'||(a.estadoRepro==='vacia'&&a.diasVacia))
+      .map(a=>({cow:refPunto(a.id),
+        motivo:a.estadoRepro==='servida'?'servida, por confirmar':'vacía hace '+a.diasVacia+' días'}));
+    /* vacas vacías que requieren decisión */
+    vacasVacias=animales.filter(a=>a.estadoRepro==='vacia'&&a.diasVacia&&a.diasVacia>=120)
+      .map(a=>({cow:refPunto(a.id),num:a.id,del:a.del,
+        sub:(a.partos?ordinalParto(a.partos):'')+(a.raza?' · '+a.raza:''),
+        dias:a.diasVacia,ultima:fmtFechaCorta(a.ultimaPalpacion),
+        ayer:(a.leche&&a.leche.ayer!=null?a.leche.ayer+' L':'—'),
+        rec:a.del>300?'Lactancia extendida sin preñez — evaluar descarte':'Producción muy baja para su etapa — evaluar descarte'}));
+    /* partos recientes desde la tabla partos */
+    if(partos&&partos.length){
+      partosRecientes=partos.map(p=>{
+        const criaGrupo=p.cria_id&&porId[p.cria_id]?(GRUPO_DISPLAY[porId[p.cria_id].grupo]||'Terneras'):'Terneras';
+        return {madre:ref(p.madre_id),cria:p.cria_id||'—',fecha:fmtFechaCorta(p.fecha),
+          sexo:p.sexo_cria,peso:p.peso_kg||0,tipo:p.tipo,
+          estado:p.estado_cria,grupo:p.estado_cria==='viva'?criaGrupo:null};
+      });
+    }
+    renderPartos();renderPartosRecientes();renderPartosKpis();renderVacias();renderPalpLista();
+  }catch(e){console.warn('Reproducción: usando datos locales:',e.message||e);}
+})();
 
 /* ===== Hato: tabla con filtros funcionales ===== */
 let hato=[
