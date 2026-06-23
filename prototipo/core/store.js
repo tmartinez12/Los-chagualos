@@ -128,6 +128,31 @@
     return animalFromDB(data);
   }
 
+  /* --- Registro de ordeño --------------------------------------------------- *
+   * turno fijo 'dia' (total del día) para que el UNIQUE(animal,fecha,turno)
+   * permita corregir (upsert) sin duplicar. fecha omitida = CURRENT_DATE.     */
+  async function registrarOrdeno(animalId, litros, fecha) {
+    const fila = { animal_id: animalId, litros: litros, turno: 'dia' };
+    if (fecha) fila.fecha = fecha;
+    const { data, error } = await client()
+      .from('ordenos')
+      .upsert(fila, { onConflict: 'animal_id,fecha,turno' })
+      .select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  /* Ordeños de una fecha (default: hoy real) → mapa { animalId: litros } */
+  async function getOrdenosFecha(fecha) {
+    let q = client().from('ordenos').select('animal_id, litros').eq('turno', 'dia');
+    q = fecha ? q.eq('fecha', fecha) : q.eq('fecha', new Date().toISOString().slice(0, 10));
+    const { data, error } = await q;
+    if (error) throw error;
+    const map = {};
+    (data || []).forEach(r => { map[r.animal_id] = r.litros; });
+    return map;
+  }
+
   /* --- Diagnóstico: ping de conexión ---------------------------------------- */
   async function ping() {
     const { count, error } = await client()
@@ -141,6 +166,7 @@
     animalFromDB, animalToDB,
     getAnimales, getAnimal, getLecheros, getPotreros,
     insertAnimal, updateAnimal,
+    registrarOrdeno, getOrdenosFecha,
     ping,
   };
 });

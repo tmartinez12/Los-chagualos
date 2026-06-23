@@ -218,6 +218,13 @@ function saveMilk(){
   const drop=!c.done&&LCRules.esBajonLeche(c.ayer,v);
   c.done=true;c.v=v;
   closeMilk();renderMilk();
+  /* persistir en Supabase (optimista: ya se guardó local) */
+  if(typeof LCStore!=='undefined'){
+    LCStore.registrarOrdeno(c.num,v).catch(e=>{
+      console.warn('No se pudo guardar el ordeño en la base:',e.message||e);
+      snack('⚠ '+c.n+': guardado local, falta sincronizar');
+    });
+  }
   if(drop)snack('Atención: '+c.n+' bajó '+(c.ayer-v)+' L vs ayer — ¿mastitis, celo, comida?','Deshacer',()=>{
     c.done=prev.done;c.v=prev.v;renderMilk();snack('Registro deshecho');});
   else snack(c.n+': '+v+' L guardados','Deshacer',()=>{
@@ -253,6 +260,10 @@ function animalAMilk(a){
     const animales=await LCStore.getAnimales('ordeño');
     if(!animales||!animales.length)return;
     milkCows=animales.map(animalAMilk);
+    /* marcar las que ya tienen ordeño registrado hoy */
+    try{const hoy=await LCStore.getOrdenosFecha();
+      milkCows.forEach(c=>{if(hoy[c.num]!=null){c.done=true;c.v=hoy[c.num];}});
+    }catch(_){/* sin ordeños hoy o sin conexión: sigue sin marcar */}
     renderMilk();
   }catch(e){console.warn('Ordeño: usando datos locales:',e.message||e);}
 })();
