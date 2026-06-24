@@ -88,13 +88,19 @@
     return o;
   }
 
+  /* normaliza para comparar grupos sin depender de acentos/mayúsculas/espacios
+   * (evita que la ñ de "ordeño" rompa el filtro entre la BD y el código). */
+  function _normGrupo(s) {
+    return (s == null ? '' : String(s)).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  }
+
   /* --- API de lectura ------------------------------------------------------- */
   async function getAnimales(grupo) {
-    let q = client().from('animales').select('*').order('id');
-    if (grupo) q = q.eq('grupo', grupo);
-    const { data, error } = await q;
+    const { data, error } = await client().from('animales').select('*').order('id');
     if (error) throw error;
-    return data.map(animalFromDB);
+    let rows = data.map(animalFromDB);
+    if (grupo) { const g = _normGrupo(grupo); rows = rows.filter(a => _normGrupo(a.grupo) === g); }
+    return rows;
   }
 
   async function getAnimal(id) {
