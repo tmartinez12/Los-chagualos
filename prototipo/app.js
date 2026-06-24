@@ -342,7 +342,7 @@ let animalesPorIdM={};
 (async function cacheAnimalesMovil(){
   if(typeof LCStore==='undefined')return;
   try{
-    const all=await LCStore.getAnimales();if(!all||!all.length)return;
+    const all=await LCStore.getAnimales();if(!all)return;
     all.forEach(a=>animalesPorIdM[a.id]=a);
     const maxNum=Math.max(0,...all.map(a=>parseInt(a.id,10)).filter(n=>!isNaN(n)));
     if(typeof criaNum!=='undefined'&&maxNum>criaNum)criaNum=maxNum;
@@ -369,7 +369,7 @@ function animalACow(a){
   if(typeof LCStore==='undefined')return;
   try{
     const animales=await LCStore.getAnimales('ordeño');
-    if(!animales||!animales.length)return;
+    if(!animales)return;
     cows.length=0;animales.forEach(a=>cows.push(animalACow(a)));
     try{const hoy=await LCStore.getOrdenosFecha();
       cows.forEach(c=>{if(hoy[c.num]!=null){c.done=true;c.v=hoy[c.num];}});
@@ -652,7 +652,7 @@ const fechaParto=LCRules.fechaParto;
   if(typeof LCStore==='undefined')return;
   try{
     const [animales,partosDB]=await Promise.all([LCStore.getAnimales(),LCStore.getPartos()]);
-    if(!animales||!animales.length)return;
+    if(!animales)return;
     const porId={};animales.forEach(a=>porId[a.id]=a);
     const refP=id=>porId[id]?(id+' · '+porId[id].nombre):id;
     /* próximos partos */
@@ -662,15 +662,13 @@ const fechaParto=LCRules.fechaParto;
         return {cow:refP(a.id),sub:'Preñada '+String(m).replace('.',',')+' meses · parto ~'+f,
           short:'~'+f,badge:MESC[new Date(a.prenez.partoEstimado+'T00:00:00').getMonth()],bw:m>=8?'warn':''};});
     porParir=proximosPartos.length;
-    /* partos recientes */
-    if(partosDB&&partosDB.length){
-      partosRecientes=partosDB.map(p=>{
-        const viva=p.estado_cria==='viva';const sx=p.sexo_cria==='H'?'♀ hembra':'♂ macho';
-        return {t:refP(p.madre_id)+' → cría'+(p.cria_id?' '+p.cria_id:''),
-          s:fmtFechaCortaM(p.fecha)+' · '+sx+' · '+(viva?'viva':'nació muerto')+' · '+(p.peso_kg||0)+' kg · parto '+p.tipo,
-          badge:viva?('en '+(p.sexo_cria==='H'?'Terneras':'Machos')):'mortinato',bw:viva?'ok':'bad'};});
-      partos2026=partosRecientes.length;
-    }
+    /* partos recientes (vacío si no hay) */
+    partosRecientes=(partosDB||[]).map(p=>{
+      const viva=p.estado_cria==='viva';const sx=p.sexo_cria==='H'?'♀ hembra':'♂ macho';
+      return {t:refP(p.madre_id)+' → cría'+(p.cria_id?' '+p.cria_id:''),
+        s:fmtFechaCortaM(p.fecha)+' · '+sx+' · '+(viva?'viva':'nació muerto')+' · '+(p.peso_kg||0)+' kg · parto '+p.tipo,
+        badge:viva?('en '+(p.sexo_cria==='H'?'Terneras':'Machos')):'mortinato',bw:viva?'ok':'bad'};});
+    partos2026=partosRecientes.length;
     /* vacías que requieren decisión */
     vacasVacias.length=0;
     animales.filter(a=>a.estadoRepro==='vacia'&&a.diasVacia&&a.diasVacia>=120).forEach(a=>{

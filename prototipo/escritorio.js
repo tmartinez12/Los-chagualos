@@ -304,7 +304,7 @@ function animalAMilk(a){
   if(typeof LCStore==='undefined')return;
   try{
     const animales=await LCStore.getAnimales('ordeño');
-    if(!animales||!animales.length)return;
+    if(!animales)return;
     milkCows=animales.map(animalAMilk);
     /* marcar las que ya tienen ordeño registrado hoy */
     try{const hoy=await LCStore.getOrdenosFecha();
@@ -400,7 +400,7 @@ function lecheroAFila(l,precio){
   if(typeof LCStore==='undefined')return;
   try{
     const [ls,tarifa]=await Promise.all([LCStore.getLecheros(),LCStore.getTarifa().catch(()=>null)]);
-    if(!ls||!ls.length)return;
+    if(!ls)return;
     const precio=tarifa?tarifa.precio_litro:1950;
     lecheros=ls.map(l=>lecheroAFila(l,precio));
     try{const hoy=await LCStore.getEntregasFecha();
@@ -729,7 +729,7 @@ renderMesPicker();renderMensual();
   if(typeof LCStore==='undefined')return;
   try{
     const filas=await LCStore.getProduccionMensual();
-    if(!filas||!filas.length)return;
+    if(!filas)return;
     const meses=['2026-01','2026-02','2026-03','2026-04','2026-05','2026-06'];
     const porAnimal={};
     filas.forEach(f=>{
@@ -1301,7 +1301,7 @@ function fmtFechaCorta(iso){if(!iso)return '—';const d=new Date(iso+'T00:00:00
   if(typeof LCStore==='undefined')return;
   try{
     const [animales,partos]=await Promise.all([LCStore.getAnimales(),LCStore.getPartos()]);
-    if(!animales||!animales.length)return;
+    if(!animales)return;
     const porId={};animales.forEach(a=>porId[a.id]=a);
     const ref=id=>porId[id]?(id+' '+porId[id].nombre):id;
     const refPunto=id=>porId[id]?(id+' · '+porId[id].nombre):id;
@@ -1324,17 +1324,15 @@ function fmtFechaCorta(iso){if(!iso)return '—';const d=new Date(iso+'T00:00:00
         dias:a.diasVacia,ultima:fmtFechaCorta(a.ultimaPalpacion),
         ayer:(a.leche&&a.leche.ayer!=null?a.leche.ayer+' L':'—'),
         rec:a.del>300?'Lactancia extendida sin preñez — evaluar descarte':'Producción muy baja para su etapa — evaluar descarte'}));
-    /* partos recientes desde la tabla partos */
-    if(partos&&partos.length){
-      const GP={ternera:'Terneras',macho:'Machos'};
-      partosRecientes=partos.map(p=>{
-        const criaGrupo=p.cria_id&&porId[p.cria_id]?(GP[porId[p.cria_id].grupo]||'Terneras')
-          :(p.sexo_cria==='M'?'Machos':'Terneras');
-        return {madre:ref(p.madre_id),cria:p.cria_id||'—',fecha:fmtFechaCorta(p.fecha),
-          sexo:p.sexo_cria,peso:p.peso_kg||0,tipo:p.tipo,
-          estado:p.estado_cria,grupo:p.estado_cria==='viva'?criaGrupo:null};
-      });
-    }
+    /* partos recientes desde la tabla partos (vacío si no hay) */
+    const GP={ternera:'Terneras',macho:'Machos'};
+    partosRecientes=(partos||[]).map(p=>{
+      const criaGrupo=p.cria_id&&porId[p.cria_id]?(GP[porId[p.cria_id].grupo]||'Terneras')
+        :(p.sexo_cria==='M'?'Machos':'Terneras');
+      return {madre:ref(p.madre_id),cria:p.cria_id||'—',fecha:fmtFechaCorta(p.fecha),
+        sexo:p.sexo_cria,peso:p.peso_kg||0,tipo:p.tipo,
+        estado:p.estado_cria,grupo:p.estado_cria==='viva'?criaGrupo:null};
+    });
     renderPartos();renderPartosRecientes();renderPartosKpis();renderVacias();renderPalpLista();
   }catch(e){console.warn('Reproducción: usando datos locales:',e.message||e);}
 })();
@@ -1569,7 +1567,7 @@ let animalesPorId={};   // cache id→animal (forma canónica) para fichas y gen
   if(typeof LCStore==='undefined')return;
   try{
     const animales=await LCStore.getAnimales();
-    if(!animales||!animales.length)return; /* base vacía: conservo respaldo local */
+    if(!animales)return; /* base vacía: conservo respaldo local */
     animales.forEach(a=>{animalesPorId[a.id]=a;});
     /* evitar colisión de IDs: los contadores de cría/compra arrancan tras el
        mayor ID numérico que ya exista en la base */
@@ -2025,7 +2023,7 @@ renderInicio();   /* pintado inicial del dashboard (los cargadores lo refinan) *
   if(typeof LCStore==='undefined')return;
   try{
     const ps=await LCStore.getPotreros();
-    if(!ps||!ps.length)return;
+    if(!ps)return;
     pots=ps.map(p=>({n:p.numero,d:p.dias_descanso,sugerido:!!p.sugerido_siguiente}));
     renderPotreros();renderInicio();
   }catch(e){console.warn('Potreros: usando datos locales:',e.message||e);}
