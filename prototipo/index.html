@@ -98,45 +98,30 @@
     <div class="kpi-row">
       <div class="kpi">
         <div class="k-label">Leche hoy</div>
-        <div class="k-value">184 <span class="k-unit">L</span></div>
-        <div class="k-trend up">↑ 8% vs ayer</div>
+        <div class="k-value" id="miLecheHoy">— <span class="k-unit">L</span></div>
+        <div class="k-trend">registrada hoy</div>
       </div>
       <div class="kpi">
-        <div class="k-label">Promedio 7 días</div>
-        <div class="k-value">171 <span class="k-unit">L</span></div>
-        <div class="k-trend">26 vacas en ordeño</div>
+        <div class="k-label">En ordeño</div>
+        <div class="k-value" id="miOrdeno">—</div>
+        <div class="k-trend">vacas</div>
       </div>
     </div>
 
-    <div class="alert info mt12">
-      <div class="a-icon"><svg class="ic"><use href="#i-x"/></svg></div>
-      <div class="a-body">
-        <div class="a-title">Retiro de leche: vaca 017 — faltan 2 días</div>
-        <div class="a-sub">Tratamiento mastitis · no vender su leche hasta el sáb 14</div>
-      </div>
-    </div>
-
-    <div class="alert warn">
-      <div class="a-icon"><svg class="ic"><use href="#i-cal"/></svg></div>
-      <div class="a-body">
-        <div class="a-title">Vaca 042 “Lucero”: programar secado</div>
-        <div class="a-sub">Preñada 7 meses (palpación 2 may) · parto probable ~12 sep</div>
-        <button class="btn outl small mt8" onclick="openCow('042')">Ver ficha</button>
-      </div>
-    </div>
+    <div id="miAlertas" class="mt12"></div>
 
     <div class="section-label">Rutina de la mañana · <span id="rutinaProg">0 de 3</span></div>
     <div class="list">
       <div class="list-item" onclick="go('scr-ordeno')">
         <div class="li-leading" id="rut-ordeno"><svg class="ic"><use href="#i-drop"/></svg></div>
         <div class="li-body"><div class="li-title">1 · Ordeño vaca por vaca</div>
-          <div class="li-sub">26 vacas · ~3 min · el total se suma solo</div></div>
+          <div class="li-sub">Vaca por vaca · el total se suma solo</div></div>
         <svg class="ic chev"><use href="#i-chev"/></svg>
       </div>
       <div class="list-item" onclick="goEntregas()">
         <div class="li-leading" id="rut-entregas"><svg class="ic"><use href="#i-truck"/></svg></div>
         <div class="li-body"><div class="li-title">2 · Entregas a los lecheros</div>
-          <div class="li-sub">Don José (diario) · La María (lun-mié-vie)</div></div>
+          <div class="li-sub">Registra lo entregado a cada lechero</div></div>
         <svg class="ic chev"><use href="#i-chev"/></svg>
       </div>
       <div class="list-item" onclick="go('scr-potreros')" style="display:none">
@@ -186,16 +171,6 @@
       </svg>
     </div>
 
-    <!-- 2. Excepciones: SOLO aparece cuando algo está mal -->
-    <div class="alert urgent">
-      <div class="a-icon"><svg class="ic"><use href="#i-warn"/></svg></div>
-      <div class="a-body">
-        <div class="a-title">2 vacas requieren atención</div>
-        <div class="a-sub"><b>033 Paloma</b> — 6 L a DEL 95, muy bajo para su etapa ·
-          <b>017 Azucena</b> — retiro de leche, 2 días más</div>
-        <button class="btn outl small mt8" onclick="openGroup('ordeno')">Ver vacas</button>
-      </div>
-    </div>
 
     <!-- 3. Registrar: tú eliges la vaca, anotas, aceptas -->
     <div class="section-label" style="display:flex;justify-content:space-between;align-items:baseline">
@@ -209,23 +184,11 @@
 
     <div class="section-label" id="entregasSec">Entregas a los lecheros · hoy</div>
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0 8px;
-        border-bottom:1px solid var(--border)">
-        <div><div class="li-title">Don José</div><div class="li-sub">todos los días</div></div>
-        <span class="li-num">120 L</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0">
-        <div><div class="li-title">Quesería La María</div><div class="li-sub">lun · mié · vie</div></div>
-        <span class="li-num">50 L</span>
-      </div>
-      <div style="font-size:12.5px;color:var(--ink-2);line-height:1.6;border-top:1px solid var(--border);
-        padding-top:10px;margin-top:2px">
-        <b style="color:var(--ink)">Balance:</b> producida 184 − entregada 170 − terneras 12
-        = casa 2 L <b class="up">✓ cuadra</b></div>
+      <div id="entregaListaM"><div class="li-sub" style="color:var(--ink-3)">Cargando lecheros…</div></div>
       <button class="btn filled small mt8" style="width:100%;justify-content:center"
         onclick="registrarEntrega()">Registrar entrega</button>
       <div style="font-size:11px;color:var(--ink-3);margin-top:8px;text-align:center">
-        Las cuentas en pesos viven en Decisiones — aquí solo litros</div>
+        Aquí solo litros</div>
     </div>
   </div>
 
@@ -418,29 +381,14 @@
     <div class="section-label">Regla de los 21 días</div>
     <div class="card">
       <div class="chart-sub" style="margin-bottom:8px">El ciclo de la vaca dura ~21 días: si el celo no
-        se repite, probablemente quedó preñada.</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;
-        border-bottom:1px solid var(--border)">
-        <div><div class="li-title">038 · Mona</div>
-          <div class="li-sub">Celo visto el 3 jun · monta de Sansón vista</div></div>
-        <span class="badge warn">revisar ~24 jun</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0">
-        <div><div class="li-title">027 · Estrella</div>
-          <div class="li-sub">Celo visto el 28 may · no repitió el 18 jun</div></div>
-        <span class="badge ok">¿preñada? → palpar</span>
-      </div>
+        se repite, probablemente quedó preñada. Registra los celos que veas para hacerles seguimiento.</div>
       <button class="btn outl small mt8" style="width:100%;justify-content:center" onclick="openSheet()">
         ＋ Registrar celo o monta vista</button>
     </div>
 
     <div class="section-label">Lista para la próxima palpación (se arma sola)</div>
     <div class="card">
-      <div style="font-size:13px;line-height:1.8;color:var(--ink-2)">
-        <b style="color:var(--ink)">027 Estrella</b> — celo sin repetir (¿preñada?)<br>
-        <b style="color:var(--ink)">033 Paloma</b> — vacía hace 132 días<br>
-        <b style="color:var(--ink)">029 Pinta</b> — vacía hace 150 días<br>
-        <b style="color:var(--ink)">051 Careta</b> — parida hace 121 días, sin celo visto</div>
+      <div id="palpListaM" style="font-size:13px;line-height:1.8;color:var(--ink-2)"></div>
       <div style="display:flex;gap:8px;margin-top:10px">
         <button class="btn filled small" style="flex:1;justify-content:center"
           onclick="openPalp()">Iniciar modo palpación</button>
@@ -516,18 +464,8 @@
     <button class="btn filled" style="width:100%;justify-content:center;margin-top:4px"
       onclick="openSheet()"><svg class="ic-s ic"><use href="#i-cross"/></svg>Registrar enfermedad o tratamiento</button>
 
-    <div class="section-label">En tratamiento ahora · <span style="color:var(--ink)">1</span></div>
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
-        <div><div class="li-title">017 · Azucena</div>
-          <div class="li-sub">Mastitis · antibiótico (3er día de 5) · <b>retiro de leche hasta sáb 14</b></div></div>
-        <span class="badge bad">retiro 2 d</span>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="btn outl small" onclick="snack('Tratamiento marcado como terminado — el retiro de leche se levanta el sáb 14')">Marcar terminado</button>
-        <button class="btn text small" onclick="snack('Historia clínica de Azucena — tratamientos, dosis y retiros')">Ver historia</button>
-      </div>
-    </div>
+    <div class="section-label">En tratamiento ahora · <span style="color:var(--ink)" id="tratCountM">0</span></div>
+    <div id="tratListaM"></div>
 
     <div class="section-label">Vacunas</div>
     <div class="card" style="border:1.5px solid var(--ink)">

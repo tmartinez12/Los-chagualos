@@ -55,7 +55,7 @@ const grupos={
       ['071 · (cría de Canela)','4,5 meses · destete próximo'],
       ['Ver las 9 restantes','',0,1]]},
   machos:{nombre:'Machos / toros',sub:'2 machos',
-    header:'<b>2 machos.</b> Sansón cubre el hato; el torete se vende en agosto.',
+    header:'<b>2 machos.</b> Toros y terneros machos del hato.',
     animales:[
       ['T01 · Sansón','Toro · 6 años · sanidad al día'],
       ['T02 · Torete','11 meses · venta programada ago']]},
@@ -70,6 +70,8 @@ const grupos={
       ['033 · (cría de Paloma)','MUERTA · 20 abr · mortinato'],
       ['052 · Nube','PERDIDA · 6 ene · no apareció tras tormenta']]}
 };
+/* sin demo: las listas de cada grupo arrancan vacías y se llenan desde Supabase */
+Object.keys(grupos).forEach(k=>{grupos[k].animales=[];});
 function openGroup(k){const g=grupos[k];
   titles['scr-grupo']=[g.nombre,g.sub];
   document.getElementById('grpHeader').innerHTML=g.header;
@@ -109,6 +111,7 @@ function go(id,navBtn){
   if(navBtn||enSelector)histStack=[id];                       // cambiar de pestaña o ir al selector reinicia el historial
   else if(histStack[histStack.length-1]!==id)histStack.push(id);
   document.getElementById(id).scrollTop=0;
+  if(id==='scr-inicio'&&typeof renderInicioM==='function')renderInicioM();
 }
 function goBack(){histStack.pop();go(histStack.pop()||'scr-inicio');}
 function entrarModulo(m){
@@ -268,7 +271,8 @@ function goEntregas(){go('scr-ordeno');
   setTimeout(()=>document.getElementById('entregasSec').scrollIntoView({behavior:'smooth'}),150);}
 /* botón + contextual */
 function openSheet(){
-  const ctx={'scr-vaca':'Registrar en Lucero (042)',
+  const fa=fichaActualM&&animalesPorIdM[fichaActualM];
+  const ctx={'scr-vaca':fa?('Registrar en '+fa.id+' · '+fa.nombre):'Registrar en esta vaca',
     'scr-sanitario':'Registrar enfermedad o tratamiento',
     'scr-ordeno':'Registrar en el ordeño'};
   const id=document.querySelector('.screen.active').id;
@@ -293,14 +297,7 @@ function snack(msg,accionLabel,accionFn){const sb=document.getElementById('snack
   sb.classList.add('show');
   clearTimeout(snackTimer);snackTimer=setTimeout(()=>sb.classList.remove('show'),accionLabel?5200:2600);}
 /* registrar leche: tú eliges la vaca → litros → aceptar */
-const cows=[
-  {num:'042', n:'Lucero',  del:'DEL 152 · 3er parto', ayer:18},
-  {num:'038', n:'Mona',    del:'DEL 98 · 2do parto',  ayer:16},
-  {num:'051', n:'Careta',  del:'DEL 121 · 1er parto', ayer:14},
-  {num:'027', n:'Estrella',del:'DEL 64 · pico de lactancia', ayer:13},
-  {num:'033', n:'Paloma',  del:'DEL 95 · 4to parto',  ayer:6},
-  {num:'029', n:'Pinta',   del:'DEL 412 · lactancia larga', ayer:5}
-];
+const cows=[];
 cows.forEach(c=>{c.done=false;c.v=null;});
 /* ===== Helpers compartidos para derivar desde Supabase ===== */
 const HOY_LC=new Date(2026,5,13);
@@ -337,6 +334,83 @@ function subAnimalM(a){
 }
 const GRUPO_KEY={'ordeño':'ordeno','horra':'horras','novilla':'novillas','levante':'levante','ternera':'terneras','macho':'machos','baja':'bajas'};
 const GRUPO_LABEL={ordeno:'vacas en ordeño',horras:'vacas horras',novillas:'novillas',levante:'hembras de levante',terneras:'terneras',machos:'machos',bajas:'bajas en 2026'};
+/* Sanidad: tratamientos activos reales (sin demo). */
+function renderTratamientosM(lista){
+  const box=document.getElementById('tratListaM');if(!box)return;
+  const cnt=document.getElementById('tratCountM');if(cnt)cnt.textContent=lista.length;
+  if(!lista.length){box.innerHTML='<div class="card"><div class="li-sub" style="color:var(--ink-3)">Sin tratamientos activos.</div></div>';return;}
+  box.innerHTML=lista.map(t=>{
+    const retiroD=t.retiro_leche_hasta?diasHastaM(t.retiro_leche_hasta):null;
+    const conRetiro=retiroD!=null&&retiroD>=0;
+    const nombre=(t.animales&&t.animales.nombre)||t.animal_id;
+    return '<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">'+
+      '<div><div class="li-title">'+t.animal_id+' · '+nombre+'</div>'+
+      '<div class="li-sub">'+(t.problema||'')+(t.medicamento?' · '+t.medicamento.toLowerCase():'')+
+      (conRetiro?' · <b>retiro hasta '+fmtFechaCortaM(t.retiro_leche_hasta)+'</b>':'')+'</div></div>'+
+      (conRetiro?'<span class="badge bad">retiro '+retiroD+'d</span>':'<span class="badge ok">sin retiro</span>')+'</div></div>';
+  }).join('');
+}
+(async function cargarTratamientosMovil(){
+  if(typeof LCStore==='undefined'){renderTratamientosM([]);return;}
+  try{const ts=await LCStore.getTratamientos(true);renderTratamientosM(ts||[]);}
+  catch(e){console.warn('Tratamientos móvil:',e.message||e);renderTratamientosM([]);}
+})();
+/* Entregas: lista de lecheros reales (sin demo). */
+let lecherosM=[];
+function freqTextoM(l){
+  const d=l.dias_semana||[];
+  if(d.length>=7)return 'todos los días';
+  if(l.frecuencia&&l.frecuencia!=='diario'&&l.frecuencia!=='lmv')return l.frecuencia;
+  return d.length?d.length+' días por semana':(l.frecuencia||'');
+}
+function renderEntregasM(){
+  const box=document.getElementById('entregaListaM');if(!box)return;
+  if(!lecherosM.length){box.innerHTML='<div class="li-sub" style="color:var(--ink-3)">Aún no hay lecheros registrados.</div>';return;}
+  let h='';
+  lecherosM.forEach((l,i)=>{
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0'+
+       (i<lecherosM.length-1?';border-bottom:1px solid var(--border)':'')+'">'+
+       '<div><div class="li-title">'+l.nombre+'</div><div class="li-sub">'+freqTextoM(l)+'</div></div>'+
+       '<span class="li-num">'+(l.base_litros!=null?l.base_litros+' L':'—')+'</span></div>';
+  });
+  const prod=cows.filter(c=>c.done).reduce((s,c)=>s+c.v,0);
+  h+='<div style="font-size:12.5px;color:var(--ink-2);border-top:1px solid var(--border);padding-top:10px;margin-top:2px">'+
+     '<b style="color:var(--ink)">Producida hoy:</b> '+(prod||'—')+' L</div>';
+  box.innerHTML=h;
+}
+(async function cargarLecherosMovil(){
+  if(typeof LCStore==='undefined')return;
+  try{const ls=await LCStore.getLecheros();lecherosM=ls||[];renderEntregasM();}
+  catch(e){console.warn('Lecheros móvil:',e.message||e);}
+})();
+/* Lista de candidatas a palpar (se arma sola desde palpCandidatas). */
+function renderPalpListaM(){
+  const box=document.getElementById('palpListaM');if(!box)return;
+  const keys=Object.keys(palpCandidatas);
+  box.innerHTML=keys.length?keys.map(k=>'<b style="color:var(--ink)">'+k.replace(' · ',' ')+'</b> — '+palpCandidatas[k]).join('<br>')
+    :'<span style="color:var(--ink-3)">No hay vacas pendientes de palpar.</span>';
+}
+/* Dashboard de inicio (móvil) con datos reales — sin demo. */
+function renderInicioM(){
+  const done=cows.filter(c=>c.done);
+  const elL=document.getElementById('miLecheHoy');
+  if(elL)elL.innerHTML=(done.length?done.reduce((s,c)=>s+c.v,0):'—')+' <span class="k-unit">L</span>';
+  const elO=document.getElementById('miOrdeno');
+  if(elO)elO.textContent=cows.length||'—';
+  const al=document.getElementById('miAlertas');if(!al)return;
+  const A=[];
+  Object.values(animalesPorIdM).filter(a=>a.retiroLecheHasta&&diasHastaM(a.retiroLecheHasta)>=0).slice(0,2).forEach(a=>{
+    const d=diasHastaM(a.retiroLecheHasta);
+    A.push({c:'info',t:'Retiro de leche: vaca '+a.id+(d===1?' — falta 1 día':' — faltan '+d+' días'),
+      s:'No vender su leche hasta '+fmtFechaCortaM(a.retiroLecheHasta)});});
+  Object.values(animalesPorIdM).filter(a=>a.grupo==='ordeño'&&a.prenez&&a.prenez.meses>=7).slice(0,2).forEach(a=>{
+    A.push({c:'warn',t:'Vaca '+a.id+' "'+a.nombre+'": programar secado',
+      s:'Preñada '+a.prenez.meses+' meses',cow:a.id});});
+  al.innerHTML=A.map(x=>'<div class="alert '+x.c+'"><div class="a-icon"><svg class="ic"><use href="#i-cal"/></svg></div>'+
+    '<div class="a-body"><div class="a-title">'+x.t+'</div><div class="a-sub">'+x.s+'</div>'+
+    (x.cow?'<button class="btn outl small mt8" onclick="openCow(\''+x.cow+'\')">Ver ficha</button>':'')+
+    '</div></div>').join('');
+}
 /* cache de todos los animales (genealogía/raza + sincronizar contador de IDs) */
 let animalesPorIdM={};
 (async function cacheAnimalesMovil(){
@@ -354,6 +428,7 @@ let animalesPorIdM={};
     Object.keys(grupos).forEach(k=>{const n=grupos[k].animales.length;
       grupos[k].sub=n+' '+GRUPO_LABEL[k];
       grupos[k].header='<b>'+n+' '+GRUPO_LABEL[k]+'.</b>';});
+    renderInicioM();
   }catch(e){console.warn('Cache/hato móvil:',e.message||e);}
 })();
 /* animal canónico (BD) → tarjeta de ordeño de la móvil */
@@ -374,7 +449,7 @@ function animalACow(a){
     try{const hoy=await LCStore.getOrdenosFecha();
       cows.forEach(c=>{if(hoy[c.num]!=null){c.done=true;c.v=hoy[c.num];}});
     }catch(_){/* sin ordeños hoy */}
-    renderCows();
+    renderCows();renderInicioM();
   }catch(e){console.warn('Ordeño móvil: usando datos locales:',e.message||e);}
 })();
 let ci=-1,typing=false;
@@ -424,10 +499,9 @@ function saveMilk(){
     setTimeout(()=>snack('Ordeño completo: '+tot+' L — siguiente: entregas a los lecheros'),1500);
     setTimeout(()=>document.getElementById('entregasSec').scrollIntoView({behavior:'smooth'}),2600);}
 }
-renderCows();
-/* Maíz: el bloque del inicio solo se muestra si la finca tiene datos del cultivo.
-   Si no hay siembra/silo registrado (datosMaiz = null), no se ve nada de maíz. */
-let datosMaiz = { siloDias:45, loteDias:38 };   // pon null para simular "sin datos de cultivo"
+renderCows();renderInicioM();pintaRutina();renderEntregasM();renderPalpListaM();
+/* Maíz: el bloque del inicio solo se muestra si la finca tiene datos del cultivo. */
+let datosMaiz = null;   // sin demo de maíz (poner {siloDias,loteDias} cuando haya cultivo)
 function aplicarMaiz(){
   const b=document.getElementById('bloque-maiz');
   if(b)b.style.display = datosMaiz ? '' : 'none';
@@ -469,16 +543,8 @@ const partoInfo={
   '045 · Morena' :'Preñada 7,5 meses · esperado ~2 ago'
 };
 /* próximos partos (salen de las palpaciones) e historial reciente */
-let proximosPartos=[
-  {cow:'011 · Violeta',sub:'Preñada 8,5 meses · parto ~3 jul',short:'~3 jul',badge:'~3 sem',bw:'warn'},
-  {cow:'019 · Canela', sub:'Preñada 8 meses · parto ~18 jul',short:'~18 jul',badge:'~5 sem',bw:''},
-  {cow:'045 · Morena', sub:'Preñada 7,5 meses · parto ~2 ago',short:'~2 ago',badge:'ago',bw:''}
-];
-let partosRecientes=[
-  {t:'042 · Lucero → cría 064',s:'12 ene · ♀ hembra · viva · 36 kg · parto normal',badge:'en Terneras',bw:'ok'},
-  {t:'027 · Estrella → cría 069',s:'28 feb · ♀ hembra · viva · 34 kg · parto normal',badge:'en Terneras',bw:'ok'},
-  {t:'033 · Paloma → cría',s:'20 abr · ♂ macho · nació muerto · 41 kg · parto asistido',badge:'mortinato',bw:'bad'}
-];
+let proximosPartos=[];
+let partosRecientes=[];
 let partos2026=7, porParir=9, criaNum=71, nTerneras=11, nMachos=2;
 const parto={cow:'011 · Violeta',sexo:'H',tipo:'normal',estado:'viva',peso:38};
 function renderPartos(){
@@ -509,9 +575,10 @@ function renderPartos(){
   lr.appendChild(hist);
 }
 function openParto(cow){
-  if(cow)parto.cow=cow;
+  const horras=Object.values(animalesPorIdM).filter(a=>a.grupo==='horra').map(a=>a.id+' · '+a.nombre);
+  parto.cow=cow||horras[0]||'';
   parto.sexo='H';parto.tipo='normal';parto.estado='viva';parto.peso=38;
-  document.getElementById('partoCow').textContent=parto.cow.toUpperCase();
+  document.getElementById('partoCow').textContent=(parto.cow||'—').toUpperCase();
   document.getElementById('partoDel').textContent=partoInfo[parto.cow]||'Confirma la fecha y los datos de la cría';
   document.getElementById('partoPesoVal').textContent=parto.peso;
   document.querySelectorAll('#partoSheet .chips').forEach(g=>
@@ -554,7 +621,7 @@ function saveParto(){
       grupos.terneras.header='<b>'+nTerneras+' terneras.</b> Consumen ~40 L/día de la leche del ordeño.';
     }else{nMachos++;
       grupos.machos.sub=nMachos+' machos';
-      grupos.machos.header='<b>'+nMachos+' machos.</b> Sansón cubre el hato; los terneros machos se levantan o se venden.';}
+      grupos.machos.header='<b>'+nMachos+' machos.</b> Toros y terneros machos del hato.';}
     grupos[grupo].animales.unshift([num+' · (cría de '+nombre+')','recién nacid'+(parto.sexo==='H'?'a':'o')+' · '+parto.peso+' kg · 0 meses',0]);
     partosRecientes.unshift({t:parto.cow+' → cría '+num,
       s:'13 jun · '+sexoTxt+' · viva · '+parto.peso+' kg · '+tipoTxt,badge:'en '+destino,bw:'ok'});
@@ -603,12 +670,7 @@ function saveParto(){
 }
 renderPartos();
 /* ===== Vacas vacías (se muestran en Reproducción) ===== */
-const vacasVacias=[
-  {cow:'033 · Paloma',del:95,diasVacia:132,ultimaPalp:'3 feb 2026',resultado:'vacía',
-   sub:'DEL 95 · 4to parto · ayer 6 L',accion:'Producción muy baja para su etapa — evaluar descarte'},
-  {cow:'029 · Pinta',del:412,diasVacia:150,ultimaPalp:'18 ene 2026',resultado:'vacía',
-   sub:'DEL 412 · lactancia larga · ayer 5 L',accion:'Lactancia extendida sin preñez — evaluar descarte'}
-];
+const vacasVacias=[];
 function renderVacias(){
   const list=document.getElementById('listVacias');if(!list)return;list.innerHTML='';
   const kpi=document.getElementById('kpiVacias');
@@ -637,12 +699,7 @@ function renderVacias(){
 }
 renderVacias();   // init: tras declarar vacasVacias y renderVacias (evita TDZ)
 /* ===== Palpación (la fuente de verdad de la reproducción) ===== */
-const palpCandidatas={
-  '027 · Estrella':'celo sin repetir — ¿preñada?',
-  '051 · Careta':'parida hace 121 días, sin celo visto',
-  '033 · Paloma':'vacía hace 132 días',
-  '029 · Pinta':'vacía hace 150 días'
-};
+const palpCandidatas={};
 const palp={cow:'027 · Estrella',resultado:'prenada',meses:2};
 /* reglas puras compartidas (core/rules.js) */
 const MESC=LCRules.MESC;
@@ -681,20 +738,31 @@ const fechaParto=LCRules.fechaParto;
     animales.filter(a=>a.estadoRepro==='servida'||a.estadoRepro==='vacia').forEach(a=>{
       palpCandidatas[refP(a.id)]=a.estadoRepro==='servida'?'servida, por confirmar'
         :'vacía'+(a.diasVacia?' hace '+a.diasVacia+' días':', confirmar estado');});
-    renderPartos();renderVacias();
+    renderPartos();renderVacias();renderPalpListaM();
   }catch(e){console.warn('Reproducción móvil: usando datos locales:',e.message||e);}
 })();
 function palpMostrarMeses(){document.getElementById('palpMesesWrap').style.display=
   palp.resultado==='prenada'?'':'none';}
+/* pinta chips de vacas reales (formato 'id · nombre') en un contenedor */
+function pintarCowChips(containerId,lista,current,onPick){
+  const c=document.getElementById(containerId);if(!c)return;
+  c.innerHTML='';
+  if(!lista.length){c.innerHTML='<span style="font-size:12.5px;color:var(--ink-3)">No hay animales disponibles</span>';return;}
+  lista.forEach(cw=>{const b=document.createElement('button');b.className='chip'+(cw===current?' sel':'');
+    b.textContent=cw.replace(' · ',' ');b.onclick=()=>onPick(cw);c.appendChild(b);});
+}
+function listaCows(){return cows.map(c=>c.num+' · '+c.n);}
+function listaTodos(){return Object.values(animalesPorIdM).filter(a=>a.grupo!=='baja').map(a=>a.id+' · '+a.nombre);}
 function palpMarcarVaca(){document.querySelectorAll('#palpCows .chip').forEach(c=>
   c.classList.toggle('sel',c.textContent.trim().startsWith(palp.cow.split('·')[0].trim())));}
 function openPalp(cow){
-  if(cow)palp.cow=cow;
+  const lista=Object.keys(palpCandidatas).length?Object.keys(palpCandidatas):listaCows();
+  palp.cow=cow||lista[0]||'';
   palp.resultado='prenada';palp.meses=2;
-  document.getElementById('palpCow').textContent=palp.cow.toUpperCase();
+  pintarCowChips('palpCows',lista,palp.cow,palpCow);
+  document.getElementById('palpCow').textContent=(palp.cow||'—').toUpperCase();
   document.getElementById('palpInfo').textContent=palpCandidatas[palp.cow]||'Confirma el resultado de la palpación';
   document.getElementById('palpMesesVal').textContent=palp.meses;
-  palpMarcarVaca();
   const res=document.querySelectorAll('#palpSheet .chips')[1].querySelectorAll('.chip');
   res.forEach((c,i)=>c.classList.toggle('sel',i===0));
   palpMostrarMeses();
@@ -764,13 +832,14 @@ const trata={cow:'033 · Paloma',problema:'Mastitis',medicina:'Antibiótico',ret
 function trataMarcarVaca(){document.querySelectorAll('#trataCows .chip').forEach(c=>
   c.classList.toggle('sel',c.textContent.trim().startsWith(trata.cow.split('·')[0].trim())));}
 function openTrata(cow){
-  if(cow)trata.cow=cow;
+  const lista=listaTodos();
+  trata.cow=cow||lista[0]||'';
   trata.problema='Mastitis';trata.medicina='Antibiótico';trata.retiro=4;
-  document.getElementById('trataCow').textContent=trata.cow.toUpperCase();
+  pintarCowChips('trataCows',lista,trata.cow,trataCow);
+  document.getElementById('trataCow').textContent=(trata.cow||'—').toUpperCase();
   const cd=cows.find(c=>trata.cow.startsWith(c.num));
   document.getElementById('trataInfo').textContent=cd?cd.del:'Selecciona el problema y el tratamiento';
   document.getElementById('trataRetiroVal').textContent=trata.retiro;
-  trataMarcarVaca();
   // problema y tratamiento vuelven a la primera opción
   const groups=document.querySelectorAll('#trataSheet .chips');
   [1,2].forEach(gi=>groups[gi].querySelectorAll('.chip').forEach((c,i)=>c.classList.toggle('sel',i===0)));
@@ -825,10 +894,11 @@ let nHorras=9;
 function secaMarcar(){document.querySelectorAll('#secaCows .chip').forEach(c=>
   c.classList.toggle('sel',c.textContent.trim().startsWith(seca.cow.split('·')[0].trim())));}
 function openSeca(cow){
-  if(cow)seca.cow=cow;
-  document.getElementById('secaCow').textContent=seca.cow.toUpperCase();
+  const lista=listaCows();
+  seca.cow=cow||lista[0]||'';
+  pintarCowChips('secaCows',lista,seca.cow,secaCow);
+  document.getElementById('secaCow').textContent=(seca.cow||'—').toUpperCase();
   document.getElementById('secaInfo').textContent=secaInfo[seca.cow]||'Confirma la preñez antes de secar';
-  secaMarcar();
   document.getElementById('scrim').classList.add('show');
   document.getElementById('secaSheet').classList.add('show');
 }
@@ -874,7 +944,7 @@ function subNovillas(){grupos.novillas.sub=nNovillas+' novillas · 4 listas para
 function subTerneras(){grupos.terneras.sub=nTerneras+' terneras · 2 destetes próximos';
   grupos.terneras.header='<b>'+nTerneras+' terneras.</b> Consumen ~40 L/día de la leche del ordeño.';}
 function subMachos(){grupos.machos.sub=nMachos+' machos';
-  grupos.machos.header='<b>'+nMachos+' machos.</b> Sansón cubre el hato; los terneros machos se levantan o se venden.';}
+  grupos.machos.header='<b>'+nMachos+' machos.</b> Toros y terneros machos del hato.';}
 function subHorras(){grupos.horras.sub=nHorras+' vacas · 6 paren antes de octubre';
   grupos.horras.header='<b>'+nHorras+' vacas horras.</b> Ordenadas por fecha de parto; tras parir vuelven al ordeño.';}
 function subBajas(){grupos.bajas.sub=nBajas+' animales fuera del hato · 2026';
@@ -939,11 +1009,12 @@ const baja={cow:'033 · Paloma',motivo:'Venta'};
 function bajaMarcar(){document.querySelectorAll('#bajaCows .chip').forEach(c=>
   c.classList.toggle('sel',c.textContent.trim().startsWith(baja.cow.split('·')[0].trim())));}
 function openBaja(cow){
-  if(cow)baja.cow=cow;baja.motivo='Venta';
-  document.getElementById('bajaCow').textContent=baja.cow.toUpperCase();
+  const lista=listaTodos();
+  baja.cow=cow||lista[0]||'';baja.motivo='Venta';
+  pintarCowChips('bajaCows',lista,baja.cow,bajaCow);
+  document.getElementById('bajaCow').textContent=(baja.cow||'—').toUpperCase();
   const cd=cows.find(c=>baja.cow.startsWith(c.num));
   document.getElementById('bajaInfo').textContent=cd?cd.del:'Elige el animal y el motivo';
-  bajaMarcar();
   document.querySelectorAll('#bajaSheet .chips')[1].querySelectorAll('.chip')
     .forEach((c,i)=>c.classList.toggle('sel',i===0));
   document.getElementById('scrim').classList.add('show');

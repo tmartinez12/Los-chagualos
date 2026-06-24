@@ -101,10 +101,11 @@ function renderInicio(){
       alertas.push({cls:'info',title:'Retiro de leche: vaca '+a.id+(d===1?' — falta 1 día':' — faltan '+d+' días'),
         sub:'No vender su leche hasta '+fmtFechaCorta(a.retiroLecheHasta)});});
     }catch(e){}
-    if(alertas.length)al.innerHTML=alertas.map(a=>'<div class="alert '+a.cls+'"><div style="flex:1">'+
+    al.innerHTML=alertas.length?alertas.map(a=>'<div class="alert '+a.cls+'"><div style="flex:1">'+
       '<div class="a-title">'+a.title+'</div><div class="a-sub">'+a.sub+'</div>'+
       (a.btn?'<button class="btn outl small" style="margin-top:8px" onclick="go(\''+a.pg+'\')">'+a.btn+'</button>':'')+
-      '</div></div>').join('');
+      '</div></div>').join('')
+      :'<div class="card flat" style="text-align:center;color:var(--ink-3);padding:14px;font-size:13px">Sin alertas por ahora</div>';
   }
 }
 let snackTimer;
@@ -161,21 +162,7 @@ function renderLecheKpis(){
 }
 
 /* ===== Registrar leche por vaca ===== */
-let milkCows=[
-  {num:'042',n:'Lucero',  del:'DEL 152 · 3er parto',          ayer:18},
-  {num:'038',n:'Mona',    del:'DEL 98 · servida, por palpar', ayer:16},
-  {num:'051',n:'Careta',  del:'DEL 121 · 1er parto',          ayer:14},
-  {num:'027',n:'Estrella',del:'DEL 64 · pico de lactancia',   ayer:13},
-  {num:'017',n:'Azucena', del:'DEL 201 · retiro 2 días más',  ayer:11, retiro:2,
-    estado:'<span class="badge bad">retiro 2d</span>', nota:'no vender su leche'},
-  {num:'033',n:'Paloma',  del:'DEL 95 · 4to parto',           ayer:6,
-    estado:'<span class="badge bad">vacía 132d</span>', nota:'producción muy baja', notaRed:1},
-  {num:'029',n:'Pinta',   del:'DEL 412 · lactancia larga',    ayer:5,
-    estado:'<span class="badge bad">vacía 150d</span>', nota:'evaluar descarte', notaRed:1}
-];
-milkCows[0].estado='<span class="badge warn">preñada 6m</span>';milkCows[0].nota='secar ~12 jul';
-milkCows[1].estado='<span class="badge">servida</span>';milkCows[1].nota='por confirmar palp.';
-milkCows[2].nota='1er parto';milkCows[3].nota='pico de lactancia';
+let milkCows=[];
 milkCows.forEach(c=>{c.done=false;c.v=null;});
 let mi=-1;
 /* el scatter depende de `hato`, que se declara más abajo en el archivo.
@@ -378,12 +365,7 @@ function renderScatters(){if(!scatterListo)return;renderScatter('scatterLeche');
 /* ===== Entregas a lecheros ===== */
 const MESES_L=['Ene','Feb','Mar','Abr','May','Jun'];
 const DIAS_MES=[31,28,31,30,31,12];
-let lecheros=[
-  {id:'jose',n:'Don José',freq:'Diario',precio:1950,diasSemana:[0,1,2,3,4,5,6],
-   ayer:120,hoy:null,done:false},
-  {id:'maria',n:'Quesería La María',freq:'Lun · Mié · Vie',precio:1950,diasSemana:[1,3,5],
-   ayer:50,hoy:null,done:false},
-];
+let lecheros=[];
 /* derivación lechero canónico (BD) → fila de la UI */
 const DOW_ABBR=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 function freqDisplay(l){
@@ -568,15 +550,7 @@ function editEntregaDia(td,lid,mes,dia,oldVal,nombre){
 renderEntregas();renderEntregaMesPicker();renderEntregaHist();
 
 /* ===== Producción mensual por vaca (resumen) y diaria (detalle del mes) ===== */
-let mensualData=[
-  {num:'042',n:'Lucero',   m:[null,null,12.5,14.8,17.2,18.0], partos:'parió ene'},
-  {num:'038',n:'Mona',     m:[14.2,14.0,15.1,14.8,15.5,16.0]},
-  {num:'051',n:'Careta',   m:[null,null,10.2,12.0,13.6,14.0], partos:'parió feb, 1er parto'},
-  {num:'027',n:'Estrella', m:[null,null,null,null,11.8,13.0], partos:'parió abr'},
-  {num:'017',n:'Azucena',  m:[14.0,13.5,9.0,10.5,11.0,11.0], nota:'mastitis mar → baja'},
-  {num:'033',n:'Paloma',   m:[11.0,10.2,9.8,8.5,7.0,6.0],    nota:'bajando — vacía'},
-  {num:'029',n:'Pinta',    m:[8.0,7.5,7.0,6.2,5.5,5.0],      nota:'lactancia >400d — vacía'},
-];
+let mensualData=[];
 let mensualVista='promedio';   // 'promedio' | 'total' (solo aplica al resumen)
 let mensualMes=-1;             // -1 = resumen 2026; 0..5 = detalle diario del mes
 const diaOverrides={};         // clave "num-mes-dia" → valor editado
@@ -743,70 +717,7 @@ renderMesPicker();renderMensual();
 })();
 
 /* ===== Ficha de vaca ===== */
-const fichas={
-  '042':{num:'042',n:'Lucero',raza:'Holstein × Gyr',edad:'5,2 años',grupo:'En ordeño',origen:'Nació en finca',
-    del:152,parto:3,ayer:18,peso:'480 kg (abr)',madre:'017 Azucena',padre:'Sansón',
-    crias:['038 Mona','051 Careta','064'],
-    repro:{badge:'warn',text:'Preñada · 6 meses (palpación 2 may)',sub:'Parto probable ~12 sep · Secar ~12 jul'},
-    sanidad:'Sanidad al día — vacunas ok (aftosa may 2026) · sin tratamientos ni retiros activos',sanOk:true,
-    historia:[
-      {fecha:'02 MAY 2026',texto:'Palpación: <b>preñada 6 meses</b>',sub:'Dr. Restrepo · parto calculado ~12 sep'},
-      {fecha:'15 MAR 2026',texto:'Mastitis — tratamiento + retiro 4 días'},
-      {fecha:'11 ENE 2026',texto:'Parto #3 — nació la 064 · arranca lactancia (DEL 0)'},
-      {fecha:'03 DIC 2025',texto:'Monta de Sansón vista'}],
-    curva:[[0,52],[40,20],[60,16],[90,18],[120,22],[152,24]],curvaHoy:{del:152,l:18}},
-  '038':{num:'038',n:'Mona',raza:'Gyrolando',edad:'4,1 años',grupo:'En ordeño',origen:'Nació en finca',
-    del:98,parto:2,ayer:16,peso:'460 kg (abr)',madre:'011 Violeta',padre:'Sansón',crias:['064'],
-    repro:{badge:'',text:'Servida · por palpar',sub:'Monta observada 10 abr — palpación pendiente'},
-    sanidad:'Sanidad al día — vacunas ok · sin retiros',sanOk:true,
-    historia:[
-      {fecha:'10 ABR 2026',texto:'Monta de Sansón observada'},
-      {fecha:'08 MAR 2026',texto:'Parto #2 — nació la 064'},
-      {fecha:'MAY 2025',texto:'Desparasitación'}],
-    curva:[[0,48],[30,22],[60,16],[98,18]],curvaHoy:{del:98,l:16}},
-  '051':{num:'051',n:'Careta',raza:'Holstein × Gyr',edad:'3,2 años',grupo:'En ordeño',origen:'Nació en finca',
-    del:121,parto:1,ayer:14,peso:'420 kg (mar)',madre:'033 Paloma',padre:'Sansón',crias:[],
-    repro:{badge:'',text:'1er parto · vacía',sub:'Esperar mínimo 60 días postparto para servicio'},
-    sanidad:'Sanidad al día — vacunas ok · sin retiros',sanOk:true,
-    historia:[
-      {fecha:'12 FEB 2026',texto:'Parto #1 — arranca lactancia'},
-      {fecha:'MAY 2025',texto:'Desparasitación'}],
-    curva:[[0,46],[30,24],[60,16],[90,14],[121,14]],curvaHoy:{del:121,l:14}},
-  '027':{num:'027',n:'Estrella',raza:'Gyrolando',edad:'3,8 años',grupo:'En ordeño',origen:'Nació en finca',
-    del:64,parto:1,ayer:13,peso:'440 kg (may)',madre:'038 Mona',padre:'Sansón',crias:[],
-    repro:{badge:'ok',text:'Pico de lactancia · 1er parto',sub:'DEL 64 — esperar para servicio'},
-    sanidad:'Sanidad al día — vacunas ok · sin retiros',sanOk:true,
-    historia:[
-      {fecha:'11 ABR 2026',texto:'Parto #1 — arranca lactancia'},
-      {fecha:'MAY 2025',texto:'Aftosa ICA'}],
-    curva:[[0,42],[30,18],[64,14]],curvaHoy:{del:64,l:13}},
-  '017':{num:'017',n:'Azucena',raza:'Holstein',edad:'8 años',grupo:'En ordeño',origen:'Nació en finca',
-    del:201,parto:5,ayer:11,peso:'510 kg (abr)',madre:'—',padre:'—',crias:['042 Lucero','039','044'],
-    repro:{badge:'warn',text:'Preñada · 4 meses',sub:'Pendiente: confirmar palpación siguiente'},
-    sanidad:'Retiro activo — mastitis jun · antibiótico · no vender leche hasta sáb 14',sanOk:false,
-    historia:[
-      {fecha:'10 JUN 2026',texto:'Mastitis — inicio tratamiento + retiro 4 días',miss:true},
-      {fecha:'01 MAY 2026',texto:'Palpación: <b>preñada 4 meses</b>'},
-      {fecha:'ENE 2026',texto:'Parto #5'}],
-    curva:[[0,50],[40,22],[100,16],[150,13],[201,12]],curvaHoy:{del:201,l:11}},
-  '033':{num:'033',n:'Paloma',raza:'Normando',edad:'6,5 años',grupo:'En ordeño',origen:'Nació en finca',
-    del:95,parto:4,ayer:6,peso:'490 kg (may)',madre:'—',padre:'—',crias:['051 Careta','046','048'],
-    repro:{badge:'bad',text:'Vacía 132 días · producción muy baja',sub:'Evaluar descarte o tratamiento reproductivo'},
-    sanidad:'Sanidad al día — vacunas ok · sin retiros',sanOk:true,
-    historia:[
-      {fecha:'02 MAY 2026',texto:'Palpación: <b>vacía</b>',sub:'132 días vacía — alerta'},
-      {fecha:'FEB 2026',texto:'Parto #4 — producción bajó'},
-      {fecha:'DIC 2025',texto:'Desparasitación'}],
-    curva:[[0,48],[30,18],[60,12],[95,8]],curvaHoy:{del:95,l:6}},
-  '029':{num:'029',n:'Pinta',raza:'Holstein × Gyr',edad:'7 años',grupo:'En ordeño',origen:'Comprada',
-    del:412,parto:5,ayer:5,peso:'470 kg (may)',madre:'—',padre:'—',crias:['052','053','056'],
-    repro:{badge:'bad',text:'Vacía 150 días · lactancia >400 DEL',sub:'Urgente: palpar o evaluar descarte'},
-    sanidad:'Sanidad al día — vacunas ok · sin retiros',sanOk:true,
-    historia:[
-      {fecha:'02 MAY 2026',texto:'Palpación: <b>vacía</b>',sub:'150 días vacía — alerta crítica'},
-      {fecha:'ABR 2025',texto:'Parto #5 — lactancia extendida'}],
-    curva:[[0,50],[60,14],[150,10],[300,7],[412,5]],curvaHoy:{del:412,l:5}},
-};
+const fichas={};
 let vacaFrom='pg-hato';
 const cowFotos={};   // num → dataURL de la foto subida
 let vacaActual=null;
@@ -983,26 +894,11 @@ function goVaca(num,from){
 const MESC=LCRules.MESC;
 const fechaParto=LCRules.fechaParto;
 /* candidatas a palpar (la lista se arma sola) */
-let palpCandidatas=[
-  {cow:'027 · Estrella',motivo:'celo sin repetir — ¿preñada?'},
-  {cow:'051 · Careta',motivo:'parida hace 121 días, sin celo visto'},
-  {cow:'038 · Mona',motivo:'servida 3 jun, por confirmar'},
-  {cow:'033 · Paloma',motivo:'vacía hace 132 días'},
-  {cow:'029 · Pinta',motivo:'vacía hace 150 días'},
-];
+let palpCandidatas=[];
 /* próximos partos (salen de las palpaciones) */
-let proximosPartos=[
-  {cow:'011 · Violeta',prenez:'8,5 meses',parto:'~3 jul',badge:'warn'},
-  {cow:'019 · Canela',prenez:'8 meses',parto:'~18 jul'},
-  {cow:'045 · Morena',prenez:'7,5 meses',parto:'~2 ago'},
-  {cow:'008 · Golondrina',prenez:'7 meses',parto:'~12 sep'},
-];
+let proximosPartos=[];
 /* partos recientes 2026 */
-let partosRecientes=[
-  {madre:'042 Lucero',cria:'064',fecha:'12 ene',sexo:'H',peso:36,tipo:'normal',estado:'viva',grupo:'Terneras'},
-  {madre:'027 Estrella',cria:'069',fecha:'28 feb',sexo:'H',peso:34,tipo:'normal',estado:'viva',grupo:'Terneras'},
-  {madre:'033 Paloma',cria:'—',fecha:'20 abr',sexo:'H',peso:0,tipo:'asistido',estado:'muerta',grupo:null},
-];
+let partosRecientes=[];
 function renderPartosRecientes(){
   const tb=document.getElementById('partosRecientesTbody');if(!tb)return;tb.innerHTML='';
   partosRecientes.forEach(p=>{
@@ -1032,12 +928,7 @@ function renderPartosKpis(){
   refreshHeader();
 }
 /* vacas vacías que requieren decisión */
-let vacasVacias=[
-  {cow:'033 · Paloma',num:'033',del:95,sub:'4to parto · Normando',dias:132,ultima:'3 feb 2026',
-   ayer:'6 L',rec:'Producción muy baja para su etapa — evaluar descarte'},
-  {cow:'029 · Pinta',num:'029',del:412,sub:'Lactancia larga · Holstein × Gyr',dias:150,ultima:'18 ene 2026',
-   ayer:'5 L',rec:'Lactancia extendida sin preñez — evaluar descarte'},
-];
+let vacasVacias=[];
 function renderPartos(){
   const tb=document.getElementById('partosTbody');if(!tb)return;tb.innerHTML='';
   proximosPartos.forEach(p=>{
@@ -1072,10 +963,7 @@ function renderVacias(){
 }
 
 /* ===== Tratamientos / sanidad del animal ===== */
-let tratamientos=[
-  {num:'017',n:'Azucena',desc:'Mastitis · antibiótico (3er día de 5)',
-   retiro:'retiro de leche hasta sáb 14',badge:'retiro 2 d',badgeCls:'bad'},
-];
+let tratamientos=[];
 /* derivación tratamiento canónico (BD) → tarjeta de la UI */
 function tratamientoAFila(t){
   const desc=(t.problema||'')+(t.medicamento?' · '+t.medicamento.toLowerCase():'');
@@ -1338,48 +1226,7 @@ function fmtFechaCorta(iso){if(!iso)return '—';const d=new Date(iso+'T00:00:00
 })();
 
 /* ===== Hato: tabla con filtros funcionales ===== */
-let hato=[
-  /* En ordeño (26 representadas con muestra) */
-  {num:'042',n:'Lucero',raza:'Holstein × Gyr',grupo:'En ordeño',edad:'5,2 a',repro:'<span class="badge warn">preñada 6 m</span> <span class="sub">secar ~12 jul</span>',del:152,ayer:18,var:'+1',vc:'up',tags:['prenada']},
-  {num:'038',n:'Mona',raza:'Gyrolando',grupo:'En ordeño',edad:'4,1 a',repro:'<span class="badge">servida · por palpar</span>',del:98,ayer:16,var:'= ayer',vc:'mut',tags:[]},
-  {num:'051',n:'Careta',raza:'Holstein × Gyr',grupo:'En ordeño',edad:'3,2 a',repro:'<span class="badge">1er parto · vacía</span>',del:121,ayer:14,var:'+2',vc:'up',tags:['vacia']},
-  {num:'027',n:'Estrella',raza:'Gyrolando',grupo:'En ordeño',edad:'3,8 a',repro:'<span class="badge ok">celo sin repetir</span>',del:64,ayer:13,var:'= ayer',vc:'mut',tags:[]},
-  {num:'017',n:'Azucena',raza:'Holstein',grupo:'En ordeño',edad:'8 a',repro:'<span class="badge bad">retiro 2 días más</span>',del:201,ayer:11,var:'= ayer',vc:'mut',tags:['tratamiento','prenada']},
-  {num:'033',n:'Paloma',raza:'Normando',grupo:'En ordeño',edad:'6,5 a',repro:'<span class="badge bad">vacía 132 días</span>',del:95,ayer:6,var:'-3',vc:'down',tags:['vacia']},
-  {num:'029',n:'Pinta',raza:'Holstein × Gyr',grupo:'En ordeño',edad:'7 a',repro:'<span class="badge bad">vacía 150 días</span>',del:412,ayer:5,var:'-1',vc:'down',tags:['vacia']},
-  {num:'015',n:'Mariposa',raza:'Gyrolando',grupo:'En ordeño',edad:'5 a',repro:'<span class="badge warn">preñada 4 m</span>',del:180,ayer:10,var:'= ayer',vc:'mut',tags:['prenada']},
-  {num:'023',n:'Candelaria',raza:'Holstein',grupo:'En ordeño',edad:'6 a',repro:'<span class="badge warn">preñada 3 m</span>',del:142,ayer:12,var:'+1',vc:'up',tags:['prenada']},
-  {num:'035',n:'Rocío',raza:'Normando',grupo:'En ordeño',edad:'4,5 a',repro:'<span class="badge warn">preñada 5 m</span>',del:110,ayer:14,var:'= ayer',vc:'mut',tags:['prenada']},
-  {num:'040',n:'Nieve',raza:'Holstein × Gyr',grupo:'En ordeño',edad:'3,5 a',repro:'<span class="badge warn">preñada 2 m</span>',del:88,ayer:15,var:'+1',vc:'up',tags:['prenada']},
-  {num:'046',n:'Esperanza',raza:'Gyrolando',grupo:'En ordeño',edad:'5,8 a',repro:'<span class="badge warn">preñada 7 m</span> <span class="sub">secar ~jul</span>',del:195,ayer:9,var:'-1',vc:'down',tags:['prenada']},
-  /* Horras (9) */
-  {num:'011',n:'Violeta',raza:'Gyrolando',grupo:'Horra',edad:'7 a',repro:'<span class="badge ok">preñada 8,5 m · parto ~3 jul</span>',del:'—',ayer:'—',var:'—',vc:'',tags:['prenada']},
-  {num:'019',n:'Canela',raza:'Holstein × Gyr',grupo:'Horra',edad:'6 a',repro:'<span class="badge ok">preñada 8 m · parto ~18 jul</span>',del:'—',ayer:'—',var:'—',vc:'',tags:['prenada']},
-  {num:'045',n:'Morena',raza:'Normando',grupo:'Horra',edad:'5,5 a',repro:'<span class="badge">preñada 7,5 m · parto ~2 ago</span>',del:'—',ayer:'—',var:'—',vc:'',tags:['prenada']},
-  {num:'008',n:'Golondrina',raza:'Holstein',grupo:'Horra',edad:'9 a',repro:'<span class="badge">preñada 7 m · parto ~12 sep</span>',del:'—',ayer:'—',var:'—',vc:'',tags:['prenada']},
-  {num:'036',n:'Cereza',raza:'Gyrolando',grupo:'Horra',edad:'4 a',repro:'<span class="badge">preñada 7 m · parto ~15 sep</span>',del:'—',ayer:'—',var:'—',vc:'',tags:['prenada']},
-  {num:'041',n:'Garza',raza:'Holstein × Gyr',grupo:'Horra',edad:'5,2 a',repro:'<span class="badge">preñada 6,5 m · parto ~28 sep</span>',del:'—',ayer:'—',var:'—',vc:'',tags:['prenada']},
-  {num:'014',n:'Nube',raza:'Gyrolando',grupo:'Horra',edad:'6,8 a',repro:'<span class="badge">preñada 6 m · parto ~10 oct</span>',del:'—',ayer:'—',var:'—',vc:'',tags:['prenada']},
-  {num:'048',n:'Flor',raza:'Normando',grupo:'Horra',edad:'3,8 a',repro:'<span class="badge">preñada 5,5 m · parto ~25 oct</span>',del:'—',ayer:'—',var:'—',vc:'',tags:['prenada']},
-  {num:'022',n:'Luna',raza:'Holstein',grupo:'Horra',edad:'7,5 a',repro:'<span class="badge">preñada 5 m · parto ~8 nov</span>',del:'—',ayer:'—',var:'—',vc:'',tags:['prenada']},
-  /* Novillas (14 — muestra) */
-  {num:'055',n:'Princesa',raza:'Gyrolando',grupo:'Novilla',edad:'2,1 a',repro:'<span class="badge warn">lista para servicio · hija de Sansón</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
-  {num:'058',n:'Alondra',raza:'Holstein × Gyr',grupo:'Novilla',edad:'2 a',repro:'<span class="badge warn">lista para servicio</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
-  {num:'061',n:'Café',raza:'Normando',grupo:'Novilla',edad:'1,9 a',repro:'<span class="sub">318 kg · le faltan ~12 kg</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
-  {num:'063',n:'Dalia',raza:'Gyrolando',grupo:'Novilla',edad:'1,7 a',repro:'<span class="sub">295 kg</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
-  {num:'067',n:'Sirena',raza:'Holstein',grupo:'Novilla',edad:'1,5 a',repro:'<span class="sub">275 kg</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
-  /* Levante (18 — muestra) */
-  {num:'066',n:'Esmeralda',raza:'Gyrolando',grupo:'Levante',edad:'14 m',repro:'<span class="sub">218 kg · 480 g/día</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
-  {num:'068',n:'Perla',raza:'Holstein × Gyr',grupo:'Levante',edad:'13 m',repro:'<span class="sub">201 kg · 470 g/día</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
-  {num:'070',n:'Coral',raza:'Normando',grupo:'Levante',edad:'11 m',repro:'<span class="sub">178 kg · 490 g/día</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
-  /* Terneras (11 — muestra) */
-  {num:'064',n:'(cría de Lucero)',raza:'Holstein × Gyr',grupo:'Ternera',edad:'5 m',repro:'<span class="badge warn">destete próximo</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
-  {num:'071',n:'(cría de Canela)',raza:'Holstein × Gyr',grupo:'Ternera',edad:'4,5 m',repro:'<span class="badge warn">destete próximo</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
-  {num:'073',n:'(cría de Morena)',raza:'Normando',grupo:'Ternera',edad:'3 m',repro:'',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
-  /* Machos (2) */
-  {num:'T01',n:'Sansón',raza:'Toro · Gyr',grupo:'Macho',edad:'6 a',repro:'<span class="badge">toro activo · 23 hijas</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
-  {num:'T02',n:'Torete',raza:'Gyr',grupo:'Macho',edad:'11 m',repro:'<span class="sub">venta programada ago</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]},
-];
+let hato=[];
 scatterListo=true;   // `hato` ya está definido: el scatter puede leerlo sin riesgo
 const hatoGrupos=['En ordeño','Horra','Novilla','Levante','Ternera','Macho'];
 const hatoFiltrosEstado=[
