@@ -1223,17 +1223,25 @@ function savePalp(){
   /* los tratamientos aplicados quedan en la sanidad del animal, sea cual sea el resultado */
   const undoTrat=aplicarTratamientos(num,nombre,p.trat,nota);
   /* persistir la palpación y el nuevo estado reproductivo en Supabase */
+  let pSavePalp=Promise.resolve(),palpId=null;
+  const reproAntes=animalesPorId[num]?snapshotReproDB(animalesPorId[num]):null;
   if(typeof LCStore!=='undefined'){
     const campos={ultima_palpacion:isoHoy()};let prenezMeses=null;
     if(p.tipo==='prenada'){const m=Math.round(p.meses);prenezMeses=m;
       campos.estado_repro='prenada';campos.prenez_meses=m;campos.parto_estimado=isoParto(m);campos.dias_vacia=null;}
     else if(p.tipo==='vacia'){campos.estado_repro='vacia';campos.prenez_meses=null;campos.parto_estimado=null;campos.dias_vacia=1;}
-    LCStore.registrarPalpacion({animalId:num,resultado:nota,
+    pSavePalp=LCStore.registrarPalpacion({animalId:num,resultado:nota,
       motivo:removedCand?removedCand.motivo:null,prenezMeses:prenezMeses})
-      .then(()=>LCStore.updateAnimalCampos(num,campos))
+      .then(r=>{palpId=r&&r.id;return LCStore.updateAnimalCampos(num,campos);})
       .catch(e=>{console.warn('Palpación no guardada en la base:',e.message||e);
         snack('⚠ Palpación guardada local, falta sincronizar');});
   }
+  /* compensación en la base al deshacer (usada por ambas ramas) */
+  const revertirPalpEnBase=()=>{ if(typeof LCStore==='undefined')return;
+    pSavePalp.then(()=>Promise.all([
+      palpId?LCStore.deletePalpacion(palpId):null,
+      reproAntes?LCStore.updateAnimalCampos(num,reproAntes):null,
+    ])).catch(e=>console.warn('No se pudo revertir la palpación en la base:',e.message||e)); };
   if(p.tipo==='prenada'){
     const meses=Math.round(p.meses);
     const f=fechaParto(meses);
@@ -1252,6 +1260,7 @@ function savePalp(){
       if(removedVacia)vacasVacias.splice(Math.min(vi,vacasVacias.length),0,removedVacia);
       if(removedCand)palpCandidatas.splice(Math.min(ci,palpCandidatas.length),0,removedCand);
       if(undoTrat)undoTrat();
+      revertirPalpEnBase();
       renderPartos();renderPartosKpis();renderVacias();renderPalpLista();});
     return;
   }
@@ -1272,6 +1281,7 @@ function savePalp(){
       if(prevParto)proximosPartos.splice(Math.min(pi,proximosPartos.length),0,prevParto);
       if(removedCand)palpCandidatas.splice(Math.min(ci,palpCandidatas.length),0,removedCand);
       if(undoTrat)undoTrat();
+      revertirPalpEnBase();
       renderPartos();renderPartosKpis();renderVacias();renderPalpLista();});
     return;
   }
@@ -1490,6 +1500,15 @@ function isoHoy(){return isoDe(HOY_LC);}
 function isoMasDias(n){const d=new Date(HOY_LC.getTime());d.setDate(d.getDate()+(n||0));return isoDe(d);}
 /* fecha estimada de parto: hoy + lo que falta de gestación (~9 meses) */
 function isoParto(meses){const d=new Date(HOY_LC.getTime());d.setMonth(d.getMonth()+Math.max(0,Math.round(9-meses)));return isoDe(d);}
+/* snapshot de los campos reproductivos de un animal (forma BD) para poder
+   revertir en Supabase si se deshace un parto o una palpación. */
+function snapshotReproDB(a){
+  return {grupo:a.grupo, del:a.del, estado_repro:a.estadoRepro,
+    prenez_meses:a.prenez?a.prenez.meses:null,
+    parto_estimado:a.prenez?a.prenez.partoEstimado:null,
+    ultima_palpacion:a.ultimaPalpacion||(a.prenez?a.prenez.ultimaPalpacion:null),
+    dias_vacia:a.diasVacia, leche_ayer:a.leche?a.leche.ayer:null};
+}
 /* fecha de nacimiento: exacta si se conoce; si no, estimada desde la edad */
 function fmtNacimiento(a){
   if(a&&a.nacimiento){const d=new Date(a.nacimiento+'T00:00:00');return d.getDate()+' '+LCRules.MESC[d.getMonth()]+' '+d.getFullYear();}
@@ -1828,20 +1847,24 @@ function saveParto(){
   partosRecientes.push(reciente);
   renderHatoFiltros();renderHato();renderPartos();renderPartosRecientes();renderPartosKpis();
   go('pg-partos',navFor('pg-partos'));
+  /* persistencia + datos para revertir en la base si se deshace */
+  let pSaveParto=Promise.resolve();
+  const partoId='P-'+Date.now();
+  const criaId=cria?cria.num:null;
+  const numMadre=partoState.num;
+  const madreAntes=animalesPorId[numMadre]?snapshotReproDB(animalesPorId[numMadre]):null;
   if(typeof LCStore!=='undefined'){
-    const criaId=cria?cria.num:null;
     /* ORDEN IMPORTANTE: la cría debe existir antes que el parto, porque
        partos.cria_id la referencia por llave foránea. */
-    Promise.resolve()
+    pSaveParto=Promise.resolve()
       .then(()=>{ if(cria)return LCStore.insertAnimal({id:cria.num,nombre:'Cría de '+nombre,
           raza:a.raza,grupo:partoState.sexo==='H'?'ternera':'macho',sexo:partoState.sexo,
           edadAnios:0,origen:'nacido_finca',madreId:partoState.num,pesoKg:partoState.peso}); })
-      .then(()=>LCStore.registrarParto({madreId:partoState.num,criaId:criaId,fecha:isoHoy(),
+      .then(()=>LCStore.registrarParto({id:partoId,madreId:partoState.num,criaId:criaId,fecha:isoHoy(),
         sexo:partoState.sexo,pesoKg:partoState.peso,tipo:partoState.tipo,estadoCria:partoState.estado}))
-      .then(()=>{ /* la madre vuelve al ordeño en DEL 0 */
-        return LCStore.updateAnimalCampos(partoState.num,{grupo:'ordeño',del:0,
-          estado_repro:null,prenez_meses:null,parto_estimado:null,ultima_palpacion:null,
-          dias_vacia:null,leche_ayer:0});})
+      .then(()=>LCStore.updateAnimalCampos(partoState.num,{grupo:'ordeño',del:0,
+        estado_repro:null,prenez_meses:null,parto_estimado:null,ultima_palpacion:null,
+        dias_vacia:null,leche_ayer:0}))
       .catch(e=>{console.warn('Parto no guardado completo en la base:',e.message||e);
         snack('⚠ Parto guardado local, falta sincronizar');});
   }
@@ -1853,7 +1876,14 @@ function saveParto(){
     if(cria){const ci=hato.indexOf(cria);if(ci>=0)hato.splice(ci,1);criaSeq--;}
     if(prevParto)proximosPartos.splice(Math.min(pi,proximosPartos.length),0,prevParto);
     const ri=partosRecientes.indexOf(reciente);if(ri>=0)partosRecientes.splice(ri,1);
-    renderHatoFiltros();renderHato();renderPartos();renderPartosRecientes();renderPartosKpis();});
+    renderHatoFiltros();renderHato();renderPartos();renderPartosRecientes();renderPartosKpis();
+    /* revertir en la base: esperar a que termine de guardar y compensar */
+    if(typeof LCStore!=='undefined')pSaveParto.then(()=>Promise.all([
+      LCStore.deleteParto(partoId),
+      criaId?LCStore.deleteAnimal(criaId):null,
+      madreAntes?LCStore.updateAnimalCampos(numMadre,madreAntes):null,
+    ])).catch(e=>console.warn('No se pudo revertir el parto en la base:',e.message||e));
+  });
 }
 
 /* --- alta (compra / ingreso) --- */

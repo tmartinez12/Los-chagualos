@@ -311,6 +311,14 @@ function isoHoyM(){return isoDeM(HOY_LC);}
 function isoMasDiasM(n){const d=new Date(HOY_LC.getTime());d.setDate(d.getDate()+(n||0));return isoDeM(d);}
 function isoPartoM(meses){const d=new Date(HOY_LC.getTime());d.setMonth(d.getMonth()+Math.max(0,Math.round(9-meses)));return isoDeM(d);}
 function numDe(cow){return (''+cow).split('·')[0].trim();}
+/* snapshot de campos reproductivos (forma BD) para revertir en Supabase al deshacer */
+function snapshotReproDBM(a){
+  return {grupo:a.grupo, del:a.del, estado_repro:a.estadoRepro,
+    prenez_meses:a.prenez?a.prenez.meses:null,
+    parto_estimado:a.prenez?a.prenez.partoEstimado:null,
+    ultima_palpacion:a.ultimaPalpacion||(a.prenez?a.prenez.ultimaPalpacion:null),
+    dias_vacia:a.diasVacia, leche_ayer:a.leche?a.leche.ayer:null};
+}
 function fmtFechaCortaM(iso){if(!iso)return '—';const d=new Date(iso+'T00:00:00');return d.getDate()+' '+MESC[d.getMonth()];}
 function edadTextoM(a){const n=a.edadAnios;if(n==null)return '';
   const enMeses=a.grupo==='levante'||a.grupo==='ternera'||(a.grupo==='macho'&&n<1.5)||n<1;
@@ -560,13 +568,16 @@ function saveParto(){
     msg='Parto de '+nombre+' · la cría nació muerta — queda en el historial · '+nombre+' al ordeño en DEL 0';
   }
   encolar();
+  let pSaveParto=Promise.resolve();
+  const partoId='P-'+Date.now();
+  const madreAntes=animalesPorIdM[numMadre]?snapshotReproDBM(animalesPorIdM[numMadre]):null;
   if(typeof LCStore!=='undefined'){
     const madreRaza=(animalesPorIdM[numMadre]||{}).raza||null;
-    Promise.resolve()
+    pSaveParto=Promise.resolve()
       .then(()=>{ if(criaIdNueva)return LCStore.insertAnimal({id:criaIdNueva,nombre:'Cría de '+nombre,
         raza:madreRaza,grupo:parto.sexo==='H'?'ternera':'macho',sexo:parto.sexo,
         edadAnios:0,origen:'nacido_finca',madreId:numMadre,pesoKg:parto.peso}); })
-      .then(()=>LCStore.registrarParto({madreId:numMadre,criaId:criaIdNueva,fecha:isoHoyM(),
+      .then(()=>LCStore.registrarParto({id:partoId,madreId:numMadre,criaId:criaIdNueva,fecha:isoHoyM(),
         sexo:parto.sexo,pesoKg:parto.peso,tipo:parto.tipo,estadoCria:parto.estado}))
       .then(()=>LCStore.updateAnimalCampos(numMadre,{grupo:'ordeño',del:0,estado_repro:null,
         prenez_meses:null,parto_estimado:null,ultima_palpacion:null,dias_vacia:null,leche_ayer:0}))
@@ -583,6 +594,11 @@ function saveParto(){
     deshacerCria(); desencolar();
     renderPartos();
     snack('Parto deshecho');
+    if(typeof LCStore!=='undefined')pSaveParto.then(()=>Promise.all([
+      LCStore.deleteParto(partoId),
+      criaIdNueva?LCStore.deleteAnimal(criaIdNueva):null,
+      madreAntes?LCStore.updateAnimalCampos(numMadre,madreAntes):null,
+    ])).catch(e=>console.warn('No se pudo revertir el parto móvil en la base:',e.message||e));
   });
 }
 renderPartos();
@@ -703,15 +719,22 @@ function savePalp(){
   const nombre=palp.cow.split('·')[1].trim();
   const numPalp=numDe(palp.cow);
   encolar();
+  let pSavePalp=Promise.resolve(),palpId=null;
+  const reproAntes=animalesPorIdM[numPalp]?snapshotReproDBM(animalesPorIdM[numPalp]):null;
   if(typeof LCStore!=='undefined'){
     const esPren=palp.resultado!=='vacia';
     const campos=esPren
       ?{estado_repro:'prenada',prenez_meses:palp.meses,parto_estimado:isoPartoM(palp.meses),ultima_palpacion:isoHoyM(),dias_vacia:null}
       :{estado_repro:'vacia',prenez_meses:null,parto_estimado:null,ultima_palpacion:isoHoyM(),dias_vacia:1};
-    LCStore.registrarPalpacion({animalId:numPalp,resultado:palp.resultado,prenezMeses:esPren?palp.meses:null})
-      .then(()=>LCStore.updateAnimalCampos(numPalp,campos)).then(()=>desencolar())
+    pSavePalp=LCStore.registrarPalpacion({animalId:numPalp,resultado:palp.resultado,prenezMeses:esPren?palp.meses:null})
+      .then(r=>{palpId=r&&r.id;return LCStore.updateAnimalCampos(numPalp,campos);}).then(()=>desencolar())
       .catch(e=>console.warn('Palpación móvil no guardada:',e.message||e));
   }
+  const revertirPalpEnBaseM=()=>{ if(typeof LCStore==='undefined')return;
+    pSavePalp.then(()=>Promise.all([
+      palpId?LCStore.deletePalpacion(palpId):null,
+      reproAntes?LCStore.updateAnimalCampos(numPalp,reproAntes):null,
+    ])).catch(e=>console.warn('No se pudo revertir la palpación móvil en la base:',e.message||e)); };
   if(palp.resultado==='vacia'){
     renderVacias();
     setTimeout(()=>go('scr-repro'),300);
@@ -734,6 +757,7 @@ function savePalp(){
     if(prev)proximosPartos.push(prev); else porParir--;
     if(removedVacia)vacasVacias.splice(Math.min(vi,vacasVacias.length),0,removedVacia);
     desencolar();renderPartos();renderVacias();snack('Palpación deshecha');
+    revertirPalpEnBaseM();
   });
 }
 /* ===== Enfermedad / tratamiento (activa el retiro de leche) ===== */

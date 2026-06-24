@@ -142,6 +142,18 @@
     return true;
   }
 
+  async function deleteParto(id) {
+    const { error } = await client().from('partos').delete().eq('id', id);
+    if (error) throw error;
+    return true;
+  }
+
+  async function deletePalpacion(id) {
+    const { error } = await client().from('palpaciones').delete().eq('id', id);
+    if (error) throw error;
+    return true;
+  }
+
   const MOTIVO_BAJA = { 'Venta': 'venta', 'Muerte': 'muerte', 'Descarte': 'descarte', 'Pérdida': 'perdida' };
   async function darDeBaja(id, baja) {
     return updateAnimalCampos(id, {
@@ -307,7 +319,8 @@
     registrarOrdeno, getOrdenosFecha,
     getTarifa, registrarEntrega, getEntregasFecha,
     getProduccionMensual, getPartos, getTratamientos, terminarTratamiento, reactivarTratamiento,
-    updateAnimalCampos, darDeBaja, deleteAnimal, registrarTratamiento, registrarParto, registrarPalpacion,
+    updateAnimalCampos, darDeBaja, deleteAnimal, deleteParto, deletePalpacion,
+    registrarTratamiento, registrarParto, registrarPalpacion,
     ping,
   };
 });
