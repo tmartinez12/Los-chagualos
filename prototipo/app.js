@@ -194,11 +194,14 @@ function openEditVaca(){
   if(!a){snack('Abre una ficha primero');return;}
   editM.num=num;editM.nombre=a.nombre||'';editM.raza=a.raza||'';
   editM.nacimiento=a.nacimiento||'';editM.peso=(a.pesoKg!=null?a.pesoKg:'');
+  editM.del=(a.del!=null?a.del:'');editM.leche=(a.leche&&a.leche.ayer!=null?a.leche.ayer:'');
   document.getElementById('editCow').textContent=(a.id+' · '+a.nombre).toUpperCase();
   document.getElementById('editNombre').value=editM.nombre;
   document.getElementById('editRaza').value=editM.raza;
   document.getElementById('editNac').value=editM.nacimiento||'';
   document.getElementById('editPeso').value=editM.peso;
+  document.getElementById('editDel').value=editM.del;
+  document.getElementById('editLeche').value=editM.leche;
   document.getElementById('scrim').classList.add('show');
   document.getElementById('editSheet').classList.add('show');
 }
@@ -210,15 +213,20 @@ function saveEditVaca(){
   const raza=(editM.raza||'').trim()||null;
   const nacimiento=editM.nacimiento||null;
   const peso=(editM.peso!==''&&editM.peso!=null)?parseFloat(editM.peso):null;
+  const del=(editM.del!==''&&editM.del!=null)?parseInt(editM.del,10):null;
+  const leche=(editM.leche!==''&&editM.leche!=null)?parseFloat(editM.leche):null;
   closeEdit();
-  const campos={nombre:nombre,raza:raza,nacimiento:nacimiento};
+  const campos={nombre:nombre,raza:raza,nacimiento:nacimiento,del:del,leche_ayer:leche};
   if(peso!=null&&!isNaN(peso)){campos.peso_kg=peso;campos.fecha_peso=isoHoyM();}
-  Object.assign(a,{nombre:nombre,raza:raza,nacimiento:nacimiento});
+  Object.assign(a,{nombre:nombre,raza:raza,nacimiento:nacimiento,del:del});
+  a.leche=a.leche||{};a.leche.ayer=leche;
   if(peso!=null&&!isNaN(peso)){a.pesoKg=peso;a.fechaPeso=isoHoyM();}
-  /* refrescar la entrada del hato (nombre/sub) si existe */
+  /* refrescar la entrada del hato y la tarjeta de ordeño */
   const k=GRUPO_KEY[a.grupo];
   if(k&&grupos[k]){const e=grupos[k].animales.find(x=>numDe(x[0])===num);
     if(e){e[0]=a.id+' · '+a.nombre;e[1]=subAnimalM(a);}}
+  const mc=cows.findIndex(c=>c.num===num);
+  if(mc>=0){const pd=cows[mc].done,pv=cows[mc].v;cows[mc]=Object.assign(animalACow(a),{done:pd,v:pv});renderCows();renderInicioM();}
   renderFicha(num);encolar();
   if(typeof LCStore!=='undefined'){
     LCStore.updateAnimalCampos(num,campos).then(()=>desencolar()).catch(e=>{

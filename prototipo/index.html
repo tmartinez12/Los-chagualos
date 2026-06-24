@@ -859,6 +859,12 @@
     <div class="section-label">Peso (kg)</div>
     <input id="editPeso" type="number" inputmode="numeric" placeholder="kg" oninput="editM.peso=this.value"
       style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
+    <div class="section-label">DEL · días en leche</div>
+    <input id="editDel" type="number" inputmode="numeric" placeholder="solo vacas en ordeño" oninput="editM.del=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
+    <div class="section-label">Leche de ayer (L)</div>
+    <input id="editLeche" type="number" inputmode="numeric" placeholder="litros del último día" oninput="editM.leche=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
     <button class="btn filled" style="width:100%;justify-content:center;margin-top:16px" onclick="saveEditVaca()">
       <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar cambios</button>
     <div style="font-size:11px;color:var(--ink-3);margin-top:10px;text-align:center">

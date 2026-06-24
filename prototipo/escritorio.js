@@ -1517,13 +1517,16 @@ function openEditarVaca(num){
   editState.num=num;
   editState.nombre=a.nombre||'';editState.raza=a.raza||'';
   editState.nacimiento=a.nacimiento||'';editState.peso=(a.pesoKg!=null?a.pesoKg:'');
-  openReg('Editar datos de '+num,'Cambia la información básica del animal');
+  editState.del=(a.del!=null?a.del:'');editState.leche=(a.leche&&a.leche.ayer!=null?a.leche.ayer:'');
+  openReg('Editar datos de '+num,'Cambia la información básica y de producción del animal');
   const body=document.getElementById('regBody');body.innerHTML='';
   body.appendChild(regTexto('Nombre','Nombre del animal',v=>editState.nombre=v,'text',editState.nombre));
   body.appendChild(regTexto('Raza','Ej. Holstein × Gyr',v=>editState.raza=v,'text',editState.raza));
   body.appendChild(regTexto('Fecha de nacimiento','',v=>editState.nacimiento=v,'date',editState.nacimiento));
   body.appendChild(regTexto('Peso (kg)','',v=>editState.peso=v,'number',editState.peso));
-  body.appendChild(regHint('Para cambios reproductivos (preñez, secado, parto) usa los registros del menú.'));
+  body.appendChild(regTexto('DEL · días en leche','solo vacas en ordeño',v=>editState.del=v,'number',editState.del));
+  body.appendChild(regTexto('Leche de ayer (L)','litros del último día',v=>editState.leche=v,'number',editState.leche));
+  body.appendChild(regHint('DEL y leche alimentan la producción (tabla y gráfico). Para preñez/secado/parto usa los registros del menú.'));
   document.getElementById('regSaveBtn').onclick=guardarEditarVaca;
 }
 function guardarEditarVaca(){
@@ -1532,16 +1535,23 @@ function guardarEditarVaca(){
   const raza=(editState.raza||'').trim()||null;
   const nacimiento=editState.nacimiento||null;
   const peso=(editState.peso!==''&&editState.peso!=null)?parseFloat(editState.peso):null;
+  const del=(editState.del!==''&&editState.del!=null)?parseInt(editState.del,10):null;
+  const leche=(editState.leche!==''&&editState.leche!=null)?parseFloat(editState.leche):null;
   closeReg();
   /* persistir en la base */
-  const campos={nombre:nombre,raza:raza,nacimiento:nacimiento};
+  const campos={nombre:nombre,raza:raza,nacimiento:nacimiento,del:del,leche_ayer:leche};
   if(peso!=null&&!isNaN(peso)){campos.peso_kg=peso;campos.fecha_peso=isoHoy();}
   /* actualizar caché, ficha curada y fila del hato para reflejarlo de inmediato */
-  Object.assign(a,{nombre:nombre,raza:raza,nacimiento:nacimiento});
+  Object.assign(a,{nombre:nombre,raza:raza,nacimiento:nacimiento,del:del});
+  a.leche=a.leche||{};a.leche.ayer=leche;
   if(peso!=null&&!isNaN(peso)){a.pesoKg=peso;a.fechaPeso=isoHoy();}
   if(fichas[num]){fichas[num].n=nombre;fichas[num].raza=raza;if(peso!=null&&!isNaN(peso))fichas[num].peso=peso+' kg';}
-  const h=hato.find(x=>x.num===num);if(h){h.n=nombre;h.raza=raza;}
-  goVaca(num,vacaFrom);renderHato();
+  const h=hato.find(x=>x.num===num);if(h){h.n=nombre;h.raza=raza;h.del=(del==null?'—':del);h.ayer=(leche==null?'—':leche);}
+  /* reflejar en la tabla de ordeño si la vaca está en ordeño */
+  const mEdit=milkCows.findIndex(c=>c.num===num);
+  if(mEdit>=0){const prevDone=milkCows[mEdit].done,prevV=milkCows[mEdit].v;
+    milkCows[mEdit]=Object.assign(animalAMilk(a),{done:prevDone,v:prevV});}
+  goVaca(num,vacaFrom);renderHato();renderMilk();
   if(typeof LCStore!=='undefined')LCStore.updateAnimalCampos(num,campos).catch(e=>{
     console.warn('Edición no guardada en la base:',e.message||e);
     snack('⚠ '+num+': cambios guardados local, falta sincronizar');});
