@@ -515,6 +515,48 @@ function renderSanidadVacunasM(){
   const mes=new Date().getMonth(),cal=document.getElementById('sanCalendarioM');
   if(cal)Array.prototype.forEach.call(cal.children,(c,i)=>c.classList.toggle('now',i===mes));
 }
+/* ===== Vacunaciones (móvil) ===== */
+const vacM={tipo:'aftosa',alcance:'hato',animal:'',producto:'',lote:''};
+function vacPick(btn,campo,val){vacM[campo]=val;[...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));}
+function openVacunaM(){
+  vacM.tipo='aftosa';vacM.alcance='hato';vacM.animal='';vacM.producto='';vacM.lote='';
+  document.querySelectorAll('#vacunaSheet .chips').forEach((g,gi)=>g.querySelectorAll('.chip').forEach((c,i)=>c.classList.toggle('sel',i===0)));
+  ['vacAnimalM','vacProductoM','vacLoteM'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('vacAnimalM').style.display='none';
+  document.getElementById('scrim').classList.add('show');
+  document.getElementById('vacunaSheet').classList.add('show');
+}
+function closeVacuna(){document.getElementById('vacunaSheet').classList.remove('show');
+  document.getElementById('scrim').classList.remove('show');}
+function saveVacunaM(){
+  closeVacuna();
+  const individual=vacM.alcance==='individual';
+  const animalId=individual?(vacM.animal||'').trim():null;
+  const nAnimales=individual?null:Object.values(animalesPorIdM).filter(a=>a.grupo!=='baja').length;
+  encolar();
+  if(typeof LCStore!=='undefined'){
+    LCStore.registrarVacunacion({tipo:vacM.tipo,alcance:vacM.alcance,animalId:animalId,nAnimales:nAnimales,
+      producto:vacM.producto||null,lote:vacM.lote||null,fecha:isoHoyM()})
+      .then(()=>{desencolar();cargarVacunacionesM();})
+      .catch(e=>{console.warn('Vacunación móvil no guardada:',e.message||e);snack('⚠ Vacunación guardada local, falta sincronizar');});
+  }
+  snack('Vacunación registrada: '+vacM.tipo+(individual?(animalId?' · '+animalId:''):' · todo el hato'));
+}
+function renderVacunacionesM(lista){
+  const box=document.getElementById('vacListaHistM');if(!box)return;
+  if(!lista||!lista.length){box.innerHTML='<span style="color:var(--ink-3)">Aún no hay vacunaciones registradas.</span>';return;}
+  box.innerHTML=lista.slice(0,8).map(v=>{
+    const quien=v.alcance==='individual'
+      ?((v.animales&&v.animales.nombre)?v.animal_id+' '+v.animales.nombre:(v.animal_id||'animal'))
+      :('todo el hato'+(v.n_animales?' ('+v.n_animales+')':''));
+    return '<div><b style="color:var(--ink)">'+fmtFechaCortaM(v.fecha)+'</b> · '+v.tipo+' · '+quien+(v.lote?' · lote '+v.lote:'')+'</div>';
+  }).join('');
+}
+async function cargarVacunacionesM(){
+  if(typeof LCStore==='undefined')return;
+  try{const v=await LCStore.getVacunaciones();renderVacunacionesM(v);}catch(e){console.warn('Vacunaciones móvil:',e.message||e);}
+}
+cargarVacunacionesM();
 renderCows();renderInicioM();pintaRutina();renderEntregasM();renderPalpListaM();renderSanidadVacunasM();
 /* Maíz: el bloque del inicio solo se muestra si la finca tiene datos del cultivo. */
 let datosMaiz = null;   // sin demo de maíz (poner {siloDias,loteDias} cuando haya cultivo)

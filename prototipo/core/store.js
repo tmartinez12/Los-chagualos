@@ -317,6 +317,33 @@
     return data || [];
   }
 
+  /* --- Vacunaciones --------------------------------------------------------- */
+  async function registrarVacunacion(v) {
+    const fila = {
+      tipo: v.tipo, alcance: v.alcance || 'hato',
+      animal_id: v.alcance === 'individual' ? (v.animalId || null) : null,
+      n_animales: v.alcance === 'hato' ? (v.nAnimales != null ? v.nAnimales : null) : null,
+      producto: v.producto || null, lote: v.lote || null,
+      fecha: v.fecha || new Date().toISOString().slice(0, 10),
+      proxima: v.proxima || null, nota: v.nota || null,
+    };
+    const { data, error } = await client().from('vacunaciones').insert(fila).select().single();
+    if (error) throw error;
+    return data;
+  }
+  async function getVacunaciones() {
+    const { data, error } = await client().from('vacunaciones')
+      .select('id, tipo, alcance, animal_id, n_animales, producto, lote, fecha, proxima, nota, animales(nombre)')
+      .order('fecha', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  }
+  async function deleteVacunacion(id) {
+    const { error } = await client().from('vacunaciones').delete().eq('id', id);
+    if (error) throw error;
+    return true;
+  }
+
   /* Histórico mensual DERIVADO de los ordeños (vista v_produccion_mensual).
    * Si la vista no existe, cae a la tabla produccion_mensual (compatibilidad). */
   async function getProduccionMensual() {
@@ -376,6 +403,7 @@
     insertAnimal, updateAnimal,
     registrarOrdeno, getOrdenosFecha,
     getTarifa, registrarEntrega, getEntregasFecha, getEntregas, getOrdenos,
+    registrarVacunacion, getVacunaciones, deleteVacunacion,
     getProduccionMensual, getPartos, getTratamientos, terminarTratamiento, reactivarTratamiento,
     updateAnimalCampos, darDeBaja, deleteAnimal, deleteParto, deletePalpacion,
     registrarTratamiento, registrarParto, registrarPalpacion,

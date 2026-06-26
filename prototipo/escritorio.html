@@ -361,7 +361,8 @@
         <div class="section-label" style="margin-top:0">En tratamiento ahora · <span style="color:var(--red)" id="tratCount">1</span></div>
         <div id="tratActivos" style="margin-bottom:14px"></div>
 
-        <div class="section-label">Vacunas</div>
+        <div class="section-label" style="display:flex;justify-content:space-between;align-items:center">Vacunas
+          <button class="btn outl small" onclick="openVacuna()">＋ Registrar vacunación</button></div>
         <div class="grid" style="grid-template-columns:1fr 1fr">
           <div class="card" style="border:1.5px solid var(--ink);display:flex;align-items:center;gap:14px">
             <svg class="ic" style="color:var(--ink-2)"><use href="#i-shield"/></svg>
@@ -401,10 +402,8 @@
               Desparasitación — cada 3 meses<br>Baño garrapaticida — según clima</div>
           </div>
           <div class="card">
-            <div class="chart-title" style="font-size:13.5px">Soporte ICA</div>
-            <div style="font-size:13px;color:var(--ink-2);line-height:1.95;margin-top:8px">
-              Registra los ciclos de vacunación (aftosa, brucelosis) para tener el
-              soporte oficial ICA exportable.</div>
+            <div class="chart-title" style="font-size:13.5px">Historial · soporte ICA</div>
+            <div id="vacListaHist" style="font-size:12.5px;color:var(--ink-2);line-height:1.7;margin-top:8px"></div>
             <button class="btn outl small" style="margin-top:12px" onclick="snack('Soporte ICA exportado')"><svg class="ic-s ic"><use href="#i-export"/></svg>Exportar soporte</button>
           </div>
         </div>

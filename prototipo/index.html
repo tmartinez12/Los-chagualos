@@ -458,6 +458,8 @@
     <div class="section-label">En tratamiento ahora · <span style="color:var(--ink)" id="tratCountM">0</span></div>
     <div id="tratListaM"></div>
 
+    <button class="btn outl" style="width:100%;justify-content:center;margin-top:4px" onclick="openVacunaM()">
+      <svg class="ic-s ic"><use href="#i-shield"/></svg>Registrar vacunación</button>
     <div class="section-label">Vacunas</div>
     <div class="card" style="border:1.5px solid var(--ink)">
       <div class="row">
@@ -505,12 +507,38 @@
         <div class="li-body"><div class="li-title">Protocolos configurados</div>
           <div class="li-sub">Aftosa · brucelosis · desparasitación · baño</div></div>
         <div class="li-trail"><div class="li-num">4</div></div><svg class="ic chev"><use href="#i-chev"/></svg></div>
-      <div class="list-item" onclick="snack('Soporte ICA — registra las vacunaciones del hato')">
-        <div class="li-leading"><svg class="ic"><use href="#i-export"/></svg></div>
-        <div class="li-body"><div class="li-title">Historial · soporte ICA</div>
-          <div class="li-sub">Registra aquí las vacunaciones del hato</div></div>
-        <svg class="ic chev"><use href="#i-chev"/></svg></div>
+      <div class="list-item" style="display:block">
+        <div class="li-title" style="margin-bottom:6px">Historial · soporte ICA</div>
+        <div id="vacListaHistM" style="font-size:12.5px;color:var(--ink-2);line-height:1.7"></div></div>
     </div>
+  </div>
+
+  <!-- SHEET: registrar vacunación -->
+  <div class="sheet" id="vacunaSheet">
+    <div class="handle"></div>
+    <h3>Registrar vacunación</h3>
+    <div class="m-del" style="margin-bottom:12px">Queda como soporte ICA.</div>
+    <div class="section-label" style="margin-top:0">Tipo</div>
+    <div class="chips" id="vacTipoChips">
+      <button class="chip sel" onclick="vacPick(this,'tipo','aftosa')">Aftosa</button>
+      <button class="chip" onclick="vacPick(this,'tipo','brucelosis')">Brucelosis</button>
+      <button class="chip" onclick="vacPick(this,'tipo','desparasitacion')">Desparasitación</button>
+      <button class="chip" onclick="vacPick(this,'tipo','vitaminas')">Vitaminas</button>
+      <button class="chip" onclick="vacPick(this,'tipo','otra')">Otra</button>
+    </div>
+    <div class="section-label">¿A quién?</div>
+    <div class="chips">
+      <button class="chip sel" onclick="vacPick(this,'alcance','hato');document.getElementById('vacAnimalM').style.display='none'">Todo el hato</button>
+      <button class="chip" onclick="vacPick(this,'alcance','individual');document.getElementById('vacAnimalM').style.display=''">Una animal</button>
+    </div>
+    <input id="vacAnimalM" placeholder="Número del animal" oninput="vacM.animal=this.value"
+      style="display:none;width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-top:8px">
+    <input id="vacProductoM" placeholder="Producto (opcional)" oninput="vacM.producto=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-top:8px">
+    <input id="vacLoteM" placeholder="Lote (opcional)" oninput="vacM.lote=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-top:8px">
+    <button class="btn filled" style="width:100%;justify-content:center;margin-top:16px" onclick="saveVacunaM()">
+      <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar vacunación</button>
   </div>
 
   <!-- ============ GRUPO (drill-down) ============ -->
@@ -565,7 +593,7 @@
   </div>
 
   <!-- SHEET -->
-  <div class="scrim" id="scrim" onclick="closeSheet();closeMilk();closeParto();closePalp();closeTrata();closeSeca();closeAlta();closeBaja();closeEdit()"></div>
+  <div class="scrim" id="scrim" onclick="closeSheet();closeMilk();closeParto();closePalp();closeTrata();closeSeca();closeAlta();closeBaja();closeEdit();closeVacuna()"></div>
   <div class="sheet" id="sheet">
     <div class="handle"></div>
     <h3>Registrar</h3>

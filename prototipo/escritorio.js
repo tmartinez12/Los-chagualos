@@ -1050,6 +1050,57 @@ function renderSanidadVacunas(){
   const cal=document.getElementById('sanCalendario');
   if(cal)Array.prototype.forEach.call(cal.children,(c,i)=>c.classList.toggle('now',i===mes));
 }
+/* ===== Registro de vacunaciones ===== */
+const TIPO_VAC=[{val:'aftosa',label:'Aftosa'},{val:'brucelosis',label:'Brucelosis'},
+  {val:'desparasitacion',label:'Desparasitación'},{val:'vitaminas',label:'Vitaminas'},{val:'otra',label:'Otra'}];
+const vacunaState={};
+function openVacuna(){
+  vacunaState.tipo='aftosa';vacunaState.alcance='hato';vacunaState.animal='';
+  vacunaState.producto='';vacunaState.lote='';vacunaState.fecha=isoHoy();
+  openReg('Registrar vacunación','Queda como soporte ICA');
+  const body=document.getElementById('regBody');body.innerHTML='';
+  body.appendChild(regLabel('Tipo'));
+  body.appendChild(regChips(TIPO_VAC,vacunaState.tipo,v=>vacunaState.tipo=v));
+  body.appendChild(regLabel('¿A quién?'));
+  body.appendChild(regChips([{val:'hato',label:'Todo el hato'},{val:'individual',label:'Una animal'}],vacunaState.alcance,
+    v=>{vacunaState.alcance=v;const w=document.getElementById('vacAnimalWrap');if(w)w.style.display=v==='individual'?'':'none';}));
+  const aw=regTexto('Animal (número)','solo si es una animal',v=>vacunaState.animal=v,'text',vacunaState.animal);
+  aw.id='vacAnimalWrap';aw.style.display='none';body.appendChild(aw);
+  body.appendChild(regTexto('Producto (opcional)','Ej. Aftogan',v=>vacunaState.producto=v,'text',vacunaState.producto));
+  body.appendChild(regTexto('Lote (opcional)','lote del biológico',v=>vacunaState.lote=v,'text',vacunaState.lote));
+  body.appendChild(regTexto('Fecha','',v=>vacunaState.fecha=v,'date',vacunaState.fecha));
+  document.getElementById('regSaveBtn').onclick=saveVacuna;
+}
+function saveVacuna(){
+  closeReg();
+  const tipoLabel=(TIPO_VAC.find(t=>t.val===vacunaState.tipo)||{}).label||vacunaState.tipo;
+  const individual=vacunaState.alcance==='individual';
+  const animalId=individual?(vacunaState.animal||'').trim():null;
+  const nAnimales=individual?null:Object.values(animalesPorId).filter(a=>a.grupo!=='baja').length;
+  if(typeof LCStore!=='undefined'){
+    LCStore.registrarVacunacion({tipo:vacunaState.tipo,alcance:vacunaState.alcance,animalId:animalId,
+      nAnimales:nAnimales,producto:vacunaState.producto||null,lote:vacunaState.lote||null,fecha:vacunaState.fecha||isoHoy()})
+      .then(()=>cargarVacunaciones())
+      .catch(e=>{console.warn('Vacunación no guardada:',e.message||e);snack('⚠ Vacunación guardada local, falta sincronizar');});
+  }
+  snack('Vacunación registrada: '+tipoLabel+(individual?(animalId?' · '+animalId:''):' · todo el hato'));
+}
+function renderVacunaciones(lista){
+  const box=document.getElementById('vacListaHist');if(!box)return;
+  if(!lista||!lista.length){box.innerHTML='<span style="color:var(--ink-3)">Aún no hay vacunaciones registradas.</span>';return;}
+  box.innerHTML=lista.slice(0,8).map(v=>{
+    const quien=v.alcance==='individual'
+      ?((v.animales&&v.animales.nombre)?v.animal_id+' '+v.animales.nombre:(v.animal_id||'animal'))
+      :('todo el hato'+(v.n_animales?' ('+v.n_animales+')':''));
+    return '<div><b style="color:var(--ink)">'+fmtFechaCorta(v.fecha)+'</b> · '+v.tipo+' · '+quien+(v.lote?' · lote '+v.lote:'')+'</div>';
+  }).join('');
+}
+async function cargarVacunaciones(){
+  if(typeof LCStore==='undefined')return;
+  try{const v=await LCStore.getVacunaciones();renderVacunaciones(v);}
+  catch(e){console.warn('Vacunaciones:',e.message||e);}
+}
+cargarVacunaciones();
 function renderTratamientos(){
   const cont=document.getElementById('tratActivos');if(!cont)return;cont.innerHTML='';
   tratamientos.forEach((t,i)=>{

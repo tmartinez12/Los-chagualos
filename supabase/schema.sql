@@ -262,6 +262,26 @@ CREATE TABLE tratamientos (
 CREATE INDEX idx_tratamientos_animal ON tratamientos(animal_id);
 CREATE INDEX idx_tratamientos_activo ON tratamientos(activo) WHERE activo = TRUE;
 
+-- ─── VACUNACIONES ───────────────────────────────────────────────────────────
+-- Evento de vacunación: a todo el hato (ciclo) o a un animal. Soporte ICA.
+
+CREATE TABLE vacunaciones (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tipo        TEXT NOT NULL,                 -- aftosa · brucelosis · desparasitacion · vitaminas · otra
+  alcance     TEXT NOT NULL DEFAULT 'hato',  -- hato | individual
+  animal_id   TEXT REFERENCES animales(id) ON DELETE CASCADE,
+  n_animales  INTEGER,
+  producto    TEXT,
+  lote        TEXT,
+  fecha       DATE NOT NULL DEFAULT CURRENT_DATE,
+  proxima     DATE,
+  nota        TEXT,
+  registrado_por UUID REFERENCES profiles(id),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_vacunaciones_fecha ON vacunaciones(fecha DESC);
+
 -- ─── POTREROS ───────────────────────────────────────────────────────────────
 
 CREATE TABLE potreros (
