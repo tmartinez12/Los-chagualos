@@ -12,7 +12,10 @@ ALTER TABLE animales ADD COLUMN IF NOT EXISTS inicio_lactancia DATE;
 --    - del_calc: días desde el inicio de lactancia (si se conoce).
 --    - leche_ultima: litros del ordeño más reciente registrado.
 --    La app usa estos cuando existen; si no, cae a las columnas guardadas.
-CREATE OR REPLACE VIEW v_animales AS
+-- DROP antes de crear: CREATE OR REPLACE no permite reordenar/renombrar columnas
+-- de una vista existente, y esta migración agrega columnas nuevas.
+DROP VIEW IF EXISTS v_animales CASCADE;
+CREATE VIEW v_animales AS
 SELECT a.*,
   -- edad DERIVADA de la fecha de nacimiento (si se conoce); avanza con el tiempo
   CASE WHEN a.nacimiento IS NOT NULL
@@ -42,7 +45,8 @@ SELECT a.*,
 FROM animales a;
 
 -- 3) Vista del histórico mensual DERIVADA de los ordeños (ya no se llena a mano).
-CREATE OR REPLACE VIEW v_produccion_mensual AS
+DROP VIEW IF EXISTS v_produccion_mensual CASCADE;
+CREATE VIEW v_produccion_mensual AS
 SELECT animal_id,
        to_char(fecha, 'YYYY-MM')      AS mes,
        round(avg(litros)::numeric, 1) AS litros_dia,
