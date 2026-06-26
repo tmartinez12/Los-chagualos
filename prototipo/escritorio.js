@@ -28,7 +28,7 @@ function subFor(id){
       return hato.length+' animales · '+ordeño+' en ordeño · '+prenadas+' preñadas';
     }
     if(id==='pg-partos'){
-      return partosRecientes.length+' partos en 2026 · '+proximosPartos.length+' por parir';
+      return partosRecientes.length+' partos · '+proximosPartos.length+' por parir';
     }
     if(id==='pg-repro'){
       return vacasVacias.length+' vacías por decidir · '+palpCandidatas.length+' por palpar';
@@ -371,8 +371,22 @@ function renderScatter(svgId){
 function renderScatters(){if(!scatterListo)return;renderScatter('scatterLeche');}
 
 /* ===== Entregas a lecheros ===== */
-const MESES_L=['Ene','Feb','Mar','Abr','May','Jun'];
-const DIAS_MES=[31,28,31,30,31,12];
+/* Últimos 6 meses hasta hoy (dinámico). Cada mes: clave 'YYYY-MM', etiqueta,
+   año, índice de mes (0-11) y días (el mes en curso, hasta hoy). */
+const MESES_INFO=(function(){
+  const arr=[],now=new Date();
+  for(let k=5;k>=0;k--){
+    const d=new Date(now.getFullYear(),now.getMonth()-k,1);
+    const esActual=d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();
+    const lab=LCRules.MESC[d.getMonth()];
+    arr.push({key:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),
+      label:lab.charAt(0).toUpperCase()+lab.slice(1), year:d.getFullYear(), month:d.getMonth(),
+      dias:esActual?now.getDate():new Date(d.getFullYear(),d.getMonth()+1,0).getDate()});
+  }
+  return arr;
+})();
+const MESES_L=MESES_INFO.map(m=>m.label);     // derivado (compatibilidad)
+const DIAS_MES=MESES_INFO.map(m=>m.dias);      // derivado
 let lecheros=[];
 /* derivación lechero canónico (BD) → fila de la UI */
 const DOW_ABBR=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
@@ -407,7 +421,7 @@ function entregaDiaKey(lid,m,d){return lid+'-'+m+'-'+d;}
 /* mapas de datos reales por día (cargados desde Supabase) */
 let entregasDiaMap={};   // 'lecheroId|YYYY-MM-DD' → litros
 let ordenosDiaMap={};    // 'animalId|YYYY-MM-DD'  → litros
-function claveFecha(mesIdx,dia){return '2026-'+String(mesIdx+1).padStart(2,'0')+'-'+String(dia).padStart(2,'0');}
+function claveFecha(mesIdx,dia){return MESES_INFO[mesIdx].key+'-'+String(dia).padStart(2,'0');}
 function entregaDiaVal(lid,mesIdx,dia){
   const k=entregaDiaKey(lid,mesIdx,dia);
   if(k in entregaOverrides)return entregaOverrides[k];
@@ -509,7 +523,7 @@ function renderEntregaHist(){
   if(!head||!tb)return;head.innerHTML='';tb.innerHTML='';
   const tit=document.getElementById('entregaHistTitulo');
   const n=DIAS_MES[entregaMesIdx];
-  if(tit)tit.textContent='Historial de entregas · '+MESES_L[entregaMesIdx]+' 2026';
+  if(tit)tit.textContent='Historial de entregas · '+MESES_L[entregaMesIdx]+' '+MESES_INFO[entregaMesIdx].year;
   let h='<tr><th>Día</th>';
   lecheros.forEach(l=>h+='<th class="r">'+l.n+'</th>');
   h+='<th class="r" style="font-weight:800">Total</th></tr>';
@@ -518,7 +532,7 @@ function renderEntregaHist(){
   let gran=0;
   for(let d=n;d>=1;d--){
     const tr=document.createElement('tr');
-    const dow=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][new Date(2026,entregaMesIdx,d).getDay()];
+    const dow=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][new Date(MESES_INFO[entregaMesIdx].year,MESES_INFO[entregaMesIdx].month,d).getDay()];
     let cells='<td><b>'+d+'</b> <span class="sub">'+dow+'</span></td>';
     let diaTotal=0;
     lecheros.forEach((l,li)=>{
@@ -599,7 +613,7 @@ function toggleMensual(v){mensualVista=v;
   renderMensual();}
 function renderMesPicker(){
   const p=document.getElementById('mesPicker');if(!p)return;p.innerHTML='';
-  const items=[{i:-1,t:'Resumen 2026'}].concat(MESES_L.map((m,i)=>({i:i,t:m})));
+  const items=[{i:-1,t:'Resumen'}].concat(MESES_L.map((m,i)=>({i:i,t:m})));
   items.forEach(it=>{
     const b=document.createElement('button');b.className='btn outl small';
     b.textContent=it.t;
@@ -617,8 +631,8 @@ function renderMensual(){
   if(mensualMes>=0){   /* ---- vista DIARIA del mes elegido ---- */
     if(btnT)btnT.style.display='none';if(btnP)btnP.style.display='none';
     const n=DIAS_MES[mensualMes];
-    if(tit)tit.textContent='Producción diaria · '+MESES_L[mensualMes]+' 2026 (L/día por vaca)';
-    if(hint)hint.textContent='Clic en un valor para editarlo · ‹ Resumen 2026 › para volver';
+    if(tit)tit.textContent='Producción diaria · '+MESES_L[mensualMes]+' '+MESES_INFO[mensualMes].year+' (L/día por vaca)';
+    if(hint)hint.textContent='Clic en un valor para editarlo · ‹ Resumen › para volver';
     let h='<tr><th>Animal</th>';
     for(let d=1;d<=n;d++)h+='<th class="r" style="padding:8px 6px">'+d+'</th>';
     h+='<th class="r" style="font-weight:800">Prom</th><th class="r" style="font-weight:800">Total</th></tr>';
@@ -664,11 +678,11 @@ function renderMensual(){
   }
   /* ---- vista RESUMEN 2026 (mensual) ---- */
   if(btnT)btnT.style.display='';if(btnP)btnP.style.display='';
-  if(tit)tit.textContent='Producción por vaca · resumen 2026';
+  if(tit)tit.textContent='Producción por vaca · últimos 6 meses';
   if(hint)hint.textContent='Toca un mes para ver el detalle día por día · toca una vaca para su ficha completa';
   let h='<tr><th>Animal</th>';
   MESES_L.forEach(m=>h+='<th class="r">'+m+'</th>');
-  h+='<th class="r" style="font-weight:800">Prom. 2026</th><th class="r" style="font-weight:800">Total 2026</th></tr>';
+  h+='<th class="r" style="font-weight:800">Prom.</th><th class="r" style="font-weight:800">Total</th></tr>';
   head.innerHTML=h;
   const totales=[0,0,0,0,0,0],conteos=[0,0,0,0,0,0];
   mensualData.forEach(c=>c.m.forEach((v,i)=>{if(v!==null){totales[i]+=v;conteos[i]++;}}));
@@ -712,7 +726,7 @@ renderMesPicker();renderMensual();
   try{
     const filas=await LCStore.getProduccionMensual();
     if(!filas)return;
-    const meses=['2026-01','2026-02','2026-03','2026-04','2026-05','2026-06'];
+    const meses=MESES_INFO.map(m=>m.key);
     const porAnimal={};
     filas.forEach(f=>{
       if(!porAnimal[f.animal_id])porAnimal[f.animal_id]={num:f.animal_id,
@@ -886,9 +900,9 @@ function goVaca(num,from){
     let total=0;
     md.m.forEach((v,i)=>{
       const tr=document.createElement('tr');
-      if(v===null){tr.innerHTML='<td>'+MESES_L[i]+' 2026</td><td class="r pending">—</td><td class="r pending">—</td><td class="r pending">—</td><td class="sub">sin ordeño</td>';}
+      if(v===null){tr.innerHTML='<td>'+MESES_L[i]+' '+MESES_INFO[i].year+'</td><td class="r pending">—</td><td class="r pending">—</td><td class="r pending">—</td><td class="sub">sin ordeño</td>';}
       else{const t=Math.round(v*DIAS_MES[i]);total+=t;
-        tr.innerHTML='<td><b>'+MESES_L[i]+' 2026</b></td><td class="r">'+v.toFixed(1)+'</td><td class="r"><b>'+t+' L</b></td><td class="r">'+DIAS_MES[i]+'</td><td class="sub">'+(v<8?'bajo':'normal')+'</td>';}
+        tr.innerHTML='<td><b>'+MESES_L[i]+' '+MESES_INFO[i].year+'</b></td><td class="r">'+v.toFixed(1)+'</td><td class="r"><b>'+t+' L</b></td><td class="r">'+DIAS_MES[i]+'</td><td class="sub">'+(v<8?'bajo':'normal')+'</td>';}
       tr.style.cursor='pointer';
       tr.onclick=()=>{mensualMes=i;renderMesPicker();renderMensual();go('pg-leche',document.querySelector('[data-pg="pg-leche"]'));
         document.querySelector('.content').scrollTop=document.getElementById('mesPicker').offsetTop-60;};
@@ -896,7 +910,7 @@ function goVaca(num,from){
     });
     const avgM=md.m.filter(v=>v!==null);
     const trT=document.createElement('tr');trT.style.cssText='font-weight:700;background:var(--surface)';
-    trT.innerHTML='<td>Total 2026</td><td class="r">'+(avgM.length?(avgM.reduce((a,b)=>a+b,0)/avgM.length).toFixed(1):'—')+'</td><td class="r">'+total+' L</td><td class="r">'+DIAS_MES.slice(0,md.m.filter(v=>v!==null).length).reduce((a,b)=>a+b,0)+'</td><td></td>';
+    trT.innerHTML='<td>Total</td><td class="r">'+(avgM.length?(avgM.reduce((a,b)=>a+b,0)/avgM.length).toFixed(1):'—')+'</td><td class="r">'+total+' L</td><td class="r">'+DIAS_MES.slice(0,md.m.filter(v=>v!==null).length).reduce((a,b)=>a+b,0)+'</td><td></td>';
     mtb.appendChild(trT);
   }
 }
@@ -933,10 +947,10 @@ function renderPartosKpis(){
   const porParir=proximosPartos.length;
   const prox=proximosPartos.length?proximosPartos[0]:null;
   box.innerHTML=
-    '<div class="card kpi"><div class="k-label">Partos 2026</div><div class="k-value">'+total+'</div><div class="k-trend up">'+vivas+' crías vivas</div></div>'+
+    '<div class="card kpi"><div class="k-label">Partos</div><div class="k-value">'+total+'</div><div class="k-trend up">'+vivas+' crías vivas</div></div>'+
     '<div class="card kpi"><div class="k-label">Por parir</div><div class="k-value">'+porParir+'</div><div class="k-trend mut">de las palpaciones</div></div>'+
     '<div class="card kpi"><div class="k-label">Próximo</div><div class="k-value" style="font-size:20px">'+(prox?prox.parto:'—')+'</div><div class="k-trend mut">'+(prox?prox.cow:'sin próximos')+'</div></div>'+
-    '<div class="card kpi"><div class="k-label">Mortinatos 2026</div><div class="k-value'+(mortinatos?' down':'')+'">'+mortinatos+'</div><div class="k-trend mut">de '+total+' partos</div></div>';
+    '<div class="card kpi"><div class="k-label">Mortinatos</div><div class="k-value'+(mortinatos?' down':'')+'">'+mortinatos+'</div><div class="k-trend mut">de '+total+' partos</div></div>';
   refreshHeader();
 }
 /* vacas vacías que requieren decisión */
