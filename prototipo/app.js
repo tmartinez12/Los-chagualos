@@ -311,7 +311,7 @@ function snack(msg,accionLabel,accionFn){const sb=document.getElementById('snack
 const cows=[];
 cows.forEach(c=>{c.done=false;c.v=null;});
 /* ===== Helpers compartidos para derivar desde Supabase ===== */
-const HOY_LC=new Date(2026,5,13);
+const HOY_LC=new Date();   // hoy real (la base trae datos reales)
 function diasHastaM(iso){if(!iso)return null;const d=new Date(iso+'T00:00:00');return Math.round((d-HOY_LC)/86400000);}
 function ordinalPartoM(n){const m={1:'1er',2:'2do',3:'3er',4:'4to',5:'5to',6:'6to',7:'7mo',8:'8vo',9:'9no'};return (m[n]||n+'to')+' parto';}
 function isoDeM(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+dd;}

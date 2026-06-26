@@ -100,14 +100,25 @@
     return (s == null ? '' : String(s)).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
   }
 
+  /* Caché corto de la tabla de animales: en una carga, varias pantallas piden
+   * getAnimales() casi a la vez; con esto se baja la tabla UNA sola vez.
+   * Se invalida en cada escritura de animales. */
+  let _animCache = null, _animCacheAt = 0;
+  function _invalidarAnimales() { _animCache = null; }
+  async function _fetchAnimalesRaw() {
+    if (_animCache && (Date.now() - _animCacheAt) < 3000) return _animCache;
+    let resp = await client().from('v_animales').select('*').order('id');
+    if (resp.error) resp = await client().from('animales').select('*').order('id');
+    if (resp.error) throw resp.error;
+    _animCache = resp.data; _animCacheAt = Date.now();
+    return _animCache;
+  }
+
   /* --- API de lectura ------------------------------------------------------- *
    * Lee de la vista v_animales (DEL y leche derivados). Si la vista no existe
    * todavía (migración sin aplicar), cae a la tabla animales.                 */
   async function getAnimales(grupo) {
-    let resp = await client().from('v_animales').select('*').order('id');
-    if (resp.error) resp = await client().from('animales').select('*').order('id');
-    const { data, error } = resp;
-    if (error) throw error;
+    const data = await _fetchAnimalesRaw();
     let rows = data.map(animalFromDB);
     if (grupo) { const g = _normGrupo(grupo); rows = rows.filter(a => _normGrupo(a.grupo) === g); }
     return rows;
@@ -135,12 +146,14 @@
 
   /* --- API de escritura ----------------------------------------------------- */
   async function insertAnimal(a) {
+    _invalidarAnimales();
     const { data, error } = await client().from('animales').insert(animalToDB(a)).select().single();
     if (error) throw error;
     return animalFromDB(data);
   }
 
   async function updateAnimal(id, patch) {
+    _invalidarAnimales();
     const { data, error } = await client().from('animales').update(animalToDB(patch)).eq('id', id).select().single();
     if (error) throw error;
     return animalFromDB(data);
@@ -149,12 +162,14 @@
   /* Update PARCIAL: solo toca las columnas dadas (snake_case). No usar
    * animalToDB aquí porque rellenaría con null y borraría otras columnas.  */
   async function updateAnimalCampos(id, campos) {
+    _invalidarAnimales();
     const { data, error } = await client().from('animales').update(campos).eq('id', id).select().single();
     if (error) throw error;
     return data;
   }
 
   async function deleteAnimal(id) {
+    _invalidarAnimales();
     const { error } = await client().from('animales').delete().eq('id', id);
     if (error) throw error;
     return true;

@@ -15,11 +15,12 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
 
   const MESC = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  const HOY_DEFECTO = [2026, 5, 13]; // [año, mesBase0, día]
 
+  /* "Hoy": por defecto la fecha real. Se puede inyectar una fecha (Date) para
+   * pruebas o para un "hoy" fijo desde el backend. */
   function baseHoy(hoy) {
     if (hoy instanceof Date) return new Date(hoy.getTime());
-    return new Date(HOY_DEFECTO[0], HOY_DEFECTO[1], HOY_DEFECTO[2]);
+    return new Date();
   }
 
   /* Fecha estimada de parto: hoy + lo que falta de gestación (~9 meses).

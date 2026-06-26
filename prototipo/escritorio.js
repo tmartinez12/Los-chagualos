@@ -1368,7 +1368,7 @@ function fmtNacimiento(a){
   if(a&&a.edadAnios!=null){const d=new Date(HOY_LC.getTime());d.setMonth(d.getMonth()-Math.round(a.edadAnios*12));return '~'+LCRules.MESC[d.getMonth()]+' '+d.getFullYear()+' (estimada)';}
   return '—';
 }
-const HOY_LC=new Date(2026,5,13);
+const HOY_LC=new Date();   // hoy real (la base trae datos reales)
 function fmtEdad(a){
   const n=a.edadAnios;if(n==null)return '—';
   const enMeses=a.grupo==='levante'||a.grupo==='ternera'||(a.grupo==='macho'&&n<1.5)||n<1;
