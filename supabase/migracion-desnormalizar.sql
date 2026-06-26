@@ -23,7 +23,16 @@ SELECT a.*,
   -- Al terminar/corregir el tratamiento, el retiro de la vaca se actualiza solo.
   ( SELECT max(t.retiro_leche_hasta) FROM tratamientos t
     WHERE t.animal_id = a.id AND t.activo
-      AND t.retiro_leche_hasta >= CURRENT_DATE ) AS retiro_calc
+      AND t.retiro_leche_hasta >= CURRENT_DATE ) AS retiro_calc,
+  -- Reproducción DERIVADA de la palpación (prenez_meses + ultima_palpacion):
+  --  parto ≈ palpación + (9 − meses) meses · secado ≈ parto − 2 meses
+  --  días vacía = días desde la palpación que la halló vacía
+  CASE WHEN a.estado_repro = 'prenada' AND a.prenez_meses IS NOT NULL AND a.ultima_palpacion IS NOT NULL
+       THEN (a.ultima_palpacion + (round((9 - a.prenez_meses))::int * INTERVAL '1 month'))::date END AS parto_estimado_calc,
+  CASE WHEN a.estado_repro = 'prenada' AND a.prenez_meses IS NOT NULL AND a.ultima_palpacion IS NOT NULL
+       THEN (a.ultima_palpacion + (round((7 - a.prenez_meses))::int * INTERVAL '1 month'))::date END AS secar_calc,
+  CASE WHEN a.estado_repro = 'vacia' AND a.ultima_palpacion IS NOT NULL
+       THEN (CURRENT_DATE - a.ultima_palpacion) END AS dias_vacia_calc
 FROM animales a;
 
 -- 3) Vista del histórico mensual DERIVADA de los ordeños (ya no se llena a mano).

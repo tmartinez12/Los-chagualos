@@ -45,6 +45,10 @@
     const delDerivado = (r.del_calc != null) ? r.del_calc : r.del;
     const lecheDerivada = (r.leche_ultima != null) ? r.leche_ultima : r.leche_ayer;
     const retiroDerivado = (r.retiro_calc !== undefined) ? r.retiro_calc : r.retiro_leche_hasta;
+    /* reproducción derivada de la palpación (con respaldo a la columna guardada) */
+    const partoEstDeriv = (r.parto_estimado_calc != null) ? r.parto_estimado_calc : r.parto_estimado;
+    const secarDeriv = (r.secar_calc != null) ? r.secar_calc : r.secar_estimado;
+    const diasVaciaDeriv = (r.dias_vacia_calc != null) ? r.dias_vacia_calc : r.dias_vacia;
     return {
       id: r.id, nombre: r.nombre, unidad: r.unidad_id, especie: r.especie,
       raza: r.raza, grupo: r.grupo, sexo: r.sexo,
@@ -52,11 +56,11 @@
       del: delDerivado, partos: r.partos, inicioLactancia: r.inicio_lactancia,
       leche: { ayer: lecheDerivada, hoy: r.leche_hoy },
       estadoRepro: r.estado_repro,
-      prenez: (r.prenez_meses != null || r.parto_estimado)
-        ? { meses: r.prenez_meses, partoEstimado: r.parto_estimado, ultimaPalpacion: r.ultima_palpacion }
+      prenez: (r.prenez_meses != null || partoEstDeriv)
+        ? { meses: r.prenez_meses, partoEstimado: partoEstDeriv, ultimaPalpacion: r.ultima_palpacion }
         : null,
-      diasVacia: r.dias_vacia, ultimaPalpacion: r.ultima_palpacion,
-      listaServicio: r.lista_servicio, secarEstimado: r.secar_estimado,
+      diasVacia: diasVaciaDeriv, ultimaPalpacion: r.ultima_palpacion,
+      listaServicio: r.lista_servicio, secarEstimado: secarDeriv,
       retiroLecheHasta: retiroDerivado,
       madreId: r.madre_id, padreId: r.padre_id,
       pesoKg: r.peso_kg, fechaPeso: r.fecha_peso, gananciaDiaG: r.ganancia_dia_g,
