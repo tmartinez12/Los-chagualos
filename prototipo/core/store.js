@@ -297,6 +297,21 @@
     return map;
   }
 
+  /* Entregas y ordeños históricos (datos reales para las tablas de detalle).
+   * Devuelven filas planas; la UI las agrupa por día/mes. */
+  async function getEntregas() {
+    const { data, error } = await client().from('entregas')
+      .select('lechero_id, fecha, litros, total, precio_litro');
+    if (error) throw error;
+    return data || [];
+  }
+  async function getOrdenos() {
+    const { data, error } = await client().from('ordenos')
+      .select('animal_id, fecha, litros').eq('turno', 'dia');
+    if (error) throw error;
+    return data || [];
+  }
+
   /* Histórico mensual DERIVADO de los ordeños (vista v_produccion_mensual).
    * Si la vista no existe, cae a la tabla produccion_mensual (compatibilidad). */
   async function getProduccionMensual() {
@@ -355,7 +370,7 @@
     getAnimales, getAnimal, getLecheros, getPotreros,
     insertAnimal, updateAnimal,
     registrarOrdeno, getOrdenosFecha,
-    getTarifa, registrarEntrega, getEntregasFecha,
+    getTarifa, registrarEntrega, getEntregasFecha, getEntregas, getOrdenos,
     getProduccionMensual, getPartos, getTratamientos, terminarTratamiento, reactivarTratamiento,
     updateAnimalCampos, darDeBaja, deleteAnimal, deleteParto, deletePalpacion,
     registrarTratamiento, registrarParto, registrarPalpacion,

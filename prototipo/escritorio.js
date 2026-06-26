@@ -396,21 +396,23 @@ function lecheroAFila(l,precio){
     try{const hoy=await LCStore.getEntregasFecha();
       lecheros.forEach(l=>{if(hoy[l.id]!=null){l.done=true;l.hoy=hoy[l.id];}});
     }catch(_){/* sin entregas hoy */}
-    renderEntregas();renderInicio();
+    try{const ents=await LCStore.getEntregas();
+      entregasDiaMap={};ents.forEach(e=>{entregasDiaMap[e.lechero_id+'|'+e.fecha]=e.litros;});
+    }catch(_){/* sin histórico de entregas */}
+    renderEntregas();renderInicio();if(typeof renderEntregaHist==='function')renderEntregaHist();
   }catch(e){console.warn('Lecheros: usando datos locales:',e.message||e);}
 })();
 const entregaOverrides={};
 function entregaDiaKey(lid,m,d){return lid+'-'+m+'-'+d;}
+/* mapas de datos reales por día (cargados desde Supabase) */
+let entregasDiaMap={};   // 'lecheroId|YYYY-MM-DD' → litros
+let ordenosDiaMap={};    // 'animalId|YYYY-MM-DD'  → litros
+function claveFecha(mesIdx,dia){return '2026-'+String(mesIdx+1).padStart(2,'0')+'-'+String(dia).padStart(2,'0');}
 function entregaDiaVal(lid,mesIdx,dia){
   const k=entregaDiaKey(lid,mesIdx,dia);
   if(k in entregaOverrides)return entregaOverrides[k];
-  const l=lecheros.find(x=>x.id===lid);if(!l)return 0;
-  const dow=new Date(2026,mesIdx,dia).getDay();
-  if(!l.diasSemana.includes(dow))return 0;
-  const base=l.id==='jose'?120:50;
-  const seed=lid.charCodeAt(0)*13+mesIdx*101+dia*7;
-  const wobble=Math.sin(seed)*0.08;
-  return Math.max(0,Math.round(base*(1+wobble)));
+  const v=entregasDiaMap[lid+'|'+claveFecha(mesIdx,dia)];
+  return v!=null?v:0;   // dato real registrado, o 0 si no hubo entrega ese día
 }
 function renderEntregas(){
   const tb=document.getElementById('entregaTbody');if(!tb)return;tb.innerHTML='';
@@ -437,21 +439,22 @@ function renderEntregas(){
   if(prog)prog.textContent=done.length+' de '+lecheros.length+' · Σ '+done.reduce((s,l)=>s+l.hoy,0)+' L';
   const bal=document.getElementById('entregaBalance');
   if(bal){
-    const producida=184;const terneras=12;
+    /* balance con datos reales: producida hoy = ordeños registrados hoy */
+    const producida=(typeof milkCows!=='undefined')?milkCows.filter(c=>c.done).reduce((s,c)=>s+c.v,0):0;
     const entregada=done.reduce((s,l)=>s+l.hoy,0);
     const pendientes=lecheros.filter(l=>!l.done);
-    const casa=producida-entregada-terneras;
-    const cuadra=casa>=0&&pendientes.length===0;
+    const dif=producida-entregada;
+    const precio=(lecheros[0]&&lecheros[0].precio)||1950;
+    /* total a cobrar del mes = suma real de entregas registradas */
+    const litrosMes=lecheros.reduce((s,l)=>{let t=0;for(let d=1;d<=DIAS_MES[5];d++)t+=entregaDiaVal(l.id,5,d);return s+t;},0);
     bal.innerHTML='<div style="font-size:13px;color:var(--ink-2);line-height:1.8">'+
       '<b style="color:var(--ink)">Balance del día:</b><br>'+
-      'Producida <b>184 L</b> − entregada <b>'+(entregada||'…')+' L</b> − terneras <b>12 L</b> = casa <b>'+(done.length?casa:'…')+' L</b>'+
-      (cuadra?' <span class="up" style="font-weight:700"> ✓ cuadra</span>':pendientes.length?' <span class="mut">(faltan '+pendientes.length+' entregas)</span>':
-        casa<0?' <span class="down" style="font-weight:700">⚠ más entregada que producida</span>':'')+'</div>'+
+      'Producida hoy <b>'+(producida||'…')+' L</b> − entregada <b>'+(entregada||'…')+' L</b> = queda en finca <b>'+
+      (producida||entregada?dif:'…')+' L</b>'+
+      (pendientes.length?' <span class="mut">(faltan '+pendientes.length+' entregas)</span>':'')+'</div>'+
       '<div style="margin-top:12px;font-size:13px;color:var(--ink-2);line-height:1.8">'+
-      '<b style="color:var(--ink)">Precio vigente:</b> $1.950/L<br>'+
-      '<b style="color:var(--ink)">Total por cobrar (junio):</b> $'+((lecheros.reduce((s,l)=>{
-        let t=0;for(let d=1;d<=DIAS_MES[5];d++)t+=entregaDiaVal(l.id,5,d);
-        if(l.done)t+=l.hoy;return s+t*l.precio;},0))/1e6).toFixed(2)+'M</div>';
+      '<b style="color:var(--ink)">Precio vigente:</b> $'+precio.toLocaleString('es-CO')+'/L<br>'+
+      '<b style="color:var(--ink)">Entregado este mes:</b> '+litrosMes+' L · <b>$'+(litrosMes*precio).toLocaleString('es-CO')+'</b></div>';
   }
   renderLecheKpis();
 }
@@ -566,11 +569,8 @@ function diaKey(num,m,d){return num+'-'+m+'-'+d;}
 function diaVal(numStr,monthIdx,day){
   const k=diaKey(numStr,monthIdx,day);
   if(k in diaOverrides)return diaOverrides[k];
-  const avg=mensualData.find(c=>c.num===numStr).m[monthIdx];
-  if(avg===null)return null;
-  const seed=parseInt(numStr)*13+monthIdx*101+day*7;
-  const wobble=Math.sin(seed)*0.5+Math.sin(seed*2.3)*0.3;
-  return Math.max(0,Math.round((avg+wobble*avg*0.16)*10)/10);
+  const v=ordenosDiaMap[numStr+'|'+claveFecha(monthIdx,day)];
+  return v!=null?v:null;   // litros reales del ordeño de ese día, o null si no hay
 }
 function editDiaCell(td,cow,day,oldVal){
   if(td.querySelector('input'))return;
@@ -720,6 +720,10 @@ renderMesPicker();renderMensual();
       const i=meses.indexOf(f.mes);if(i>=0)porAnimal[f.animal_id].m[i]=f.litros_dia;
     });
     mensualData=Object.values(porAnimal);
+    /* detalle diario real: ordeños por animal y día */
+    try{const ords=await LCStore.getOrdenos();
+      ordenosDiaMap={};ords.forEach(o=>{ordenosDiaMap[o.animal_id+'|'+o.fecha]=o.litros;});
+    }catch(_){/* sin ordeños */}
     renderMensual();
   }catch(e){console.warn('Producción mensual: usando datos locales:',e.message||e);}
 })();
