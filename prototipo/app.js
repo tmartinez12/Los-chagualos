@@ -3,7 +3,7 @@ const titles={
   'scr-inicio':['Dashboard','Resumen del día'],
   'scr-ordeno':['Leche','Producción y ordeño del día'],
   'scr-potreros':['Potreros','12 potreros · ocupación 1 día (máx 2)'],
-  'scr-hato':['Hato','80 animales · 26 en ordeño'],
+  'scr-hato':['Hato','Inventario del hato'],
   'scr-vaca':['Ficha del animal','Se consulta mucho, se edita poco'],
   'scr-sanitario':['Sanidad','Tratamientos, retiros y vacunas'],
   'scr-repro':['Reproducción','Monta natural · la palpación manda'],

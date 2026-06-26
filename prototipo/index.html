@@ -52,7 +52,7 @@
     <button class="icon-btn" id="backBtn" style="display:none" onclick="goBack()"><svg class="ic"><use href="#i-back"/></svg></button>
     <div class="titles">
       <div class="title" id="barTitle">Los Chagualos</div>
-      <div class="subtitle" id="barSub">Jue 12 jun · Lluvia ayer: 12 mm</div>
+      <div class="subtitle" id="barSub">Resumen del día</div>
     </div>
     <button class="sync-chip" id="syncChip" onclick="sincronizar()">al día ✓</button>
     <div class="avatar">T</div>
@@ -69,7 +69,7 @@
       <button class="mod-card" onclick="entrarModulo('leche')">
         <div class="mod-ic"><svg class="ic"><use href="#i-drop"/></svg></div>
         <div class="mod-name">Leche</div>
-        <div class="mod-sub">26 en ordeño · 184 L hoy</div>
+        <div class="mod-sub">Hato lechero</div>
         <span class="mod-tag on">activa</span>
       </button>
       <button class="mod-card dis" onclick="snack('Café — próximamente')">
@@ -239,15 +239,15 @@
         <span class="chip sel">Hoy → P4</span><span class="chip">vie P5</span><span class="chip">sáb P3</span>
         <span class="chip">dom P12</span><span class="chip">lun P11</span><span class="chip">mar P2</span><span class="chip">mié P6</span>
       </div>
-      <div class="chart-sub mt8 mb0">Descanso promedio: <b>31 días</b> — adecuado para lluvias.
+      <div class="chart-sub mt8 mb0">Días de descanso por potrero.
         En seca el sistema pedirá ampliar la vuelta.</div>
     </div>
 
     <div class="card flat" style="display:flex;gap:10px;align-items:center;padding:12px 14px">
       <svg class="ic-s ic" style="color:var(--ink-2)"><use href="#i-rain"/></svg>
-      <div style="flex:1;font-size:13px"><b>Lluvia</b> · ayer 12 mm · junio: 148 mm
+      <div style="flex:1;font-size:13px">Descanso de potreros
         <span style="color:var(--ink-2)">(el pasto crece con esto)</span></div>
-      <button class="btn outl small" onclick="snack('Lluvia de hoy registrada: 8 mm')">Registrar</button>
+      <button class="btn outl small" onclick="snack('Registro guardado')">Registrar</button>
     </div>
   </div>
 
@@ -309,7 +309,7 @@
       </div>
     </div>
 
-    <div class="section-label">Inventario · los 80 animales</div>
+    <div class="section-label">Inventario del hato</div>
     <div class="card">
       <div class="row" style="background:var(--surface);border:1px solid var(--border);
         border-radius:100px;padding:9px 14px;margin-bottom:10px;color:var(--ink-3)">
@@ -317,14 +317,14 @@
         <span style="font-size:13px">Buscar por número o nombre…</span>
       </div>
       <div class="chips">
-        <button class="chip sel" onclick="snack('Mostrando: todos los animales (80)')">Todas (80)</button>
+        <button class="chip sel" onclick="snack('Mostrando todos los animales')">Todas</button>
         <button class="chip" onclick="snack('Filtro: 19 preñadas')">Preñadas</button>
         <button class="chip" onclick="snack('Filtro: 5 vacías >120 DEL')">Vacías</button>
         <button class="chip" onclick="snack('Filtro: 1 en tratamiento')">En tratamiento</button>
       </div>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button class="btn text small" style="flex:1;justify-content:center"
-          onclick="snack('Lista completa de los 80, con scroll — cada animal abre su ficha')">Ver la lista completa</button>
+          onclick="snack('Cada animal abre su ficha')">Ver la lista completa</button>
         <button class="btn outl small" onclick="openNuevaVaca()">＋ Vaca nueva</button>
         <button class="btn outl small" onclick="snack('Exportado: inventario_hato_jun2026.xlsx')"><svg class="ic-s ic"><use href="#i-export"/></svg></button>
       </div>
@@ -392,7 +392,7 @@
       <div style="display:flex;gap:8px;margin-top:10px">
         <button class="btn filled small" style="flex:1;justify-content:center"
           onclick="openPalp()">Iniciar modo palpación</button>
-        <button class="btn text small" onclick="snack('Lista enviada al Dr. Restrepo por WhatsApp')">Enviar al vet</button>
+        <button class="btn text small" onclick="snack('Lista enviada al veterinario')">Enviar al vet</button>
       </div>
     </div>
   </div>
@@ -473,12 +473,12 @@
         <svg class="ic" style="color:var(--ink-2)"><use href="#i-shield"/></svg>
         <div style="flex:1">
           <div style="font-size:14.5px;font-weight:700">Próxima: desparasitación + vitaminas</div>
-          <div style="font-size:12px;color:var(--ink-2)">Todo el hato (80) · ~15 jul · en 33 días</div>
+          <div style="font-size:12px;color:var(--ink-2)">Programa de vacunación del hato</div>
         </div>
       </div>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button class="btn filled small" style="flex:1;justify-content:center"
-          onclick="snack('Tarea creada para el 15 jul con la lista de los 80 animales')">Crear tarea</button>
+          onclick="snack('Tarea de sanidad creada')">Crear tarea</button>
         <button class="btn text small" onclick="snack('Fecha movida — el ciclo se recalcula')">Cambiar fecha</button>
       </div>
     </div>
@@ -518,7 +518,7 @@
       <div class="list-item" onclick="snack('Aftosa ciclo I-2026: 80/80 aplicados · exportable como soporte oficial ICA')">
         <div class="li-leading"><svg class="ic"><use href="#i-export"/></svg></div>
         <div class="li-body"><div class="li-title">Historial · soporte ICA</div>
-          <div class="li-sub">Último: aftosa may 2026 — 80/80 ✓</div></div>
+          <div class="li-sub">Registra aquí las vacunaciones del hato</div></div>
         <svg class="ic chev"><use href="#i-chev"/></svg></div>
     </div>
   </div>
