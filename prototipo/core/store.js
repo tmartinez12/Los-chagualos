@@ -53,7 +53,7 @@
     return {
       id: r.id, nombre: r.nombre, unidad: r.unidad_id, especie: r.especie,
       raza: r.raza, grupo: r.grupo, sexo: r.sexo,
-      edadAnios: r.edad_anios, nacimiento: r.nacimiento, origen: r.origen,
+      edadAnios: (r.edad_calc != null) ? r.edad_calc : r.edad_anios, nacimiento: r.nacimiento, origen: r.origen,
       del: delDerivado, partos: r.partos, inicioLactancia: r.inicio_lactancia,
       leche: { ayer: lecheDerivada, hoy: r.leche_hoy },
       estadoRepro: r.estado_repro,

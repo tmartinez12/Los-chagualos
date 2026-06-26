@@ -182,7 +182,7 @@
           <div class="spacer" style="flex:1"></div>
           <div id="hatoFiltros" style="display:flex;gap:6px;flex-wrap:wrap"></div>
           <button class="btn outl small" onclick="openNuevaVaca()">＋ Vaca nueva</button>
-          <button class="btn outl small" onclick="snack('Exportado: inventario_hato_jun2026.xlsx')"><svg class="ic-s ic"><use href="#i-export"/></svg>Exportar</button>
+          <button class="btn outl small" onclick="snack('Inventario del hato exportado')"><svg class="ic-s ic"><use href="#i-export"/></svg>Exportar</button>
         </div>
         <div class="card" style="padding:8px">
           <table>
@@ -192,8 +192,7 @@
               <th class="r sortable" onclick="sortHato('edad')">Edad<span class="sort-ar" id="hs-edad"></span></th>
               <th>Estado reproductivo</th>
               <th class="r sortable" onclick="sortHato('del')">DEL<span class="sort-ar" id="hs-del"></span></th>
-              <th class="r sortable" onclick="sortHato('ayer')">Ayer<span class="sort-ar" id="hs-ayer"></span></th>
-              <th class="r sortable" onclick="sortHato('var')">Var.<span class="sort-ar" id="hs-var"></span></th>
+              <th class="r sortable" onclick="sortHato('ayer')">Leche ayer<span class="sort-ar" id="hs-ayer"></span></th>
               <th></th>
             </tr></thead>
             <tbody id="hatoTbody"></tbody>

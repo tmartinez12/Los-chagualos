@@ -14,6 +14,9 @@ ALTER TABLE animales ADD COLUMN IF NOT EXISTS inicio_lactancia DATE;
 --    La app usa estos cuando existen; si no, cae a las columnas guardadas.
 CREATE OR REPLACE VIEW v_animales AS
 SELECT a.*,
+  -- edad DERIVADA de la fecha de nacimiento (si se conoce); avanza con el tiempo
+  CASE WHEN a.nacimiento IS NOT NULL
+       THEN round(((CURRENT_DATE - a.nacimiento) / 365.25)::numeric, 1) END AS edad_calc,
   CASE WHEN a.inicio_lactancia IS NOT NULL
        THEN (CURRENT_DATE - a.inicio_lactancia) END AS del_calc,
   ( SELECT o.litros FROM ordenos o

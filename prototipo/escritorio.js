@@ -1362,19 +1362,16 @@ function renderHato(){
     else res.textContent=filtered.length+' de '+hato.length+' animales'+(hatoFiltro!=='todas'?' · filtro: '+(grupoMatch||hatoFiltrosEstado.find(x=>x.id===hatoFiltro).label):'');
   }
   if(!filtered.length){
-    tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--ink-3)">Sin resultados'+(q?' para "'+q+'"':'')+'</td></tr>';
+    tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--ink-3)">Sin resultados'+(q?' para "'+q+'"':'')+'</td></tr>';
     return;
   }
   filtered.forEach(a=>{
     const tr=document.createElement('tr');
     tr.onclick=()=>goVaca(a.num,'pg-hato');
-    const varHtml=a.var==='—'?'—':a.var.startsWith('+')?'<span class="up">↑ '+a.var+'</span>':
-      a.var.startsWith('-')?'<span class="down">↓ '+a.var+'</span>':'<span class="mut">'+a.var+'</span>';
     tr.innerHTML='<td><div class="cell-animal"><div class="cini">'+a.num+'</div><div><div class="cn">'+a.n+'</div><div class="cs">'+a.raza+'</div></div></div></td>'+
       '<td>'+a.grupo+'</td><td class="r">'+a.edad+'</td>'+
       '<td>'+a.repro+'</td>'+
       '<td class="r">'+(a.del===''||a.del==null||a.del==='—'?'—':a.del)+'</td><td class="r">'+(a.ayer==='—'?'—':'<b>'+a.ayer+' L</b>')+'</td>'+
-      '<td class="r">'+varHtml+'</td>'+
       '<td class="r"><svg class="ic-s ic" style="color:var(--ink-3)"><use href="#i-dots"/></svg></td>';
     tb.appendChild(tr);
   });
