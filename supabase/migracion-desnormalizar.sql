@@ -18,7 +18,12 @@ SELECT a.*,
        THEN (CURRENT_DATE - a.inicio_lactancia) END AS del_calc,
   ( SELECT o.litros FROM ordenos o
     WHERE o.animal_id = a.id AND o.turno = 'dia'
-    ORDER BY o.fecha DESC LIMIT 1 ) AS leche_ultima
+    ORDER BY o.fecha DESC LIMIT 1 ) AS leche_ultima,
+  -- retiro de leche DERIVADO del tratamiento activo (fuente: tratamientos).
+  -- Al terminar/corregir el tratamiento, el retiro de la vaca se actualiza solo.
+  ( SELECT max(t.retiro_leche_hasta) FROM tratamientos t
+    WHERE t.animal_id = a.id AND t.activo
+      AND t.retiro_leche_hasta >= CURRENT_DATE ) AS retiro_calc
 FROM animales a;
 
 -- 3) Vista del histórico mensual DERIVADA de los ordeños (ya no se llena a mano).

@@ -44,6 +44,7 @@
      * si no hay vista/derivado, se usa la columna guardada como respaldo. */
     const delDerivado = (r.del_calc != null) ? r.del_calc : r.del;
     const lecheDerivada = (r.leche_ultima != null) ? r.leche_ultima : r.leche_ayer;
+    const retiroDerivado = (r.retiro_calc !== undefined) ? r.retiro_calc : r.retiro_leche_hasta;
     return {
       id: r.id, nombre: r.nombre, unidad: r.unidad_id, especie: r.especie,
       raza: r.raza, grupo: r.grupo, sexo: r.sexo,
@@ -56,7 +57,7 @@
         : null,
       diasVacia: r.dias_vacia, ultimaPalpacion: r.ultima_palpacion,
       listaServicio: r.lista_servicio, secarEstimado: r.secar_estimado,
-      retiroLecheHasta: r.retiro_leche_hasta,
+      retiroLecheHasta: retiroDerivado,
       madreId: r.madre_id, padreId: r.padre_id,
       pesoKg: r.peso_kg, fechaPeso: r.fecha_peso, gananciaDiaG: r.ganancia_dia_g,
       desteteProximo: r.destete_proximo, rolToro: r.rol_toro,
@@ -208,9 +209,9 @@
     };
     const { data, error } = await client().from('tratamientos').insert(fila).select().single();
     if (error) throw error;
-    if (t.retiroLecheHasta) {
-      await updateAnimalCampos(t.animalId, { retiro_leche_hasta: t.retiroLecheHasta }).catch(() => {});
-    }
+    /* el retiro de la vaca se DERIVA del tratamiento (vista v_animales); no se
+     * copia a la tabla animales. Se invalida la caché para que se recalcule. */
+    _invalidarAnimales();
     return data;
   }
 
@@ -320,12 +321,14 @@
   async function terminarTratamiento(id) {
     const { error } = await client().from('tratamientos').update({ activo: false }).eq('id', id);
     if (error) throw error;
+    _invalidarAnimales();   // el retiro derivado de la vaca se recalcula
     return true;
   }
 
   async function reactivarTratamiento(id) {
     const { error } = await client().from('tratamientos').update({ activo: true }).eq('id', id);
     if (error) throw error;
+    _invalidarAnimales();
     return true;
   }
 
