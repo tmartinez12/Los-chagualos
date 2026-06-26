@@ -39,12 +39,17 @@
   /* --- Mapeo BD → modelo canónico ------------------------------------------- */
   function animalFromDB(r) {
     if (!r) return null;
+    /* del y leche.ayer pueden venir DERIVADOS de la vista v_animales
+     * (del_calc desde inicio_lactancia, leche_ultima desde el último ordeño);
+     * si no hay vista/derivado, se usa la columna guardada como respaldo. */
+    const delDerivado = (r.del_calc != null) ? r.del_calc : r.del;
+    const lecheDerivada = (r.leche_ultima != null) ? r.leche_ultima : r.leche_ayer;
     return {
       id: r.id, nombre: r.nombre, unidad: r.unidad_id, especie: r.especie,
       raza: r.raza, grupo: r.grupo, sexo: r.sexo,
       edadAnios: r.edad_anios, nacimiento: r.nacimiento, origen: r.origen,
-      del: r.del, partos: r.partos,
-      leche: { ayer: r.leche_ayer, hoy: r.leche_hoy },
+      del: delDerivado, partos: r.partos, inicioLactancia: r.inicio_lactancia,
+      leche: { ayer: lecheDerivada, hoy: r.leche_hoy },
       estadoRepro: r.estado_repro,
       prenez: (r.prenez_meses != null || r.parto_estimado)
         ? { meses: r.prenez_meses, partoEstimado: r.parto_estimado, ultimaPalpacion: r.ultima_palpacion }
@@ -83,6 +88,7 @@
       ganancia_dia_g: a.gananciaDiaG ?? null,
       destete_proximo: a.desteteProximo ?? null,
       procedencia: a.procedencia || null, valor_compra: a.valorCompra ?? null,
+      inicio_lactancia: a.inicioLactancia || null,
     };
     if (a.unidad) o.unidad_id = a.unidad;
     return o;
@@ -94,9 +100,13 @@
     return (s == null ? '' : String(s)).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
   }
 
-  /* --- API de lectura ------------------------------------------------------- */
+  /* --- API de lectura ------------------------------------------------------- *
+   * Lee de la vista v_animales (DEL y leche derivados). Si la vista no existe
+   * todavía (migración sin aplicar), cae a la tabla animales.                 */
   async function getAnimales(grupo) {
-    const { data, error } = await client().from('animales').select('*').order('id');
+    let resp = await client().from('v_animales').select('*').order('id');
+    if (resp.error) resp = await client().from('animales').select('*').order('id');
+    const { data, error } = resp;
     if (error) throw error;
     let rows = data.map(animalFromDB);
     if (grupo) { const g = _normGrupo(grupo); rows = rows.filter(a => _normGrupo(a.grupo) === g); }
@@ -104,7 +114,9 @@
   }
 
   async function getAnimal(id) {
-    const { data, error } = await client().from('animales').select('*').eq('id', id).single();
+    let resp = await client().from('v_animales').select('*').eq('id', id).single();
+    if (resp.error) resp = await client().from('animales').select('*').eq('id', id).single();
+    const { data, error } = resp;
     if (error) throw error;
     return animalFromDB(data);
   }
@@ -269,13 +281,15 @@
     return map;
   }
 
+  /* Histórico mensual DERIVADO de los ordeños (vista v_produccion_mensual).
+   * Si la vista no existe, cae a la tabla produccion_mensual (compatibilidad). */
   async function getProduccionMensual() {
-    const { data, error } = await client()
-      .from('produccion_mensual')
-      .select('animal_id, mes, litros_dia, animales(nombre)')
-      .order('animal_id');
-    if (error) throw error;
-    return data || [];
+    let resp = await client().from('v_produccion_mensual')
+      .select('animal_id, mes, litros_dia').order('animal_id');
+    if (resp.error) resp = await client().from('produccion_mensual')
+      .select('animal_id, mes, litros_dia').order('animal_id');
+    if (resp.error) throw resp.error;
+    return resp.data || [];
   }
 
   async function getTratamientos(soloActivos) {

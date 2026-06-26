@@ -194,13 +194,13 @@ function openEditVaca(){
   if(!a){snack('Abre una ficha primero');return;}
   editM.num=num;editM.nombre=a.nombre||'';editM.raza=a.raza||'';
   editM.nacimiento=a.nacimiento||'';editM.peso=(a.pesoKg!=null?a.pesoKg:'');
-  editM.del=(a.del!=null?a.del:'');editM.leche=(a.leche&&a.leche.ayer!=null?a.leche.ayer:'');
+  editM.inicio=a.inicioLactancia||'';editM.leche=(a.leche&&a.leche.ayer!=null?a.leche.ayer:'');
   document.getElementById('editCow').textContent=(a.id+' · '+a.nombre).toUpperCase();
   document.getElementById('editNombre').value=editM.nombre;
   document.getElementById('editRaza').value=editM.raza;
   document.getElementById('editNac').value=editM.nacimiento||'';
   document.getElementById('editPeso').value=editM.peso;
-  document.getElementById('editDel').value=editM.del;
+  document.getElementById('editInicio').value=editM.inicio||'';
   document.getElementById('editLeche').value=editM.leche;
   document.getElementById('scrim').classList.add('show');
   document.getElementById('editSheet').classList.add('show');
@@ -213,13 +213,14 @@ function saveEditVaca(){
   const raza=(editM.raza||'').trim()||null;
   const nacimiento=editM.nacimiento||null;
   const peso=(editM.peso!==''&&editM.peso!=null)?parseFloat(editM.peso):null;
-  const del=(editM.del!==''&&editM.del!=null)?parseInt(editM.del,10):null;
+  const inicio=editM.inicio||null;
   const leche=(editM.leche!==''&&editM.leche!=null)?parseFloat(editM.leche):null;
   closeEdit();
-  const campos={nombre:nombre,raza:raza,nacimiento:nacimiento,del:del,leche_ayer:leche};
+  const campos={nombre:nombre,raza:raza,nacimiento:nacimiento,inicio_lactancia:inicio};
   if(peso!=null&&!isNaN(peso)){campos.peso_kg=peso;campos.fecha_peso=isoHoyM();}
-  Object.assign(a,{nombre:nombre,raza:raza,nacimiento:nacimiento,del:del});
-  a.leche=a.leche||{};a.leche.ayer=leche;
+  const delCalc=inicio?Math.max(0,Math.round((new Date()-new Date(inicio+'T00:00:00'))/86400000)):a.del;
+  Object.assign(a,{nombre:nombre,raza:raza,nacimiento:nacimiento,inicioLactancia:inicio,del:delCalc});
+  a.leche=a.leche||{};if(leche!=null&&!isNaN(leche))a.leche.ayer=leche;
   if(peso!=null&&!isNaN(peso)){a.pesoKg=peso;a.fechaPeso=isoHoyM();}
   /* refrescar la entrada del hato y la tarjeta de ordeño */
   const k=GRUPO_KEY[a.grupo];
@@ -231,6 +232,8 @@ function saveEditVaca(){
   if(typeof LCStore!=='undefined'){
     LCStore.updateAnimalCampos(num,campos).then(()=>desencolar()).catch(e=>{
       console.warn('Edición móvil no guardada:',e.message||e);snack('⚠ '+num+': guardado local, falta sincronizar');});
+    if(leche!=null&&!isNaN(leche)){const ay=new Date();ay.setDate(ay.getDate()-1);
+      LCStore.registrarOrdeno(num,leche,isoDeM(ay)).catch(()=>{});}
   }
   snack(num+' actualizado');
 }
@@ -654,7 +657,8 @@ function saveParto(){
         edadAnios:0,origen:'nacido_finca',madreId:numMadre,pesoKg:parto.peso}); })
       .then(()=>LCStore.registrarParto({id:partoId,madreId:numMadre,criaId:criaIdNueva,fecha:isoHoyM(),
         sexo:parto.sexo,pesoKg:parto.peso,tipo:parto.tipo,estadoCria:parto.estado}))
-      .then(()=>LCStore.updateAnimalCampos(numMadre,{grupo:'ordeño',del:0,estado_repro:null,
+      .then(()=>LCStore.updateAnimalCampos(numMadre,{grupo:'ordeño',del:0,
+        inicio_lactancia:new Date().toISOString().slice(0,10),estado_repro:null,
         prenez_meses:null,parto_estimado:null,ultima_palpacion:null,dias_vacia:null,leche_ayer:0}))
       .then(()=>desencolar())
       .catch(e=>console.warn('Parto móvil no guardado:',e.message||e));

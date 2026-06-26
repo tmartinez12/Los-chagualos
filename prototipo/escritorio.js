@@ -716,7 +716,7 @@ renderMesPicker();renderMensual();
     const porAnimal={};
     filas.forEach(f=>{
       if(!porAnimal[f.animal_id])porAnimal[f.animal_id]={num:f.animal_id,
-        n:(f.animales&&f.animales.nombre)||f.animal_id,m:[null,null,null,null,null,null]};
+        n:(animalesPorId[f.animal_id]?animalesPorId[f.animal_id].nombre:f.animal_id),m:[null,null,null,null,null,null]};
       const i=meses.indexOf(f.mes);if(i>=0)porAnimal[f.animal_id].m[i]=f.litros_dia;
     });
     mensualData=Object.values(porAnimal);
@@ -1525,44 +1525,51 @@ function openEditarVaca(num){
   editState.num=num;
   editState.nombre=a.nombre||'';editState.raza=a.raza||'';
   editState.nacimiento=a.nacimiento||'';editState.peso=(a.pesoKg!=null?a.pesoKg:'');
-  editState.del=(a.del!=null?a.del:'');editState.leche=(a.leche&&a.leche.ayer!=null?a.leche.ayer:'');
-  openReg('Editar datos de '+num,'Cambia la información básica y de producción del animal');
+  editState.inicio=a.inicioLactancia||'';editState.leche=(a.leche&&a.leche.ayer!=null?a.leche.ayer:'');
+  openReg('Editar datos de '+num,'La producción se calcula de los ordeños y del inicio de lactancia');
   const body=document.getElementById('regBody');body.innerHTML='';
   body.appendChild(regTexto('Nombre','Nombre del animal',v=>editState.nombre=v,'text',editState.nombre));
   body.appendChild(regTexto('Raza','Ej. Holstein × Gyr',v=>editState.raza=v,'text',editState.raza));
   body.appendChild(regTexto('Fecha de nacimiento','',v=>editState.nacimiento=v,'date',editState.nacimiento));
   body.appendChild(regTexto('Peso (kg)','',v=>editState.peso=v,'number',editState.peso));
-  body.appendChild(regTexto('DEL · días en leche','solo vacas en ordeño',v=>editState.del=v,'number',editState.del));
-  body.appendChild(regTexto('Leche de ayer (L)','litros del último día',v=>editState.leche=v,'number',editState.leche));
-  body.appendChild(regHint('DEL y leche alimentan la producción (tabla y gráfico). Para preñez/secado/parto usa los registros del menú.'));
+  body.appendChild(regTexto('Inicio de lactancia (último parto)','',v=>editState.inicio=v,'date',editState.inicio));
+  body.appendChild(regHint('El DEL se calcula solo desde esta fecha (hoy − inicio de lactancia).'));
+  body.appendChild(regTexto('Leche de ayer (L)','registra el ordeño de ayer',v=>editState.leche=v,'number',editState.leche));
+  body.appendChild(regHint('“Leche de ayer” crea un registro de ordeño; lo demás (promedios, histórico) se calcula solo.'));
   document.getElementById('regSaveBtn').onclick=guardarEditarVaca;
 }
+function diasDesdeReal(iso){if(!iso)return null;const d=new Date(iso+'T00:00:00');return Math.max(0,Math.round((new Date()-d)/86400000));}
+function isoAyerReal(){const d=new Date();d.setDate(d.getDate()-1);return isoDe(d);}
 function guardarEditarVaca(){
   const num=editState.num,a=animalesPorId[num];if(!a)return;
   const nombre=(editState.nombre||'').trim()||a.nombre;
   const raza=(editState.raza||'').trim()||null;
   const nacimiento=editState.nacimiento||null;
   const peso=(editState.peso!==''&&editState.peso!=null)?parseFloat(editState.peso):null;
-  const del=(editState.del!==''&&editState.del!=null)?parseInt(editState.del,10):null;
+  const inicio=editState.inicio||null;
   const leche=(editState.leche!==''&&editState.leche!=null)?parseFloat(editState.leche):null;
   closeReg();
-  /* persistir en la base */
-  const campos={nombre:nombre,raza:raza,nacimiento:nacimiento,del:del,leche_ayer:leche};
+  /* persistir datos básicos + inicio de lactancia (fuente del DEL) */
+  const campos={nombre:nombre,raza:raza,nacimiento:nacimiento,inicio_lactancia:inicio};
   if(peso!=null&&!isNaN(peso)){campos.peso_kg=peso;campos.fecha_peso=isoHoy();}
-  /* actualizar caché, ficha curada y fila del hato para reflejarlo de inmediato */
-  Object.assign(a,{nombre:nombre,raza:raza,nacimiento:nacimiento,del:del});
-  a.leche=a.leche||{};a.leche.ayer=leche;
+  /* DEL y leche se DERIVAN: actualizo la caché para reflejarlo de inmediato */
+  const delCalc=inicio?diasDesdeReal(inicio):a.del;
+  Object.assign(a,{nombre:nombre,raza:raza,nacimiento:nacimiento,inicioLactancia:inicio,del:delCalc});
+  a.leche=a.leche||{};if(leche!=null&&!isNaN(leche))a.leche.ayer=leche;
   if(peso!=null&&!isNaN(peso)){a.pesoKg=peso;a.fechaPeso=isoHoy();}
   if(fichas[num]){fichas[num].n=nombre;fichas[num].raza=raza;if(peso!=null&&!isNaN(peso))fichas[num].peso=peso+' kg';}
-  const h=hato.find(x=>x.num===num);if(h){h.n=nombre;h.raza=raza;h.del=(del==null?'—':del);h.ayer=(leche==null?'—':leche);}
-  /* reflejar en la tabla de ordeño si la vaca está en ordeño */
+  const h=hato.find(x=>x.num===num);if(h){h.n=nombre;h.raza=raza;h.del=(delCalc==null?'—':delCalc);if(leche!=null&&!isNaN(leche))h.ayer=leche;}
   const mEdit=milkCows.findIndex(c=>c.num===num);
   if(mEdit>=0){const prevDone=milkCows[mEdit].done,prevV=milkCows[mEdit].v;
     milkCows[mEdit]=Object.assign(animalAMilk(a),{done:prevDone,v:prevV});}
   goVaca(num,vacaFrom);renderHato();renderMilk();
-  if(typeof LCStore!=='undefined')LCStore.updateAnimalCampos(num,campos).catch(e=>{
-    console.warn('Edición no guardada en la base:',e.message||e);
-    snack('⚠ '+num+': cambios guardados local, falta sincronizar');});
+  if(typeof LCStore!=='undefined'){
+    LCStore.updateAnimalCampos(num,campos).catch(e=>{
+      console.warn('Edición no guardada en la base:',e.message||e);
+      snack('⚠ '+num+': cambios guardados local, falta sincronizar');});
+    /* "leche de ayer" = registrar un ordeño real de ayer (fuente de verdad) */
+    if(leche!=null&&!isNaN(leche))LCStore.registrarOrdeno(num,leche,isoAyerReal()).catch(()=>{});
+  }
   snack(num+' actualizado');
 }
 
@@ -1726,6 +1733,7 @@ function saveParto(){
       .then(()=>LCStore.registrarParto({id:partoId,madreId:partoState.num,criaId:criaId,fecha:isoHoy(),
         sexo:partoState.sexo,pesoKg:partoState.peso,tipo:partoState.tipo,estadoCria:partoState.estado}))
       .then(()=>LCStore.updateAnimalCampos(partoState.num,{grupo:'ordeño',del:0,
+        inicio_lactancia:new Date().toISOString().slice(0,10),
         estado_repro:null,prenez_meses:null,parto_estimado:null,ultima_palpacion:null,
         dias_vacia:null,leche_ayer:0}))
       .catch(e=>{console.warn('Parto no guardado completo en la base:',e.message||e);
