@@ -1,6 +1,6 @@
 const titles={
   'scr-selector':['Los Chagualos','Elige una línea de negocio'],
-  'scr-inicio':['Dashboard','Leche · jue 12 jun · datos clave'],
+  'scr-inicio':['Dashboard','Resumen del día'],
   'scr-ordeno':['Leche','Producción y ordeño del día'],
   'scr-potreros':['Potreros','12 potreros · ocupación 1 día (máx 2)'],
   'scr-hato':['Hato','80 animales · 26 en ordeño'],
@@ -100,7 +100,7 @@ function go(id,navBtn){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.scr===tab));
   const t=titles[id];
   document.getElementById('barTitle').textContent=t[0];
-  document.getElementById('barSub').textContent=t[1];
+  document.getElementById('barSub').textContent=(id==='scr-inicio'&&window.LCRules)?LCRules.fechaLarga():t[1];
   // botón superior izquierdo: rejilla (volver al selector) en pestañas, flecha atrás en hijas, nada en el selector
   const back=document.getElementById('backBtn');
   if(enSelector){back.style.display='none';}
@@ -628,14 +628,14 @@ function saveParto(){
       grupos.machos.header='<b>'+nMachos+' machos.</b> Toros y terneros machos del hato.';}
     grupos[grupo].animales.unshift([num+' · (cría de '+nombre+')','recién nacid'+(parto.sexo==='H'?'a':'o')+' · '+parto.peso+' kg · 0 meses',0]);
     partosRecientes.unshift({t:parto.cow+' → cría '+num,
-      s:'13 jun · '+sexoTxt+' · viva · '+parto.peso+' kg · '+tipoTxt,badge:'en '+destino,bw:'ok'});
+      s:fmtFechaCortaM(isoHoyM())+' · '+sexoTxt+' · viva · '+parto.peso+' kg · '+tipoTxt,badge:'en '+destino,bw:'ok'});
     deshacerCria=()=>{grupos[grupo].animales.shift();grupos[grupo].sub=prevSub;grupos[grupo].header=prevHeader;
       if(parto.sexo==='H')nTerneras--;else nMachos--;criaNum--;};
     msg='Parto de '+nombre+' · cría '+num+' ('+sexoTxt+', '+parto.peso+' kg) creada en '+destino+' y vinculada · '+nombre+' al ordeño en DEL 0';
   }else{
     // mortinato: no entra al hato, pero queda registrado
     partosRecientes.unshift({t:parto.cow+' → cría',
-      s:'13 jun · '+sexoTxt+' · nació muerta · '+parto.peso+' kg · '+tipoTxt,badge:'mortinato',bw:'bad'});
+      s:fmtFechaCortaM(isoHoyM())+' · '+sexoTxt+' · nació muerta · '+parto.peso+' kg · '+tipoTxt,badge:'mortinato',bw:'bad'});
     msg='Parto de '+nombre+' · la cría nació muerta — queda en el historial · '+nombre+' al ordeño en DEL 0';
   }
   encolar();
@@ -1040,7 +1040,7 @@ function saveBaja(){
   const removed=idx>=0?cows[idx]:null;
   if(idx>=0){cows.splice(idx,1);renderCows();incGrupo('ordeno',-1);}
   nBajas++;subBajas();
-  grupos.bajas.animales.unshift([baja.cow,baja.motivo.toUpperCase()+' · 13 jun · registrada']);
+  grupos.bajas.animales.unshift([baja.cow,baja.motivo.toUpperCase()+' · '+fmtFechaCortaM(isoHoyM())+' · registrada']);
   encolar();
   const numBaja=numDe(baja.cow);
   if(typeof LCStore!=='undefined'){

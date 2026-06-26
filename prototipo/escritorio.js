@@ -1,9 +1,9 @@
 /* Bandera para ocultar Potreros por ahora (poner true para reactivarlo). */
 const POTREROS_VISIBLE=false;
 const titles={
-  'pg-inicio':['Buenos días, Tatiana','Jueves 12 de junio · lluvia ayer: 12 mm'],
-  'pg-leche':['Producción de leche','26 vacas en ordeño · hoy 184 L'],
-  'pg-hato':['Hato','80 animales · unidad leche'],
+  'pg-inicio':['Buenos días, Tatiana','Resumen del día'],
+  'pg-leche':['Producción de leche','Ordeño y entregas del día'],
+  'pg-hato':['Hato','Animales · unidad leche'],
   'pg-potreros':['Potreros','32 potreros · ocupación 1 día (máx 2)'],
   'pg-repro':['Reproducción','Monta natural · la palpación manda'],
   'pg-partos':['Partos','Las palpaciones marcan las fechas'],
@@ -15,7 +15,7 @@ function subFor(id){
   try{
     if(id==='pg-inicio'){
       const done=milkCows.filter(c=>c.done);
-      return 'Jueves 12 de junio · '+(done.length?'ordeño en curso: '+done.length+'/'+milkCows.length+' de la muestra':'ordeño pendiente');
+      return LCRules.fechaLarga()+' · '+(done.length?'ordeño en curso: '+done.length+'/'+milkCows.length:'ordeño pendiente');
     }
     if(id==='pg-leche'){
       const done=milkCows.filter(c=>c.done);
@@ -1036,7 +1036,7 @@ function aplicarTratamientos(num,nombre,trats,contexto){
   }
   /* queda en la historia clínica de la ficha del animal */
   const fi=fichas[num];let histAdded=false;
-  if(fi){fi.historia.unshift({fecha:'13 JUN 2026',
+  if(fi){fi.historia.unshift({fecha:fmtFechaCorta(isoHoy()).toUpperCase()+' '+new Date().getFullYear(),
     texto:'Tratamiento: <b>'+trats.join(', ')+'</b>',
     sub:contexto?'En palpación · '+contexto:'Aplicado en palpación'});histAdded=true;}
   renderTratamientos();
@@ -1171,7 +1171,7 @@ function savePalp(){
     if(!vacasVacias.find(v=>v.cow===cow)){
       const num=cow.split('·')[0].trim();const fi=fichas[num];
       added={cow:cow,num:num,del:fi?fi.del:'—',sub:fi?(fi.parto+'° parto · '+fi.raza):'—',
-        dias:1,ultima:'13 jun 2026',ayer:fi?fi.ayer+' L':'—',
+        dias:1,ultima:fmtFechaCorta(isoHoy())+' '+new Date().getFullYear(),ayer:fi?fi.ayer+' L':'—',
         rec:p.subtipo==='fisiologica'?'Vacía fisiológica — programar servicio':'Vacía — evaluar siguiente paso'};
       vacasVacias.push(added);
     }
@@ -1599,7 +1599,7 @@ function saveTrata(){
   let addedTag=false;
   if(a&&!a.tags.includes('tratamiento')){a.tags.push('tratamiento');addedTag=true;}
   const fi=fichas[tratState.num];let histAdded=false;
-  if(fi){fi.historia.unshift({fecha:'13 JUN 2026',texto:'Tratamiento: <b>'+tratState.problema+'</b> · '+tratState.medicina.toLowerCase(),
+  if(fi){fi.historia.unshift({fecha:fmtFechaCorta(isoHoy()).toUpperCase()+' '+new Date().getFullYear(),texto:'Tratamiento: <b>'+tratState.problema+'</b> · '+tratState.medicina.toLowerCase(),
     sub:conRetiro?'Retiro de leche '+tratState.retiro+' días':'Sin retiro de leche'});histAdded=true;}
   renderTratamientos();renderHatoFiltros();renderHato();
   go('pg-sanitario',navFor('pg-sanitario'));
@@ -1707,7 +1707,7 @@ function saveParto(){
     hato.unshift(cria);
   }
   /* registrar en partos recientes */
-  const reciente={madre:partoState.num+' '+nombre,cria:cria?cria.num:'—',fecha:'13 jun',
+  const reciente={madre:partoState.num+' '+nombre,cria:cria?cria.num:'—',fecha:fmtFechaCorta(isoHoy()),
     sexo:partoState.sexo,peso:partoState.peso,tipo:partoState.tipo,
     estado:partoState.estado,grupo:partoState.estado==='viva'?(criaGrupo==='Ternera'?'Terneras':'Machos'):null};
   partosRecientes.push(reciente);

@@ -138,6 +138,20 @@
     return d.getDate() + ' ' + MESC[d.getMonth()];
   }
 
+  /* Fecha larga del día (por defecto hoy real): "Jueves 24 de junio". */
+  const DIASEM = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+  const MESLARGO = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  function fechaLarga(hoy) {
+    const d = baseHoy(hoy), dn = DIASEM[d.getDay()];
+    return dn.charAt(0).toUpperCase() + dn.slice(1) + ' ' + d.getDate() + ' de ' + MESLARGO[d.getMonth()];
+  }
+  /* ISO del día de hoy real: "YYYY-MM-DD". */
+  function isoHoy(hoy) {
+    const d = baseHoy(hoy);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
   /* Snapshot de los campos reproductivos (forma BD) para poder revertir en
    * Supabase si se deshace un parto o una palpación. */
   function snapshotReproDB(a) {
@@ -152,6 +166,6 @@
 
   return {
     MESC, fechaParto, fechaDias, esBajonLeche, parseTrat, parsePalpNota, curvaLactancia,
-    diasHasta, ordinalParto, fmtFechaCorta, snapshotReproDB,
+    diasHasta, ordinalParto, fmtFechaCorta, snapshotReproDB, fechaLarga, isoHoy,
   };
 });
