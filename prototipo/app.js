@@ -432,7 +432,7 @@ let animalesPorIdM={};
     Object.keys(grupos).forEach(k=>{const n=grupos[k].animales.length;
       grupos[k].sub=n+' '+GRUPO_LABEL[k];
       grupos[k].header='<b>'+n+' '+GRUPO_LABEL[k]+'.</b>';});
-    renderInicioM();
+    renderInicioM();renderSanidadVacunasM();
   }catch(e){console.warn('Cache/hato móvil:',e.message||e);}
 })();
 /* animal canónico (BD) → tarjeta de ordeño de la móvil */
@@ -503,7 +503,19 @@ function saveMilk(){
     setTimeout(()=>snack('Ordeño completo: '+tot+' L — siguiente: entregas a los lecheros'),1500);
     setTimeout(()=>document.getElementById('entregasSec').scrollIntoView({behavior:'smooth'}),2600);}
 }
-renderCows();renderInicioM();pintaRutina();renderEntregasM();renderPalpListaM();
+/* Sanidad móvil · vacunas: brucelosis desde terneras reales + mes actual */
+function renderSanidadVacunasM(){
+  const A=Object.values(animalesPorIdM||{});
+  const el=document.getElementById('sanBrucelosisM');
+  if(el){const t=A.filter(a=>a.grupo==='ternera'&&a.edadAnios!=null&&a.edadAnios>=0.25&&a.edadAnios<=0.67);
+    if(t.length){el.style.display='';
+      el.querySelector('.a-title').textContent='Brucelosis: '+t.length+' ternera'+(t.length>1?'s':'')+' en ventana';
+      el.querySelector('.a-sub').textContent=t.slice(0,6).map(x=>x.id).join(', ')+' · vacuna única entre los 3 y 8 meses';
+    }else el.style.display='none';}
+  const mes=new Date().getMonth(),cal=document.getElementById('sanCalendarioM');
+  if(cal)Array.prototype.forEach.call(cal.children,(c,i)=>c.classList.toggle('now',i===mes));
+}
+renderCows();renderInicioM();pintaRutina();renderEntregasM();renderPalpListaM();renderSanidadVacunasM();
 /* Maíz: el bloque del inicio solo se muestra si la finca tiene datos del cultivo. */
 let datosMaiz = null;   // sin demo de maíz (poner {siloDias,loteDias} cuando haya cultivo)
 function aplicarMaiz(){

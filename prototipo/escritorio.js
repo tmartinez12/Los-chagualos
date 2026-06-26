@@ -1035,6 +1035,21 @@ function tratamientoAFila(t){
     renderTratamientos();
   }catch(e){console.warn('Tratamientos: usando datos locales:',e.message||e);}
 })();
+/* Sanidad · vacunas: brucelosis desde terneras reales (3-8 meses) + mes actual */
+function renderSanidadVacunas(){
+  const A=Object.values(animalesPorId||{});
+  const el=document.getElementById('sanBrucelosis');
+  if(el){
+    const t=A.filter(a=>a.grupo==='ternera'&&a.edadAnios!=null&&a.edadAnios>=0.25&&a.edadAnios<=0.67);
+    if(t.length){el.style.display='';
+      el.querySelector('.a-title').textContent='Brucelosis: '+t.length+' ternera'+(t.length>1?'s':'')+' en ventana de vacunación';
+      el.querySelector('.a-sub').textContent=t.slice(0,6).map(x=>x.id+(x.nombre?' '+x.nombre:'')).join(', ')+' · vacuna única entre los 3 y 8 meses';
+    }else el.style.display='none';
+  }
+  const mes=new Date().getMonth();
+  const cal=document.getElementById('sanCalendario');
+  if(cal)Array.prototype.forEach.call(cal.children,(c,i)=>c.classList.toggle('now',i===mes));
+}
 function renderTratamientos(){
   const cont=document.getElementById('tratActivos');if(!cont)return;cont.innerHTML='';
   tratamientos.forEach((t,i)=>{
@@ -1235,7 +1250,7 @@ function renderPalpLista(){
   if(!palpCandidatas.length){box.innerHTML='<span class="mut">No hay candidatas para palpar</span>';return;}
   box.innerHTML=palpCandidatas.map(c=>'<b style="color:var(--ink)">'+c.cow.replace(' · ',' ')+'</b> — '+c.motivo).join('<br>');
 }
-renderPartos();renderPartosRecientes();renderPartosKpis();renderVacias();renderPalpLista();renderReproKpis();renderTratamientos();
+renderPartos();renderPartosRecientes();renderPartosKpis();renderVacias();renderPalpLista();renderReproKpis();renderTratamientos();renderSanidadVacunas();
 /* ===== Cableado a Supabase: reproducción y partos ===== */
 const fmtFechaCorta=LCRules.fmtFechaCorta;   // compartido en core/rules.js
 (async function cargarReproDesdeSupabase(){
@@ -1464,7 +1479,7 @@ let animalesPorId={};   // cache id→animal (forma canónica) para fichas y gen
     if(typeof criaSeq!=='undefined'&&maxNum>criaSeq)criaSeq=maxNum;
     if(typeof altaSeq!=='undefined'&&maxNum>altaSeq)altaSeq=maxNum;
     hato=animales.filter(a=>a.grupo!=='baja').map(animalAFila);
-    renderHatoFiltros();renderHato();renderInicio();
+    renderHatoFiltros();renderHato();renderInicio();renderSanidadVacunas();
     if(typeof snack==='function')snack('Hato actualizado desde la base ('+hato.length+')');
   }catch(e){console.warn('Hato: usando datos locales (Supabase no disponible):',e.message||e);}
 })();

@@ -369,27 +369,27 @@
               <div style="font-size:12px;color:var(--ink-2)">Programa de vacunación del hato</div></div>
             <button class="btn filled small" onclick="snack('Tarea de sanidad creada')">Crear tarea</button>
           </div>
-          <div class="alert warn" style="margin:0">
+          <div class="alert warn" id="sanBrucelosis" style="margin:0;display:none">
             <svg class="ic" style="color:var(--amber)"><use href="#i-sprout"/></svg>
-            <div style="flex:1"><div class="a-title">Brucelosis: 2 terneras entran en ventana</div>
-              <div class="a-sub">064 (5 meses) y 071 (4,5 meses) · vacuna única entre los 3 y 8 meses — vacunar este mes</div>
-              <button class="btn outl small" style="margin-top:10px" onclick="snack('Ver terneras 064 y 071 — pendientes de brucelosis')">Ver terneras</button></div>
+            <div style="flex:1"><div class="a-title"></div>
+              <div class="a-sub"></div>
+              <button class="btn outl small" style="margin-top:10px" onclick="go('pg-hato')">Ver terneras</button></div>
           </div>
         </div>
 
-        <div class="section-label">Calendario 2026</div>
-        <div class="pgrid" style="grid-template-columns:repeat(12,1fr)">
-          <div class="pot ok off"><div class="p-top"><span class="p-name">ENE</span><span class="dot"></span></div><div class="p-cap" style="margin-top:6px">despar. ✓</div></div>
+        <div class="section-label">Calendario de vacunación · protocolo</div>
+        <div class="pgrid" id="sanCalendario" style="grid-template-columns:repeat(12,1fr)">
+          <div class="pot off"><div class="p-name">ENE</div><div class="p-cap" style="margin-top:6px">despar.</div></div>
           <div class="pot off"><div class="p-name">FEB</div><div class="p-cap" style="margin-top:6px">—</div></div>
           <div class="pot off"><div class="p-name">MAR</div><div class="p-cap" style="margin-top:6px">—</div></div>
-          <div class="pot ok off"><div class="p-top"><span class="p-name">ABR</span><span class="dot"></span></div><div class="p-cap" style="margin-top:6px">despar. ✓</div></div>
-          <div class="pot ok off"><div class="p-top"><span class="p-name">MAY</span><span class="dot"></span></div><div class="p-cap" style="margin-top:6px">aftosa ✓</div></div>
-          <div class="pot warn now"><div class="p-tag">HOY</div><div class="p-top"><span class="p-name">JUN</span><span class="dot"></span></div><div class="p-cap" style="margin-top:6px">brucelosis ×2</div></div>
-          <div class="pot warn"><div class="p-top"><span class="p-name">JUL</span><span class="dot"></span></div><div class="p-cap" style="margin-top:6px">despar. ~15</div></div>
+          <div class="pot off"><div class="p-name">ABR</div><div class="p-cap" style="margin-top:6px">despar.</div></div>
+          <div class="pot warn"><div class="p-top"><span class="p-name">MAY</span><span class="dot"></span></div><div class="p-cap" style="margin-top:6px">aftosa</div></div>
+          <div class="pot off"><div class="p-name">JUN</div><div class="p-cap" style="margin-top:6px">—</div></div>
+          <div class="pot off"><div class="p-name">JUL</div><div class="p-cap" style="margin-top:6px">despar.</div></div>
           <div class="pot off"><div class="p-name">AGO</div><div class="p-cap" style="margin-top:6px">—</div></div>
           <div class="pot off"><div class="p-name">SEP</div><div class="p-cap" style="margin-top:6px">—</div></div>
-          <div class="pot warn"><div class="p-top"><span class="p-name">OCT</span><span class="dot"></span></div><div class="p-cap" style="margin-top:6px">despar.</div></div>
-          <div class="pot warn"><div class="p-top"><span class="p-name">NOV</span><span class="dot"></span></div><div class="p-cap" style="margin-top:6px">aftosa ICA</div></div>
+          <div class="pot off"><div class="p-name">OCT</div><div class="p-cap" style="margin-top:6px">despar.</div></div>
+          <div class="pot warn"><div class="p-top"><span class="p-name">NOV</span><span class="dot"></span></div><div class="p-cap" style="margin-top:6px">aftosa</div></div>
           <div class="pot off"><div class="p-name">DIC</div><div class="p-cap" style="margin-top:6px">—</div></div>
         </div>
 
@@ -401,11 +401,11 @@
               Desparasitación — cada 3 meses<br>Baño garrapaticida — según clima</div>
           </div>
           <div class="card">
-            <div class="chart-title" style="font-size:13.5px">Historial · soporte ICA</div>
+            <div class="chart-title" style="font-size:13.5px">Soporte ICA</div>
             <div style="font-size:13px;color:var(--ink-2);line-height:1.95;margin-top:8px">
-              Último ciclo de aftosa: <b style="color:var(--ink)">mayo 2026 — 80/80 ✓</b><br>
-              Exportable como soporte oficial ICA para trámites.</div>
-            <button class="btn outl small" style="margin-top:12px" onclick="snack('Exportado: soporte_ICA_aftosa_may2026.pdf')"><svg class="ic-s ic"><use href="#i-export"/></svg>Exportar soporte</button>
+              Registra los ciclos de vacunación (aftosa, brucelosis) para tener el
+              soporte oficial ICA exportable.</div>
+            <button class="btn outl small" style="margin-top:12px" onclick="snack('Soporte ICA exportado')"><svg class="ic-s ic"><use href="#i-export"/></svg>Exportar soporte</button>
           </div>
         </div>
       </div>
