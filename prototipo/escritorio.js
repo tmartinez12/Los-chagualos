@@ -270,7 +270,7 @@ function saveMilk(){
 renderMilk();
 
 /* ===== Cableado a Supabase: tabla de ordeño (con respaldo local) ===== */
-function ordinalParto(n){const m={1:'1er',2:'2do',3:'3er',4:'4to',5:'5to',6:'6to',7:'7mo',8:'8vo',9:'9no'};return (m[n]||n+'to')+' parto';}
+const ordinalParto=LCRules.ordinalParto;   // compartido en core/rules.js
 function animalAMilk(a){
   const ctx=a.del>300?'lactancia larga':(a.partos?ordinalParto(a.partos):'');
   const delTxt='DEL '+(a.del==null?'—':a.del)+(ctx?' · '+ctx:'');
@@ -1192,7 +1192,7 @@ function renderPalpLista(){
 }
 renderPartos();renderPartosRecientes();renderPartosKpis();renderVacias();renderPalpLista();renderTratamientos();
 /* ===== Cableado a Supabase: reproducción y partos ===== */
-function fmtFechaCorta(iso){if(!iso)return '—';const d=new Date(iso+'T00:00:00');return d.getDate()+' '+LCRules.MESC[d.getMonth()];}
+const fmtFechaCorta=LCRules.fmtFechaCorta;   // compartido en core/rules.js
 (async function cargarReproDesdeSupabase(){
   if(typeof LCStore==='undefined')return;
   try{
@@ -1353,15 +1353,7 @@ function isoHoy(){return isoDe(HOY_LC);}
 function isoMasDias(n){const d=new Date(HOY_LC.getTime());d.setDate(d.getDate()+(n||0));return isoDe(d);}
 /* fecha estimada de parto: hoy + lo que falta de gestación (~9 meses) */
 function isoParto(meses){const d=new Date(HOY_LC.getTime());d.setMonth(d.getMonth()+Math.max(0,Math.round(9-meses)));return isoDe(d);}
-/* snapshot de los campos reproductivos de un animal (forma BD) para poder
-   revertir en Supabase si se deshace un parto o una palpación. */
-function snapshotReproDB(a){
-  return {grupo:a.grupo, del:a.del, estado_repro:a.estadoRepro,
-    prenez_meses:a.prenez?a.prenez.meses:null,
-    parto_estimado:a.prenez?a.prenez.partoEstimado:null,
-    ultima_palpacion:a.ultimaPalpacion||(a.prenez?a.prenez.ultimaPalpacion:null),
-    dias_vacia:a.diasVacia, leche_ayer:a.leche?a.leche.ayer:null};
-}
+const snapshotReproDB=LCRules.snapshotReproDB;   // compartido en core/rules.js
 /* fecha de nacimiento: exacta si se conoce; si no, estimada desde la edad */
 function fmtNacimiento(a){
   if(a&&a.nacimiento){const d=new Date(a.nacimiento+'T00:00:00');return d.getDate()+' '+LCRules.MESC[d.getMonth()]+' '+d.getFullYear();}
@@ -1375,7 +1367,7 @@ function fmtEdad(a){
   if(enMeses)return Math.round(n*12)+' m';
   return (n%1===0?String(n):n.toFixed(1).replace('.',','))+' a';
 }
-function diasHasta(iso){if(!iso)return null;const d=new Date(iso+'T00:00:00');return Math.round((d-HOY_LC)/86400000);}
+const diasHasta=LCRules.diasHasta;   // compartido en core/rules.js
 function deriveRepro(a){
   /* retiro de leche por tratamiento (prioridad: alerta sanitaria) */
   if(a.retiroLecheHasta){const d=diasHasta(a.retiroLecheHasta);

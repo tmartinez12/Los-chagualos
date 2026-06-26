@@ -312,22 +312,15 @@ const cows=[];
 cows.forEach(c=>{c.done=false;c.v=null;});
 /* ===== Helpers compartidos para derivar desde Supabase ===== */
 const HOY_LC=new Date();   // hoy real (la base trae datos reales)
-function diasHastaM(iso){if(!iso)return null;const d=new Date(iso+'T00:00:00');return Math.round((d-HOY_LC)/86400000);}
-function ordinalPartoM(n){const m={1:'1er',2:'2do',3:'3er',4:'4to',5:'5to',6:'6to',7:'7mo',8:'8vo',9:'9no'};return (m[n]||n+'to')+' parto';}
+const diasHastaM=LCRules.diasHasta;        // compartido en core/rules.js
+const ordinalPartoM=LCRules.ordinalParto;  // compartido en core/rules.js
 function isoDeM(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+dd;}
 function isoHoyM(){return isoDeM(HOY_LC);}
 function isoMasDiasM(n){const d=new Date(HOY_LC.getTime());d.setDate(d.getDate()+(n||0));return isoDeM(d);}
 function isoPartoM(meses){const d=new Date(HOY_LC.getTime());d.setMonth(d.getMonth()+Math.max(0,Math.round(9-meses)));return isoDeM(d);}
 function numDe(cow){return (''+cow).split('·')[0].trim();}
-/* snapshot de campos reproductivos (forma BD) para revertir en Supabase al deshacer */
-function snapshotReproDBM(a){
-  return {grupo:a.grupo, del:a.del, estado_repro:a.estadoRepro,
-    prenez_meses:a.prenez?a.prenez.meses:null,
-    parto_estimado:a.prenez?a.prenez.partoEstimado:null,
-    ultima_palpacion:a.ultimaPalpacion||(a.prenez?a.prenez.ultimaPalpacion:null),
-    dias_vacia:a.diasVacia, leche_ayer:a.leche?a.leche.ayer:null};
-}
-function fmtFechaCortaM(iso){if(!iso)return '—';const d=new Date(iso+'T00:00:00');return d.getDate()+' '+MESC[d.getMonth()];}
+const snapshotReproDBM=LCRules.snapshotReproDB;   // compartido en core/rules.js
+const fmtFechaCortaM=LCRules.fmtFechaCorta;       // compartido en core/rules.js
 function edadTextoM(a){const n=a.edadAnios;if(n==null)return '';
   const enMeses=a.grupo==='levante'||a.grupo==='ternera'||(a.grupo==='macho'&&n<1.5)||n<1;
   return enMeses?Math.round(n*12)+' meses':((n%1===0?String(n):n.toFixed(1).replace('.',','))+' años');}

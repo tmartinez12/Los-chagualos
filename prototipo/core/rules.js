@@ -115,5 +115,43 @@
     return { puntos, picoDia: tp, picoL: valorEn(tp), maxDia, valorEn };
   }
 
-  return { MESC, fechaParto, fechaDias, esBajonLeche, parseTrat, parsePalpNota, curvaLactancia };
+  /* ----- Derivaciones compartidas por móvil y escritorio --------------------
+   * Antes estaban duplicadas en app.js y escritorio.js. */
+
+  /* Días desde hoy hasta una fecha ISO (negativo si ya pasó). null si no hay. */
+  function diasHasta(iso, hoy) {
+    if (!iso) return null;
+    const d = new Date(iso + 'T00:00:00');
+    return Math.round((d - baseHoy(hoy)) / 86400000);
+  }
+
+  /* "3er parto", "4to parto"… */
+  function ordinalParto(n) {
+    const m = { 1: '1er', 2: '2do', 3: '3er', 4: '4to', 5: '5to', 6: '6to', 7: '7mo', 8: '8vo', 9: '9no' };
+    return (m[n] || n + 'to') + ' parto';
+  }
+
+  /* Fecha corta para mostrar: "13 jun". '—' si no hay. */
+  function fmtFechaCorta(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso + 'T00:00:00');
+    return d.getDate() + ' ' + MESC[d.getMonth()];
+  }
+
+  /* Snapshot de los campos reproductivos (forma BD) para poder revertir en
+   * Supabase si se deshace un parto o una palpación. */
+  function snapshotReproDB(a) {
+    return {
+      grupo: a.grupo, del: a.del, estado_repro: a.estadoRepro,
+      prenez_meses: a.prenez ? a.prenez.meses : null,
+      parto_estimado: a.prenez ? a.prenez.partoEstimado : null,
+      ultima_palpacion: a.ultimaPalpacion || (a.prenez ? a.prenez.ultimaPalpacion : null),
+      dias_vacia: a.diasVacia, leche_ayer: a.leche ? a.leche.ayer : null,
+    };
+  }
+
+  return {
+    MESC, fechaParto, fechaDias, esBajonLeche, parseTrat, parsePalpNota, curvaLactancia,
+    diasHasta, ordinalParto, fmtFechaCorta, snapshotReproDB,
+  };
 });
