@@ -162,7 +162,7 @@ function renderFicha(num){
     '<div class="stat"><div class="s-label">Partos</div><div class="s-value">'+(a.partos||0)+'</div></div>';
   /* genealogía */
   const madre=a.madreId?(animalesPorIdM[a.madreId]?a.madreId+' '+animalesPorIdM[a.madreId].nombre:a.madreId):'—';
-  const padre=a.padreId?(a.padreId==='T01'?'Sansón':(animalesPorIdM[a.padreId]?a.padreId+' '+animalesPorIdM[a.padreId].nombre:a.padreId)):'—';
+  const padre=a.padreId?(animalesPorIdM[a.padreId]?a.padreId+' '+animalesPorIdM[a.padreId].nombre:a.padreId):'—';
   const crias=Object.values(animalesPorIdM).filter(x=>x.madreId===a.id).map(x=>x.id+' '+x.nombre);
   document.getElementById('vmGenea').innerHTML='<b style="color:var(--ink)">Nacimiento:</b> '+fmtNacimientoM(a)+'<br>'+
     '<b style="color:var(--ink)">Madre:</b> '+madre+
@@ -563,7 +563,7 @@ function renderPartos(){
       '<span class="badge '+p.bw+'">'+p.badge+'</span>';
     lp.appendChild(d);});
   const ver=document.createElement('div');ver.className='list-item';
-  ver.onclick=()=>snack('Calendario completo de partos: jul · ago · sep · oct · nov · dic — de las palpaciones');
+  ver.onclick=()=>snack('Próximos partos según las palpaciones');
   ver.innerHTML='<div class="li-body" style="text-align:center"><div class="li-sub" style="font-weight:600;text-decoration:underline;text-underline-offset:3px">Ver los '+porParir+' próximos partos</div></div>';
   lp.appendChild(ver);
   const lr=document.getElementById('listRecientes');lr.innerHTML='';
@@ -575,7 +575,7 @@ function renderPartos(){
     lr.appendChild(row);});
   const hist=document.createElement('button');hist.className='btn text small mt8';
   hist.style.cssText='width:100%;justify-content:center';hist.textContent='Ver historial completo';
-  hist.onclick=()=>snack('Historial completo de partos — cada cría con su fecha, sexo, peso y notas; incluye los mortinatos');
+  hist.onclick=()=>snack('Historial de partos');
   lr.appendChild(hist);
 }
 function openParto(cow){
@@ -743,6 +743,17 @@ const fechaParto=LCRules.fechaParto;
     animales.filter(a=>a.estadoRepro==='servida'||a.estadoRepro==='vacia').forEach(a=>{
       palpCandidatas[refP(a.id)]=a.estadoRepro==='servida'?'servida, por confirmar'
         :'vacía'+(a.diasVacia?' hace '+a.diasVacia+' días':', confirmar estado');});
+    /* toro y resumen de partos (datos reales) */
+    const A=Object.values(animalesPorIdM);
+    const toro=A.find(a=>a.grupo==='macho'&&a.rolToro)||A.find(a=>a.grupo==='macho');
+    const tEl=document.getElementById('reproToroM');
+    if(tEl){ if(toro){const hijas=A.filter(x=>x.padreId===toro.id).length;
+      tEl.innerHTML='<div class="li-leading"><svg class="ic"><use href="#i-male"/></svg></div>'+
+        '<div style="flex:1"><div style="font-size:14px;font-weight:700">'+toro.id+' · '+toro.nombre+' — toro</div>'+
+        '<div style="font-size:12px;color:var(--ink-2)">'+(toro.edadAnios?Math.round(toro.edadAnios)+' años · ':'')+'monta natural'+(hijas?' · '+hijas+' hijas':'')+'</div></div>';
+      } else tEl.innerHTML='<div style="font-size:12.5px;color:var(--ink-3);padding:6px">Sin toro registrado.</div>'; }
+    const pEl=document.getElementById('reproPartosM');
+    if(pEl)pEl.textContent=porParir+' por parir'+(proximosPartos[0]?' · próximo '+proximosPartos[0].short:'');
     renderPartos();renderVacias();renderPalpListaM();
   }catch(e){console.warn('Reproducción móvil: usando datos locales:',e.message||e);}
 })();

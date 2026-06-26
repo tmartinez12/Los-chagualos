@@ -49,6 +49,7 @@
     const partoEstDeriv = (r.parto_estimado_calc != null) ? r.parto_estimado_calc : r.parto_estimado;
     const secarDeriv = (r.secar_calc != null) ? r.secar_calc : r.secar_estimado;
     const diasVaciaDeriv = (r.dias_vacia_calc != null) ? r.dias_vacia_calc : r.dias_vacia;
+    const mesesDeriv = (r.prenez_meses_actual != null) ? r.prenez_meses_actual : r.prenez_meses;
     return {
       id: r.id, nombre: r.nombre, unidad: r.unidad_id, especie: r.especie,
       raza: r.raza, grupo: r.grupo, sexo: r.sexo,
@@ -57,7 +58,7 @@
       leche: { ayer: lecheDerivada, hoy: r.leche_hoy },
       estadoRepro: r.estado_repro,
       prenez: (r.prenez_meses != null || partoEstDeriv)
-        ? { meses: r.prenez_meses, partoEstimado: partoEstDeriv, ultimaPalpacion: r.ultima_palpacion }
+        ? { meses: mesesDeriv, partoEstimado: partoEstDeriv, ultimaPalpacion: r.ultima_palpacion }
         : null,
       diasVacia: diasVaciaDeriv, ultimaPalpacion: r.ultima_palpacion,
       listaServicio: r.lista_servicio, secarEstimado: secarDeriv,

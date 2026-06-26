@@ -835,7 +835,7 @@ function buildFichaBasica(a){
     origen:a.origen==='comprado'?'Comprada':a.origen==='nacido_finca'?'Nació en finca':'—',
     del:(a.del==null?0:a.del),parto:a.partos||0,ayer:(a.leche&&a.leche.ayer!=null?a.leche.ayer:0),
     peso:a.pesoKg?a.pesoKg+' kg':'—',
-    madre:a.madreId?nombreRef(a.madreId):'—',padre:a.padreId?(a.padreId==='T01'?'Sansón':nombreRef(a.padreId)):'—',
+    madre:a.madreId?nombreRef(a.madreId):'—',padre:a.padreId?nombreRef(a.padreId):'—',
     crias:crias,repro:deriveReproFicha(a),
     sanidad:sanOk?'Sanidad al día — sin retiros activos':'Retiro de leche activo — no vender su leche',sanOk:sanOk,
     historia:historia};
@@ -952,6 +952,33 @@ function renderPartosKpis(){
     '<div class="card kpi"><div class="k-label">Próximo</div><div class="k-value" style="font-size:20px">'+(prox?prox.parto:'—')+'</div><div class="k-trend mut">'+(prox?prox.cow:'sin próximos')+'</div></div>'+
     '<div class="card kpi"><div class="k-label">Mortinatos</div><div class="k-value'+(mortinatos?' down':'')+'">'+mortinatos+'</div><div class="k-trend mut">de '+total+' partos</div></div>';
   refreshHeader();
+}
+/* KPIs y toro de la página de reproducción (datos reales) */
+function renderReproKpis(){
+  const A=Object.values(animalesPorId||{});
+  const box=document.getElementById('reproKpis');
+  if(box){
+    const eleg=A.filter(a=>a.sexo==='H'&&['ordeño','horra','novilla'].includes(a.grupo));
+    const pren=eleg.filter(a=>a.estadoRepro==='prenada').length;
+    const pct=eleg.length?Math.round(pren/eleg.length*100):0;
+    const prox=proximosPartos[0]||null;
+    box.innerHTML=
+      '<div class="card kpi"><div class="k-label">Preñez</div><div class="k-value">'+pct+'<span class="k-unit">%</span></div><div class="k-trend mut">'+pren+' de '+eleg.length+' elegibles</div></div>'+
+      '<div class="card kpi"><div class="k-label">Preñadas</div><div class="k-value">'+pren+'</div><div class="k-trend mut">en el hato</div></div>'+
+      '<div class="card kpi"><div class="k-label">Vacías &gt;120 días</div><div class="k-value'+(vacasVacias.length?' down':'')+'">'+vacasVacias.length+'</div><div class="k-trend mut">revisar servicio</div></div>'+
+      '<div class="card kpi"><div class="k-label">Próximo parto</div><div class="k-value" style="font-size:20px">'+(prox?prox.parto:'—')+'</div><div class="k-trend mut">'+(prox?prox.cow:'sin próximos')+'</div></div>';
+  }
+  const toro=document.getElementById('reproToro');
+  if(toro){
+    const t=A.find(a=>a.grupo==='macho'&&a.rolToro)||A.find(a=>a.grupo==='macho');
+    if(t){const hijas=A.filter(x=>x.padreId===t.id).length;
+      toro.innerHTML='<div class="cini" style="width:44px;height:44px"><svg class="ic"><use href="#i-repeat"/></svg></div>'+
+        '<div style="flex:1"><div style="font-size:14.5px;font-weight:700">'+t.id+' · '+t.nombre+' — toro</div>'+
+        '<div style="font-size:12px;color:var(--ink-2)">'+(t.edadAnios?Math.round(t.edadAnios)+' años · ':'')+'monta natural'+(hijas?' · '+hijas+' hijas en la finca':'')+'</div></div>'+
+        '<button class="btn outl small" onclick="goVaca(\''+t.id+'\',\'pg-repro\')">Ver ficha</button>';
+    }else toro.innerHTML='<div style="font-size:13px;color:var(--ink-3);padding:6px">Sin toro registrado en el hato.</div>';
+  }
+  const pp=document.getElementById('reproPorParir');if(pp)pp.textContent=proximosPartos.length+' por parir';
 }
 /* vacas vacías que requieren decisión */
 let vacasVacias=[];
@@ -1165,7 +1192,7 @@ function savePalp(){
     if(pi>=0)proximosPartos[pi]=nuevo; else proximosPartos.push(nuevo);
     const vi=vacasVacias.findIndex(v=>v.cow===cow);
     const removedVacia=vi>=0?vacasVacias.splice(vi,1)[0]:null;
-    renderPartos();renderPartosKpis();renderVacias();renderPalpLista();go('pg-partos',document.querySelector('[data-pg="pg-partos"]'));
+    renderPartos();renderPartosKpis();renderVacias();renderPalpLista();renderReproKpis();go('pg-partos',document.querySelector('[data-pg="pg-partos"]'));
     const trats=p.trat.length?' · Trat: '+p.trat.join(', '):'';
     snack(nombre+': '+nota+' → preñada ~'+p.dias+'d — parto '+f.corta+trats,'Deshacer',()=>{
       const j=proximosPartos.findIndex(pp=>pp.cow===cow);
@@ -1175,7 +1202,7 @@ function savePalp(){
       if(removedCand)palpCandidatas.splice(Math.min(ci,palpCandidatas.length),0,removedCand);
       if(undoTrat)undoTrat();
       revertirPalpEnBase();
-      renderPartos();renderPartosKpis();renderVacias();renderPalpLista();});
+      renderPartos();renderPartosKpis();renderVacias();renderPalpLista();renderReproKpis();});
     return;
   }
   if(p.tipo==='vacia'){
@@ -1189,14 +1216,14 @@ function savePalp(){
         rec:p.subtipo==='fisiologica'?'Vacía fisiológica — programar servicio':'Vacía — evaluar siguiente paso'};
       vacasVacias.push(added);
     }
-    renderPartos();renderPartosKpis();renderVacias();renderPalpLista();go('pg-repro',document.querySelector('[data-pg="pg-repro"]'));
+    renderPartos();renderPartosKpis();renderVacias();renderPalpLista();renderReproKpis();go('pg-repro',document.querySelector('[data-pg="pg-repro"]'));
     snack(nombre+': '+nota+' → vacía — lista para servicio','Deshacer',()=>{
       if(added){const ai=vacasVacias.findIndex(v=>v.cow===cow);if(ai>=0)vacasVacias.splice(ai,1);}
       if(prevParto)proximosPartos.splice(Math.min(pi,proximosPartos.length),0,prevParto);
       if(removedCand)palpCandidatas.splice(Math.min(ci,palpCandidatas.length),0,removedCand);
       if(undoTrat)undoTrat();
       revertirPalpEnBase();
-      renderPartos();renderPartosKpis();renderVacias();renderPalpLista();});
+      renderPartos();renderPartosKpis();renderVacias();renderPalpLista();renderReproKpis();});
     return;
   }
   renderPalpLista();
@@ -1208,7 +1235,7 @@ function renderPalpLista(){
   if(!palpCandidatas.length){box.innerHTML='<span class="mut">No hay candidatas para palpar</span>';return;}
   box.innerHTML=palpCandidatas.map(c=>'<b style="color:var(--ink)">'+c.cow.replace(' · ',' ')+'</b> — '+c.motivo).join('<br>');
 }
-renderPartos();renderPartosRecientes();renderPartosKpis();renderVacias();renderPalpLista();renderTratamientos();
+renderPartos();renderPartosRecientes();renderPartosKpis();renderVacias();renderPalpLista();renderReproKpis();renderTratamientos();
 /* ===== Cableado a Supabase: reproducción y partos ===== */
 const fmtFechaCorta=LCRules.fmtFechaCorta;   // compartido en core/rules.js
 (async function cargarReproDesdeSupabase(){
@@ -1247,7 +1274,7 @@ const fmtFechaCorta=LCRules.fmtFechaCorta;   // compartido en core/rules.js
         sexo:p.sexo_cria,peso:p.peso_kg||0,tipo:p.tipo,
         estado:p.estado_cria,grupo:p.estado_cria==='viva'?criaGrupo:null};
     });
-    renderPartos();renderPartosRecientes();renderPartosKpis();renderVacias();renderPalpLista();
+    renderPartos();renderPartosRecientes();renderPartosKpis();renderVacias();renderPalpLista();renderReproKpis();
   }catch(e){console.warn('Reproducción: usando datos locales:',e.message||e);}
 })();
 

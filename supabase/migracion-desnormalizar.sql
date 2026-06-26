@@ -32,7 +32,10 @@ SELECT a.*,
   CASE WHEN a.estado_repro = 'prenada' AND a.prenez_meses IS NOT NULL AND a.ultima_palpacion IS NOT NULL
        THEN (a.ultima_palpacion + (round((7 - a.prenez_meses))::int * INTERVAL '1 month'))::date END AS secar_calc,
   CASE WHEN a.estado_repro = 'vacia' AND a.ultima_palpacion IS NOT NULL
-       THEN (CURRENT_DATE - a.ultima_palpacion) END AS dias_vacia_calc
+       THEN (CURRENT_DATE - a.ultima_palpacion) END AS dias_vacia_calc,
+  -- meses de preñez ACTUALES: avanzan con el tiempo desde la palpación (tope 9)
+  CASE WHEN a.estado_repro = 'prenada' AND a.prenez_meses IS NOT NULL AND a.ultima_palpacion IS NOT NULL
+       THEN least(9, round((a.prenez_meses + (CURRENT_DATE - a.ultima_palpacion) / 30.44)::numeric, 1)) END AS prenez_meses_actual
 FROM animales a;
 
 -- 3) Vista del histórico mensual DERIVADA de los ordeños (ya no se llena a mano).

@@ -346,33 +346,24 @@
       <div class="kpi"><div class="k-label">Vacías >120d</div><div class="k-value down" id="kpiVacias">2</div></div>
     </div>
 
-    <div class="card" style="display:flex;gap:12px;align-items:center">
-      <div class="li-leading"><svg class="ic"><use href="#i-male"/></svg></div>
-      <div style="flex:1">
-        <div style="font-size:14px;font-weight:700">T01 · Sansón — toro activo</div>
-        <div style="font-size:12px;color:var(--ink-2)">6 años · en el hato desde 2021 · <b>23 hijas vivas en la finca</b></div>
-      </div>
-      <svg class="ic chev"><use href="#i-chev"/></svg>
-    </div>
+    <div class="card" id="reproToroM" style="display:flex;gap:12px;align-items:center"></div>
 
     <div class="card flat" style="display:flex;gap:10px;align-items:center;padding:12px 14px;cursor:pointer"
       onclick="go('scr-partos')">
       <svg class="ic-s ic" style="color:var(--ink-2)"><use href="#i-sprout"/></svg>
-      <div style="flex:1;font-size:13px"><b>Partos:</b> 9 por parir · próximo ~3 jul · registrar parto</div>
+      <div style="flex:1;font-size:13px"><b>Partos:</b> <span id="reproPartosM">—</span> · registrar parto</div>
       <svg class="ic chev"><use href="#i-chev"/></svg>
     </div>
 
-    <div class="section-label">Vacas vacías · <span style="color:var(--red)">2 requieren decisión</span></div>
+    <div class="section-label">Vacas vacías · <span style="color:var(--red)">decisión</span></div>
     <div class="list" id="listVacias"></div>
 
-    <div class="alert urgent">
+    <div class="alert urgent" style="display:none">
       <div class="a-icon"><svg class="ic"><use href="#i-warn"/></svg></div>
       <div class="a-body">
-        <div class="a-title">Consanguinidad: 4 novillas hijas de Sansón llegan a edad de servicio</div>
-        <div class="a-sub">055 Princesa y 058 Alondra ya tienen el peso; 2 más en ~5 meses.
-          <b>No deben quedar con su padre.</b></div>
+        <div class="a-title">Consanguinidad</div>
+        <div class="a-sub">Alerta de novillas hijas del toro.</div>
         <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-          <button class="btn filled small" onclick="snack('Opciones: rotar/cambiar toro · separar lote de novillas · prestar toro de otra finca')">Ver opciones</button>
           <button class="btn text small" onclick="openGroup('novillas')">Ver novillas</button>
         </div>
       </div>
@@ -534,7 +525,7 @@
   <!-- ============ PARTOS ============ -->
   <div class="screen" id="scr-partos">
     <div class="kpi-row" style="margin-top:4px">
-      <div class="kpi"><div class="k-label">Partos 2026</div><div class="k-value" id="kpiPartos2026">7</div></div>
+      <div class="kpi"><div class="k-label">Partos</div><div class="k-value" id="kpiPartos2026">7</div></div>
       <div class="kpi"><div class="k-label">Por parir</div><div class="k-value" id="kpiPorParir">9</div></div>
       <div class="kpi"><div class="k-label">Próximo</div><div class="k-value" id="kpiProximo" style="font-size:19px">~3 jul</div></div>
     </div>
@@ -553,7 +544,7 @@
     <div class="section-label">Próximos partos · de las palpaciones</div>
     <div class="list" id="listProximos"></div>
 
-    <div class="section-label">Partos recientes · 2026</div>
+    <div class="section-label">Partos recientes</div>
     <div class="card" id="listRecientes"></div>
   </div>
 

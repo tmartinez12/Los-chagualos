@@ -293,50 +293,18 @@
 
       <!-- ============ REPRODUCCIÓN ============ -->
       <div class="page" id="pg-repro">
-        <div class="kpis">
-          <div class="card kpi"><div class="k-label">Preñez</div><div class="k-value">73<span class="k-unit">%</span></div><div class="k-trend mut">19 de 26 elegibles</div></div>
-          <div class="card kpi"><div class="k-label">Intervalo entre partos</div><div class="k-value">14,2<span class="k-unit">m</span></div><div class="k-trend up">↓ mejorando</div></div>
-          <div class="card kpi"><div class="k-label">Vacías &gt;120 días</div><div class="k-value down">2</div><div class="k-trend mut">revisar servicio</div></div>
-          <div class="card kpi"><div class="k-label">Próximo parto</div><div class="k-value" style="font-size:20px">~3 jul</div><div class="k-trend mut">011 Violeta</div></div>
-        </div>
+        <div class="kpis" id="reproKpis"></div>
 
         <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:12px">
           <div>
-            <div class="card" style="display:flex;gap:14px;align-items:center">
-              <div class="cini" style="width:44px;height:44px"><svg class="ic"><use href="#i-repeat"/></svg></div>
-              <div style="flex:1">
-                <div style="font-size:14.5px;font-weight:700">T01 · Sansón — toro activo</div>
-                <div style="font-size:12px;color:var(--ink-2)">6 años · en el hato desde 2021 · <b>23 hijas vivas</b> · monta natural</div>
-              </div>
-              <button class="btn outl small" onclick="snack('Ficha del toro Sansón — 23 hijas en la finca')">Ver ficha</button>
-            </div>
+            <div class="card" id="reproToro" style="display:flex;gap:14px;align-items:center"></div>
             <div class="card" style="display:flex;gap:12px;align-items:center;cursor:pointer" onclick="go('pg-partos')">
               <svg class="ic" style="color:var(--ink-2)"><use href="#i-sprout"/></svg>
-              <div style="flex:1;font-size:13px"><b>Partos:</b> 9 por parir · calendario y partos recientes</div>
+              <div style="flex:1;font-size:13px"><b>Partos:</b> <span id="reproPorParir">—</span> · calendario y partos recientes</div>
               <button class="btn outl small">Ver partos</button>
-            </div>
-            <div class="section-label">Regla de los 21 días</div>
-            <div class="card">
-              <div class="chart-sub" style="margin-bottom:10px">El ciclo de la vaca dura ~21 días: si el celo no se repite, probablemente quedó preñada.</div>
-              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
-                <div><div style="font-weight:600;font-size:13.5px">038 · Mona</div><div style="font-size:12px;color:var(--ink-2)">monta de Sansón vista · 3 jun</div></div>
-                <span class="badge warn">revisar ~24 jun</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
-                <div><div style="font-weight:600;font-size:13.5px">027 · Estrella</div><div style="font-size:12px;color:var(--ink-2)">celo sin repetir desde el 28 may</div></div>
-                <span class="badge ok" style="cursor:pointer" onclick="openPalp('027 · Estrella')">¿preñada? → palpar</span>
-              </div>
             </div>
           </div>
           <div>
-            <div class="alert warn">
-              <svg class="ic" style="color:var(--amber)"><use href="#i-warn"/></svg>
-              <div style="flex:1">
-                <div class="a-title">Consanguinidad: 4 hijas de Sansón llegan a servicio</div>
-                <div class="a-sub">055 Princesa y 058 Alondra ya tienen el peso. <b>No deben quedar con su padre</b> — rotar/prestar toro o separar el lote.</div>
-                <button class="btn outl small" style="margin-top:10px" onclick="snack('Opciones: rotar/cambiar toro · separar lote de novillas · prestar toro de otra finca')">Ver opciones</button>
-              </div>
-            </div>
             <div class="section-label">Lista para la próxima palpación (se arma sola)</div>
             <div class="card">
               <div id="palpListaBox" style="font-size:13px;line-height:1.9;color:var(--ink-2)"></div>
@@ -371,11 +339,11 @@
                 <thead><tr><th>Vaca</th><th>Preñez</th><th class="r">Parto estimado</th></tr></thead>
                 <tbody id="partosTbody"></tbody>
               </table>
-              <div style="text-align:center;padding:10px"><button class="btn outl small" onclick="snack('Calendario completo de partos: jul 2 · ago 1 · sep 4 · oct 1 · nov 3 · dic 2')">Ver los 9 próximos partos</button></div>
+              <div style="text-align:center;padding:10px"><button class="btn outl small" onclick="snack('Próximos partos según las palpaciones')">Ver el calendario de partos</button></div>
             </div>
           </div>
           <div>
-            <div class="section-label" style="margin-top:4px">Partos recientes · 2026</div>
+            <div class="section-label" style="margin-top:4px">Partos recientes</div>
             <div class="card" style="padding:8px">
               <table>
                 <thead><tr><th>Madre → cría</th><th>Fecha</th><th class="r">Resultado</th></tr></thead>
