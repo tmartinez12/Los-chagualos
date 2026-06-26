@@ -92,9 +92,13 @@ function renderInicio(){
       if(occ)alertas.push({cls:'urgent',title:'Hato: día '+Math.abs(occ.d)+' en el potrero '+occ.n+' — mover hoy',
         sub:sug?'Sugerido: P'+sug.n+' · '+sug.d+' días de descanso':'Revisar potreros disponibles',btn:'Ver potreros',pg:'pg-potreros'});
     }catch(e){}
+    try{Object.values(animalesPorId).filter(a=>a.estadoRepro==='vacia'&&a.diasVacia&&a.diasVacia>=120).slice(0,2).forEach(a=>{
+      alertas.push({cls:'urgent',title:'Vaca '+a.id+' "'+a.nombre+'": vacía '+a.diasVacia+' días',
+        sub:'Requiere decisión: palpar, servir o evaluar descarte',btn:'Ver reproducción',pg:'pg-repro'});});
+    }catch(e){}
     try{Object.values(animalesPorId).filter(a=>a.grupo==='ordeño'&&a.prenez&&a.prenez.meses>=7).slice(0,2).forEach(a=>{
       alertas.push({cls:'warn',title:'Vaca '+a.id+' "'+a.nombre+'": programar secado',
-        sub:'Preñada '+a.prenez.meses+' meses — secar ~2 meses antes del parto'});});
+        sub:'Preñada '+a.prenez.meses+' meses'+(a.secarEstimado?' — secar ~'+fmtFechaCorta(a.secarEstimado):' — secar ~2 meses antes del parto')});});
     }catch(e){}
     try{Object.values(animalesPorId).filter(a=>a.retiroLecheHasta&&diasHasta(a.retiroLecheHasta)>=0).slice(0,2).forEach(a=>{
       const d=diasHasta(a.retiroLecheHasta);

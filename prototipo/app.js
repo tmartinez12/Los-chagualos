@@ -403,13 +403,16 @@ function renderInicioM(){
   if(elO)elO.textContent=cows.length||'—';
   const al=document.getElementById('miAlertas');if(!al)return;
   const A=[];
+  Object.values(animalesPorIdM).filter(a=>a.estadoRepro==='vacia'&&a.diasVacia&&a.diasVacia>=120).slice(0,2).forEach(a=>{
+    A.push({c:'urgent',t:'Vaca '+a.id+' "'+a.nombre+'": vacía '+a.diasVacia+' días',
+      s:'Requiere decisión: palpar, servir o evaluar descarte',cow:a.id});});
   Object.values(animalesPorIdM).filter(a=>a.retiroLecheHasta&&diasHastaM(a.retiroLecheHasta)>=0).slice(0,2).forEach(a=>{
     const d=diasHastaM(a.retiroLecheHasta);
     A.push({c:'info',t:'Retiro de leche: vaca '+a.id+(d===1?' — falta 1 día':' — faltan '+d+' días'),
       s:'No vender su leche hasta '+fmtFechaCortaM(a.retiroLecheHasta)});});
   Object.values(animalesPorIdM).filter(a=>a.grupo==='ordeño'&&a.prenez&&a.prenez.meses>=7).slice(0,2).forEach(a=>{
     A.push({c:'warn',t:'Vaca '+a.id+' "'+a.nombre+'": programar secado',
-      s:'Preñada '+a.prenez.meses+' meses',cow:a.id});});
+      s:'Preñada '+a.prenez.meses+' meses'+(a.secarEstimado?' — secar ~'+fmtFechaCortaM(a.secarEstimado):''),cow:a.id});});
   al.innerHTML=A.map(x=>'<div class="alert '+x.c+'"><div class="a-icon"><svg class="ic"><use href="#i-cal"/></svg></div>'+
     '<div class="a-body"><div class="a-title">'+x.t+'</div><div class="a-sub">'+x.s+'</div>'+
     (x.cow?'<button class="btn outl small mt8" onclick="openCow(\''+x.cow+'\')">Ver ficha</button>':'')+
