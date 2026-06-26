@@ -317,7 +317,15 @@ function scatterCows(){
 function renderScatter(svgId){
   const svg=document.getElementById(svgId);if(!svg)return;
   const cows=scatterCows();
-  if(!cows.length){svg.innerHTML='';return;}
+  if(!cows.length){
+    /* sin datos: explica qué falta en vez de quedar en blanco */
+    const enOrdeno=(typeof hato!=='undefined')?hato.filter(a=>a.grupo==='En ordeño').length:0;
+    const msg=enOrdeno?('Las '+enOrdeno+' vacas en ordeño no tienen DEL y leche de ayer cargados.')
+      :'Aún no hay vacas en ordeño con datos de producción.';
+    svg.innerHTML='<text x="280" y="78" text-anchor="middle" font-family="Work Sans,sans-serif" font-size="12" fill="#A8ACA0">'+msg+'</text>'+
+      '<text x="280" y="98" text-anchor="middle" font-family="Work Sans,sans-serif" font-size="11" fill="#C0C4B8">Completa DEL y “leche de ayer” en cada vaca (✏️ Editar) o registra el ordeño.</text>';
+    return;
+  }
   const pad={l:45,r:15,t:12,b:28},w=560,h=180;
   const pw=w-pad.l-pad.r,ph=h-pad.t-pad.b;
   const maxDel=Math.max(450,...cows.map(c=>c.del+20));
