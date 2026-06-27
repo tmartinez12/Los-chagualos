@@ -1,5 +1,9 @@
 /* Bandera para ocultar Potreros por ahora (poner true para reactivarlo). */
 const POTREROS_VISIBLE=false;
+/* Caché id→animal (forma canónica) para fichas, inicio y genealogía.
+   Declarada aquí arriba para evitar TDZ: el arranque (renderHato/renderInicio)
+   corre antes de la línea donde se llena desde Supabase. */
+let animalesPorId={};
 const titles={
   'pg-inicio':['Buenos días, Tatiana','Resumen del día'],
   'pg-leche':['Producción de leche','Ordeño, histórico y días en leche'],
@@ -1319,7 +1323,6 @@ function animalAFila(a){
     del:(a.del==null?'—':a.del),ayer:(a.leche&&a.leche.ayer!=null?a.leche.ayer:'—'),
     var:'—',vc:'',tags:deriveTags(a)};
 }
-let animalesPorId={};   // cache id→animal (forma canónica) para fichas y genealogía
 (async function cargarHatoDesdeSupabase(){
   if(typeof LCStore==='undefined')return;
   try{

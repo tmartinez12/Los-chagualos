@@ -357,7 +357,10 @@ function renderTratamientosM(lista){
   try{const ts=await LCStore.getTratamientos(true);renderTratamientosM(ts||[]);}
   catch(e){console.warn('Tratamientos móvil:',e.message||e);renderTratamientosM([]);}
 })();
-/* Lista de candidatas a palpar (se arma sola desde palpCandidatas). */
+/* Lista de candidatas a palpar (se arma sola desde palpCandidatas).
+   Declarada aquí arriba para evitar TDZ: el arranque (renderPalpListaM)
+   corre antes de la línea donde estaba antes. */
+const palpCandidatas={};
 function renderPalpListaM(){
   const box=document.getElementById('palpListaM');if(!box)return;
   const keys=Object.keys(palpCandidatas);
@@ -722,7 +725,6 @@ function renderVacias(){
 }
 renderVacias();   // init: tras declarar vacasVacias y renderVacias (evita TDZ)
 /* ===== Palpación (la fuente de verdad de la reproducción) ===== */
-const palpCandidatas={};
 const palp={cow:'027 · Estrella',resultado:'prenada',meses:2};
 /* reglas puras compartidas (core/rules.js) */
 const MESC=LCRules.MESC;
