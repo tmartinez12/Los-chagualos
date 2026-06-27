@@ -2,7 +2,7 @@
 const POTREROS_VISIBLE=false;
 const titles={
   'pg-inicio':['Buenos días, Tatiana','Resumen del día'],
-  'pg-leche':['Producción de leche','Ordeño y entregas del día'],
+  'pg-leche':['Producción de leche','Ordeño, histórico y días en leche'],
   'pg-hato':['Hato','Animales · unidad leche'],
   'pg-potreros':['Potreros','32 potreros · ocupación 1 día (máx 2)'],
   'pg-repro':['Reproducción','Monta natural · la palpación manda'],
@@ -58,8 +58,7 @@ function setNavBadge(id,n){
 function renderNavBadges(){
   try{
     const milkPend=milkCows.filter(c=>!c.done).length;
-    const entPend=lecheros.filter(l=>!l.done).length;
-    setNavBadge('navBadgeLeche',milkPend+entPend);
+    setNavBadge('navBadgeLeche',milkPend);
     setNavBadge('navBadgeRepro',vacasVacias.length);
     setNavBadge('navBadgeSan',tratamientos.length);
   }catch(e){}
@@ -72,18 +71,12 @@ function renderInicio(){
     try{doneM=milkCows.filter(c=>c.done);lecheHoy=doneM.reduce((s,c)=>s+c.v,0);
       ayerM=milkCows.reduce((s,c)=>s+(typeof c.ayer==='number'?c.ayer:0),0);
       allM=milkCows.length&&doneM.length===milkCows.length;}catch(e){}
-    let doneE=[],entHoy=0,allE=false;
-    try{doneE=lecheros.filter(l=>l.done);entHoy=doneE.reduce((s,l)=>s+l.hoy,0);
-      allE=lecheros.length&&doneE.length===lecheros.length;}catch(e){}
     const trendM=allM?(lecheHoy>ayerM?'<div class="k-trend up">↑ '+(lecheHoy-ayerM)+' L vs ayer</div>':
         lecheHoy<ayerM?'<div class="k-trend down">↓ '+(ayerM-lecheHoy)+' L vs ayer</div>':'<div class="k-trend mut">= que ayer</div>')
       :'<div class="k-trend mut">registrando…</div>';
     kp.innerHTML=
       '<div class="card kpi"><div class="k-label">Leche hoy</div>'+
-        '<div class="k-value">'+(allM?lecheHoy+' <span class="k-unit">L</span>':doneM.length+'<span class="k-unit"> de '+milkCows.length+'</span>')+'</div>'+trendM+'</div>'+
-      '<div class="card kpi"><div class="k-label">Entregado a lecheros</div>'+
-        '<div class="k-value">'+(allE?entHoy+' <span class="k-unit">L</span>':doneE.length+'<span class="k-unit"> de '+lecheros.length+'</span>')+'</div>'+
-        '<div class="k-trend '+(allE?'up':'mut')+'">'+(allE?'balance cuadra ✓':'entregas pendientes')+'</div></div>';
+        '<div class="k-value">'+(allM?lecheHoy+' <span class="k-unit">L</span>':doneM.length+'<span class="k-unit"> de '+milkCows.length+'</span>')+'</div>'+trendM+'</div>';
   }
   const al=document.getElementById('inicioAlertas');
   if(al){
@@ -124,14 +117,6 @@ function snack(msg,accionLabel,accionFn){const sb=document.getElementById('snack
   sb.classList.add('show');
   clearTimeout(snackTimer);snackTimer=setTimeout(()=>sb.classList.remove('show'),accionLabel?5200:2600);}
 
-/* ===== Tabs de producción ===== */
-function switchLecheTab(id,btn){
-  document.querySelectorAll('.ltab-panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.ltab').forEach(b=>b.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  btn.classList.add('active');
-}
-
 /* ===== KPIs dinámicos de producción ===== */
 function renderLecheKpis(){
   const box=document.getElementById('lecheKpis');if(!box)return;
@@ -139,8 +124,6 @@ function renderLecheKpis(){
   const total=done.reduce((s,c)=>s+c.v,0);
   const ayerTotal=milkCows.reduce((s,c)=>s+c.ayer,0);
   const allDone=done.length===milkCows.length;
-  let entDone=[],entTotal=0,entCount=0;
-  try{entDone=lecheros.filter(l=>l.done);entTotal=entDone.reduce((s,l)=>s+l.hoy,0);entCount=lecheros.length;}catch(e){}
 
   const trendOrdenio=allDone
     ?(total>ayerTotal?'<span class="up">↑ '+(total-ayerTotal)+' L vs ayer</span>':
@@ -157,10 +140,7 @@ function renderLecheKpis(){
       '<div class="k-trend mut">de ~'+ayerTotal+' L esperados</div></div>'+
     '<div class="card kpi"><div class="k-label">L/vaca·día</div>'+
       '<div class="k-value">'+(done.length?(total/done.length).toFixed(1):'—')+'</div>'+
-      '<div class="k-trend mut">'+milkCows.length+' vacas en ordeño</div></div>'+
-    '<div class="card kpi"><div class="k-label">Entregas hoy</div>'+
-      '<div class="k-value">'+(entCount&&entDone.length===entCount?entTotal+'<span class="k-unit"> L</span>':entDone.length+'<span class="k-unit"> de '+entCount+'</span>')+'</div>'+
-      '<div class="k-trend">'+(entCount&&entDone.length===entCount?'<span class="up">balance cuadra ✓</span>':'<span class="mut">pendientes</span>')+'</div></div>';
+      '<div class="k-trend mut">'+milkCows.length+' vacas en ordeño</div></div>';
   if(typeof refreshHeader==='function')refreshHeader();
   if(typeof renderNavBadges==='function')renderNavBadges();
 }
@@ -268,7 +248,7 @@ function saveMilk(){
     c.done=prev.done;c.v=prev.v;renderMilk();snack('Registro deshecho');});
   if(milkCows.every(x=>x.done)){
     const tot=milkCows.reduce((s,x)=>s+x.v,0);
-    setTimeout(()=>snack('Ordeño completo: '+tot+' L en estas '+milkCows.length+' vacas — siguiente: entregas a los lecheros'),1600);
+    setTimeout(()=>snack('Ordeño completo: '+tot+' L en estas '+milkCows.length+' vacas'),1600);
   }
 }
 renderMilk();
@@ -374,7 +354,7 @@ function renderScatter(svgId){
 }
 function renderScatters(){if(!scatterListo)return;renderScatter('scatterLeche');}
 
-/* ===== Entregas a lecheros ===== */
+/* ===== Histórico de producción ===== */
 /* Últimos 6 meses hasta hoy (dinámico). Cada mes: clave 'YYYY-MM', etiqueta,
    año, índice de mes (0-11) y días (el mes en curso, hasta hoy). */
 const MESES_INFO=(function(){
@@ -391,192 +371,10 @@ const MESES_INFO=(function(){
 })();
 const MESES_L=MESES_INFO.map(m=>m.label);     // derivado (compatibilidad)
 const DIAS_MES=MESES_INFO.map(m=>m.dias);      // derivado
-let lecheros=[];
-/* derivación lechero canónico (BD) → fila de la UI */
-const DOW_ABBR=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-function freqDisplay(l){
-  const d=l.dias_semana||[];
-  if(d.length>=7)return 'Diario';
-  if(!d.length)return l.frecuencia||'';
-  return d.slice().sort((a,b)=>a-b).map(x=>DOW_ABBR[x]).join(' · ');
-}
-function lecheroAFila(l,precio){
-  return {id:l.id,n:l.nombre,freq:freqDisplay(l),precio:precio||1950,
-    diasSemana:l.dias_semana||[],ayer:l.base_litros||0,hoy:null,done:false};
-}
-(async function cargarLecherosDesdeSupabase(){
-  if(typeof LCStore==='undefined')return;
-  try{
-    const [ls,tarifa]=await Promise.all([LCStore.getLecheros(),LCStore.getTarifa().catch(()=>null)]);
-    if(!ls)return;
-    const precio=tarifa?tarifa.precio_litro:1950;
-    lecheros=ls.map(l=>lecheroAFila(l,precio));
-    try{const hoy=await LCStore.getEntregasFecha();
-      lecheros.forEach(l=>{if(hoy[l.id]!=null){l.done=true;l.hoy=hoy[l.id];}});
-    }catch(_){/* sin entregas hoy */}
-    try{const ents=await LCStore.getEntregas();
-      entregasDiaMap={};ents.forEach(e=>{entregasDiaMap[e.lechero_id+'|'+e.fecha]=e.litros;});
-    }catch(_){/* sin histórico de entregas */}
-    renderEntregas();renderInicio();if(typeof renderEntregaHist==='function')renderEntregaHist();
-  }catch(e){console.warn('Lecheros: usando datos locales:',e.message||e);}
-})();
-const entregaOverrides={};
-function entregaDiaKey(lid,m,d){return lid+'-'+m+'-'+d;}
-/* mapas de datos reales por día (cargados desde Supabase) */
-let entregasDiaMap={};   // 'lecheroId|YYYY-MM-DD' → litros
+/* mapa de datos reales por día (ordeños, cargados desde Supabase) */
 let ordenosDiaMap={};    // 'animalId|YYYY-MM-DD'  → litros
 function claveFecha(mesIdx,dia){return MESES_INFO[mesIdx].key+'-'+String(dia).padStart(2,'0');}
-function entregaDiaVal(lid,mesIdx,dia){
-  const k=entregaDiaKey(lid,mesIdx,dia);
-  if(k in entregaOverrides)return entregaOverrides[k];
-  const v=entregasDiaMap[lid+'|'+claveFecha(mesIdx,dia)];
-  return v!=null?v:0;   // dato real registrado, o 0 si no hubo entrega ese día
-}
-function renderEntregas(){
-  const tb=document.getElementById('entregaTbody');if(!tb)return;tb.innerHTML='';
-  let totalHoy=0,totalAyer=0;
-  lecheros.forEach((l,i)=>{
-    const tr=document.createElement('tr');
-    if(l.done)tr.className='done';
-    let hoyCell,acumL=0,acumP=0;
-    for(let d=1;d<=DIAS_MES[5];d++){const v=entregaDiaVal(l.id,5,d);acumL+=v;acumP+=v*l.precio;}
-    if(l.done){
-      totalHoy+=l.hoy;
-      hoyCell='<span class="reg">'+l.hoy+' L ✓</span><span class="edit-ic" title="Corregir">✎</span>';
-    }else{hoyCell='<button class="btn outl small reg-btn">Registrar</button>';}
-    totalAyer+=l.ayer;
-    tr.innerHTML='<td><b>'+l.n+'</b></td><td>'+l.freq+'</td><td class="r">'+l.ayer+'</td>'+
-      '<td class="r">'+hoyCell+'</td><td class="r">'+(acumL+(l.done?l.hoy:0))+' L</td>'+
-      '<td class="r">$'+((acumP+(l.done?l.hoy*l.precio:0))/1e6).toFixed(1)+'M</td>';
-    const act=tr.querySelector('.reg-btn')||tr.querySelector('.edit-ic');
-    if(act)act.onclick=e=>{e.stopPropagation();openEntrega(i);};
-    tb.appendChild(tr);
-  });
-  const done=lecheros.filter(l=>l.done);
-  const prog=document.getElementById('entregaProg');
-  if(prog)prog.textContent=done.length+' de '+lecheros.length+' · Σ '+done.reduce((s,l)=>s+l.hoy,0)+' L';
-  const bal=document.getElementById('entregaBalance');
-  if(bal){
-    /* balance con datos reales: producida hoy = ordeños registrados hoy */
-    const producida=(typeof milkCows!=='undefined')?milkCows.filter(c=>c.done).reduce((s,c)=>s+c.v,0):0;
-    const entregada=done.reduce((s,l)=>s+l.hoy,0);
-    const pendientes=lecheros.filter(l=>!l.done);
-    const dif=producida-entregada;
-    const precio=(lecheros[0]&&lecheros[0].precio)||1950;
-    /* total a cobrar del mes = suma real de entregas registradas */
-    const litrosMes=lecheros.reduce((s,l)=>{let t=0;for(let d=1;d<=DIAS_MES[5];d++)t+=entregaDiaVal(l.id,5,d);return s+t;},0);
-    bal.innerHTML='<div style="font-size:13px;color:var(--ink-2);line-height:1.8">'+
-      '<b style="color:var(--ink)">Balance del día:</b><br>'+
-      'Producida hoy <b>'+(producida||'…')+' L</b> − entregada <b>'+(entregada||'…')+' L</b> = queda en finca <b>'+
-      (producida||entregada?dif:'…')+' L</b>'+
-      (pendientes.length?' <span class="mut">(faltan '+pendientes.length+' entregas)</span>':'')+'</div>'+
-      '<div style="margin-top:12px;font-size:13px;color:var(--ink-2);line-height:1.8">'+
-      '<b style="color:var(--ink)">Precio vigente:</b> $'+precio.toLocaleString('es-CO')+'/L<br>'+
-      '<b style="color:var(--ink)">Entregado este mes:</b> '+litrosMes+' L · <b>$'+(litrosMes*precio).toLocaleString('es-CO')+'</b></div>';
-  }
-  renderLecheKpis();
-}
-function openEntrega(i){
-  const l=lecheros[i];
-  document.getElementById('mCow').textContent=l.n.toUpperCase();
-  document.getElementById('mDel').textContent=l.freq+' · $'+l.precio+'/L';
-  const inp=document.getElementById('mInput');inp.value=l.done?l.hoy:l.ayer;
-  const ref=document.getElementById('mRef');ref.className='m-ref';
-  ref.textContent=l.done?'Ya registrada con '+l.hoy+' L — puedes corregirla':'Ayer entregaste '+l.ayer+' L';
-  document.getElementById('scrim').classList.add('show');
-  document.getElementById('milkModal').classList.add('show');
-  document.getElementById('scrim').onclick=()=>closeEntrega();
-  const saveBtn=document.querySelector('#milkModal .btn.filled');
-  saveBtn.onclick=()=>saveEntrega(i);
-  inp.onkeydown=e=>{if(e.key==='Enter')saveEntrega(i);};
-  setTimeout(()=>{inp.focus();inp.select();},60);
-}
-function closeEntrega(){document.getElementById('milkModal').classList.remove('show');
-  document.getElementById('scrim').classList.remove('show');
-  document.getElementById('scrim').onclick=()=>closeMilk();
-  const saveBtn=document.querySelector('#milkModal .btn.filled');
-  saveBtn.onclick=()=>saveMilk();
-  document.getElementById('mInput').onkeydown=e=>{if(e.key==='Enter')saveMilk();};}
-function saveEntrega(i){
-  const l=lecheros[i];
-  const v=Math.max(0,parseInt(document.getElementById('mInput').value)||0);
-  const prev={done:l.done,hoy:l.hoy};
-  l.done=true;l.hoy=v;
-  closeEntrega();renderEntregas();
-  if(typeof LCStore!=='undefined'){
-    LCStore.registrarEntrega(l.id,v,l.precio).catch(e=>{
-      console.warn('No se pudo guardar la entrega en la base:',e.message||e);
-      snack('⚠ '+l.n+': guardado local, falta sincronizar');
-    });
-  }
-  snack(l.n+': '+v+' L registrados','Deshacer',()=>{
-    l.done=prev.done;l.hoy=prev.hoy;renderEntregas();});
-}
-let entregaMesIdx=5;
-function renderEntregaMesPicker(){
-  const p=document.getElementById('entregaMesPicker');if(!p)return;p.innerHTML='';
-  MESES_L.forEach((m,i)=>{
-    const b=document.createElement('button');b.className='btn outl small';b.textContent=m;
-    if(i===entregaMesIdx)b.style.cssText='font-weight:700;background:var(--black);color:#fff;border-color:var(--black)';
-    b.onclick=()=>{entregaMesIdx=i;renderEntregaMesPicker();renderEntregaHist();};
-    p.appendChild(b);
-  });
-}
-function renderEntregaHist(){
-  const head=document.getElementById('entregaHistHead'),tb=document.getElementById('entregaHistBody');
-  if(!head||!tb)return;head.innerHTML='';tb.innerHTML='';
-  const tit=document.getElementById('entregaHistTitulo');
-  const n=DIAS_MES[entregaMesIdx];
-  if(tit)tit.textContent='Historial de entregas · '+MESES_L[entregaMesIdx]+' '+MESES_INFO[entregaMesIdx].year;
-  let h='<tr><th>Día</th>';
-  lecheros.forEach(l=>h+='<th class="r">'+l.n+'</th>');
-  h+='<th class="r" style="font-weight:800">Total</th></tr>';
-  head.innerHTML=h;
-  const totPorLechero=new Array(lecheros.length).fill(0);
-  let gran=0;
-  for(let d=n;d>=1;d--){
-    const tr=document.createElement('tr');
-    const dow=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][new Date(MESES_INFO[entregaMesIdx].year,MESES_INFO[entregaMesIdx].month,d).getDay()];
-    let cells='<td><b>'+d+'</b> <span class="sub">'+dow+'</span></td>';
-    let diaTotal=0;
-    lecheros.forEach((l,li)=>{
-      const v=entregaDiaVal(l.id,entregaMesIdx,d);
-      const k=entregaDiaKey(l.id,entregaMesIdx,d);
-      if(v===0){cells+='<td class="r"><span class="pending">—</span></td>';}
-      else{
-        totPorLechero[li]+=v;diaTotal+=v;gran+=v;
-        cells+='<td class="r editable" title="Corregir" onclick="editEntregaDia(this,\''+l.id+'\','+entregaMesIdx+','+d+','+v+',\''+l.n+'\')">'+v+' L</td>';
-      }
-    });
-    cells+='<td class="r" style="font-weight:700">'+(diaTotal?diaTotal+' L':'—')+'</td>';
-    tr.innerHTML=cells;tb.appendChild(tr);
-  }
-  const trT=document.createElement('tr');trT.style.cssText='background:var(--surface);font-weight:700';
-  let tc='<td style="font-weight:700">TOTAL</td>';
-  totPorLechero.forEach(t=>tc+='<td class="r">'+t+' L</td>');
-  tc+='<td class="r" style="font-weight:800">'+gran+' L</td>';
-  trT.innerHTML=tc;tb.appendChild(trT);
-}
-function editEntregaDia(td,lid,mes,dia,oldVal,nombre){
-  if(td.querySelector('input'))return;
-  const inp=document.createElement('input');inp.type='number';inp.step='1';inp.min='0';inp.value=oldVal;
-  inp.style.cssText='width:52px;border:none;border-bottom:2px solid var(--green);background:transparent;font-family:inherit;font-size:13px;font-weight:700;text-align:center;color:var(--ink);outline:none;padding:2px';
-  td.innerHTML='';td.appendChild(inp);inp.focus();inp.select();
-  function save(){
-    const raw=parseInt(inp.value);
-    if(isNaN(raw)||raw<0){renderEntregaHist();return;}
-    const k=entregaDiaKey(lid,mes,dia);
-    const prev=k in entregaOverrides?entregaOverrides[k]:null;
-    entregaOverrides[k]=raw;
-    renderEntregaHist();renderEntregas();
-    snack(nombre+' · día '+dia+' '+MESES_L[mes]+': '+oldVal+' → '+raw+' L','Deshacer',()=>{
-      if(prev!==null)entregaOverrides[k]=prev;else delete entregaOverrides[k];renderEntregaHist();renderEntregas();});
-  }
-  inp.onblur=save;
-  inp.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();inp.blur();}
-    if(e.key==='Escape'){e.preventDefault();renderEntregaHist();}};
-}
-renderEntregas();renderEntregaMesPicker();renderEntregaHist();
+
 
 /* ===== Producción mensual por vaca (resumen) y diaria (detalle del mes) ===== */
 let mensualData=[];
@@ -1585,7 +1383,6 @@ function openMenuRegistro(){
   document.getElementById('regActions').style.display='none';
   const opts=[
     ['🥛 Leche del ordeño',()=>{closeReg();go('pg-leche',navFor('pg-leche'));}],
-    ['🚚 Entrega a lechero',()=>{closeReg();go('pg-leche',navFor('pg-leche'));}],
     ['🔬 Palpación',()=>{closeReg();openPalp();}],
     ['💊 Enfermedad / tratamiento',()=>{closeReg();openTrata();}],
     ['🐄 Parto',()=>{closeReg();openParto();}],

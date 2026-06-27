@@ -263,8 +263,8 @@ function renderFichaCurva(del,ayer){
 }
 renderFichaCurva(152,18);   // ficha (estática) = Lucero 042
 /* rutina de la mañana (Potreros oculto por ahora → sin el paso "mover el hato") */
-const rutina={ordeno:false,entregas:false};
-const rutinaIcono={ordeno:'i-drop',entregas:'i-truck',hato:'i-pin'};
+const rutina={ordeno:false};
+const rutinaIcono={ordeno:'i-drop',hato:'i-pin'};
 function pintaRutina(){const n=Object.values(rutina).filter(Boolean).length,total=Object.keys(rutina).length;
   document.getElementById('rutinaProg').textContent=n+' de '+total+(n===total?' · día completo':'');}
 function markRutina(k){if(!(k in rutina)||rutina[k])return;rutina[k]=true;
@@ -278,8 +278,6 @@ function unmarkRutina(k){if(!rutina[k])return;rutina[k]=false;
   if(el){el.style.background='';el.style.color='';
     el.innerHTML='<svg class="ic"><use href="#'+rutinaIcono[k]+'"/></svg>';}
   pintaRutina();}
-function goEntregas(){go('scr-ordeno');
-  setTimeout(()=>document.getElementById('entregasSec').scrollIntoView({behavior:'smooth'}),150);}
 /* botón + contextual */
 function openSheet(){
   const fa=fichaActualM&&animalesPorIdM[fichaActualM];
@@ -358,34 +356,6 @@ function renderTratamientosM(lista){
   if(typeof LCStore==='undefined'){renderTratamientosM([]);return;}
   try{const ts=await LCStore.getTratamientos(true);renderTratamientosM(ts||[]);}
   catch(e){console.warn('Tratamientos móvil:',e.message||e);renderTratamientosM([]);}
-})();
-/* Entregas: lista de lecheros reales (sin demo). */
-let lecherosM=[];
-function freqTextoM(l){
-  const d=l.dias_semana||[];
-  if(d.length>=7)return 'todos los días';
-  if(l.frecuencia&&l.frecuencia!=='diario'&&l.frecuencia!=='lmv')return l.frecuencia;
-  return d.length?d.length+' días por semana':(l.frecuencia||'');
-}
-function renderEntregasM(){
-  const box=document.getElementById('entregaListaM');if(!box)return;
-  if(!lecherosM.length){box.innerHTML='<div class="li-sub" style="color:var(--ink-3)">Aún no hay lecheros registrados.</div>';return;}
-  let h='';
-  lecherosM.forEach((l,i)=>{
-    h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0'+
-       (i<lecherosM.length-1?';border-bottom:1px solid var(--border)':'')+'">'+
-       '<div><div class="li-title">'+l.nombre+'</div><div class="li-sub">'+freqTextoM(l)+'</div></div>'+
-       '<span class="li-num">'+(l.base_litros!=null?l.base_litros+' L':'—')+'</span></div>';
-  });
-  const prod=cows.filter(c=>c.done).reduce((s,c)=>s+c.v,0);
-  h+='<div style="font-size:12.5px;color:var(--ink-2);border-top:1px solid var(--border);padding-top:10px;margin-top:2px">'+
-     '<b style="color:var(--ink)">Producida hoy:</b> '+(prod||'—')+' L</div>';
-  box.innerHTML=h;
-}
-(async function cargarLecherosMovil(){
-  if(typeof LCStore==='undefined')return;
-  try{const ls=await LCStore.getLecheros();lecherosM=ls||[];renderEntregasM();}
-  catch(e){console.warn('Lecheros móvil:',e.message||e);}
 })();
 /* Lista de candidatas a palpar (se arma sola desde palpCandidatas). */
 function renderPalpListaM(){
@@ -503,8 +473,7 @@ function saveMilk(){
   else snack(c.n+': '+v+' L guardados (en cola offline)');
   if(cows.every(x=>x.done)){markRutina('ordeno');
     const tot=cows.reduce((s,x)=>s+x.v,0);
-    setTimeout(()=>snack('Ordeño completo: '+tot+' L — siguiente: entregas a los lecheros'),1500);
-    setTimeout(()=>document.getElementById('entregasSec').scrollIntoView({behavior:'smooth'}),2600);}
+    setTimeout(()=>snack('Ordeño completo: '+tot+' L registrados hoy'),1500);}
 }
 /* Sanidad móvil · vacunas: brucelosis desde terneras reales + mes actual */
 function renderSanidadVacunasM(){
@@ -560,7 +529,7 @@ async function cargarVacunacionesM(){
   try{const v=await LCStore.getVacunaciones();renderVacunacionesM(v);}catch(e){console.warn('Vacunaciones móvil:',e.message||e);}
 }
 cargarVacunacionesM();
-renderCows();renderInicioM();pintaRutina();renderEntregasM();renderPalpListaM();renderSanidadVacunasM();
+renderCows();renderInicioM();pintaRutina();renderPalpListaM();renderSanidadVacunasM();
 /* Maíz: el bloque del inicio solo se muestra si la finca tiene datos del cultivo. */
 let datosMaiz = null;   // sin demo de maíz (poner {siloDias,loteDias} cuando haya cultivo)
 function aplicarMaiz(){
@@ -576,14 +545,6 @@ function confirmMove(){
     desencolar();snack('Movimiento deshecho');
   });
 }
-function registrarEntrega(){markRutina('entregas');encolar();
-  snack('Entrega registrada — el balance del día cuadra');
-  if(typeof LCStore!=='undefined'){
-    Promise.all([LCStore.getLecheros(),LCStore.getTarifa().catch(()=>null)]).then(([ls,tar])=>{
-      const precio=tar?tar.precio_litro:1950;
-      return Promise.all((ls||[]).map(l=>LCStore.registrarEntrega(l.id,l.base_litros||0,precio)));
-    }).then(()=>desencolar()).catch(e=>console.warn('Entrega móvil no guardada:',e.message||e));
-  }}
 /* sincronización offline: cuántos registros faltan por subir */
 let pendientes=3;
 function updateSync(){const c=document.getElementById('syncChip');if(!c)return;

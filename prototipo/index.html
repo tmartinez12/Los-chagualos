@@ -110,18 +110,12 @@
 
     <div id="miAlertas" class="mt12"></div>
 
-    <div class="section-label">Rutina de la mañana · <span id="rutinaProg">0 de 3</span></div>
+    <div class="section-label">Rutina de la mañana · <span id="rutinaProg">0 de 1</span></div>
     <div class="list">
       <div class="list-item" onclick="go('scr-ordeno')">
         <div class="li-leading" id="rut-ordeno"><svg class="ic"><use href="#i-drop"/></svg></div>
         <div class="li-body"><div class="li-title">1 · Ordeño vaca por vaca</div>
           <div class="li-sub">Vaca por vaca · el total se suma solo</div></div>
-        <svg class="ic chev"><use href="#i-chev"/></svg>
-      </div>
-      <div class="list-item" onclick="goEntregas()">
-        <div class="li-leading" id="rut-entregas"><svg class="ic"><use href="#i-truck"/></svg></div>
-        <div class="li-body"><div class="li-title">2 · Entregas a los lecheros</div>
-          <div class="li-sub">Registra lo entregado a cada lechero</div></div>
         <svg class="ic chev"><use href="#i-chev"/></svg>
       </div>
       <div class="list-item" onclick="go('scr-potreros')" style="display:none">
@@ -181,15 +175,6 @@
 
     <button class="btn outl mt8" style="width:100%;justify-content:center" onclick="openSheet()">
       <svg class="ic-s ic"><use href="#i-plus"/></svg>Novedad (mastitis, celo visto…)</button>
-
-    <div class="section-label" id="entregasSec">Entregas a los lecheros · hoy</div>
-    <div class="card">
-      <div id="entregaListaM"><div class="li-sub" style="color:var(--ink-3)">Cargando lecheros…</div></div>
-      <button class="btn filled small mt8" style="width:100%;justify-content:center"
-        onclick="registrarEntrega()">Registrar entrega</button>
-      <div style="font-size:11px;color:var(--ink-3);margin-top:8px;text-align:center">
-        Aquí solo litros</div>
-    </div>
   </div>
 
   <!-- ============ POTREROS ============ -->
@@ -605,12 +590,6 @@
         <div class="qh-title">Producción de leche · hoy</div>
         <div class="qh-sub" id="qhMilkSub">Registro vaca por vaca</div>
       </div>
-      <svg class="ic chev"><use href="#i-chev"/></svg>
-    </button>
-
-    <button class="quick-row" onclick="closeSheet();goEntregas()">
-      <svg class="ic"><use href="#i-truck"/></svg>
-      <span class="q-label">Entrega a lecheros</span>
       <svg class="ic chev"><use href="#i-chev"/></svg>
     </button>
 

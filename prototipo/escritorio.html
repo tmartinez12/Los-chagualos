@@ -113,42 +113,8 @@
           <svg id="scatterLeche" viewBox="0 0 560 180" style="width:100%"></svg>
         </div>
 
-        <!-- NIVEL 3: Tabs — Entregas / Histórico producción -->
-        <div style="display:flex;gap:0;margin-top:18px;border-bottom:2px solid var(--border)">
-          <button class="ltab active" data-tab="tab-entregas" onclick="switchLecheTab('tab-entregas',this)">Entregas a lecheros</button>
-          <button class="ltab" data-tab="tab-hist" onclick="switchLecheTab('tab-hist',this)">Histórico producción</button>
-        </div>
-
-        <!-- Tab: Entregas -->
-        <div class="ltab-panel active" id="tab-entregas">
-          <div class="section-label" style="display:flex;justify-content:space-between;align-items:baseline;margin-top:14px">
-            <span>Hoy</span>
-            <span id="entregaProg" style="font-weight:700;color:var(--ink);text-transform:none;letter-spacing:0">0 de 2 · Σ 0 L</span>
-          </div>
-          <div class="grid" style="grid-template-columns:1fr 1fr">
-            <div class="card" style="padding:8px">
-              <table>
-                <thead><tr><th>Lechero</th><th>Frecuencia</th><th class="r">Ayer</th><th class="r">Hoy</th><th class="r">Junio acum.</th><th class="r">$ Junio</th></tr></thead>
-                <tbody id="entregaTbody"></tbody>
-              </table>
-            </div>
-            <div class="card" id="entregaBalance"></div>
-          </div>
-          <div class="section-label" style="display:flex;justify-content:space-between;align-items:baseline">
-            <span id="entregaHistTitulo">Historial · Junio 2026</span>
-            <button class="btn outl small" onclick="snack('Exportado: entregas_'+(entregaMesIdx<0?'2026':MESES_L[entregaMesIdx].toLowerCase()+'2026')+'.xlsx')"><svg class="ic-s ic"><use href="#i-export"/></svg></button>
-          </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="entregaMesPicker"></div>
-          <div class="card" style="padding:8px;overflow-x:auto">
-            <table>
-              <thead id="entregaHistHead"></thead>
-              <tbody id="entregaHistBody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Tab: Histórico producción -->
-        <div class="ltab-panel" id="tab-hist">
+        <!-- Histórico de producción -->
+        <div class="ltab-panel active" id="tab-hist" style="margin-top:18px">
           <div class="section-label" style="display:flex;justify-content:space-between;align-items:baseline;margin-top:14px">
             <span id="mensualTitulo">Producción por vaca · resumen 2026</span>
             <span style="text-transform:none;letter-spacing:0">
