@@ -8,29 +8,27 @@
 -- (que corre con permisos del dueño y se salta el RLS); al quedar la vista sin
 -- recrear, las lecturas caen a la tabla y el RLS las bloquea.
 --
--- Esta migración desactiva RLS en todas las tablas de datos. Es idempotente:
--- se puede correr cuantas veces haga falta sin romper nada.
+-- Usa ALTER TABLE IF EXISTS para saltar sin error las tablas que aún no estén
+-- creadas en tu base. Es idempotente: se puede correr cuantas veces haga falta.
 -- ════════════════════════════════════════════════════════════════════════════
 
-ALTER TABLE animales            DISABLE ROW LEVEL SECURITY;
-ALTER TABLE ordenos             DISABLE ROW LEVEL SECURITY;
-ALTER TABLE entregas            DISABLE ROW LEVEL SECURITY;
-ALTER TABLE partos              DISABLE ROW LEVEL SECURITY;
-ALTER TABLE palpaciones         DISABLE ROW LEVEL SECURITY;
-ALTER TABLE tratamientos        DISABLE ROW LEVEL SECURITY;
-ALTER TABLE potreros            DISABLE ROW LEVEL SECURITY;
-ALTER TABLE produccion_mensual  DISABLE ROW LEVEL SECURITY;
-ALTER TABLE lecheros            DISABLE ROW LEVEL SECURITY;
-ALTER TABLE movimientos_potrero DISABLE ROW LEVEL SECURITY;
-ALTER TABLE profiles            DISABLE ROW LEVEL SECURITY;
-
--- Tablas que pueden o no tener RLS activo; las dejamos explícitas por si acaso.
-ALTER TABLE tarifa              DISABLE ROW LEVEL SECURITY;
-ALTER TABLE consumo_interno     DISABLE ROW LEVEL SECURITY;
-ALTER TABLE vacunaciones        DISABLE ROW LEVEL SECURITY;
-ALTER TABLE finca               DISABLE ROW LEVEL SECURITY;
-ALTER TABLE unidades            DISABLE ROW LEVEL SECURITY;
-ALTER TABLE modulos             DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS animales            DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS ordenos             DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS entregas            DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS partos              DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS palpaciones         DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS tratamientos        DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS potreros            DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS produccion_mensual  DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS lecheros            DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS movimientos_potrero DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS profiles            DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS tarifa              DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS consumo_interno     DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS vacunaciones        DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS finca               DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS unidades            DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS modulos             DISABLE ROW LEVEL SECURITY;
 
 -- Acceso de lectura/escritura para la app (anon key) mientras no haya login.
 GRANT ALL ON ALL TABLES    IN SCHEMA public TO anon, authenticated;
