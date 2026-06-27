@@ -156,7 +156,7 @@ function renderFicha(num){
   /* stats */
   const ayer=(a.leche&&a.leche.ayer!=null)?a.leche.ayer:0;
   document.getElementById('vmStats').innerHTML=
-    '<div class="stat"><div class="s-label">Producción ayer</div><div class="s-value">'+ayer+' L</div></div>'+
+    '<div class="stat"><div class="s-label">Último ordeño</div><div class="s-value">'+ayer+' L</div></div>'+
     '<div class="stat"><div class="s-label">DEL</div><div class="s-value">'+(a.del==null?'—':a.del+' días')+'</div></div>'+
     '<div class="stat"><div class="s-label">Peso</div><div class="s-value">'+(a.pesoKg?a.pesoKg+' kg':'—')+'</div></div>'+
     '<div class="stat"><div class="s-label">Partos</div><div class="s-value">'+(a.partos||0)+'</div></div>';
@@ -324,7 +324,7 @@ function edadTextoM(a){const n=a.edadAnios;if(n==null)return '';
   return enMeses?Math.round(n*12)+' meses':((n%1===0?String(n):n.toFixed(1).replace('.',','))+' años');}
 function subAnimalM(a){
   switch(a.grupo){
-    case 'ordeño':return 'DEL '+(a.del==null?'—':a.del)+' · ayer '+((a.leche&&a.leche.ayer!=null)?a.leche.ayer:0)+' L';
+    case 'ordeño':return 'DEL '+(a.del==null?'—':a.del)+' · últ. '+((a.leche&&a.leche.ayer!=null)?a.leche.ayer:0)+' L';
     case 'horra':return a.prenez?('preñada '+a.prenez.meses+' meses'+(a.prenez.partoEstimado?' · parto ~'+fmtFechaCortaM(a.prenez.partoEstimado):'')):'horra';
     case 'novilla':return edadTextoM(a)+(a.pesoKg?' · '+a.pesoKg+' kg':'')+(a.listaServicio?' · lista para servicio':'');
     case 'levante':return edadTextoM(a)+(a.pesoKg?' · '+a.pesoKg+' kg':'')+(a.gananciaDiaG?' · '+a.gananciaDiaG+' g/día':'');
@@ -437,7 +437,7 @@ function renderCows(){
   const g=document.getElementById('cowGrid');g.innerHTML='';
   cows.forEach((c,i)=>{const d=document.createElement('div');
     d.className='cow-tile'+(c.done?' done':'')+(c.retiro?' retiro':'');
-    const sub=c.done?'✓ '+c.v+' L':(c.retiro?'⛔ retiro '+c.retiro+'d':'ayer '+c.ayer+' L');
+    const sub=c.done?'✓ '+c.v+' L':(c.retiro?'⛔ retiro '+c.retiro+'d':'últ. '+c.ayer+' L');
     d.innerHTML='<div class="ct-num">'+c.num+'</div><div class="ct-name">'+c.n+'</div>'+
       '<div class="ct-sub">'+sub+'</div>';
     d.onclick=()=>pickCow(i);g.appendChild(d);});
@@ -453,7 +453,7 @@ function pickCow(i){ci=i;const c=cows[i];typing=false;
     ?'⛔ En retiro '+c.retiro+' días — registra su leche, pero no se vende'
     :(c.done
       ?'Ya registrada con '+c.v+' L — puedes corregirla'
-      :'Ayer dio '+c.ayer+' L — acepta ✓ si dio igual');
+      :'Último ordeño: '+c.ayer+' L — acepta ✓ si dio igual');
   document.getElementById('scrim').classList.add('show');
   document.getElementById('milkSheet').classList.add('show');}
 function closeMilk(){document.getElementById('milkSheet').classList.remove('show');
@@ -756,7 +756,7 @@ const fechaParto=LCRules.fechaParto;
     animales.filter(a=>a.estadoRepro==='vacia'&&a.diasVacia&&a.diasVacia>=120).forEach(a=>{
       vacasVacias.push({cow:refP(a.id),del:a.del,diasVacia:a.diasVacia,
         ultimaPalp:fmtFechaCortaM(a.ultimaPalpacion),resultado:'vacía',
-        sub:'DEL '+(a.del==null?'—':a.del)+' · '+ordinalPartoM(a.partos)+' · ayer '+((a.leche&&a.leche.ayer!=null)?a.leche.ayer:0)+' L',
+        sub:'DEL '+(a.del==null?'—':a.del)+' · '+ordinalPartoM(a.partos)+' · últ. '+((a.leche&&a.leche.ayer!=null)?a.leche.ayer:0)+' L',
         accion:a.del>300?'Lactancia extendida sin preñez — evaluar descarte':'Producción muy baja para su etapa — evaluar descarte'});});
     /* candidatas a palpar (objeto cow→motivo) */
     Object.keys(palpCandidatas).forEach(k=>delete palpCandidatas[k]);
@@ -973,7 +973,7 @@ function saveSeca(){
 }
 /* ===== Alta y Baja (inventario del hato) ===== */
 let nOrdeno=26, nNovillas=14, nBajas=7;   // nHorras, nTerneras, nMachos ya existen
-function subOrdeno(){grupos.ordeno.sub=nOrdeno+' vacas · ayer 11,4 L/vaca · DEL prom. 164';
+function subOrdeno(){grupos.ordeno.sub=nOrdeno+' vacas · DEL prom. 164';
   grupos.ordeno.header='<b>'+nOrdeno+' vacas en ordeño.</b> Ordenadas como entran al ordeño.';}
 function subNovillas(){grupos.novillas.sub=nNovillas+' novillas · 4 listas para servicio';
   grupos.novillas.header='<b>'+nNovillas+' novillas de vientre.</b> 4 ya tienen peso para servicio (>330 kg).';}

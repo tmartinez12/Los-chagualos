@@ -268,7 +268,7 @@ function openMilk(i){mi=i;const c=milkCows[i];
   if(c.retiro){ref.className='m-ref warn';
     ref.textContent='⛔ En retiro '+c.retiro+' días — registra su leche, pero no se vende';}
   else{ref.className='m-ref';
-    ref.textContent=c.done?'Ya registrada con '+c.v+' L — puedes corregirla':'Ayer dio '+c.ayer+' L — acepta si dio igual';}
+    ref.textContent=c.done?'Ya registrada con '+c.v+' L — puedes corregirla':'Último ordeño: '+c.ayer+' L — acepta si dio igual';}
   document.getElementById('scrim').classList.add('show');
   document.getElementById('milkModal').classList.add('show');
   setTimeout(()=>{inp.focus();inp.select();},60);
@@ -334,13 +334,26 @@ function animalAMilk(a){
 })();
 
 /* ===== Scatter: Producción vs DEL (todas las vacas en ordeño del hato) ===== */
+/* Promedio de litros de los últimos 5 días con ordeño registrado (de ordenosDiaMap).
+   Suaviza la variación día a día. Devuelve null si no hay ordeños de esa vaca. */
+function promedioUltimos5(id){
+  const arr=[];
+  for(const k in ordenosDiaMap){
+    const i=k.indexOf('|');
+    if(k.slice(0,i)===String(id))arr.push([k.slice(i+1),Number(ordenosDiaMap[k])||0]);
+  }
+  if(!arr.length)return null;
+  arr.sort((a,b)=>a[0]<b[0]?1:-1);   // por fecha, más reciente primero
+  const top=arr.slice(0,5);
+  return Math.round(top.reduce((s,x)=>s+x[1],0)/top.length*10)/10;
+}
 function scatterCows(){
   let cows=[];
   try{
     cows=hato.filter(a=>a.grupo==='En ordeño'&&a.del!=='—'&&a.del!==undefined&&a.ayer!=='—').map(a=>{
-      // si la vaca ya tiene ordeño registrado hoy en la muestra, usa ese valor
-      const m=milkCows.find(c=>c.num===a.num&&c.done);
-      return {num:a.num,n:a.n,del:parseInt(a.del),l:m?m.v:a.ayer,
+      // eje Y = promedio de los últimos 5 días; si aún no hay ordeños, el último valor
+      const p5=promedioUltimos5(a.num);
+      return {num:a.num,n:a.n,del:parseInt(a.del),l:(p5!=null?p5:a.ayer),
         prenada:a.tags.includes('prenada'),vacia:a.tags.includes('vacia'),retiro:a.tags.includes('tratamiento')};
     });
   }catch(e){ /* hato aún no definido en la carga inicial */ }
@@ -352,10 +365,10 @@ function renderScatter(svgId){
   if(!cows.length){
     /* sin datos: explica qué falta en vez de quedar en blanco */
     const enOrdeno=(typeof hato!=='undefined')?hato.filter(a=>a.grupo==='En ordeño').length:0;
-    const msg=enOrdeno?('Las '+enOrdeno+' vacas en ordeño no tienen DEL y leche de ayer cargados.')
+    const msg=enOrdeno?('Las '+enOrdeno+' vacas en ordeño no tienen DEL ni ordeños cargados.')
       :'Aún no hay vacas en ordeño con datos de producción.';
     svg.innerHTML='<text x="280" y="78" text-anchor="middle" font-family="Work Sans,sans-serif" font-size="12" fill="#A8ACA0">'+msg+'</text>'+
-      '<text x="280" y="98" text-anchor="middle" font-family="Work Sans,sans-serif" font-size="11" fill="#C0C4B8">Completa DEL y “leche de ayer” en cada vaca (✏️ Editar) o registra el ordeño.</text>';
+      '<text x="280" y="98" text-anchor="middle" font-family="Work Sans,sans-serif" font-size="11" fill="#C0C4B8">Completa el DEL (✏️ Editar) y registra ordeños para ver la producción.</text>';
     return;
   }
   const pad={l:45,r:15,t:12,b:28},w=560,h=180;
@@ -391,7 +404,7 @@ function renderScatter(svgId){
     const col=c.vacia?'var(--red)':c.retiro?'var(--red)':c.prenada?'var(--green)':'var(--ink-2)';
     const r=4.5;   // todos los círculos del mismo tamaño; el color distingue el estado
     out+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="'+col+'" opacity="0.85" style="cursor:pointer"'+
-      ' onclick="goVaca(\''+c.num+'\',\'pg-leche\')"><title>'+c.num+' '+c.n+' · DEL '+c.del+' · '+c.l+' L</title></circle>';
+      ' onclick="goVaca(\''+c.num+'\',\'pg-leche\')"><title>'+c.num+' '+c.n+' · DEL '+c.del+' · '+c.l+' L/día (prom. 5 días)</title></circle>';
     out+='<text x="'+cx+'" y="'+(cy-r-3)+'" font-family="Work Sans,sans-serif" font-size="8" font-weight="500" fill="#70756A" text-anchor="middle">'+c.num+'</text>';
   });
   svg.innerHTML=out;
@@ -545,7 +558,7 @@ function renderMensual(){
     const tr=document.createElement('tr');
     const activos=c.m.filter(v=>v!==null);
     const prom=activos.length?activos.reduce((a,b)=>a+b,0)/activos.length:0;
-    const totalL=c.m.map((v,i)=>v!==null?Math.round(v*DIAS_MES[i]):0).reduce((a,b)=>a+b,0);
+    const totalL=Math.round(c.sum.reduce((a,b)=>a+b,0));   // suma REAL de los ordeños
     let cells='<td><div class="cell-animal"><div class="cini">'+c.num+'</div><div><div class="cn">'+c.n+'</div>'+
       (c.nota?'<div class="cs" style="color:var(--red)">'+c.nota+'</div>':
        c.partos?'<div class="cs">'+c.partos+'</div>':'')+'</div></div></td>';
@@ -553,10 +566,10 @@ function renderMensual(){
       if(v===null){cells+='<td class="r"><span class="pending">—</span></td>';}
       else{const promHato=conteos[i]?totales[i]/conteos[i]:0;let cls='';
         if(v<promHato*0.65)cls=' class="down"';else if(v>promHato*1.15)cls=' class="up"';
-        const val=mensualVista==='total'?Math.round(v*DIAS_MES[i]):v.toFixed(1);
+        const val=mensualVista==='total'?Math.round(c.sum[i]):v.toFixed(1);   // suma real del mes
         cells+='<td class="r"><span'+cls+'>'+val+'</span></td>';}
     });
-    cells+='<td class="r" style="font-weight:700">'+(mensualVista==='total'?Math.round(totalL/Math.max(1,activos.length)):prom.toFixed(1))+'</td>';
+    cells+='<td class="r" style="font-weight:700">'+(mensualVista==='total'?(activos.length?Math.round(totalL/activos.length):'—'):prom.toFixed(1))+'</td>';
     cells+='<td class="r" style="font-weight:700">'+totalL+' L</td>';
     tr.innerHTML=cells;
     tr.onclick=()=>goVaca(c.num,'pg-leche');
@@ -565,9 +578,11 @@ function renderMensual(){
   const trT=document.createElement('tr');trT.style.cssText='background:var(--surface);font-weight:700';
   let tc='<td style="font-weight:700;padding-left:14px">HATO ('+mensualData.length+' vacas)</td>';let grandTotal=0;
   totales.forEach((t,i)=>{
+    const sumMes=Math.round(mensualData.reduce((s,c)=>s+(c.sum[i]||0),0));   // suma real del hato ese mes
+    grandTotal+=sumMes;
     if(conteos[i]===0){tc+='<td class="r">—</td>';}
-    else{const promMes=t/conteos[i];const tl=Math.round(promMes*DIAS_MES[i]*conteos[i]);grandTotal+=tl;
-      tc+='<td class="r">'+(mensualVista==='total'?tl:promMes.toFixed(1))+'</td>';}
+    else{const promMes=t/conteos[i];
+      tc+='<td class="r">'+(mensualVista==='total'?sumMes:promMes.toFixed(1))+'</td>';}
   });
   const totConteos=conteos.reduce((a,b)=>a+b,0);
   const promAnual=totConteos?totales.reduce((a,b)=>a+b,0)/totConteos:0;
@@ -582,15 +597,23 @@ renderMesPicker();renderMensual();
 let _mensualRaw=null, _ordsRaw=null;
 function recomputeMensual(){
   const meses=MESES_INFO.map(m=>m.key);
+  const idx={};meses.forEach((k,i)=>{idx[k]=i;});
   const porAnimal={};
-  (_mensualRaw||[]).forEach(f=>{
-    if(!porAnimal[f.animal_id])porAnimal[f.animal_id]={num:f.animal_id,
-      n:(animalesPorId[f.animal_id]?animalesPorId[f.animal_id].nombre:f.animal_id),m:new Array(MESES_INFO.length).fill(null)};
-    const i=meses.indexOf(f.mes);if(i>=0)porAnimal[f.animal_id].m[i]=f.litros_dia;
-  });
+  const ensure=id=>{
+    if(!porAnimal[id])porAnimal[id]={num:id,
+      n:(animalesPorId[id]?animalesPorId[id].nombre:id),
+      m:new Array(MESES_INFO.length).fill(null),    // promedio L/día por mes (vista)
+      sum:new Array(MESES_INFO.length).fill(0)};     // suma REAL de litros por mes (ordeños)
+    return porAnimal[id];
+  };
+  /* promedio L/día por mes (de la vista v_produccion_mensual) */
+  (_mensualRaw||[]).forEach(f=>{const i=idx[f.mes];if(i!=null)ensure(f.animal_id).m[i]=f.litros_dia;});
+  /* suma real de litros por mes (de los ordeños crudos) */
+  (_ordsRaw||[]).forEach(o=>{const i=idx[String(o.fecha).slice(0,7)];if(i!=null)ensure(o.animal_id).sum[i]+=Number(o.litros)||0;});
   mensualData=Object.values(porAnimal);
   ordenosDiaMap={};(_ordsRaw||[]).forEach(o=>{ordenosDiaMap[o.animal_id+'|'+o.fecha]=o.litros;});
   renderMensual();
+  if(typeof renderScatters==='function')renderScatters();   // el scatter usa el promedio de 5 días
 }
 (async function cargarMensualDesdeSupabase(){
   if(typeof LCStore==='undefined')return;
@@ -767,7 +790,7 @@ function goVaca(num,from){
     '<div class="a-sub">'+cow.repro.sub+'</div></div></div>';
   const kpis=document.getElementById('vacaKpis');
   kpis.innerHTML=
-    '<div class="card kpi"><div class="k-label">Producción ayer</div><div class="k-value">'+cow.ayer+' <span class="k-unit">L</span></div></div>'+
+    '<div class="card kpi"><div class="k-label">Último ordeño</div><div class="k-value">'+cow.ayer+' <span class="k-unit">L</span></div></div>'+
     '<div class="card kpi"><div class="k-label">DEL</div><div class="k-value">'+cow.del+' <span class="k-unit">días</span></div></div>'+
     '<div class="card kpi"><div class="k-label">Peso</div><div class="k-value" style="font-size:20px">'+cow.peso+'</div></div>'+
     '<div class="card kpi"><div class="k-label">Partos</div><div class="k-value">'+cow.parto+'</div></div>';

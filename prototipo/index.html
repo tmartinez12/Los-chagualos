@@ -394,7 +394,7 @@
     </div>
 
     <div class="statgrid" id="vmStats">
-      <div class="stat"><div class="s-label">Producción ayer</div><div class="s-value">18 L</div></div>
+      <div class="stat"><div class="s-label">Último ordeño</div><div class="s-value">18 L</div></div>
       <div class="stat"><div class="s-label">DEL</div><div class="s-value">152 días</div></div>
       <div class="stat"><div class="s-label">Peso (abr)</div><div class="s-value">480 kg</div></div>
       <div class="stat"><div class="s-label">Partos</div><div class="s-value">3</div></div>
@@ -859,8 +859,8 @@
     <div class="section-label">Inicio de lactancia (último parto)</div>
     <input id="editInicio" type="date" oninput="editM.inicio=this.value"
       style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
-    <div class="section-label">Leche de ayer (L) · registra el ordeño de ayer</div>
-    <input id="editLeche" type="number" inputmode="numeric" placeholder="litros de ayer" oninput="editM.leche=this.value"
+    <div class="section-label">Último ordeño (L) · registra un ordeño de esta vaca</div>
+    <input id="editLeche" type="number" inputmode="numeric" placeholder="litros del último ordeño" oninput="editM.leche=this.value"
       style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
     <button class="btn filled" style="width:100%;justify-content:center;margin-top:16px" onclick="saveEditVaca()">
       <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar cambios</button>
