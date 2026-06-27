@@ -32,7 +32,8 @@ function subFor(id){
       return hato.length+' animales · '+ordeño+' en ordeño · '+prenadas+' preñadas';
     }
     if(id==='pg-partos'){
-      return partosRecientes.length+' partos · '+proximosPartos.length+' por parir';
+      const np=(typeof partosDelAnio==='function'?partosDelAnio().length:partosRecientes.length);
+      return np+' partos en '+ANIO_SEL+' · '+proximosPartos.length+' por parir';
     }
     if(id==='pg-repro'){
       return vacasVacias.length+' vacías por decidir · '+palpCandidatas.length+' por palpar';
@@ -359,22 +360,25 @@ function renderScatter(svgId){
 function renderScatters(){if(!scatterListo)return;renderScatter('scatterLeche');}
 
 /* ===== Histórico de producción ===== */
-/* Últimos 6 meses hasta hoy (dinámico). Cada mes: clave 'YYYY-MM', etiqueta,
-   año, índice de mes (0-11) y días (el mes en curso, hasta hoy). */
-const MESES_INFO=(function(){
-  const arr=[],now=new Date();
-  for(let k=5;k>=0;k--){
-    const d=new Date(now.getFullYear(),now.getMonth()-k,1);
-    const esActual=d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();
-    const lab=LCRules.MESC[d.getMonth()];
-    arr.push({key:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),
-      label:lab.charAt(0).toUpperCase()+lab.slice(1), year:d.getFullYear(), month:d.getMonth(),
-      dias:esActual?now.getDate():new Date(d.getFullYear(),d.getMonth()+1,0).getDate()});
+/* ===== Año en consulta (filtro global) =====
+   ANIO_SEL controla qué año ven todas las pantallas con datos por fecha.
+   MESES_INFO son los meses de ese año (hasta hoy si es el año en curso). */
+let ANIO_SEL=new Date().getFullYear();
+let MESES_INFO=[], MESES_L=[], DIAS_MES=[];
+function rebuildMeses(){
+  const now=new Date(), y=ANIO_SEL, arr=[];
+  /* último mes a mostrar: año pasado → diciembre; año en curso → mes actual */
+  const ultimoMes=(y<now.getFullYear())?11:(y>now.getFullYear()?-1:now.getMonth());
+  for(let m=0;m<=ultimoMes;m++){
+    const esActual=(y===now.getFullYear()&&m===now.getMonth());
+    const lab=LCRules.MESC[m];
+    arr.push({key:y+'-'+String(m+1).padStart(2,'0'),
+      label:lab.charAt(0).toUpperCase()+lab.slice(1), year:y, month:m,
+      dias:esActual?now.getDate():new Date(y,m+1,0).getDate()});
   }
-  return arr;
-})();
-const MESES_L=MESES_INFO.map(m=>m.label);     // derivado (compatibilidad)
-const DIAS_MES=MESES_INFO.map(m=>m.dias);      // derivado
+  MESES_INFO=arr; MESES_L=arr.map(m=>m.label); DIAS_MES=arr.map(m=>m.dias);
+}
+rebuildMeses();
 /* mapa de datos reales por día (ordeños, cargados desde Supabase) */
 let ordenosDiaMap={};    // 'animalId|YYYY-MM-DD'  → litros
 function claveFecha(mesIdx,dia){return MESES_INFO[mesIdx].key+'-'+String(dia).padStart(2,'0');}
@@ -434,6 +438,7 @@ function renderMensual(){
   const tit=document.getElementById('mensualTitulo');
   const hint=document.getElementById('mensualHint');
   const btnT=document.getElementById('btnTotal'),btnP=document.getElementById('btnProm');
+  if(mensualMes>=MESES_INFO.length)mensualMes=-1;   /* año cambió y el mes ya no existe */
   if(mensualMes>=0){   /* ---- vista DIARIA del mes elegido ---- */
     if(btnT)btnT.style.display='none';if(btnP)btnP.style.display='none';
     const n=DIAS_MES[mensualMes];
@@ -484,13 +489,14 @@ function renderMensual(){
   }
   /* ---- vista RESUMEN 2026 (mensual) ---- */
   if(btnT)btnT.style.display='';if(btnP)btnP.style.display='';
-  if(tit)tit.textContent='Producción por vaca · últimos 6 meses';
+  if(tit)tit.textContent='Producción por vaca · '+ANIO_SEL;
   if(hint)hint.textContent='Toca un mes para ver el detalle día por día · toca una vaca para su ficha completa';
+  if(!MESES_INFO.length){head.innerHTML='';tb.innerHTML='<tr><td style="text-align:center;padding:24px;color:var(--ink-3)">Sin datos para '+ANIO_SEL+'</td></tr>';return;}
   let h='<tr><th>Animal</th>';
   MESES_L.forEach(m=>h+='<th class="r">'+m+'</th>');
   h+='<th class="r" style="font-weight:800">Prom.</th><th class="r" style="font-weight:800">Total</th></tr>';
   head.innerHTML=h;
-  const totales=[0,0,0,0,0,0],conteos=[0,0,0,0,0,0];
+  const totales=new Array(MESES_INFO.length).fill(0),conteos=new Array(MESES_INFO.length).fill(0);
   mensualData.forEach(c=>c.m.forEach((v,i)=>{if(v!==null){totales[i]+=v;conteos[i]++;}}));
   mensualData.forEach(c=>{
     const tr=document.createElement('tr');
@@ -520,33 +526,75 @@ function renderMensual(){
     else{const promMes=t/conteos[i];const tl=Math.round(promMes*DIAS_MES[i]*conteos[i]);grandTotal+=tl;
       tc+='<td class="r">'+(mensualVista==='total'?tl:promMes.toFixed(1))+'</td>';}
   });
-  const promAnual=totales.reduce((a,b)=>a+b,0)/conteos.reduce((a,b)=>a+b,0);
-  tc+='<td class="r" style="font-weight:800">'+(mensualVista==='total'?Math.round(grandTotal/6):promAnual.toFixed(1))+'</td>';
+  const totConteos=conteos.reduce((a,b)=>a+b,0);
+  const promAnual=totConteos?totales.reduce((a,b)=>a+b,0)/totConteos:0;
+  tc+='<td class="r" style="font-weight:800">'+(mensualVista==='total'?Math.round(grandTotal/Math.max(1,MESES_INFO.length)):promAnual.toFixed(1))+'</td>';
   tc+='<td class="r" style="font-weight:800">'+grandTotal+' L</td>';
   trT.innerHTML=tc;tb.appendChild(trT);
 }
 renderMesPicker();renderMensual();
-/* ===== Cableado a Supabase: producción mensual ===== */
+/* ===== Cableado a Supabase: producción mensual =====
+   Se baja TODO el histórico una vez (crudo) y se re-mapea al año en consulta
+   con recomputeMensual(), así cambiar de año no vuelve a pegarle a la red. */
+let _mensualRaw=null, _ordsRaw=null;
+function recomputeMensual(){
+  const meses=MESES_INFO.map(m=>m.key);
+  const porAnimal={};
+  (_mensualRaw||[]).forEach(f=>{
+    if(!porAnimal[f.animal_id])porAnimal[f.animal_id]={num:f.animal_id,
+      n:(animalesPorId[f.animal_id]?animalesPorId[f.animal_id].nombre:f.animal_id),m:new Array(MESES_INFO.length).fill(null)};
+    const i=meses.indexOf(f.mes);if(i>=0)porAnimal[f.animal_id].m[i]=f.litros_dia;
+  });
+  mensualData=Object.values(porAnimal);
+  ordenosDiaMap={};(_ordsRaw||[]).forEach(o=>{ordenosDiaMap[o.animal_id+'|'+o.fecha]=o.litros;});
+  renderMensual();
+}
 (async function cargarMensualDesdeSupabase(){
   if(typeof LCStore==='undefined')return;
   try{
     const filas=await LCStore.getProduccionMensual();
     if(!filas)return;
-    const meses=MESES_INFO.map(m=>m.key);
-    const porAnimal={};
-    filas.forEach(f=>{
-      if(!porAnimal[f.animal_id])porAnimal[f.animal_id]={num:f.animal_id,
-        n:(animalesPorId[f.animal_id]?animalesPorId[f.animal_id].nombre:f.animal_id),m:[null,null,null,null,null,null]};
-      const i=meses.indexOf(f.mes);if(i>=0)porAnimal[f.animal_id].m[i]=f.litros_dia;
-    });
-    mensualData=Object.values(porAnimal);
+    _mensualRaw=filas;
     /* detalle diario real: ordeños por animal y día */
-    try{const ords=await LCStore.getOrdenos();
-      ordenosDiaMap={};ords.forEach(o=>{ordenosDiaMap[o.animal_id+'|'+o.fecha]=o.litros;});
-    }catch(_){/* sin ordeños */}
-    renderMensual();
+    try{_ordsRaw=await LCStore.getOrdenos()||[];}catch(_){_ordsRaw=[];}
+    actualizarAniosDisponibles();
+    recomputeMensual();
   }catch(e){console.warn('Producción mensual: usando datos locales:',e.message||e);}
 })();
+
+/* ===== Selector de año (filtro global) =====
+   Construye la lista de años con datos (producción, ordeños, partos) + el año
+   en curso, y al cambiar re-renderiza todas las pantallas con datos por fecha. */
+let _partosRaw=[];
+let ANIOS_DISP=[new Date().getFullYear()];
+function actualizarAniosDisponibles(){
+  const set=new Set([new Date().getFullYear(), ANIO_SEL]);
+  (_mensualRaw||[]).forEach(f=>{const y=parseInt(String(f.mes||'').slice(0,4),10);if(y)set.add(y);});
+  (_ordsRaw||[]).forEach(o=>{const y=parseInt(String(o.fecha||'').slice(0,4),10);if(y)set.add(y);});
+  (_partosRaw||[]).forEach(p=>{const y=parseInt(String(p.fecha||'').slice(0,4),10);if(y)set.add(y);});
+  ANIOS_DISP=Array.from(set).filter(Boolean).sort((a,b)=>b-a);
+  renderAnioSelector();
+}
+function renderAnioSelector(){
+  const sel=document.getElementById('anioSelector');if(!sel)return;
+  sel.innerHTML=ANIOS_DISP.map(y=>'<option value="'+y+'"'+(y===ANIO_SEL?' selected':'')+'>'+y+'</option>').join('');
+}
+function setAnio(v){
+  const y=parseInt(v,10);if(!y||y===ANIO_SEL){renderAnioSelector();return;}
+  ANIO_SEL=y;
+  rebuildMeses();
+  mensualMes=-1;
+  if(typeof renderMesPicker==='function')renderMesPicker();
+  if(typeof recomputeMensual==='function')recomputeMensual();
+  else if(typeof renderMensual==='function')renderMensual();
+  if(typeof renderPartosRecientes==='function')renderPartosRecientes();
+  if(typeof renderPartosKpis==='function')renderPartosKpis();
+  if(typeof renderInicio==='function')renderInicio();
+  renderAnioSelector();
+  if(typeof refreshHeader==='function')refreshHeader();
+  if(typeof snack==='function')snack('Mostrando el año '+y);
+}
+renderAnioSelector();
 
 /* ===== Ficha de vaca ===== */
 const fichas={};
@@ -731,9 +779,11 @@ let palpCandidatas=[];
 let proximosPartos=[];
 /* partos recientes 2026 */
 let partosRecientes=[];
+/* partos del año en consulta (ANIO_SEL) */
+function partosDelAnio(){return partosRecientes.filter(p=>!p.fechaISO||String(p.fechaISO).slice(0,4)===String(ANIO_SEL));}
 function renderPartosRecientes(){
   const tb=document.getElementById('partosRecientesTbody');if(!tb)return;tb.innerHTML='';
-  partosRecientes.forEach(p=>{
+  partosDelAnio().forEach(p=>{
     const tr=document.createElement('tr');
     if(p.estado==='viva'){
       tr.innerHTML='<td>'+p.madre+' → '+p.cria+'</td><td>'+p.fecha+'</td>'+
@@ -747,8 +797,9 @@ function renderPartosRecientes(){
 }
 function renderPartosKpis(){
   const box=document.getElementById('partosKpis');if(!box)return;
-  const total=partosRecientes.length;
-  const vivas=partosRecientes.filter(p=>p.estado==='viva').length;
+  const pa=partosDelAnio();
+  const total=pa.length;
+  const vivas=pa.filter(p=>p.estado==='viva').length;
   const mortinatos=total-vivas;
   const porParir=proximosPartos.length;
   const prox=proximosPartos.length?proximosPartos[0]:null;
@@ -759,7 +810,7 @@ function renderPartosKpis(){
     '<div class="card kpi"><div class="k-label">Mortinatos</div><div class="k-value'+(mortinatos?' down':'')+'">'+mortinatos+'</div><div class="k-trend mut">de '+total+' partos</div></div>';
   refreshHeader();
 }
-/* KPIs y toro de la página de reproducción (datos reales) */
+/* KPIs de la página de reproducción (datos reales) */
 function renderReproKpis(){
   const A=Object.values(animalesPorId||{});
   const box=document.getElementById('reproKpis');
@@ -773,16 +824,6 @@ function renderReproKpis(){
       '<div class="card kpi"><div class="k-label">Preñadas</div><div class="k-value">'+pren+'</div><div class="k-trend mut">en el hato</div></div>'+
       '<div class="card kpi"><div class="k-label">Vacías &gt;120 días</div><div class="k-value'+(vacasVacias.length?' down':'')+'">'+vacasVacias.length+'</div><div class="k-trend mut">revisar servicio</div></div>'+
       '<div class="card kpi"><div class="k-label">Próximo parto</div><div class="k-value" style="font-size:20px">'+(prox?prox.parto:'—')+'</div><div class="k-trend mut">'+(prox?prox.cow:'sin próximos')+'</div></div>';
-  }
-  const toro=document.getElementById('reproToro');
-  if(toro){
-    const t=A.find(a=>a.grupo==='macho'&&a.rolToro)||A.find(a=>a.grupo==='macho');
-    if(t){const hijas=A.filter(x=>x.padreId===t.id).length;
-      toro.innerHTML='<div class="cini" style="width:44px;height:44px"><svg class="ic"><use href="#i-repeat"/></svg></div>'+
-        '<div style="flex:1"><div style="font-size:14.5px;font-weight:700">'+t.id+' · '+t.nombre+' — toro</div>'+
-        '<div style="font-size:12px;color:var(--ink-2)">'+(t.edadAnios?Math.round(t.edadAnios)+' años · ':'')+'monta natural'+(hijas?' · '+hijas+' hijas en la finca':'')+'</div></div>'+
-        '<button class="btn outl small" onclick="goVaca(\''+t.id+'\',\'pg-repro\')">Ver ficha</button>';
-    }else toro.innerHTML='<div style="font-size:13px;color:var(--ink-3);padding:6px">Sin toro registrado en el hato.</div>';
   }
   const pp=document.getElementById('reproPorParir');if(pp)pp.textContent=proximosPartos.length+' por parir';
 }
@@ -1139,13 +1180,15 @@ const fmtFechaCorta=LCRules.fmtFechaCorta;   // compartido en core/rules.js
         rec:a.del>300?'Lactancia extendida sin preñez — evaluar descarte':'Producción muy baja para su etapa — evaluar descarte'}));
     /* partos recientes desde la tabla partos (vacío si no hay) */
     const GP={ternera:'Terneras',macho:'Machos'};
-    partosRecientes=(partos||[]).map(p=>{
+    _partosRaw=partos||[];
+    partosRecientes=_partosRaw.map(p=>{
       const criaGrupo=p.cria_id&&porId[p.cria_id]?(GP[porId[p.cria_id].grupo]||'Terneras')
         :(p.sexo_cria==='M'?'Machos':'Terneras');
-      return {madre:ref(p.madre_id),cria:p.cria_id||'—',fecha:fmtFechaCorta(p.fecha),
+      return {madre:ref(p.madre_id),cria:p.cria_id||'—',fecha:fmtFechaCorta(p.fecha),fechaISO:p.fecha,
         sexo:p.sexo_cria,peso:p.peso_kg||0,tipo:p.tipo,
         estado:p.estado_cria,grupo:p.estado_cria==='viva'?criaGrupo:null};
     });
+    actualizarAniosDisponibles();
     renderPartos();renderPartosRecientes();renderPartosKpis();renderVacias();renderPalpLista();renderReproKpis();
   }catch(e){console.warn('Reproducción: usando datos locales:',e.message||e);}
 })();
