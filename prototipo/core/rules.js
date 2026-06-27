@@ -153,14 +153,14 @@
   }
 
   /* Snapshot de los campos reproductivos (forma BD) para poder revertir en
-   * Supabase si se deshace un parto o una palpación. */
+   * Supabase si se deshace un parto o una palpación. Solo columnas FUENTE:
+   * parto_estimado, dias_vacia, secar y del se derivan en la vista v_animales. */
   function snapshotReproDB(a) {
     return {
-      grupo: a.grupo, del: a.del, estado_repro: a.estadoRepro,
+      grupo: a.grupo, estado_repro: a.estadoRepro,
       prenez_meses: a.prenez ? a.prenez.meses : null,
-      parto_estimado: a.prenez ? a.prenez.partoEstimado : null,
       ultima_palpacion: a.ultimaPalpacion || (a.prenez ? a.prenez.ultimaPalpacion : null),
-      dias_vacia: a.diasVacia, leche_ayer: a.leche ? a.leche.ayer : null,
+      inicio_lactancia: a.inicioLactancia || null,
     };
   }
 

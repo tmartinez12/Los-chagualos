@@ -1082,8 +1082,8 @@ function savePalp(){
   if(typeof LCStore!=='undefined'){
     const campos={ultima_palpacion:isoHoy()};let prenezMeses=null;
     if(p.tipo==='prenada'){const m=Math.round(p.meses);prenezMeses=m;
-      campos.estado_repro='prenada';campos.prenez_meses=m;campos.parto_estimado=isoParto(m);campos.dias_vacia=null;}
-    else if(p.tipo==='vacia'){campos.estado_repro='vacia';campos.prenez_meses=null;campos.parto_estimado=null;campos.dias_vacia=1;}
+      campos.estado_repro='prenada';campos.prenez_meses=m;}
+    else if(p.tipo==='vacia'){campos.estado_repro='vacia';campos.prenez_meses=null;}
     pSavePalp=LCStore.registrarPalpacion({animalId:num,resultado:nota,
       motivo:removedCand?removedCand.motivo:null,prenezMeses:prenezMeses})
       .then(r=>{palpId=r&&r.id;return LCStore.updateAnimalCampos(num,campos);})
@@ -1595,20 +1595,21 @@ function saveSeca(){
     snack(nombre+' no figura preñada — el secado es para vacas preñadas. Confírmalo con palpación.');return;}
   closeReg();
   const prev={grupo:a.grupo,del:a.del,ayer:a.ayer,var:a.var,vc:a.vc,repro:a.repro};
+  /* secar = dejar la lactancia: se borra inicio_lactancia (de ahí sale el DEL) */
+  const prevInicio=animalesPorId[secaState.num]?animalesPorId[secaState.num].inicioLactancia:null;
   a.grupo='Horra';a.del='—';a.ayer='—';a.var='—';a.vc='';
   a.repro=a.repro.replace(/<span class="sub">[^<]*<\/span>/,'').trim()+' <span class="sub">recién secada</span>';
   hatoFiltro='Horra';renderHatoFiltros();renderHato();
   go('pg-hato',navFor('pg-hato'));
   if(typeof LCStore!=='undefined'){
-    LCStore.updateAnimalCampos(secaState.num,{grupo:'horra',del:null,leche_ayer:null,secar_estimado:null}).catch(e=>{
+    LCStore.updateAnimalCampos(secaState.num,{grupo:'horra',inicio_lactancia:null}).catch(e=>{
       console.warn('Secado no guardado en la base:',e.message||e);
       snack('⚠ Secado guardado local, falta sincronizar');});
   }
   snack(nombre+' secada · sale del ordeño y pasa a horras','Deshacer',()=>{
     Object.assign(a,prev);renderHatoFiltros();renderHato();
     if(typeof LCStore!=='undefined')LCStore.updateAnimalCampos(secaState.num,
-      {grupo:'ordeño',del:(typeof prev.del==='number'?prev.del:null),
-       leche_ayer:(typeof prev.ayer==='number'?prev.ayer:null)}).catch(()=>{});});
+      {grupo:'ordeño',inicio_lactancia:prevInicio}).catch(()=>{});});
 }
 
 /* --- parto --- */
@@ -1679,10 +1680,9 @@ function saveParto(){
           edadAnios:0,origen:'nacido_finca',madreId:partoState.num,pesoKg:partoState.peso}); })
       .then(()=>LCStore.registrarParto({id:partoId,madreId:partoState.num,criaId:criaId,fecha:isoHoy(),
         sexo:partoState.sexo,pesoKg:partoState.peso,tipo:partoState.tipo,estadoCria:partoState.estado}))
-      .then(()=>LCStore.updateAnimalCampos(partoState.num,{grupo:'ordeño',del:0,
+      .then(()=>LCStore.updateAnimalCampos(partoState.num,{grupo:'ordeño',
         inicio_lactancia:new Date().toISOString().slice(0,10),
-        estado_repro:null,prenez_meses:null,parto_estimado:null,ultima_palpacion:null,
-        dias_vacia:null,leche_ayer:0}))
+        estado_repro:null,prenez_meses:null,ultima_palpacion:null}))
       .catch(e=>{console.warn('Parto no guardado completo en la base:',e.message||e);
         snack('⚠ Parto guardado local, falta sincronizar');});
   }

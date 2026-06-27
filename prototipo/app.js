@@ -671,9 +671,9 @@ function saveParto(){
         edadAnios:0,origen:'nacido_finca',madreId:numMadre,pesoKg:parto.peso}); })
       .then(()=>LCStore.registrarParto({id:partoId,madreId:numMadre,criaId:criaIdNueva,fecha:isoHoyM(),
         sexo:parto.sexo,pesoKg:parto.peso,tipo:parto.tipo,estadoCria:parto.estado}))
-      .then(()=>LCStore.updateAnimalCampos(numMadre,{grupo:'ordeño',del:0,
+      .then(()=>LCStore.updateAnimalCampos(numMadre,{grupo:'ordeño',
         inicio_lactancia:new Date().toISOString().slice(0,10),estado_repro:null,
-        prenez_meses:null,parto_estimado:null,ultima_palpacion:null,dias_vacia:null,leche_ayer:0}))
+        prenez_meses:null,ultima_palpacion:null}))
       .then(()=>desencolar())
       .catch(e=>console.warn('Parto móvil no guardado:',e.message||e));
   }
@@ -826,8 +826,8 @@ function savePalp(){
   if(typeof LCStore!=='undefined'){
     const esPren=palp.resultado!=='vacia';
     const campos=esPren
-      ?{estado_repro:'prenada',prenez_meses:palp.meses,parto_estimado:isoPartoM(palp.meses),ultima_palpacion:isoHoyM(),dias_vacia:null}
-      :{estado_repro:'vacia',prenez_meses:null,parto_estimado:null,ultima_palpacion:isoHoyM(),dias_vacia:1};
+      ?{estado_repro:'prenada',prenez_meses:palp.meses,ultima_palpacion:isoHoyM()}
+      :{estado_repro:'vacia',prenez_meses:null,ultima_palpacion:isoHoyM()};
     pSavePalp=LCStore.registrarPalpacion({animalId:numPalp,resultado:palp.resultado,prenezMeses:esPren?palp.meses:null})
       .then(r=>{palpId=r&&r.id;return LCStore.updateAnimalCampos(numPalp,campos);}).then(()=>desencolar())
       .catch(e=>console.warn('Palpación móvil no guardada:',e.message||e));
@@ -960,7 +960,7 @@ function saveSeca(){
   grupos.horras.animales.unshift([seca.cow,'recién secada — '+(secaInfo[seca.cow]||'preñada')]);
   encolar();
   if(typeof LCStore!=='undefined'){
-    LCStore.updateAnimalCampos(numDe(seca.cow),{grupo:'horra',del:null,leche_ayer:null,secar_estimado:null})
+    LCStore.updateAnimalCampos(numDe(seca.cow),{grupo:'horra',inicio_lactancia:null})
       .then(()=>desencolar()).catch(e=>console.warn('Secado móvil no guardado:',e.message||e));
   }
   setTimeout(()=>openGroup('horras'),300);

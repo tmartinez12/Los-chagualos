@@ -75,20 +75,18 @@
 
   /* --- Mapeo modelo → BD (para insertar/actualizar) ------------------------- */
   function animalToDB(a) {
+    /* Solo columnas FUENTE. del, leche_ayer, parto_estimado, dias_vacia,
+     * secar_estimado y retiro_leche_hasta se DERIVAN en la vista v_animales
+     * (no se guardan, para no tener dos verdades que se contradigan). */
     const o = {
       id: a.id, nombre: a.nombre, raza: a.raza, grupo: a.grupo, sexo: a.sexo,
       edad_anios: a.edadAnios, nacimiento: a.nacimiento || null, origen: a.origen || null,
-      del: a.del ?? null, partos: a.partos ?? 0,
-      leche_ayer: a.leche ? a.leche.ayer : null,
+      partos: a.partos ?? 0,
       leche_hoy: a.leche ? a.leche.hoy : null,
       estado_repro: a.estadoRepro || null,
       prenez_meses: a.prenez ? a.prenez.meses : null,
-      parto_estimado: a.prenez ? (a.prenez.partoEstimado || null) : null,
       ultima_palpacion: a.ultimaPalpacion || (a.prenez ? a.prenez.ultimaPalpacion : null) || null,
-      dias_vacia: a.diasVacia ?? null,
       lista_servicio: a.listaServicio ?? null,
-      secar_estimado: a.secarEstimado || null,
-      retiro_leche_hasta: a.retiroLecheHasta || null,
       madre_id: a.madreId || null, padre_id: a.padreId || null,
       peso_kg: a.pesoKg ?? null, fecha_peso: a.fechaPeso || null,
       ganancia_dia_g: a.gananciaDiaG ?? null,
@@ -136,12 +134,6 @@
     const { data, error } = resp;
     if (error) throw error;
     return animalFromDB(data);
-  }
-
-  async function getLecheros() {
-    const { data, error } = await client().from('lecheros').select('*').order('id');
-    if (error) throw error;
-    return data;
   }
 
   async function getPotreros() {
@@ -268,48 +260,8 @@
     return map;
   }
 
-  async function getTarifa() {
-    const { data, error } = await client()
-      .from('tarifa').select('precio_litro, moneda')
-      .order('vigente_desde', { ascending: false }).limit(1);
-    if (error) throw error;
-    return (data && data[0]) || { precio_litro: 1950, moneda: 'COP' };
-  }
-
-  /* --- Registro de entrega a lechero --------------------------------------- *
-   * UNIQUE(lechero_id, fecha) permite corregir (upsert) sin duplicar.        */
-  async function registrarEntrega(lecheroId, litros, precioLitro, fecha) {
-    const fila = {
-      lechero_id: lecheroId, litros: litros,
-      precio_litro: precioLitro, total: litros * precioLitro,
-    };
-    if (fecha) fila.fecha = fecha;
-    const { data, error } = await client()
-      .from('entregas')
-      .upsert(fila, { onConflict: 'lechero_id,fecha' })
-      .select().single();
-    if (error) throw error;
-    return data;
-  }
-
-  async function getEntregasFecha(fecha) {
-    let q = client().from('entregas').select('lechero_id, litros');
-    q = q.eq('fecha', fecha || new Date().toISOString().slice(0, 10));
-    const { data, error } = await q;
-    if (error) throw error;
-    const map = {};
-    (data || []).forEach(r => { map[r.lechero_id] = r.litros; });
-    return map;
-  }
-
-  /* Entregas y ordeños históricos (datos reales para las tablas de detalle).
-   * Devuelven filas planas; la UI las agrupa por día/mes. */
-  async function getEntregas() {
-    const { data, error } = await client().from('entregas')
-      .select('lechero_id, fecha, litros, total, precio_litro');
-    if (error) throw error;
-    return data || [];
-  }
+  /* Ordeños históricos (datos reales para el histórico de producción).
+   * Devuelve filas planas; la UI las agrupa por día/mes. */
   async function getOrdenos() {
     const { data, error } = await client().from('ordenos')
       .select('animal_id, fecha, litros').eq('turno', 'dia');
@@ -344,15 +296,12 @@
     return true;
   }
 
-  /* Histórico mensual DERIVADO de los ordeños (vista v_produccion_mensual).
-   * Si la vista no existe, cae a la tabla produccion_mensual (compatibilidad). */
+  /* Histórico mensual DERIVADO de los ordeños (vista v_produccion_mensual). */
   async function getProduccionMensual() {
-    let resp = await client().from('v_produccion_mensual')
+    const { data, error } = await client().from('v_produccion_mensual')
       .select('animal_id, mes, litros_dia').order('animal_id');
-    if (resp.error) resp = await client().from('produccion_mensual')
-      .select('animal_id, mes, litros_dia').order('animal_id');
-    if (resp.error) throw resp.error;
-    return resp.data || [];
+    if (error) throw error;
+    return data || [];
   }
 
   async function getTratamientos(soloActivos) {
@@ -399,10 +348,9 @@
   return {
     CONFIG, client,
     animalFromDB, animalToDB,
-    getAnimales, getAnimal, getLecheros, getPotreros,
+    getAnimales, getAnimal, getPotreros,
     insertAnimal, updateAnimal,
-    registrarOrdeno, getOrdenosFecha,
-    getTarifa, registrarEntrega, getEntregasFecha, getEntregas, getOrdenos,
+    registrarOrdeno, getOrdenosFecha, getOrdenos,
     registrarVacunacion, getVacunaciones, deleteVacunacion,
     getProduccionMensual, getPartos, getTratamientos, terminarTratamiento, reactivarTratamiento,
     updateAnimalCampos, darDeBaja, deleteAnimal, deleteParto, deletePalpacion,

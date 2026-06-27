@@ -81,23 +81,16 @@ CREATE TABLE animales (
   nacimiento          DATE,
   origen              origen_animal,
 
-  -- Lactancia
-  del                 INTEGER,
+  -- Lactancia (DEL y "leche de ayer" se DERIVAN en la vista v_animales)
+  inicio_lactancia    DATE,                  -- DEL = hoy − inicio_lactancia
   partos              INTEGER NOT NULL DEFAULT 0,
-  leche_ayer          NUMERIC(6,1),
   leche_hoy           NUMERIC(6,1),
 
-  -- Reproducción
+  -- Reproducción (parto_estimado, dias_vacia y secar se DERIVAN en v_animales)
   estado_repro        estado_repro,
   prenez_meses        NUMERIC(4,1),
-  parto_estimado      DATE,
   ultima_palpacion    DATE,
-  dias_vacia          INTEGER,
   lista_servicio      BOOLEAN,
-  secar_estimado      DATE,
-
-  -- Sanidad
-  retiro_leche_hasta  DATE,
 
   -- Genealogía
   madre_id            TEXT REFERENCES animales(id),
@@ -135,17 +128,6 @@ CREATE INDEX idx_animales_grupo ON animales(grupo);
 CREATE INDEX idx_animales_unidad ON animales(unidad_id);
 CREATE INDEX idx_animales_estado_repro ON animales(estado_repro);
 
--- ─── PRODUCCIÓN MENSUAL ─────────────────────────────────────────────────────
-
-CREATE TABLE produccion_mensual (
-  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  animal_id   TEXT NOT NULL REFERENCES animales(id) ON DELETE CASCADE,
-  mes         TEXT NOT NULL,              -- formato YYYY-MM
-  litros_dia  NUMERIC(6,1),              -- promedio L/día ese mes (null = sin ordeño)
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE(animal_id, mes)
-);
-
 -- ─── ORDEÑOS DIARIOS ────────────────────────────────────────────────────────
 -- Registro día a día (no existía en el prototipo, pero es la fuente real)
 
@@ -161,54 +143,6 @@ CREATE TABLE ordenos (
 );
 
 CREATE INDEX idx_ordenos_fecha ON ordenos(fecha);
-
--- ─── LECHEROS ───────────────────────────────────────────────────────────────
-
-CREATE TABLE lecheros (
-  id              TEXT PRIMARY KEY,
-  nombre          TEXT NOT NULL,
-  frecuencia      TEXT,                   -- 'diario', 'lmv', etc.
-  dias_semana     INTEGER[],              -- {0,1,2,3,4,5,6}
-  base_litros     NUMERIC(6,1),
-  activo          BOOLEAN NOT NULL DEFAULT TRUE,
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- ─── ENTREGAS DE LECHE ──────────────────────────────────────────────────────
-
-CREATE TABLE entregas (
-  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  lechero_id      TEXT NOT NULL REFERENCES lecheros(id),
-  fecha           DATE NOT NULL DEFAULT CURRENT_DATE,
-  litros          NUMERIC(6,1) NOT NULL,
-  precio_litro    NUMERIC(8,0),
-  total           NUMERIC(12,0),
-  registrado_por  UUID REFERENCES profiles(id),
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE(lechero_id, fecha)
-);
-
-CREATE INDEX idx_entregas_fecha ON entregas(fecha);
-
--- ─── TARIFA ─────────────────────────────────────────────────────────────────
-
-CREATE TABLE tarifa (
-  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  precio_litro    NUMERIC(8,0) NOT NULL,
-  moneda          TEXT NOT NULL DEFAULT 'COP',
-  vigente_desde   DATE NOT NULL DEFAULT CURRENT_DATE,
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- ─── CONSUMO INTERNO ────────────────────────────────────────────────────────
-
-CREATE TABLE consumo_interno (
-  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  fecha           DATE NOT NULL DEFAULT CURRENT_DATE,
-  terneras_litros NUMERIC(6,1),
-  nota            TEXT,
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
-);
 
 -- ─── PALPACIONES ────────────────────────────────────────────────────────────
 
@@ -361,74 +295,61 @@ CREATE TRIGGER set_updated_at_profiles
   FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
 
 -- ─── RLS (Row Level Security) ───────────────────────────────────────────────
--- MVP SIN LOGIN: el RLS queda DESACTIVADO. Las políticas de abajo dependen de
--- un JWT con role='admin'/'operario' que sólo existe cuando hay login por PIN;
--- mientras no lo haya, activar RLS deja las lecturas con la anon key en CERO
--- filas (sin error) y el hato aparece vacío. Cuando se reactive el login,
--- volver a poner ENABLE ROW LEVEL SECURITY en estas tablas.
+-- MVP SIN LOGIN: el RLS queda DESACTIVADO en todas las tablas de datos. Con la
+-- anon key sin login, activarlo deja las lecturas en CERO filas (sin error) y
+-- el hato aparece vacío. Cuando se reactive el login por PIN, aquí volverían
+-- las políticas por rol (admin/operario) — ver el historial de git.
 
-ALTER TABLE animales DISABLE ROW LEVEL SECURITY;
-ALTER TABLE ordenos DISABLE ROW LEVEL SECURITY;
-ALTER TABLE entregas DISABLE ROW LEVEL SECURITY;
-ALTER TABLE partos DISABLE ROW LEVEL SECURITY;
-ALTER TABLE palpaciones DISABLE ROW LEVEL SECURITY;
-ALTER TABLE tratamientos DISABLE ROW LEVEL SECURITY;
-ALTER TABLE potreros DISABLE ROW LEVEL SECURITY;
-ALTER TABLE produccion_mensual DISABLE ROW LEVEL SECURITY;
-ALTER TABLE lecheros DISABLE ROW LEVEL SECURITY;
+ALTER TABLE animales            DISABLE ROW LEVEL SECURITY;
+ALTER TABLE ordenos             DISABLE ROW LEVEL SECURITY;
+ALTER TABLE partos              DISABLE ROW LEVEL SECURITY;
+ALTER TABLE palpaciones         DISABLE ROW LEVEL SECURITY;
+ALTER TABLE tratamientos        DISABLE ROW LEVEL SECURITY;
+ALTER TABLE vacunaciones        DISABLE ROW LEVEL SECURITY;
+ALTER TABLE potreros            DISABLE ROW LEVEL SECURITY;
 ALTER TABLE movimientos_potrero DISABLE ROW LEVEL SECURITY;
-ALTER TABLE profiles DISABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles            DISABLE ROW LEVEL SECURITY;
 
--- Admin: todo
-CREATE POLICY admin_all ON animales FOR ALL
-  USING (current_setting('request.jwt.claims', true)::json->>'role' = 'admin');
-CREATE POLICY admin_all ON ordenos FOR ALL
-  USING (current_setting('request.jwt.claims', true)::json->>'role' = 'admin');
-CREATE POLICY admin_all ON entregas FOR ALL
-  USING (current_setting('request.jwt.claims', true)::json->>'role' = 'admin');
-CREATE POLICY admin_all ON partos FOR ALL
-  USING (current_setting('request.jwt.claims', true)::json->>'role' = 'admin');
-CREATE POLICY admin_all ON palpaciones FOR ALL
-  USING (current_setting('request.jwt.claims', true)::json->>'role' = 'admin');
-CREATE POLICY admin_all ON tratamientos FOR ALL
-  USING (current_setting('request.jwt.claims', true)::json->>'role' = 'admin');
-CREATE POLICY admin_all ON potreros FOR ALL
-  USING (current_setting('request.jwt.claims', true)::json->>'role' = 'admin');
-CREATE POLICY admin_all ON produccion_mensual FOR ALL
-  USING (current_setting('request.jwt.claims', true)::json->>'role' = 'admin');
-CREATE POLICY admin_all ON lecheros FOR ALL
-  USING (current_setting('request.jwt.claims', true)::json->>'role' = 'admin');
-CREATE POLICY admin_all ON movimientos_potrero FOR ALL
-  USING (current_setting('request.jwt.claims', true)::json->>'role' = 'admin');
-CREATE POLICY admin_all ON profiles FOR ALL
-  USING (current_setting('request.jwt.claims', true)::json->>'role' = 'admin');
+-- ─── VISTAS DERIVADAS (una sola fuente de verdad) ───────────────────────────
+-- v_animales: edad, DEL, leche de ayer, retiro de leche y la reproducción
+-- (parto estimado, secado, días vacía, preñez actual) se CALCULAN aquí a
+-- partir de las columnas fuente y de ordenos/tratamientos/palpaciones. La app
+-- nunca guarda estos valores: así no hay dos verdades que se contradigan.
+CREATE VIEW v_animales AS
+SELECT a.*,
+  CASE WHEN a.nacimiento IS NOT NULL
+       THEN round(((CURRENT_DATE - a.nacimiento) / 365.25)::numeric, 1) END AS edad_calc,
+  CASE WHEN a.inicio_lactancia IS NOT NULL
+       THEN (CURRENT_DATE - a.inicio_lactancia) END AS del_calc,
+  ( SELECT o.litros FROM ordenos o
+    WHERE o.animal_id = a.id AND o.turno = 'dia'
+    ORDER BY o.fecha DESC LIMIT 1 ) AS leche_ultima,
+  ( SELECT max(t.retiro_leche_hasta) FROM tratamientos t
+    WHERE t.animal_id = a.id AND t.activo
+      AND t.retiro_leche_hasta >= CURRENT_DATE ) AS retiro_calc,
+  CASE WHEN a.estado_repro = 'prenada' AND a.prenez_meses IS NOT NULL AND a.ultima_palpacion IS NOT NULL
+       THEN (a.ultima_palpacion + (round((9 - a.prenez_meses))::int * INTERVAL '1 month'))::date END AS parto_estimado_calc,
+  CASE WHEN a.estado_repro = 'prenada' AND a.prenez_meses IS NOT NULL AND a.ultima_palpacion IS NOT NULL
+       THEN (a.ultima_palpacion + (round((7 - a.prenez_meses))::int * INTERVAL '1 month'))::date END AS secar_calc,
+  CASE WHEN a.estado_repro = 'vacia' AND a.ultima_palpacion IS NOT NULL
+       THEN (CURRENT_DATE - a.ultima_palpacion) END AS dias_vacia_calc,
+  CASE WHEN a.estado_repro = 'prenada' AND a.prenez_meses IS NOT NULL AND a.ultima_palpacion IS NOT NULL
+       THEN least(9, round((a.prenez_meses + (CURRENT_DATE - a.ultima_palpacion) / 30.44)::numeric, 1)) END AS prenez_meses_actual
+FROM animales a;
 
--- Operario: lectura de toda su unidad, escritura en tablas de registro
-CREATE POLICY operario_read_animales ON animales FOR SELECT
-  USING (current_setting('request.jwt.claims', true)::json->>'role' = 'operario'
-    AND unidad_id = current_setting('request.jwt.claims', true)::json->>'unidad');
+-- v_produccion_mensual: histórico mensual DERIVADO de los ordeños diarios.
+CREATE VIEW v_produccion_mensual AS
+SELECT animal_id,
+       to_char(fecha, 'YYYY-MM')      AS mes,
+       round(avg(litros)::numeric, 1) AS litros_dia,
+       count(*)                       AS dias_con_registro
+FROM ordenos
+WHERE turno = 'dia'
+GROUP BY animal_id, to_char(fecha, 'YYYY-MM');
 
-CREATE POLICY operario_insert_ordenos ON ordenos FOR INSERT
-  WITH CHECK (current_setting('request.jwt.claims', true)::json->>'role' = 'operario');
-
-CREATE POLICY operario_read_ordenos ON ordenos FOR SELECT
-  USING (current_setting('request.jwt.claims', true)::json->>'role' = 'operario');
-
-CREATE POLICY operario_insert_entregas ON entregas FOR INSERT
-  WITH CHECK (current_setting('request.jwt.claims', true)::json->>'role' = 'operario');
-
-CREATE POLICY operario_read_entregas ON entregas FOR SELECT
-  USING (current_setting('request.jwt.claims', true)::json->>'role' = 'operario');
-
-CREATE POLICY operario_read_potreros ON potreros FOR SELECT
-  USING (current_setting('request.jwt.claims', true)::json->>'role' = 'operario');
-
-CREATE POLICY operario_insert_movimientos ON movimientos_potrero FOR INSERT
-  WITH CHECK (current_setting('request.jwt.claims', true)::json->>'role' = 'operario');
-
-CREATE POLICY operario_read_movimientos ON movimientos_potrero FOR SELECT
-  USING (current_setting('request.jwt.claims', true)::json->>'role' = 'operario');
-
--- Operario puede leer su propio perfil
-CREATE POLICY operario_own_profile ON profiles FOR SELECT
-  USING (id = (current_setting('request.jwt.claims', true)::json->>'sub')::uuid);
+-- ─── PERMISOS (rol anon = la app, sin login) ────────────────────────────────
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL TABLES    IN SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated;
