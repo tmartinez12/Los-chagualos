@@ -41,30 +41,12 @@ CREATE TABLE profiles (
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- ─── FINCA ──────────────────────────────────────────────────────────────────
-
-CREATE TABLE finca (
-  id          TEXT PRIMARY KEY DEFAULT 'chagualos',
-  nombre      TEXT NOT NULL,
-  moneda      TEXT NOT NULL DEFAULT 'COP',
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
 -- ─── UNIDADES DE NEGOCIO ────────────────────────────────────────────────────
 
 CREATE TABLE unidades (
   id          TEXT PRIMARY KEY,
   nombre      TEXT NOT NULL,
   activa      BOOLEAN NOT NULL DEFAULT FALSE
-);
-
--- ─── MÓDULOS ────────────────────────────────────────────────────────────────
-
-CREATE TABLE modulos (
-  id          TEXT PRIMARY KEY,
-  nombre      TEXT NOT NULL,
-  unidad_id   TEXT REFERENCES unidades(id),
-  activo      BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 -- ─── ANIMALES ───────────────────────────────────────────────────────────────

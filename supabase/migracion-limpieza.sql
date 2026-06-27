@@ -72,3 +72,7 @@ DROP TABLE IF EXISTS lecheros CASCADE;
 DROP TABLE IF EXISTS tarifa CASCADE;
 DROP TABLE IF EXISTS consumo_interno CASCADE;
 DROP TABLE IF EXISTS produccion_mensual CASCADE;
+
+-- 6) Tablas de configuración vacías y sin uso (eran para varias fincas/módulos).
+DROP TABLE IF EXISTS modulos CASCADE;
+DROP TABLE IF EXISTS finca CASCADE;
