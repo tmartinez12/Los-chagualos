@@ -361,20 +361,23 @@ CREATE TRIGGER set_updated_at_profiles
   FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
 
 -- ─── RLS (Row Level Security) ───────────────────────────────────────────────
--- Se activa en todas las tablas de datos. Las políticas usan el JWT claim
--- `role` y `unidad` que emite la Edge Function login-pin.
+-- MVP SIN LOGIN: el RLS queda DESACTIVADO. Las políticas de abajo dependen de
+-- un JWT con role='admin'/'operario' que sólo existe cuando hay login por PIN;
+-- mientras no lo haya, activar RLS deja las lecturas con la anon key en CERO
+-- filas (sin error) y el hato aparece vacío. Cuando se reactive el login,
+-- volver a poner ENABLE ROW LEVEL SECURITY en estas tablas.
 
-ALTER TABLE animales ENABLE ROW LEVEL SECURITY;
-ALTER TABLE ordenos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE entregas ENABLE ROW LEVEL SECURITY;
-ALTER TABLE partos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE palpaciones ENABLE ROW LEVEL SECURITY;
-ALTER TABLE tratamientos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE potreros ENABLE ROW LEVEL SECURITY;
-ALTER TABLE produccion_mensual ENABLE ROW LEVEL SECURITY;
-ALTER TABLE lecheros ENABLE ROW LEVEL SECURITY;
-ALTER TABLE movimientos_potrero ENABLE ROW LEVEL SECURITY;
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE animales DISABLE ROW LEVEL SECURITY;
+ALTER TABLE ordenos DISABLE ROW LEVEL SECURITY;
+ALTER TABLE entregas DISABLE ROW LEVEL SECURITY;
+ALTER TABLE partos DISABLE ROW LEVEL SECURITY;
+ALTER TABLE palpaciones DISABLE ROW LEVEL SECURITY;
+ALTER TABLE tratamientos DISABLE ROW LEVEL SECURITY;
+ALTER TABLE potreros DISABLE ROW LEVEL SECURITY;
+ALTER TABLE produccion_mensual DISABLE ROW LEVEL SECURITY;
+ALTER TABLE lecheros DISABLE ROW LEVEL SECURITY;
+ALTER TABLE movimientos_potrero DISABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles DISABLE ROW LEVEL SECURITY;
 
 -- Admin: todo
 CREATE POLICY admin_all ON animales FOR ALL
