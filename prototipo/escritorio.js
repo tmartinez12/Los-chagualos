@@ -110,6 +110,49 @@ function renderInicio(){
       :'<div class="card flat" style="text-align:center;color:var(--ink-3);padding:14px;font-size:13px">Sin alertas por ahora</div>';
   }
 }
+
+/* ===== Copia de seguridad (descargar / restaurar) ===== */
+async function descargarRespaldo(){
+  if(typeof LCStore==='undefined'){snack('No hay conexión con la base para respaldar');return;}
+  snack('Preparando respaldo…');
+  try{
+    const data=await LCStore.exportarTodo();
+    const total=Object.values(data.tablas).reduce((s,f)=>s+f.length,0);
+    const hoy=isoHoy();
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download='respaldo-los-chagualos-'+hoy+'.json';
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),2000);
+    const est=document.getElementById('respaldoEstado');
+    if(est)est.textContent='· último: '+hoy+' ('+total+' registros).';
+    snack('Respaldo descargado: '+total+' registros');
+  }catch(e){console.warn('Respaldo:',e.message||e);snack('No se pudo crear el respaldo: '+(e.message||e));}
+}
+function restaurarRespaldo(input){
+  const f=input.files&&input.files[0];input.value='';
+  if(!f)return;
+  const reader=new FileReader();
+  reader.onload=async ev=>{
+    let data;
+    try{data=JSON.parse(ev.target.result);}catch(_){snack('El archivo no es un respaldo válido');return;}
+    if(!data||!data.tablas){snack('El archivo no es un respaldo de Los Chagualos');return;}
+    const total=Object.values(data.tablas).reduce((s,fl)=>s+(fl?fl.length:0),0);
+    const fecha=data.fecha?data.fecha.slice(0,10):'desconocida';
+    if(!confirm('Vas a restaurar el respaldo del '+fecha+' ('+total+' registros).\n\n'+
+      'Esto vuelve a cargar esos datos en la base (los registros con el mismo código se sobrescriben). '+
+      '¿Continuar?'))return;
+    if(typeof LCStore==='undefined'){snack('No hay conexión con la base');return;}
+    snack('Restaurando…');
+    try{
+      await LCStore.restaurarTodo(data);
+      snack('Respaldo restaurado: '+total+' registros. Recargando…');
+      setTimeout(()=>location.reload(),1400);
+    }catch(e){console.warn('Restaurar:',e.message||e);snack('No se pudo restaurar: '+(e.message||e));}
+  };
+  reader.readAsText(f);
+}
 let snackTimer;
 function snack(msg,accionLabel,accionFn){const sb=document.getElementById('snackbar');
   document.getElementById('snackText').textContent=msg;

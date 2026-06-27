@@ -337,6 +337,47 @@
     return data || [];
   }
 
+  /* --- Respaldo y restauración --------------------------------------------- *
+   * exportarTodo(): baja TODAS las tablas de datos a un objeto (para guardar
+   *   como archivo .json). restaurarTodo(): vuelve a cargar ese archivo.       */
+  const TABLAS_RESPALDO = [
+    'potreros', 'animales', 'ordenos', 'palpaciones',
+    'tratamientos', 'vacunaciones', 'partos', 'movimientos_potrero',
+  ];
+  async function exportarTodo() {
+    const out = { app: 'Los Chagualos', version: 1, fecha: new Date().toISOString(), tablas: {} };
+    for (const t of TABLAS_RESPALDO) {
+      const { data, error } = await client().from(t).select('*');
+      out.tablas[t] = error ? [] : (data || []);   // tabla ausente → vacía, no rompe
+    }
+    return out;
+  }
+  async function restaurarTodo(data) {
+    if (!data || !data.tablas) throw new Error('El archivo de respaldo no es válido.');
+    const T = data.tablas;
+    const upsert = async (tabla, filas, opts) => {
+      if (!filas || !filas.length) return;
+      const { error } = await client().from(tabla).upsert(filas, opts);
+      if (error) throw new Error(tabla + ': ' + error.message);
+    };
+    /* potreros primero (sin dependencias) */
+    await upsert('potreros', T.potreros, { onConflict: 'id' });
+    /* animales en dos fases: las FK madre/padre se referencian entre sí, así que
+     * primero se cargan sin esas referencias y luego se completan. */
+    if (T.animales && T.animales.length) {
+      await upsert('animales', T.animales.map(a => ({ ...a, madre_id: null, padre_id: null })), { onConflict: 'id' });
+      const conRefs = T.animales.filter(a => a.madre_id || a.padre_id)
+        .map(a => ({ id: a.id, madre_id: a.madre_id || null, padre_id: a.padre_id || null }));
+      await upsert('animales', conRefs, { onConflict: 'id' });
+    }
+    /* tablas hijas (ya existen animales y potreros que referencian) */
+    for (const t of ['ordenos', 'palpaciones', 'tratamientos', 'vacunaciones', 'partos', 'movimientos_potrero']) {
+      await upsert(t, T[t]);
+    }
+    _invalidarAnimales();
+    return true;
+  }
+
   /* --- Diagnóstico: ping de conexión ---------------------------------------- */
   async function ping() {
     const { count, error } = await client()
@@ -355,6 +396,7 @@
     getProduccionMensual, getPartos, getTratamientos, terminarTratamiento, reactivarTratamiento,
     updateAnimalCampos, darDeBaja, deleteAnimal, deleteParto, deletePalpacion,
     registrarTratamiento, registrarParto, registrarPalpacion,
+    exportarTodo, restaurarTodo,
     ping,
   };
 });
