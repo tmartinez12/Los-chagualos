@@ -761,6 +761,15 @@ function recomputeMensual(){
   ordenosDiaMap={};(_ordsRaw||[]).forEach(o=>{ordenosDiaMap[o.animal_id+'|'+o.fecha]=o.litros;});
   renderMensual();
   if(typeof renderScatters==='function')renderScatters();   // el scatter usa el promedio de 5 días
+  renderProduccionAnio();
+}
+/* producción total del AÑO seleccionado (suma real de los ordeños de ese año) */
+function renderProduccionAnio(){
+  const box=document.getElementById('produccionAnioTotal');if(!box)return;
+  const total=Math.round((mensualData||[]).reduce((s,c)=>s+((c.sum||[]).reduce((a,b)=>a+b,0)),0));
+  const dias=(mensualData||[]).length; // nº de vacas con datos (informativo)
+  box.innerHTML='Producción registrada en <b style="color:var(--ink)">'+ANIO_SEL+'</b>: '+
+    '<b style="color:var(--ink)">'+total.toLocaleString('es-CO')+' L</b>'+(total?'':' <span style="color:var(--ink-3)">(sin datos de ese año)</span>');
 }
 (async function cargarMensualDesdeSupabase(){
   if(typeof LCStore==='undefined')return;
@@ -803,7 +812,8 @@ function setAnio(v){
   else if(typeof renderMensual==='function')renderMensual();
   if(typeof renderPartosRecientes==='function')renderPartosRecientes();
   if(typeof renderPartosKpis==='function')renderPartosKpis();
-  if(typeof renderInicio==='function')renderInicio();
+  if(typeof renderPalpHistorial==='function')renderPalpHistorial();   // historial de palpaciones del año
+  if(typeof renderVacunaciones==='function')renderVacunaciones();     // vacunaciones del año
   renderAnioSelector();
   if(typeof refreshHeader==='function')refreshHeader();
   if(typeof snack==='function')snack('Mostrando el año '+y);
@@ -1174,10 +1184,13 @@ function saveVacuna(){
   }
   snack('Vacunación registrada: '+tipoLabel+(individual?(animalId?' · '+animalId:''):' · todo el hato'));
 }
+let _vacunaciones=[];
 function renderVacunaciones(lista){
+  if(lista)_vacunaciones=lista;
   const box=document.getElementById('vacListaHist');if(!box)return;
-  if(!lista||!lista.length){box.innerHTML='<span style="color:var(--ink-3)">Aún no hay vacunaciones registradas.</span>';return;}
-  box.innerHTML=lista.slice(0,8).map(v=>{
+  const arr=(_vacunaciones||[]).filter(v=>!v.fecha||String(v.fecha).slice(0,4)===String(ANIO_SEL));
+  if(!arr.length){box.innerHTML='<span style="color:var(--ink-3)">Sin vacunaciones en '+ANIO_SEL+'.</span>';return;}
+  box.innerHTML=arr.slice(0,8).map(v=>{
     const quien=v.alcance==='individual'
       ?((v.animales&&v.animales.nombre)?v.animal_id+' '+v.animales.nombre:(v.animal_id||'animal'))
       :('todo el hato'+(v.n_animales?' ('+v.n_animales+')':''));
@@ -1397,8 +1410,9 @@ function renderPalpLista(){
 /* ===== Historial de palpaciones ===== */
 function renderPalpHistorial(lista){
   const tb=document.getElementById('palpHistTbody');if(!tb)return;tb.innerHTML='';
-  if(!lista||!lista.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--ink-3)">Aún no hay palpaciones registradas.</td></tr>';return;}
-  lista.slice(0,60).forEach(p=>{
+  const arr=(lista||_palpaciones||[]).filter(p=>!p.fecha||String(p.fecha).slice(0,4)===String(ANIO_SEL));
+  if(!arr.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--ink-3)">Sin palpaciones en '+ANIO_SEL+'.</td></tr>';return;}
+  arr.slice(0,60).forEach(p=>{
     const nombre=(p.animales&&p.animales.nombre)?p.animales.nombre:'';
     const esPren=(p.prenez_meses!=null)||/pre/i.test(p.resultado||'');
     const res=p.resultado||(esPren?'preñada':'vacía');
