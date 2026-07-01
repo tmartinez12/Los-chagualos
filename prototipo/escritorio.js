@@ -173,30 +173,67 @@ function renderLecheKpis(){
   const box=document.getElementById('lecheKpis');if(!box)return;
   const enOrdeno=Object.values(animalesPorId).filter(a=>a.grupo==='ordeño');
   const nOrdeno=enOrdeno.length;
-  /* promedio diario del hato = promedio de los últimos 7 días CON datos */
-  const porFecha={};
-  for(const k in ordenosDiaMap){const f=k.slice(k.indexOf('|')+1);porFecha[f]=(porFecha[f]||0)+(Number(ordenosDiaMap[k])||0);}
-  const fechas=Object.keys(porFecha).sort().reverse().slice(0,7);
-  const promDia=fechas.length?Math.round(fechas.reduce((s,f)=>s+porFecha[f],0)/fechas.length):0;
+  const now=new Date(),ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  /* totales del hato por fecha y por vaca (desde los ordeños) */
+  const porFecha={},porCow={};
+  for(const k in ordenosDiaMap){const i=k.indexOf('|'),cow=k.slice(0,i),f=k.slice(i+1),v=Number(ordenosDiaMap[k])||0;
+    porFecha[f]=(porFecha[f]||0)+v;(porCow[cow]=porCow[cow]||{})[f]=v;}
+  const fechas=Object.keys(porFecha).sort().reverse();
+  const semana=fechas.slice(0,7),prevSemana=fechas.slice(7,14);
+  const promDe=ds=>ds.length?Math.round(ds.reduce((s,f)=>s+porFecha[f],0)/ds.length):0;
+  const promDia=promDe(semana),promPrev=promDe(prevSemana);
   const promVaca=(nOrdeno&&promDia)?(promDia/nOrdeno).toFixed(1):null;
+  /* tendencia: esta semana vs la anterior */
+  let trend='<span class="mut">'+(promVaca?promVaca+' L/vaca · última semana':'registra ordeños para verlo')+'</span>';
+  if(promDia&&promPrev){const d=promDia-promPrev,pct=Math.round(Math.abs(d)/promPrev*100);
+    trend=(d>0?'<span class="up">↑ '+pct+'% vs semana pasada</span>':d<0?'<span class="down">↓ '+pct+'% vs semana pasada</span>':'<span class="mut">= que la semana pasada</span>')+
+      (promVaca?' <span class="mut">· '+promVaca+' L/vaca</span>':'');}
   const porSecar=vacasPorSecar();
   box.innerHTML=
     '<div class="card kpi"><div class="k-label">Vacas en ordeño</div>'+
-      '<div class="k-value">'+nOrdeno+'</div>'+
-      '<div class="k-trend mut">dando leche ahora</div></div>'+
+      '<div class="k-value">'+nOrdeno+'</div><div class="k-trend mut">dando leche ahora</div></div>'+
     '<div class="card kpi"><div class="k-label">Promedio diario</div>'+
-      '<div class="k-value">'+(promDia||'—')+' <span class="k-unit">L/día</span></div>'+
-      '<div class="k-trend mut">'+(promVaca?promVaca+' L/vaca · última semana':'registra ordeños para verlo')+'</div></div>'+
+      '<div class="k-value">'+(promDia||'—')+' <span class="k-unit">L/día</span></div><div class="k-trend">'+trend+'</div></div>'+
     '<div class="card kpi"><div class="k-label">Por secar este mes</div>'+
-      '<div class="k-value'+(porSecar.length?' down':'')+'">'+porSecar.length+'</div>'+
-      '<div class="k-trend mut">a 7 meses de preñez</div></div>';
+      '<div class="k-value'+(porSecar.length?' down':'')+'">'+porSecar.length+'</div><div class="k-trend mut">a 7 meses de preñez</div></div>';
+  /* por secar (lista) */
   const listBox=document.getElementById('porSecarLista');
-  if(listBox){
-    if(porSecar.length){listBox.style.display='';
+  if(listBox){ if(porSecar.length){listBox.style.display='';
       listBox.innerHTML='<b style="color:var(--ink)">Por secar este mes (7 meses de preñez):</b> '+
         porSecar.map(a=>'<a onclick="goVaca(\''+a.id+'\',\'pg-leche\')" style="cursor:pointer;text-decoration:underline">'+a.id+' '+a.nombre+'</a>'+
           (a.prenez&&a.prenez.meses!=null?' ('+a.prenez.meses+'m)':'')).join(' · ');
-    }else listBox.style.display='none';
+    }else listBox.style.display='none';}
+  /* bajón por vaca: cayó >15% respecto a su propia semana anterior */
+  const bajon=[];
+  if(semana.length&&prevSemana.length){
+    enOrdeno.forEach(a=>{const c=porCow[a.id];if(!c)return;
+      const vt=semana.map(f=>c[f]).filter(v=>v!=null),vp=prevSemana.map(f=>c[f]).filter(v=>v!=null);
+      if(vt.length&&vp.length){const at=vt.reduce((s,x)=>s+x,0)/vt.length,ap=vp.reduce((s,x)=>s+x,0)/vp.length;
+        if(ap>0&&at<ap*0.85)bajon.push({a,pct:Math.round((ap-at)/ap*100),at:at.toFixed(1),ap:ap.toFixed(1)});}});
+    bajon.sort((x,y)=>y.pct-x.pct);
+  }
+  const bajonBox=document.getElementById('bajonLista');
+  if(bajonBox){ if(bajon.length){bajonBox.style.display='';
+      bajonBox.innerHTML='<b style="color:var(--red)">⚠ Bajaron esta semana</b> (revisa mastitis, celo o alimentación): '+
+        bajon.map(b=>'<a onclick="goVaca(\''+b.a.id+'\',\'pg-leche\')" style="cursor:pointer;text-decoration:underline">'+b.a.id+' '+b.a.nombre+'</a> −'+b.pct+'% ('+b.ap+'→'+b.at+' L)').join(' · ');
+    }else bajonBox.style.display='none';}
+  /* resumen del hato: DEL promedio · en ordeño/secas · paren este mes · faltan registrar */
+  const resBox=document.getElementById('hatoResumenLeche');
+  if(resBox){
+    const dels=enOrdeno.map(a=>a.del).filter(d=>typeof d==='number');
+    const delProm=dels.length?Math.round(dels.reduce((s,d)=>s+d,0)/dels.length):null;
+    const secas=Object.values(animalesPorId).filter(a=>a.grupo==='horra').length;
+    const paren=Object.values(animalesPorId).filter(a=>a.prenez&&a.prenez.partoEstimado&&String(a.prenez.partoEstimado).slice(0,7)===ym).length;
+    const ult7=[];for(let i=0;i<7;i++){const d=new Date(now);d.setDate(now.getDate()-i);ult7.push(_isoDe(d));}
+    const faltan=enOrdeno.filter(a=>{const c=porCow[a.id]||{};return !ult7.some(f=>c[f]!=null);});
+    const parts=[];
+    if(delProm!=null)parts.push('DEL promedio <b style="color:var(--ink)">'+delProm+' días</b>');
+    parts.push('<b style="color:var(--ink)">'+nOrdeno+'</b> en ordeño / <b style="color:var(--ink)">'+secas+'</b> secas');
+    if(paren)parts.push('<b style="color:var(--ink)">'+paren+'</b> paren este mes (entran a producir)');
+    let html=parts.join(' · ');
+    if(faltan.length&&faltan.length<nOrdeno)html+='<br><span style="color:var(--red)">Sin registrar esta semana:</span> '+
+      faltan.map(a=>'<a onclick="goVaca(\''+a.id+'\',\'pg-leche\')" style="cursor:pointer;text-decoration:underline">'+a.id+' '+a.nombre+'</a>').join(' · ');
+    resBox.style.display='';resBox.innerHTML=html;
   }
   if(typeof refreshHeader==='function')refreshHeader();
   if(typeof renderNavBadges==='function')renderNavBadges();
