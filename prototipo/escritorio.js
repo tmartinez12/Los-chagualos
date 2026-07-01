@@ -4,6 +4,7 @@ const POTREROS_VISIBLE=false;
    Declarada aquí arriba para evitar TDZ: el arranque (renderHato/renderInicio)
    corre antes de la línea donde se llena desde Supabase. */
 let animalesPorId={};
+let _palpaciones=[];   // todas las palpaciones (cache para la ficha y el historial)
 const titles={
   'pg-leche':['Producción de leche','Ordeño, histórico y días en leche'],
   'pg-hato':['Hato','Animales · unidad leche'],
@@ -948,6 +949,8 @@ function goVaca(num,from){
       '<span class="f-time" style="width:auto;font-size:10px;white-space:nowrap">'+h.fecha+'</span>'+
       '<span class="f-text">'+h.texto+(h.sub?'<br><span class="sub">'+h.sub+'</span>':'')+'</span></div>';
   });
+  /* historial de palpaciones de esta vaca */
+  if(typeof renderVacaPalpaciones==='function')renderVacaPalpaciones(cow.num);
   /* produccion mensual individual */
   const md=mensualData.find(c=>c.num===num);
   const mtb=document.getElementById('vacaMensualTb');mtb.innerHTML='';
@@ -1372,8 +1375,24 @@ function renderPalpHistorial(lista){
 }
 async function cargarPalpHistorial(){
   if(typeof LCStore==='undefined'){renderPalpHistorial([]);return;}
-  try{const ps=await LCStore.getPalpaciones();renderPalpHistorial(ps);}
+  try{const ps=await LCStore.getPalpaciones();_palpaciones=ps||[];renderPalpHistorial(_palpaciones);
+    const pv=document.getElementById('pg-vaca');
+    if(vacaActual&&pv&&pv.classList.contains('active'))renderVacaPalpaciones(vacaActual);}   // refresca la ficha abierta
   catch(e){console.warn('Historial de palpaciones:',e.message||e);renderPalpHistorial([]);}
+}
+/* palpaciones de UNA vaca, para su ficha */
+function renderVacaPalpaciones(num){
+  const tb=document.getElementById('vacaPalpTb');if(!tb)return;tb.innerHTML='';
+  const ps=(_palpaciones||[]).filter(p=>String(p.animal_id)===String(num));
+  if(!ps.length){tb.innerHTML='<tr><td colspan="4" style="text-align:center;padding:12px;color:var(--ink-3)">Sin palpaciones registradas.</td></tr>';return;}
+  ps.forEach(p=>{
+    const esPren=(p.prenez_meses!=null)||/pre/i.test(p.resultado||'');
+    const res=p.resultado||(esPren?'preñada':'vacía');
+    tb.innerHTML+='<tr><td>'+(typeof fmtFechaCorta==='function'?fmtFechaCorta(p.fecha):p.fecha)+'</td>'+
+      '<td><span class="badge'+(esPren?' ok':'')+'">'+res+'</span></td>'+
+      '<td class="r">'+(p.prenez_meses!=null?p.prenez_meses+' m':'—')+'</td>'+
+      '<td style="font-size:12px;color:var(--ink-3)">'+(p.motivo||'')+'</td></tr>';
+  });
 }
 renderPartos();renderPartosRecientes();renderPartosKpis();renderVacias();renderPalpLista();renderReproKpis();renderTratamientos();renderSanidadVacunas();
 cargarPalpHistorial();
