@@ -337,6 +337,15 @@
     return data || [];
   }
 
+  async function getPalpaciones() {
+    const { data, error } = await client()
+      .from('palpaciones')
+      .select('id, animal_id, fecha, motivo, resultado, prenez_meses, animales(nombre)')
+      .order('fecha', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  }
+
   /* --- Respaldo y restauración --------------------------------------------- *
    * exportarTodo(): baja TODAS las tablas de datos a un objeto (para guardar
    *   como archivo .json). restaurarTodo(): vuelve a cargar ese archivo.       */
@@ -393,7 +402,7 @@
     insertAnimal, updateAnimal,
     registrarOrdeno, getOrdenosFecha, getOrdenos,
     registrarVacunacion, getVacunaciones, deleteVacunacion,
-    getProduccionMensual, getPartos, getTratamientos, terminarTratamiento, reactivarTratamiento,
+    getProduccionMensual, getPartos, getPalpaciones, getTratamientos, terminarTratamiento, reactivarTratamiento,
     updateAnimalCampos, darDeBaja, deleteAnimal, deleteParto, deletePalpacion,
     registrarTratamiento, registrarParto, registrarPalpacion,
     exportarTodo, restaurarTodo,

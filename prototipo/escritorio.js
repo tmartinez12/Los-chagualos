@@ -1023,7 +1023,7 @@ function renderReproKpis(){
     box.innerHTML=
       '<div class="card kpi"><div class="k-label">Preñez</div><div class="k-value">'+pct+'<span class="k-unit">%</span></div><div class="k-trend mut">'+pren+' de '+eleg.length+' elegibles</div></div>'+
       '<div class="card kpi"><div class="k-label">Preñadas</div><div class="k-value">'+pren+'</div><div class="k-trend mut">en el hato</div></div>'+
-      '<div class="card kpi"><div class="k-label">Vacías &gt;120 días</div><div class="k-value'+(vacasVacias.length?' down':'')+'">'+vacasVacias.length+'</div><div class="k-trend mut">revisar servicio</div></div>'+
+      '<div class="card kpi"><div class="k-label">Vacías &gt;120 días</div><div class="k-value'+(vacasVacias.filter(v=>v.decision).length?' down':'')+'">'+vacasVacias.filter(v=>v.decision).length+'</div><div class="k-trend mut">de '+vacasVacias.length+' vacías</div></div>'+
       '<div class="card kpi"><div class="k-label">Por palpar</div><div class="k-value'+(porPalpar?' down':'')+'">'+porPalpar+'</div><div class="k-trend mut">servidas y vacías por confirmar</div></div>';
   }
 }
@@ -1042,13 +1042,15 @@ function renderPartos(){
 }
 function renderVacias(){
   const tb=document.getElementById('vaciasTbody');if(!tb)return;tb.innerHTML='';
+  if(!vacasVacias.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:16px;color:var(--ink-3)">No hay vacas vacías ahora.</td></tr>';}
   vacasVacias.forEach(v=>{
     const tr=document.createElement('tr');
+    const diasBadge=v.dias!=null?('<span class="badge'+(v.decision?' bad':'')+'">'+v.dias+' d</span>'):'—';
     tr.innerHTML='<td><div class="cell-animal"><div class="cini">'+v.num+'</div><div><div class="cn">'+
       v.cow.split('·')[1].trim()+'</div><div class="cs">'+v.sub+'</div></div></div></td>'+
-      '<td class="r">'+v.del+'</td><td class="r"><span class="badge bad">'+v.dias+' d</span></td>'+
-      '<td>'+v.ultima+' → vacía</td><td class="r"><b>'+v.ayer+'</b></td>'+
-      '<td style="color:var(--red);font-size:12px">'+v.rec+'</td>'+
+      '<td class="r">'+(v.del==null||v.del==='—'?'—':v.del)+'</td><td class="r">'+diasBadge+'</td>'+
+      '<td>'+(v.ultima&&v.ultima!=='—'?v.ultima+' → vacía':'sin palpación')+'</td><td class="r"><b>'+v.ayer+'</b></td>'+
+      '<td style="'+(v.decision?'color:var(--red)':'color:var(--ink-3)')+';font-size:12px">'+v.rec+'</td>'+
       '<td class="r" style="white-space:nowrap"><button class="btn outl small vPalp">Palpar</button> '+
       '<button class="btn outl small vSeca">Secar</button> '+
       '<button class="btn outl small vBaja" style="color:var(--red);border-color:var(--red)">Baja</button></td>';
@@ -1057,8 +1059,9 @@ function renderVacias(){
     tr.querySelector('.vBaja').onclick=e=>{e.stopPropagation();openBaja(v.cow);};
     tb.appendChild(tr);
   });
+  const dec=vacasVacias.filter(v=>v.decision).length;
   const lbl=document.getElementById('vaciasLabel');
-  if(lbl)lbl.textContent='Vacas vacías · '+vacasVacias.length+(vacasVacias.length===1?' requiere':' requieren')+' decisión';
+  if(lbl)lbl.textContent='Vacas vacías · '+vacasVacias.length+(dec?' ('+dec+' requiere'+(dec===1?'':'n')+' decisión)':'');
   refreshHeader();renderNavBadges();
 }
 
@@ -1289,6 +1292,7 @@ function savePalp(){
       .then(r=>{palpId=r&&r.id;return LCStore.updateAnimalCampos(num,campos);})
       .catch(e=>{console.warn('Palpación no guardada en la base:',e.message||e);
         snack('⚠ Palpación guardada local, falta sincronizar');});
+    pSavePalp.then(()=>{if(typeof cargarPalpHistorial==='function')cargarPalpHistorial();});
   }
   /* compensación en la base al deshacer (usada por ambas ramas) */
   const revertirPalpEnBase=()=>{ if(typeof LCStore==='undefined')return;
@@ -1348,7 +1352,31 @@ function renderPalpLista(){
   if(!palpCandidatas.length){box.innerHTML='<span class="mut">No hay candidatas para palpar</span>';return;}
   box.innerHTML=palpCandidatas.map(c=>'<b style="color:var(--ink)">'+c.cow.replace(' · ',' ')+'</b> — '+c.motivo).join('<br>');
 }
+/* ===== Historial de palpaciones ===== */
+function renderPalpHistorial(lista){
+  const tb=document.getElementById('palpHistTbody');if(!tb)return;tb.innerHTML='';
+  if(!lista||!lista.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--ink-3)">Aún no hay palpaciones registradas.</td></tr>';return;}
+  lista.slice(0,60).forEach(p=>{
+    const nombre=(p.animales&&p.animales.nombre)?p.animales.nombre:'';
+    const esPren=(p.prenez_meses!=null)||/pre/i.test(p.resultado||'');
+    const res=p.resultado||(esPren?'preñada':'vacía');
+    const tr=document.createElement('tr');tr.style.cursor='pointer';
+    tr.onclick=()=>goVaca(p.animal_id,'pg-repro');
+    tr.innerHTML='<td>'+(typeof fmtFechaCorta==='function'?fmtFechaCorta(p.fecha):p.fecha)+'</td>'+
+      '<td><b>'+p.animal_id+'</b> '+nombre+'</td>'+
+      '<td><span class="badge'+(esPren?' ok':'')+'">'+res+'</span></td>'+
+      '<td class="r">'+(p.prenez_meses!=null?p.prenez_meses+' m':'—')+'</td>'+
+      '<td style="font-size:12px;color:var(--ink-3)">'+(p.motivo||'')+'</td>';
+    tb.appendChild(tr);
+  });
+}
+async function cargarPalpHistorial(){
+  if(typeof LCStore==='undefined'){renderPalpHistorial([]);return;}
+  try{const ps=await LCStore.getPalpaciones();renderPalpHistorial(ps);}
+  catch(e){console.warn('Historial de palpaciones:',e.message||e);renderPalpHistorial([]);}
+}
 renderPartos();renderPartosRecientes();renderPartosKpis();renderVacias();renderPalpLista();renderReproKpis();renderTratamientos();renderSanidadVacunas();
+cargarPalpHistorial();
 /* ===== Cableado a Supabase: reproducción y partos ===== */
 const fmtFechaCorta=LCRules.fmtFechaCorta;   // compartido en core/rules.js
 (async function cargarReproDesdeSupabase(){
@@ -1371,13 +1399,17 @@ const fmtFechaCorta=LCRules.fmtFechaCorta;   // compartido en core/rules.js
       .map(a=>({cow:refPunto(a.id),
         motivo:a.estadoRepro==='servida'?'servida, por confirmar'
           :'vacía'+(a.diasVacia?' hace '+a.diasVacia+' días':', confirmar estado')}));
-    /* vacas vacías que requieren decisión */
-    vacasVacias=animales.filter(a=>a.estadoRepro==='vacia'&&a.diasVacia&&a.diasVacia>=120)
-      .map(a=>({cow:refPunto(a.id),num:a.id,del:a.del,
+    /* TODAS las vacas vacías (solo hembras); las de ≥120 días requieren decisión */
+    vacasVacias=animales.filter(a=>a.sexo==='H'&&a.estadoRepro==='vacia')
+      .map(a=>{const decision=(a.diasVacia!=null&&a.diasVacia>=120);
+        return {cow:refPunto(a.id),num:a.id,del:a.del,
         sub:(a.partos?ordinalParto(a.partos):'')+(a.raza?' · '+a.raza:''),
         dias:a.diasVacia,ultima:fmtFechaCorta(a.ultimaPalpacion),
         ayer:(a.leche&&a.leche.ayer!=null?a.leche.ayer+' L':'—'),
-        rec:a.del>300?'Lactancia extendida sin preñez — evaluar descarte':'Producción muy baja para su etapa — evaluar descarte'}));
+        decision:decision,
+        rec:decision?(a.del>300?'Lactancia extendida sin preñez — evaluar descarte':'Producción muy baja para su etapa — evaluar descarte')
+                    :'En rango — servir o confirmar con palpación'};})
+      .sort((x,y)=>(y.dias||0)-(x.dias||0));
     /* partos recientes desde la tabla partos (vacío si no hay) */
     const GP={ternera:'Terneras',macho:'Machos'};
     _partosRaw=partos||[];

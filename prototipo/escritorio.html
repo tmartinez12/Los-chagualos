@@ -258,11 +258,19 @@
           </div>
         </div>
 
-        <div class="section-label" style="color:var(--red)" id="vaciasLabel">Vacas vacías · 2 requieren decisión</div>
+        <div class="section-label" style="color:var(--red)" id="vaciasLabel">Vacas vacías</div>
         <div class="card" style="padding:8px">
           <table>
             <thead><tr><th>Animal</th><th class="r">DEL</th><th class="r">Días vacía</th><th>Última palpación</th><th class="r">Último ordeño</th><th>Recomendación</th><th></th></tr></thead>
             <tbody id="vaciasTbody"></tbody>
+          </table>
+        </div>
+
+        <div class="section-label" style="margin-top:18px">Historial de palpaciones</div>
+        <div class="card" style="padding:8px;overflow-x:auto">
+          <table>
+            <thead><tr><th>Fecha</th><th>Vaca</th><th>Resultado</th><th class="r">Preñez</th><th>Motivo</th></tr></thead>
+            <tbody id="palpHistTbody"></tbody>
           </table>
         </div>
       </div>
