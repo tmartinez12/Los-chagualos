@@ -201,70 +201,95 @@ function renderLecheKpis(){
   if(typeof refreshHeader==='function')refreshHeader();
   if(typeof renderNavBadges==='function')renderNavBadges();
 }
-/* ===== Registro semanal del ordeño ===== */
+/* ===== Registro del ordeño (tabla editable · vista SEMANAL Sáb–Vie o MENSUAL) ===== */
+let regVista='semana';        // 'semana' | 'mes'
 let SEMANA_OFFSET=0;          // semanas respecto a la actual (0=esta, negativo=atrás)
-let _semanaIsos=[];           // fechas ISO de la semana en pantalla (para recalcular totales)
+let MES_OFFSET=0;             // meses respecto al actual
+let _periodoIsos=[];          // fechas ISO del período en pantalla (para recalcular totales)
 function _isoDe(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-function _lunesDe(off){const d=new Date();d.setHours(0,0,0,0);const wd=(d.getDay()+6)%7;d.setDate(d.getDate()-wd+off*7);return d;}
-function _fechasSemana(off){const l=_lunesDe(off),a=[];for(let i=0;i<7;i++){const d=new Date(l);d.setDate(l.getDate()+i);a.push(d);}return a;}
-function cambiarSemana(dir){if(dir===0)SEMANA_OFFSET=0;else SEMANA_OFFSET+=dir;if(SEMANA_OFFSET>0)SEMANA_OFFSET=0;renderSemana();}
-function renderSemana(){
+/* la semana va de SÁBADO a VIERNES */
+function _inicioSemana(off){const d=new Date();d.setHours(0,0,0,0);const wd=(d.getDay()+1)%7;d.setDate(d.getDate()-wd+off*7);return d;}
+function _fechasSemana(off){const l=_inicioSemana(off),a=[];for(let i=0;i<7;i++){const d=new Date(l);d.setDate(l.getDate()+i);a.push(d);}return a;}
+function _fechasMes(off){const now=new Date(),b=new Date(now.getFullYear(),now.getMonth()+off,1),n=new Date(b.getFullYear(),b.getMonth()+1,0).getDate(),a=[];for(let d=1;d<=n;d++)a.push(new Date(b.getFullYear(),b.getMonth(),d));return a;}
+function _diasPeriodo(){return regVista==='mes'?_fechasMes(MES_OFFSET):_fechasSemana(SEMANA_OFFSET);}
+function setVistaRegistro(v){
+  regVista=v;
+  const bs=document.getElementById('btnVistaSemana'),bm=document.getElementById('btnVistaMes');
+  if(bs)bs.style.cssText=v==='semana'?'font-weight:700;border-color:var(--ink)':'';
+  if(bm)bm.style.cssText=v==='mes'?'font-weight:700;border-color:var(--ink)':'';
+  renderRegistro();
+}
+function cambiarPeriodo(dir){
+  if(regVista==='mes'){if(dir===0)MES_OFFSET=0;else MES_OFFSET+=dir;if(MES_OFFSET>0)MES_OFFSET=0;}
+  else{if(dir===0)SEMANA_OFFSET=0;else SEMANA_OFFSET+=dir;if(SEMANA_OFFSET>0)SEMANA_OFFSET=0;}
+  renderRegistro();
+}
+function renderRegistro(){
   const head=document.getElementById('semanaHead'),tb=document.getElementById('semanaBody');if(!head||!tb)return;
-  const dias=_fechasSemana(SEMANA_OFFSET);_semanaIsos=dias.map(_isoDe);
-  const DOW=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'],hoyIso=_isoDe(new Date());
-  const tit=document.getElementById('semanaTitulo');
-  if(tit)tit.textContent='Semana '+dias[0].getDate()+' '+LCRules.MESC[dias[0].getMonth()]+' – '+dias[6].getDate()+' '+LCRules.MESC[dias[6].getMonth()]+(SEMANA_OFFSET===0?' (actual)':'');
+  const dias=_diasPeriodo();_periodoIsos=dias.map(_isoDe);
+  const DOW=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'],hoyIso=_isoDe(new Date()),esMes=regVista==='mes';
+  const tit=document.getElementById('regTitulo');
+  if(tit){
+    const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+    if(esMes)tit.textContent=cap(LCRules.MESC[dias[0].getMonth()])+' '+dias[0].getFullYear()+(MES_OFFSET===0?' (actual)':'');
+    else tit.textContent='Semana '+dias[0].getDate()+' '+LCRules.MESC[dias[0].getMonth()]+' – '+dias[6].getDate()+' '+LCRules.MESC[dias[6].getMonth()]+(SEMANA_OFFSET===0?' (actual)':'');
+  }
   let h='<tr><th>Vaca</th>';
-  dias.forEach((d,i)=>{const fut=_isoDe(d)>hoyIso;h+='<th class="r" style="'+(fut?'color:var(--ink-3)':'')+'">'+DOW[i]+' <span style="font-weight:400;font-size:10px">'+d.getDate()+'</span></th>';});
-  h+='<th class="r" style="font-weight:800">Sem.</th></tr>';head.innerHTML=h;
+  dias.forEach(d=>{const fut=_isoDe(d)>hoyIso;
+    h+='<th class="r" style="'+(fut?'color:var(--ink-3)':'')+(esMes?';padding:6px 3px':'')+'">'+
+       (esMes? d.getDate()+'<br><span style="font-weight:400;font-size:9px">'+DOW[d.getDay()]+'</span>'
+             : DOW[d.getDay()]+' <span style="font-weight:400;font-size:10px">'+d.getDate()+'</span>')+'</th>';});
+  h+='<th class="r" style="font-weight:800">'+(esMes?'Mes':'Sem.')+'</th></tr>';head.innerHTML=h;
   const enOrdeno=Object.values(animalesPorId).filter(a=>a.grupo==='ordeño')
     .sort((a,b)=>String(a.id).localeCompare(String(b.id),undefined,{numeric:true}));
   tb.innerHTML='';
-  if(!enOrdeno.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--ink-3)">No hay vacas en ordeño todavía.</td></tr>';return;}
+  if(!enOrdeno.length){tb.innerHTML='<tr><td colspan="'+(dias.length+2)+'" style="text-align:center;padding:20px;color:var(--ink-3)">No hay vacas en ordeño todavía.</td></tr>';return;}
   enOrdeno.forEach(a=>{
     const tr=document.createElement('tr');
     let cells='<td><div class="cell-animal"><div class="cini">'+a.id+'</div><div class="cn">'+a.nombre+'</div></div></td>';
-    let semTot=0;
+    let tot=0;
     dias.forEach(d=>{const iso=_isoDe(d),fut=iso>hoyIso,v=ordenosDiaMap[a.id+'|'+iso];
-      if(v!=null)semTot+=Number(v)||0;
+      if(v!=null)tot+=Number(v)||0;
       cells+='<td class="r" style="padding:4px">'+
         (fut?'<span class="pending">—</span>':
          '<input type="number" inputmode="numeric" min="0" value="'+(v!=null?v:'')+'" onchange="guardarCeldaSemana(\''+a.id+'\',\''+iso+'\',this)" '+
-         'style="width:46px;text-align:center;border:none;border-bottom:1.5px solid var(--border);background:transparent;font-family:inherit;font-size:13px;padding:3px;outline:none">')+
+         'style="width:42px;text-align:center;border:none;border-bottom:1.5px solid var(--border);background:transparent;font-family:inherit;font-size:13px;padding:3px;outline:none">')+
         '</td>';
     });
-    cells+='<td class="r" style="font-weight:700" id="semtot-'+a.id+'">'+(semTot?Math.round(semTot):'—')+'</td>';
+    cells+='<td class="r" style="font-weight:700" id="regtot-'+a.id+'">'+(tot?Math.round(tot):'—')+'</td>';
     tr.innerHTML=cells;tb.appendChild(tr);
   });
   const trT=document.createElement('tr');trT.style.cssText='background:var(--surface);font-weight:700';
-  let tc='<td>Total día</td>';for(let i=0;i<7;i++)tc+='<td class="r" id="semday-'+i+'">—</td>';
-  tc+='<td class="r" id="semgrand" style="font-weight:800">—</td>';trT.innerHTML=tc;tb.appendChild(trT);
-  actualizarTotalesSemana();
+  let tc='<td>Total día</td>';for(let i=0;i<dias.length;i++)tc+='<td class="r" id="regday-'+i+'">—</td>';
+  tc+='<td class="r" id="reggrand" style="font-weight:800">—</td>';trT.innerHTML=tc;tb.appendChild(trT);
+  actualizarTotalesRegistro();
 }
 /* recalcula totales por vaca, por día y general SIN recrear las casillas (no pierde foco) */
-function actualizarTotalesSemana(){
+function actualizarTotalesRegistro(){
   const enOrdeno=Object.values(animalesPorId).filter(a=>a.grupo==='ordeño');
-  const totDia=new Array(7).fill(0);let grand=0;
+  const totDia=new Array(_periodoIsos.length).fill(0);let grand=0;
   enOrdeno.forEach(a=>{
-    let semTot=0;
-    _semanaIsos.forEach((iso,i)=>{const v=ordenosDiaMap[a.id+'|'+iso];if(v!=null){semTot+=Number(v)||0;totDia[i]+=Number(v)||0;}});
-    grand+=semTot;
-    const cell=document.getElementById('semtot-'+a.id);if(cell)cell.textContent=semTot?Math.round(semTot):'—';
+    let tot=0;
+    _periodoIsos.forEach((iso,i)=>{const v=ordenosDiaMap[a.id+'|'+iso];if(v!=null){tot+=Number(v)||0;totDia[i]+=Number(v)||0;}});
+    grand+=tot;
+    const cell=document.getElementById('regtot-'+a.id);if(cell)cell.textContent=tot?Math.round(tot):'—';
   });
-  totDia.forEach((t,i)=>{const c=document.getElementById('semday-'+i);if(c)c.textContent=t?Math.round(t):'—';});
-  const g=document.getElementById('semgrand');if(g)g.textContent=grand?Math.round(grand):'—';
+  totDia.forEach((t,i)=>{const c=document.getElementById('regday-'+i);if(c)c.textContent=t?Math.round(t):'—';});
+  const g=document.getElementById('reggrand');if(g)g.textContent=grand?Math.round(grand):'—';
 }
+/* alias para no romper llamadas antiguas */
+function renderSemana(){renderRegistro();}
 function guardarCeldaSemana(animalId,iso,input){
   const raw=String(input.value).trim();
-  if(raw===''){delete ordenosDiaMap[animalId+'|'+iso];if(_ordsRaw){const i=_ordsRaw.findIndex(o=>o.animal_id===animalId&&o.fecha===iso);if(i>=0)_ordsRaw.splice(i,1);}actualizarTotalesSemana();renderLecheKpis();return;}
+  if(raw===''){delete ordenosDiaMap[animalId+'|'+iso];if(_ordsRaw){const i=_ordsRaw.findIndex(o=>o.animal_id===animalId&&o.fecha===iso);if(i>=0)_ordsRaw.splice(i,1);}actualizarTotalesRegistro();renderLecheKpis();return;}
   const litros=Math.max(0,parseFloat(raw));
   if(isNaN(litros)){input.value=ordenosDiaMap[animalId+'|'+iso]!=null?ordenosDiaMap[animalId+'|'+iso]:'';return;}
   ordenosDiaMap[animalId+'|'+iso]=litros;
   if(_ordsRaw){const ex=_ordsRaw.find(o=>o.animal_id===animalId&&o.fecha===iso);if(ex)ex.litros=litros;else _ordsRaw.push({animal_id:animalId,fecha:iso,litros:litros});}
   if(typeof LCStore!=='undefined')LCStore.registrarOrdeno(animalId,litros,iso)
     .catch(e=>{console.warn('Ordeño no guardado:',e.message||e);snack('⚠ '+animalId+' no se guardó — revisa la conexión');});
-  actualizarTotalesSemana();renderLecheKpis();
-  if(typeof recomputeMensual==='function')recomputeMensual();   // refresca histórico y scatter (no toca esta tabla)
+  actualizarTotalesRegistro();renderLecheKpis();
+  if(typeof recomputeMensual==='function')recomputeMensual();   // refresca el scatter (no toca esta tabla)
 }
 
 /* ===== Registrar leche por vaca ===== */
