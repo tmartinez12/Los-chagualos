@@ -5,7 +5,6 @@ const POTREROS_VISIBLE=false;
    corre antes de la línea donde se llena desde Supabase. */
 let animalesPorId={};
 const titles={
-  'pg-inicio':['Buenos días, Tatiana','Resumen del día'],
   'pg-leche':['Producción de leche','Ordeño, histórico y días en leche'],
   'pg-hato':['Hato','Animales · unidad leche'],
   'pg-potreros':['Potreros','32 potreros · ocupación 1 día (máx 2)'],
@@ -13,14 +12,10 @@ const titles={
   'pg-partos':['Partos','Las palpaciones marcan las fechas'],
   'pg-sanitario':['Plan sanitario','Calendario anual · protocolos · soporte ICA'],
 };
-let currentPg='pg-inicio';
+let currentPg='pg-leche';
 /* subtítulo dinámico: refleja el estado real en vez de un valor fijo */
 function subFor(id){
   try{
-    if(id==='pg-inicio'){
-      const done=milkCows.filter(c=>c.done);
-      return LCRules.fechaLarga()+' · '+(done.length?'ordeño en curso: '+done.length+'/'+milkCows.length:'ordeño pendiente');
-    }
     if(id==='pg-leche'){
       const done=milkCows.filter(c=>c.done);
       const tot=done.reduce((s,c)=>s+c.v,0);
@@ -48,7 +43,6 @@ function go(id,el){
   document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('active',a.dataset.pg===id));
   document.getElementById('pgTitle').textContent=titles[id][0];
   document.getElementById('pgSub').textContent=subFor(id);
-  if(id==='pg-inicio')renderInicio();
   document.querySelector('.content').scrollTop=0;
 }
 /* refresca el subtítulo si estamos en la página afectada */

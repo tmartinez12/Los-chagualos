@@ -38,9 +38,8 @@
       <div><div class="l-name">Los Chagualos</div><div class="l-sub">Vista administradora</div></div>
     </div>
     <div class="nav" id="nav">
-      <a class="active" data-pg="pg-inicio" onclick="go('pg-inicio',this)"><svg class="ic"><use href="#i-home"/></svg>Inicio</a>
       <div class="nav-sec">Unidad · Leche</div>
-      <a data-pg="pg-leche" onclick="go('pg-leche',this)"><svg class="ic"><use href="#i-drop"/></svg>Producción<span class="badge" id="navBadgeLeche" style="display:none"></span></a>
+      <a class="active" data-pg="pg-leche" onclick="go('pg-leche',this)"><svg class="ic"><use href="#i-drop"/></svg>Producción<span class="badge" id="navBadgeLeche" style="display:none"></span></a>
       <a data-pg="pg-hato" onclick="go('pg-hato',this)"><svg class="ic"><use href="#i-tag"/></svg>Hato</a>
       <a data-pg="pg-potreros" onclick="go('pg-potreros',this)" style="display:none"><svg class="ic"><use href="#i-leaf"/></svg>Potreros</a>
       <a data-pg="pg-repro" onclick="go('pg-repro',this)"><svg class="ic"><use href="#i-repeat"/></svg>Reproducción<span class="badge bad" id="navBadgeRepro" style="display:none"></span></a>
@@ -58,8 +57,8 @@
   <div class="main">
     <div class="mtop">
       <div>
-        <h1 id="pgTitle">Buenos días, Tatiana</h1>
-        <div class="m-sub" id="pgSub">Resumen del día</div>
+        <h1 id="pgTitle">Producción de leche</h1>
+        <div class="m-sub" id="pgSub">Ordeño, histórico y días en leche</div>
       </div>
       <div class="spacer"></div>
       <select id="anioSelector" class="btn outl" onchange="setAnio(this.value)" style="font-weight:700;cursor:pointer;padding-right:10px" title="Año en consulta"></select>
@@ -69,29 +68,8 @@
     </div>
 
     <div class="content">
-      <!-- ============ INICIO ============ -->
-      <div class="page active" id="pg-inicio">
-        <div class="kpis" id="inicioKpis" style="grid-template-columns:repeat(2,1fr)"></div>
-
-        <div class="section-label">Requiere atención hoy</div>
-        <div class="grid" id="inicioAlertas" style="margin-top:4px"></div>
-
-        <div class="section-label" style="margin-top:22px">Copia de seguridad</div>
-        <div class="card" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
-          <div style="flex:1;min-width:220px;font-size:13px;color:var(--ink-2)">
-            <b style="color:var(--ink)">Respalda tus datos.</b> Descarga un archivo con todo
-            (vacas, ordeños, partos, palpaciones, tratamientos, vacunaciones).
-            Guárdalo en tu computador o en la nube. <span id="respaldoEstado" style="color:var(--ink-3)"></span>
-          </div>
-          <button class="btn filled small" onclick="descargarRespaldo()"><svg class="ic-s ic"><use href="#i-export"/></svg>Descargar respaldo</button>
-          <button class="btn outl small" onclick="document.getElementById('restaurarInput').click()">Restaurar desde archivo…</button>
-          <input type="file" id="restaurarInput" accept="application/json,.json" style="display:none" onchange="restaurarRespaldo(this)">
-        </div>
-
-      </div>
-
       <!-- ============ LECHE (producción) ============ -->
-      <div class="page" id="pg-leche">
+      <div class="page active" id="pg-leche">
         <!-- NIVEL 1: Tarea principal — registro del ordeño -->
         <div class="kpis" id="lecheKpis"></div>
 
@@ -176,6 +154,18 @@
             </tr></thead>
             <tbody id="hatoTbody"></tbody>
           </table>
+        </div>
+
+        <div class="section-label" style="margin-top:22px">Copia de seguridad</div>
+        <div class="card" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+          <div style="flex:1;min-width:220px;font-size:13px;color:var(--ink-2)">
+            <b style="color:var(--ink)">Respalda tus datos.</b> Descarga un archivo con todo
+            (vacas, ordeños, partos, palpaciones, tratamientos, vacunaciones).
+            Guárdalo en tu computador o en la nube. <span id="respaldoEstado" style="color:var(--ink-3)"></span>
+          </div>
+          <button class="btn filled small" onclick="descargarRespaldo()"><svg class="ic-s ic"><use href="#i-export"/></svg>Descargar respaldo</button>
+          <button class="btn outl small" onclick="document.getElementById('restaurarInput').click()">Restaurar desde archivo…</button>
+          <input type="file" id="restaurarInput" accept="application/json,.json" style="display:none" onchange="restaurarRespaldo(this)">
         </div>
       </div>
 
