@@ -1019,14 +1019,13 @@ function renderReproKpis(){
     const eleg=A.filter(a=>a.sexo==='H'&&['ordeño','horra','novilla'].includes(a.grupo));
     const pren=eleg.filter(a=>a.estadoRepro==='prenada').length;
     const pct=eleg.length?Math.round(pren/eleg.length*100):0;
-    const prox=proximosPartos[0]||null;
+    const porPalpar=(typeof palpCandidatas!=='undefined'&&palpCandidatas)?palpCandidatas.length:0;
     box.innerHTML=
       '<div class="card kpi"><div class="k-label">Preñez</div><div class="k-value">'+pct+'<span class="k-unit">%</span></div><div class="k-trend mut">'+pren+' de '+eleg.length+' elegibles</div></div>'+
       '<div class="card kpi"><div class="k-label">Preñadas</div><div class="k-value">'+pren+'</div><div class="k-trend mut">en el hato</div></div>'+
       '<div class="card kpi"><div class="k-label">Vacías &gt;120 días</div><div class="k-value'+(vacasVacias.length?' down':'')+'">'+vacasVacias.length+'</div><div class="k-trend mut">revisar servicio</div></div>'+
-      '<div class="card kpi"><div class="k-label">Próximo parto</div><div class="k-value" style="font-size:20px">'+(prox?prox.parto:'—')+'</div><div class="k-trend mut">'+(prox?prox.cow:'sin próximos')+'</div></div>';
+      '<div class="card kpi"><div class="k-label">Por palpar</div><div class="k-value'+(porPalpar?' down':'')+'">'+porPalpar+'</div><div class="k-trend mut">servidas y vacías por confirmar</div></div>';
   }
-  const pp=document.getElementById('reproPorParir');if(pp)pp.textContent=proximosPartos.length+' por parir';
 }
 /* vacas vacías que requieren decisión */
 let vacasVacias=[];

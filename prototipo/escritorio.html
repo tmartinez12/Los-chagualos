@@ -249,23 +249,12 @@
       <div class="page" id="pg-repro">
         <div class="kpis" id="reproKpis"></div>
 
-        <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:12px">
-          <div>
-            <div class="card" style="display:flex;gap:12px;align-items:center;cursor:pointer" onclick="go('pg-partos')">
-              <svg class="ic" style="color:var(--ink-2)"><use href="#i-sprout"/></svg>
-              <div style="flex:1;font-size:13px"><b>Partos:</b> <span id="reproPorParir">—</span> · calendario y partos recientes</div>
-              <button class="btn outl small">Ver partos</button>
-            </div>
-          </div>
-          <div>
-            <div class="section-label">Lista para la próxima palpación (se arma sola)</div>
-            <div class="card">
-              <div id="palpListaBox" style="font-size:13px;line-height:1.9;color:var(--ink-2)"></div>
-              <div style="display:flex;gap:8px;margin-top:14px">
-                <button class="btn filled small" onclick="openPalp()">Registrar palpación</button>
-                <button class="btn outl small" onclick="snack('Lista enviada al veterinario')">Enviar al vet</button>
-              </div>
-            </div>
+        <div class="section-label" style="margin-top:14px">Lista para la próxima palpación (se arma sola)</div>
+        <div class="card">
+          <div id="palpListaBox" style="font-size:13px;line-height:1.9;color:var(--ink-2)"></div>
+          <div style="display:flex;gap:8px;margin-top:14px">
+            <button class="btn filled small" onclick="openPalp()">Registrar palpación</button>
+            <button class="btn outl small" onclick="snack('Lista enviada al veterinario')">Enviar al vet</button>
           </div>
         </div>
 
