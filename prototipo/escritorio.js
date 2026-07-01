@@ -1064,8 +1064,13 @@ function renderPartos(){
     const tr=document.createElement('tr');
     const num=p.cow.split('·')[0].trim();
     tr.onclick=()=>goVaca(num,'pg-partos');
-    tr.innerHTML='<td>'+p.cow+'</td><td>'+p.prenez+'</td>'+
-      '<td class="r">'+(p.badge?'<span class="badge '+p.badge+'">'+p.parto+'</span>':p.parto)+'</td>';
+    /* resaltar las que paren esta semana o ya se pasaron de fecha */
+    let cell=p.badge?'<span class="badge '+p.badge+'">'+p.parto+'</span>':p.parto;
+    if(p.partoISO&&typeof diasHasta==='function'){const d=diasHasta(p.partoISO);
+      if(d<0){cell=p.parto+' <span class="badge bad">atrasada '+(-d)+'d</span>';tr.style.background='var(--red-soft,#fdecec)';}
+      else if(d<=7)cell=p.parto+' <span class="badge warn">pare en '+d+'d</span>';
+    }
+    tr.innerHTML='<td>'+p.cow+'</td><td>'+p.prenez+'</td><td class="r">'+cell+'</td>';
     tb.appendChild(tr);
   });
 }
@@ -1446,7 +1451,7 @@ const fmtFechaCorta=LCRules.fmtFechaCorta;   // compartido en core/rules.js
       .sort((x,y)=>x.prenez.partoEstimado<y.prenez.partoEstimado?-1:1)
       .map(a=>{const m=a.prenez.meses;return {cow:refPunto(a.id),
         prenez:(String(m).replace('.',','))+' meses',parto:'~'+fmtFechaCorta(a.prenez.partoEstimado),
-        badge:m>=8?'warn':undefined};});
+        partoISO:a.prenez.partoEstimado,badge:m>=8?'warn':undefined};});
     /* candidatas a palpar: servidas (confirmar) y vacías de largo */
     palpCandidatas=animales.filter(a=>a.estadoRepro==='servida'||a.estadoRepro==='vacia')
       .map(a=>({cow:refPunto(a.id),
@@ -1906,9 +1911,14 @@ function openParto(cow){
   const cands=hato.filter(a=>a.grupo==='Horra');
   if(!cands.length){snack('No hay vacas horras (preñadas próximas) para registrar parto');return;}
   partoState.num=cow?(''+cow).split('·')[0].trim():cands[0].num;
-  partoState.sexo='H';partoState.tipo='normal';partoState.estado='viva';partoState.peso=38;
+  partoState.sexo='H';partoState.tipo='normal';partoState.estado='viva';partoState.peso=38;partoState.fecha=isoHoy();
   openReg('Registrar parto','La cría entra al hato y la madre vuelve al ordeño en DEL 0');
   const body=document.getElementById('regBody');body.innerHTML='';
+  body.appendChild(regLabel('Fecha del parto'));
+  const fp=document.createElement('input');fp.type='date';fp.value=partoState.fecha;
+  fp.style.cssText='width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);padding:10px 12px;outline:none;margin-bottom:8px';
+  fp.onchange=()=>{partoState.fecha=fp.value||isoHoy();};
+  body.appendChild(fp);
   body.appendChild(regLabel('Madre (horra)'));
   body.appendChild(regChips(cands.map(a=>({val:a.num,label:a.num+' '+a.n})),partoState.num,v=>partoState.num=v));
   body.appendChild(regLabel('Sexo de la cría'));
@@ -1946,7 +1956,8 @@ function saveParto(){
     hato.unshift(cria);
   }
   /* registrar en partos recientes */
-  const reciente={madre:partoState.num+' '+nombre,cria:cria?cria.num:'—',fecha:fmtFechaCorta(isoHoy()),
+  const fechaParto=partoState.fecha||isoHoy();
+  const reciente={madre:partoState.num+' '+nombre,cria:cria?cria.num:'—',fecha:fmtFechaCorta(fechaParto),fechaISO:fechaParto,
     sexo:partoState.sexo,peso:partoState.peso,tipo:partoState.tipo,
     estado:partoState.estado,grupo:partoState.estado==='viva'?(criaGrupo==='Ternera'?'Terneras':'Machos'):null};
   partosRecientes.push(reciente);
@@ -1964,11 +1975,11 @@ function saveParto(){
     pSaveParto=Promise.resolve()
       .then(()=>{ if(cria)return LCStore.insertAnimal({id:cria.num,nombre:'Cría de '+nombre,
           raza:a.raza,grupo:partoState.sexo==='H'?'ternera':'macho',sexo:partoState.sexo,
-          edadAnios:0,origen:'nacido_finca',madreId:partoState.num,pesoKg:partoState.peso}); })
-      .then(()=>LCStore.registrarParto({id:partoId,madreId:partoState.num,criaId:criaId,fecha:isoHoy(),
+          edadAnios:0,nacimiento:fechaParto,origen:'nacido_finca',madreId:partoState.num,pesoKg:partoState.peso}); })
+      .then(()=>LCStore.registrarParto({id:partoId,madreId:partoState.num,criaId:criaId,fecha:fechaParto,
         sexo:partoState.sexo,pesoKg:partoState.peso,tipo:partoState.tipo,estadoCria:partoState.estado}))
       .then(()=>LCStore.updateAnimalCampos(partoState.num,{grupo:'ordeño',
-        inicio_lactancia:new Date().toISOString().slice(0,10),
+        inicio_lactancia:fechaParto,
         estado_repro:null,prenez_meses:null,ultima_palpacion:null}))
       .catch(e=>{console.warn('Parto no guardado completo en la base:',e.message||e);
         snack('⚠ Parto guardado local, falta sincronizar');});
