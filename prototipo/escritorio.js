@@ -573,7 +573,7 @@ function renderMensual(){
     if(btnT)btnT.style.display='none';if(btnP)btnP.style.display='none';
     const n=DIAS_MES[mensualMes];
     if(tit)tit.textContent='Producción diaria · '+MESES_L[mensualMes]+' '+MESES_INFO[mensualMes].year+' (L/día por vaca)';
-    if(hint)hint.textContent='Clic en un valor para editarlo · ‹ Resumen › para volver';
+    if(hint)hint.textContent='Detalle del mes (solo lectura) · para registrar o corregir usa la tabla semanal de arriba · ‹ Resumen › para volver';
     let h='<tr><th>Animal</th>';
     for(let d=1;d<=n;d++)h+='<th class="r" style="padding:8px 6px">'+d+'</th>';
     h+='<th class="r" style="font-weight:800">Prom</th><th class="r" style="font-weight:800">Total</th></tr>';
@@ -591,13 +591,11 @@ function renderMensual(){
       tr.appendChild(tdAnimal);
       let suma=0,dias=0;
       for(let d=1;d<=n;d++){const v=diaVal(c.num,mensualMes,d);
-        const td=document.createElement('td');td.className='r';td.style.cssText='padding:8px 6px;cursor:pointer';
-        if(v===null){td.innerHTML='<span class="pending">—</span>';td.style.cursor='default';}
+        const td=document.createElement('td');td.className='r';td.style.cssText='padding:8px 6px';
+        if(v===null){td.innerHTML='<span class="pending">—</span>';}
         else{suma+=v;dias++;let cls='';
           if(v<avg*0.85)cls=' class="down"';else if(v>avg*1.15)cls=' class="up"';
-          td.className='r editable';td.title='Corregir';
-          td.innerHTML='<span'+cls+'>'+v.toFixed(1)+'</span>';
-          td.onclick=(function(cow,day,val){return function(e){e.stopPropagation();editDiaCell(this,cow,day,val);};})(c,d,v);
+          td.innerHTML='<span'+cls+'>'+v.toFixed(1)+'</span>';   // solo lectura: se registra en la tabla semanal
         }
         tr.appendChild(td);
       }
@@ -619,8 +617,8 @@ function renderMensual(){
   }
   /* ---- vista RESUMEN 2026 (mensual) ---- */
   if(btnT)btnT.style.display='';if(btnP)btnP.style.display='';
-  if(tit)tit.textContent='Producción por vaca · '+ANIO_SEL;
-  if(hint)hint.textContent='Toca un mes para ver el detalle día por día · toca una vaca para su ficha completa';
+  if(tit)tit.textContent='Histórico (resumen) · '+ANIO_SEL;
+  if(hint)hint.textContent='Resumen del año, solo lectura · para registrar usa la tabla semanal de arriba · toca un mes para ver el detalle diario';
   if(!MESES_INFO.length){head.innerHTML='';tb.innerHTML='<tr><td style="text-align:center;padding:24px;color:var(--ink-3)">Sin datos para '+ANIO_SEL+'</td></tr>';return;}
   let h='<tr><th>Animal</th>';
   MESES_L.forEach(m=>h+='<th class="r">'+m+'</th>');
