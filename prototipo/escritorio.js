@@ -895,7 +895,8 @@ function deriveReproFicha(a){
     return {badge:m>=8?'ok':'warn',text:'Preñada · '+m+' meses',sub:sub||'Gestación en curso'};
   }
   if(a.estadoRepro==='servida')return {badge:'',text:'Servida · por palpar',sub:'Confirmar preñez en la próxima palpación'};
-  if(a.estadoRepro==='vacia')return {badge:'bad',text:'Vacía'+(a.diasVacia?' '+a.diasVacia+' días':''),sub:a.diasVacia>120?'Evaluar descarte o tratamiento reproductivo':'Esperar para servicio'};
+  if(a.estadoRepro==='vacia'){const da=(typeof _diasAbiertos==='function'?_diasAbiertos(a.id):null)??a.diasVacia;
+    return {badge:'bad',text:'Vacía'+(da?' · '+da+' días abiertos':''),sub:da>120?'Evaluar descarte o tratamiento reproductivo':'Esperar para servicio'};}
   if(a.grupo==='novilla')return {badge:a.listaServicio?'warn':'',text:a.listaServicio?'Novilla lista para servicio':'Novilla en desarrollo',sub:a.pesoKg?a.pesoKg+' kg':''};
   if(a.grupo==='macho'&&a.rolToro)return {badge:'',text:'Toro reproductor activo',sub:(a.hijasVivas?a.hijasVivas+' hijas vivas':'')};
   return {badge:'',text:a.grupo,sub:''};
@@ -909,10 +910,13 @@ function buildFichaBasica(a){
     historia.push({fecha:d.getDate()+' '+LCRules.MESC[d.getMonth()].toUpperCase()+' '+d.getFullYear(),texto:'Palpación: <b>preñada '+a.prenez.meses+' meses</b>'});}
   if(!sanOk)historia.push({fecha:'EN CURSO',texto:'Tratamiento con retiro de leche',miss:true});
   if(a.partos)historia.push({fecha:'—',texto:a.partos+(a.partos===1?'er':'°')+' parto registrado'});
-  return {num:a.id,n:a.nombre,raza:a.raza||'—',edad:fmtEdadLarga(a),grupo:GRUPO_DISPLAY[a.grupo]||a.grupo,
+  return {num:a.id,n:a.nombre,raza:a.raza||'—',color:a.color||null,edad:fmtEdadLarga(a),grupo:GRUPO_DISPLAY[a.grupo]||a.grupo,
     origen:a.origen==='comprado'?'Comprada':a.origen==='nacido_finca'?'Nació en finca':'—',
+    procedencia:a.procedencia||null,valorCompra:a.valorCompra||null,
     del:(a.del==null?0:a.del),parto:a.partos||0,ayer:(a.leche&&a.leche.ayer!=null?a.leche.ayer:0),
-    peso:a.pesoKg?a.pesoKg+' kg':'—',
+    prom5:(typeof promedioUltimos5==='function'?promedioUltimos5(a.id):null),
+    diasAbiertos:(typeof _diasAbiertos==='function'?_diasAbiertos(a.id):null),
+    peso:a.pesoKg?a.pesoKg+' kg':'—',fechaPeso:a.fechaPeso||null,
     madre:a.madreId?nombreRef(a.madreId):'—',padre:a.padreId?nombreRef(a.padreId):'—',
     crias:crias,repro:deriveReproFicha(a),
     sanidad:sanOk?'Sanidad al día — sin retiros activos':'Retiro de leche activo — no vender su leche',sanOk:sanOk,
@@ -938,7 +942,7 @@ function goVaca(num,from){
   else{fimg.removeAttribute('src');foto.classList.remove('has-img');}
   document.getElementById('vacaFotoInput').value='';
   document.getElementById('vacaNombre').textContent=cow.num+' · '+cow.n;
-  document.getElementById('vacaSub').textContent=cow.raza+' · '+cow.edad+' · '+cow.grupo+' · '+cow.origen;
+  document.getElementById('vacaSub').textContent=[cow.raza,cow.color,cow.edad,cow.grupo,cow.origen].filter(x=>x&&x!=='—').join(' · ');
   const bd=document.getElementById('vacaBadge');
   if(cow.repro.badge)bd.innerHTML='<span class="badge '+cow.repro.badge+'">'+cow.repro.text.split('·')[0].trim()+'</span>';
   else bd.innerHTML='';
@@ -948,13 +952,20 @@ function goVaca(num,from){
     '<div class="a-sub">'+cow.repro.sub+'</div></div></div>';
   const kpis=document.getElementById('vacaKpis');
   kpis.innerHTML=
-    '<div class="card kpi"><div class="k-label">Último ordeño</div><div class="k-value">'+cow.ayer+' <span class="k-unit">L</span></div></div>'+
-    '<div class="card kpi"><div class="k-label">DEL</div><div class="k-value">'+cow.del+' <span class="k-unit">días</span></div></div>'+
-    '<div class="card kpi"><div class="k-label">Peso</div><div class="k-value" style="font-size:20px">'+cow.peso+'</div></div>'+
-    '<div class="card kpi"><div class="k-label">Partos</div><div class="k-value">'+cow.parto+'</div></div>';
-  /* genealogía y crías: datos de familia, fuera de los KPIs */
+    '<div class="card kpi"><div class="k-label">Último ordeño</div><div class="k-value">'+cow.ayer+' <span class="k-unit">L</span></div>'+
+      '<div class="k-trend mut">'+(cow.prom5!=null?'prom. 5 días: '+cow.prom5+' L':'sin historial')+'</div></div>'+
+    '<div class="card kpi"><div class="k-label">DEL</div><div class="k-value">'+cow.del+' <span class="k-unit">días</span></div>'+
+      '<div class="k-trend mut">días en leche</div></div>'+
+    '<div class="card kpi"><div class="k-label">Días abiertos</div><div class="k-value'+(cow.diasAbiertos>120?' down':'')+'">'+(cow.diasAbiertos!=null?cow.diasAbiertos:'—')+'</div>'+
+      '<div class="k-trend mut">desde el último parto</div></div>'+
+    '<div class="card kpi"><div class="k-label">Partos</div><div class="k-value">'+cow.parto+'</div>'+
+      '<div class="k-trend mut">registrados</div></div>';
+  /* datos del animal: identificación, cuerpo y familia */
   document.getElementById('vacaGenea').innerHTML=
-    '<b style="color:var(--ink)">Nacimiento:</b> '+fmtNacimiento(animalesPorId[cow.num])+'<br>'+
+    '<b style="color:var(--ink)">Nacimiento:</b> '+fmtNacimiento(animalesPorId[cow.num])+
+    ' &nbsp;·&nbsp; <b style="color:var(--ink)">Color:</b> '+(cow.color||'<span style="color:var(--ink-3)">sin registrar (✏️ Editar)</span>')+
+    ' &nbsp;·&nbsp; <b style="color:var(--ink)">Peso:</b> '+cow.peso+(cow.fechaPeso?' <span style="color:var(--ink-3)">('+fmtFechaCorta(cow.fechaPeso)+')</span>':'')+'<br>'+
+    (cow.procedencia||cow.valorCompra?'<b style="color:var(--ink)">Compra:</b> '+(cow.procedencia||'')+(cow.valorCompra?' · $'+Number(cow.valorCompra).toLocaleString('es-CO'):'')+'<br>':'')+
     '<b style="color:var(--ink)">Madre:</b> '+cow.madre+' &nbsp;·&nbsp; <b style="color:var(--ink)">Padre:</b> '+cow.padre+
     '<br><b style="color:var(--ink)">Crías:</b> '+(cow.crias.length?cow.crias.join(', '):'sin crías registradas');
   /* curva de lactancia (modelo de Wood) */
@@ -973,6 +984,31 @@ function goVaca(num,from){
   });
   /* historial de palpaciones de esta vaca */
   if(typeof renderVacaPalpaciones==='function')renderVacaPalpaciones(cow.num);
+  /* partos de esta vaca (de la tabla partos) */
+  const ptb=document.getElementById('vacaPartosTb');
+  if(ptb){ptb.innerHTML='';
+    const ps=(_partosRaw||[]).filter(p=>String(p.madre_id)===String(cow.num))
+      .sort((x,y)=>String(y.fecha).localeCompare(String(x.fecha)));
+    if(!ps.length)ptb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:12px;color:var(--ink-3)">Sin partos registrados.</td></tr>';
+    ps.forEach(p=>{
+      ptb.innerHTML+='<tr><td>'+fmtFechaCorta(p.fecha)+'</td>'+
+        '<td>'+(p.cria_id?('<b>'+p.cria_id+'</b> '+(animalesPorId[p.cria_id]?animalesPorId[p.cria_id].nombre:'')):'—')+'</td>'+
+        '<td class="r">'+(p.sexo_cria==='H'?'♀':'♂')+'</td><td class="r">'+(p.peso_kg?p.peso_kg+' kg':'—')+'</td>'+
+        '<td>'+(p.tipo||'normal')+'</td>'+
+        '<td class="r"><span class="badge '+(p.estado_cria==='viva'?'ok':'bad')+'">'+(p.estado_cria==='viva'?'viva':'mortinato')+'</span></td></tr>';
+    });
+  }
+  /* sanidad de esta vaca: tratamientos activos + vacunaciones que la cubren */
+  const sl=document.getElementById('vacaSanidadLista');
+  if(sl){
+    const lineas=[];
+    (tratamientos||[]).filter(t=>String(t.num)===String(cow.num)).forEach(t=>{
+      lineas.push('💊 <b style="color:var(--ink)">'+t.desc+'</b>'+(t.retiro?' · <span style="color:var(--red)">'+t.retiro+'</span>':' · sin retiro'));});
+    (_vacunaciones||[]).filter(v=>String(v.animal_id)===String(cow.num)||v.alcance==='hato').slice(0,3).forEach(v=>{
+      lineas.push('💉 '+fmtFechaCorta(v.fecha)+' · '+v.tipo+(v.alcance==='hato'?' (todo el hato)':''));});
+    if(lineas.length){sl.style.display='';sl.innerHTML=lineas.join('<br>');}
+    else{sl.style.display='none';sl.innerHTML='';}
+  }
   /* produccion mensual individual */
   const md=mensualData.find(c=>c.num===num);
   const mtb=document.getElementById('vacaMensualTb');mtb.innerHTML='';
@@ -1784,13 +1820,14 @@ function openEditarVaca(num){
   const a=animalesPorId[num];
   if(!a){snack('No tengo los datos de '+num+' desde la base — sincroniza primero');return;}
   editState.num=num;
-  editState.nombre=a.nombre||'';editState.raza=a.raza||'';
+  editState.nombre=a.nombre||'';editState.raza=a.raza||'';editState.color=a.color||'';
   editState.nacimiento=a.nacimiento||'';editState.peso=(a.pesoKg!=null?a.pesoKg:'');
   editState.inicio=a.inicioLactancia||'';editState.leche=(a.leche&&a.leche.ayer!=null?a.leche.ayer:'');
   openReg('Editar datos de '+num,'La producción se calcula de los ordeños y del inicio de lactancia');
   const body=document.getElementById('regBody');body.innerHTML='';
   body.appendChild(regTexto('Nombre','Nombre del animal',v=>editState.nombre=v,'text',editState.nombre));
   body.appendChild(regTexto('Raza','Ej. Holstein × Gyr',v=>editState.raza=v,'text',editState.raza));
+  body.appendChild(regTexto('Color','Ej. negra, pinta roja, barcina…',v=>editState.color=v,'text',editState.color));
   body.appendChild(regTexto('Fecha de nacimiento','',v=>editState.nacimiento=v,'date',editState.nacimiento));
   body.appendChild(regTexto('Peso (kg)','',v=>editState.peso=v,'number',editState.peso));
   body.appendChild(regTexto('Inicio de lactancia (último parto)','',v=>editState.inicio=v,'date',editState.inicio));
@@ -1805,17 +1842,18 @@ function guardarEditarVaca(){
   const num=editState.num,a=animalesPorId[num];if(!a)return;
   const nombre=(editState.nombre||'').trim()||a.nombre;
   const raza=(editState.raza||'').trim()||null;
+  const color=(editState.color||'').trim()||null;
   const nacimiento=editState.nacimiento||null;
   const peso=(editState.peso!==''&&editState.peso!=null)?parseFloat(editState.peso):null;
   const inicio=editState.inicio||null;
   const leche=(editState.leche!==''&&editState.leche!=null)?parseFloat(editState.leche):null;
   closeReg();
   /* persistir datos básicos + inicio de lactancia (fuente del DEL) */
-  const campos={nombre:nombre,raza:raza,nacimiento:nacimiento,inicio_lactancia:inicio};
+  const campos={nombre:nombre,raza:raza,color:color,nacimiento:nacimiento,inicio_lactancia:inicio};
   if(peso!=null&&!isNaN(peso)){campos.peso_kg=peso;campos.fecha_peso=isoHoy();}
   /* DEL y leche se DERIVAN: actualizo la caché para reflejarlo de inmediato */
   const delCalc=inicio?diasDesdeReal(inicio):a.del;
-  Object.assign(a,{nombre:nombre,raza:raza,nacimiento:nacimiento,inicioLactancia:inicio,del:delCalc});
+  Object.assign(a,{nombre:nombre,raza:raza,color:color,nacimiento:nacimiento,inicioLactancia:inicio,del:delCalc});
   a.leche=a.leche||{};if(leche!=null&&!isNaN(leche))a.leche.ayer=leche;
   if(peso!=null&&!isNaN(peso)){a.pesoKg=peso;a.fechaPeso=isoHoy();}
   if(fichas[num]){fichas[num].n=nombre;fichas[num].raza=raza;if(peso!=null&&!isNaN(peso))fichas[num].peso=peso+' kg';}

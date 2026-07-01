@@ -190,10 +190,13 @@
             </div>
           </div>
           <div class="vaca-side">
-            <div class="card" style="display:flex;gap:10px;align-items:center;padding:12px 14px" id="vacaSanidad">
-              <svg class="ic-s ic" style="color:var(--green)"><use href="#i-shield"/></svg>
-              <div style="font-size:12.5px;color:var(--ink-2)">
-                <b style="color:var(--ink)">Sanidad al día</b> — vacunas ok · sin retiros activos</div>
+            <div class="card" style="padding:12px 14px">
+              <div style="display:flex;gap:10px;align-items:center" id="vacaSanidad">
+                <svg class="ic-s ic" style="color:var(--green)"><use href="#i-shield"/></svg>
+                <div style="font-size:12.5px;color:var(--ink-2)">
+                  <b style="color:var(--ink)">Sanidad al día</b> — vacunas ok · sin retiros activos</div>
+              </div>
+              <div id="vacaSanidadLista" style="display:none;font-size:12px;color:var(--ink-2);line-height:1.8;margin-top:8px;border-top:1px solid var(--border);padding-top:8px"></div>
             </div>
             <div class="section-label">Historia</div>
             <div class="card">
@@ -207,6 +210,12 @@
         <div class="card" style="padding:8px;overflow-x:auto">
           <table><thead><tr><th>Mes</th><th class="r">L/día prom</th><th class="r">Total L</th><th class="r">Días ordeño</th><th>Nota</th></tr></thead>
           <tbody id="vacaMensualTb"></tbody></table>
+        </div>
+
+        <div class="section-label" style="margin-top:18px">Partos de esta vaca</div>
+        <div class="card" style="padding:8px;overflow-x:auto">
+          <table><thead><tr><th>Fecha</th><th>Cría</th><th class="r">Sexo</th><th class="r">Peso</th><th>Tipo</th><th class="r">Resultado</th></tr></thead>
+          <tbody id="vacaPartosTb"></tbody></table>
         </div>
 
         <div class="section-label" style="margin-top:18px">Historial de palpaciones</div>
