@@ -70,22 +70,24 @@
     <div class="content">
       <!-- ============ LECHE (producción) ============ -->
       <div class="page active" id="pg-leche">
-        <!-- NIVEL 1: Tarea principal — registro del ordeño -->
+        <!-- NIVEL 1: Resumen del ordeño -->
         <div class="kpis" id="lecheKpis"></div>
+        <div id="porSecarLista" class="card flat" style="display:none;margin-top:10px;font-size:13px;color:var(--ink-2);padding:12px;line-height:1.7"></div>
 
-        <div class="card" style="padding:8px;margin-top:12px">
-          <table>
-            <thead><tr>
-              <th class="sortable" onclick="sortMilk('animal')">Animal<span class="sort-ar" id="ms-animal"></span></th>
-              <th class="r sortable" onclick="sortMilk('ayer')">Último<span class="sort-ar" id="ms-ayer"></span></th>
-              <th class="r sortable" onclick="sortMilk('hoy')">Hoy<span class="sort-ar" id="ms-hoy"></span></th>
-              <th class="r sortable" onclick="sortMilk('var')">Var.<span class="sort-ar" id="ms-var"></span></th>
-              <th class="r sortable" onclick="sortMilk('del')">DEL<span class="sort-ar" id="ms-del"></span></th>
-              <th>Estado</th><th>Nota</th>
-            </tr></thead>
-            <tbody id="milkTbody"></tbody>
-          </table>
+        <!-- NIVEL 1: Registro semanal del ordeño (una fila por vaca, un día por columna) -->
+        <div class="section-label" style="display:flex;justify-content:space-between;align-items:baseline;margin-top:16px">
+          <span id="semanaTitulo">Registro semanal</span>
+          <span style="text-transform:none;letter-spacing:0">
+            <button class="btn outl small" onclick="cambiarSemana(-1)">‹ anterior</button>
+            <button class="btn outl small" onclick="cambiarSemana(0)">Esta semana</button>
+            <button class="btn outl small" onclick="cambiarSemana(1)">siguiente ›</button>
+          </span>
         </div>
+        <div class="card" style="padding:8px;overflow-x:auto">
+          <table id="tblSemana"><thead id="semanaHead"></thead><tbody id="semanaBody"></tbody></table>
+        </div>
+        <div style="font-size:11.5px;color:var(--ink-3);margin-top:8px">
+          Escribe los litros de cada día tal como los tienes en tu cuaderno. Se guarda al salir de cada casilla · los días futuros están bloqueados.</div>
 
         <!-- NIVEL 2: Análisis visual — scatter con leyenda -->
         <div class="card" style="margin-top:14px">

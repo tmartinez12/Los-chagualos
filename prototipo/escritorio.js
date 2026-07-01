@@ -17,9 +17,9 @@ let currentPg='pg-leche';
 function subFor(id){
   try{
     if(id==='pg-leche'){
-      const done=milkCows.filter(c=>c.done);
-      const tot=done.reduce((s,c)=>s+c.v,0);
-      return done.length+'/'+milkCows.length+' de la muestra registradas · '+tot+' L';
+      const n=(typeof animalesPorId!=='undefined')?Object.values(animalesPorId).filter(a=>a.grupo==='ordeño').length:0;
+      const ps=(typeof vacasPorSecar==='function')?vacasPorSecar().length:0;
+      return n+' vacas en ordeño'+(ps?' · '+ps+' por secar este mes':'');
     }
     if(id==='pg-hato'){
       const ordeño=hato.filter(a=>a.grupo==='En ordeño').length;
@@ -160,31 +160,111 @@ function snack(msg,accionLabel,accionFn){const sb=document.getElementById('snack
   clearTimeout(snackTimer);snackTimer=setTimeout(()=>sb.classList.remove('show'),accionLabel?5200:2600);}
 
 /* ===== KPIs dinámicos de producción ===== */
+/* vacas que deben secarse este mes: en ordeño, preñadas, que llegan a 7 meses
+   de gestación en el mes actual (o ya lo pasaron y siguen en ordeño). */
+function vacasPorSecar(){
+  const enOrdeno=Object.values(animalesPorId).filter(a=>a.grupo==='ordeño');
+  const now=new Date(),ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  return enOrdeno.filter(a=>a.prenez&&(
+    (a.secarEstimado&&String(a.secarEstimado).slice(0,7)<=ym) ||
+    (a.prenez.meses!=null&&a.prenez.meses>=7)));
+}
 function renderLecheKpis(){
   const box=document.getElementById('lecheKpis');if(!box)return;
-  const done=milkCows.filter(c=>c.done);
-  const total=done.reduce((s,c)=>s+c.v,0);
-  const ayerTotal=milkCows.reduce((s,c)=>s+c.ayer,0);
-  const allDone=done.length===milkCows.length;
-
-  const trendOrdenio=allDone
-    ?(total>ayerTotal?'<span class="up">↑ '+(total-ayerTotal)+' L vs ayer</span>':
-      total<ayerTotal?'<span class="down">↓ '+(ayerTotal-total)+' L vs ayer</span>':
-      '<span class="mut">= que ayer</span>')
-    :'<span class="mut">registrando…</span>';
-
+  const enOrdeno=Object.values(animalesPorId).filter(a=>a.grupo==='ordeño');
+  const nOrdeno=enOrdeno.length;
+  /* promedio diario del hato = promedio de los últimos 7 días CON datos */
+  const porFecha={};
+  for(const k in ordenosDiaMap){const f=k.slice(k.indexOf('|')+1);porFecha[f]=(porFecha[f]||0)+(Number(ordenosDiaMap[k])||0);}
+  const fechas=Object.keys(porFecha).sort().reverse().slice(0,7);
+  const promDia=fechas.length?Math.round(fechas.reduce((s,f)=>s+porFecha[f],0)/fechas.length):0;
+  const promVaca=(nOrdeno&&promDia)?(promDia/nOrdeno).toFixed(1):null;
+  const porSecar=vacasPorSecar();
   box.innerHTML=
-    '<div class="card kpi"><div class="k-label">Ordeño hoy</div>'+
-      '<div class="k-value">'+(allDone?total+'<span class="k-unit"> L</span>':done.length+'<span class="k-unit"> de '+milkCows.length+'</span>')+'</div>'+
-      '<div class="k-trend">'+trendOrdenio+'</div></div>'+
-    '<div class="card kpi"><div class="k-label">Total registrado</div>'+
-      '<div class="k-value">'+total+' <span class="k-unit">L</span></div>'+
-      '<div class="k-trend mut">de ~'+ayerTotal+' L esperados</div></div>'+
-    '<div class="card kpi"><div class="k-label">L/vaca·día</div>'+
-      '<div class="k-value">'+(done.length?(total/done.length).toFixed(1):'—')+'</div>'+
-      '<div class="k-trend mut">'+milkCows.length+' vacas en ordeño</div></div>';
+    '<div class="card kpi"><div class="k-label">Vacas en ordeño</div>'+
+      '<div class="k-value">'+nOrdeno+'</div>'+
+      '<div class="k-trend mut">dando leche ahora</div></div>'+
+    '<div class="card kpi"><div class="k-label">Promedio diario</div>'+
+      '<div class="k-value">'+(promDia||'—')+' <span class="k-unit">L/día</span></div>'+
+      '<div class="k-trend mut">'+(promVaca?promVaca+' L/vaca · última semana':'registra ordeños para verlo')+'</div></div>'+
+    '<div class="card kpi"><div class="k-label">Por secar este mes</div>'+
+      '<div class="k-value'+(porSecar.length?' down':'')+'">'+porSecar.length+'</div>'+
+      '<div class="k-trend mut">a 7 meses de preñez</div></div>';
+  const listBox=document.getElementById('porSecarLista');
+  if(listBox){
+    if(porSecar.length){listBox.style.display='';
+      listBox.innerHTML='<b style="color:var(--ink)">Por secar este mes (7 meses de preñez):</b> '+
+        porSecar.map(a=>'<a onclick="goVaca(\''+a.id+'\',\'pg-leche\')" style="cursor:pointer;text-decoration:underline">'+a.id+' '+a.nombre+'</a>'+
+          (a.prenez&&a.prenez.meses!=null?' ('+a.prenez.meses+'m)':'')).join(' · ');
+    }else listBox.style.display='none';
+  }
   if(typeof refreshHeader==='function')refreshHeader();
   if(typeof renderNavBadges==='function')renderNavBadges();
+}
+/* ===== Registro semanal del ordeño ===== */
+let SEMANA_OFFSET=0;          // semanas respecto a la actual (0=esta, negativo=atrás)
+let _semanaIsos=[];           // fechas ISO de la semana en pantalla (para recalcular totales)
+function _isoDe(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function _lunesDe(off){const d=new Date();d.setHours(0,0,0,0);const wd=(d.getDay()+6)%7;d.setDate(d.getDate()-wd+off*7);return d;}
+function _fechasSemana(off){const l=_lunesDe(off),a=[];for(let i=0;i<7;i++){const d=new Date(l);d.setDate(l.getDate()+i);a.push(d);}return a;}
+function cambiarSemana(dir){if(dir===0)SEMANA_OFFSET=0;else SEMANA_OFFSET+=dir;if(SEMANA_OFFSET>0)SEMANA_OFFSET=0;renderSemana();}
+function renderSemana(){
+  const head=document.getElementById('semanaHead'),tb=document.getElementById('semanaBody');if(!head||!tb)return;
+  const dias=_fechasSemana(SEMANA_OFFSET);_semanaIsos=dias.map(_isoDe);
+  const DOW=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'],hoyIso=_isoDe(new Date());
+  const tit=document.getElementById('semanaTitulo');
+  if(tit)tit.textContent='Semana '+dias[0].getDate()+' '+LCRules.MESC[dias[0].getMonth()]+' – '+dias[6].getDate()+' '+LCRules.MESC[dias[6].getMonth()]+(SEMANA_OFFSET===0?' (actual)':'');
+  let h='<tr><th>Vaca</th>';
+  dias.forEach((d,i)=>{const fut=_isoDe(d)>hoyIso;h+='<th class="r" style="'+(fut?'color:var(--ink-3)':'')+'">'+DOW[i]+' <span style="font-weight:400;font-size:10px">'+d.getDate()+'</span></th>';});
+  h+='<th class="r" style="font-weight:800">Sem.</th></tr>';head.innerHTML=h;
+  const enOrdeno=Object.values(animalesPorId).filter(a=>a.grupo==='ordeño')
+    .sort((a,b)=>String(a.id).localeCompare(String(b.id),undefined,{numeric:true}));
+  tb.innerHTML='';
+  if(!enOrdeno.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--ink-3)">No hay vacas en ordeño todavía.</td></tr>';return;}
+  enOrdeno.forEach(a=>{
+    const tr=document.createElement('tr');
+    let cells='<td><div class="cell-animal"><div class="cini">'+a.id+'</div><div class="cn">'+a.nombre+'</div></div></td>';
+    let semTot=0;
+    dias.forEach(d=>{const iso=_isoDe(d),fut=iso>hoyIso,v=ordenosDiaMap[a.id+'|'+iso];
+      if(v!=null)semTot+=Number(v)||0;
+      cells+='<td class="r" style="padding:4px">'+
+        (fut?'<span class="pending">—</span>':
+         '<input type="number" inputmode="numeric" min="0" value="'+(v!=null?v:'')+'" onchange="guardarCeldaSemana(\''+a.id+'\',\''+iso+'\',this)" '+
+         'style="width:46px;text-align:center;border:none;border-bottom:1.5px solid var(--border);background:transparent;font-family:inherit;font-size:13px;padding:3px;outline:none">')+
+        '</td>';
+    });
+    cells+='<td class="r" style="font-weight:700" id="semtot-'+a.id+'">'+(semTot?Math.round(semTot):'—')+'</td>';
+    tr.innerHTML=cells;tb.appendChild(tr);
+  });
+  const trT=document.createElement('tr');trT.style.cssText='background:var(--surface);font-weight:700';
+  let tc='<td>Total día</td>';for(let i=0;i<7;i++)tc+='<td class="r" id="semday-'+i+'">—</td>';
+  tc+='<td class="r" id="semgrand" style="font-weight:800">—</td>';trT.innerHTML=tc;tb.appendChild(trT);
+  actualizarTotalesSemana();
+}
+/* recalcula totales por vaca, por día y general SIN recrear las casillas (no pierde foco) */
+function actualizarTotalesSemana(){
+  const enOrdeno=Object.values(animalesPorId).filter(a=>a.grupo==='ordeño');
+  const totDia=new Array(7).fill(0);let grand=0;
+  enOrdeno.forEach(a=>{
+    let semTot=0;
+    _semanaIsos.forEach((iso,i)=>{const v=ordenosDiaMap[a.id+'|'+iso];if(v!=null){semTot+=Number(v)||0;totDia[i]+=Number(v)||0;}});
+    grand+=semTot;
+    const cell=document.getElementById('semtot-'+a.id);if(cell)cell.textContent=semTot?Math.round(semTot):'—';
+  });
+  totDia.forEach((t,i)=>{const c=document.getElementById('semday-'+i);if(c)c.textContent=t?Math.round(t):'—';});
+  const g=document.getElementById('semgrand');if(g)g.textContent=grand?Math.round(grand):'—';
+}
+function guardarCeldaSemana(animalId,iso,input){
+  const raw=String(input.value).trim();
+  if(raw===''){delete ordenosDiaMap[animalId+'|'+iso];if(_ordsRaw){const i=_ordsRaw.findIndex(o=>o.animal_id===animalId&&o.fecha===iso);if(i>=0)_ordsRaw.splice(i,1);}actualizarTotalesSemana();renderLecheKpis();return;}
+  const litros=Math.max(0,parseFloat(raw));
+  if(isNaN(litros)){input.value=ordenosDiaMap[animalId+'|'+iso]!=null?ordenosDiaMap[animalId+'|'+iso]:'';return;}
+  ordenosDiaMap[animalId+'|'+iso]=litros;
+  if(_ordsRaw){const ex=_ordsRaw.find(o=>o.animal_id===animalId&&o.fecha===iso);if(ex)ex.litros=litros;else _ordsRaw.push({animal_id:animalId,fecha:iso,litros:litros});}
+  if(typeof LCStore!=='undefined')LCStore.registrarOrdeno(animalId,litros,iso)
+    .catch(e=>{console.warn('Ordeño no guardado:',e.message||e);snack('⚠ '+animalId+' no se guardó — revisa la conexión');});
+  actualizarTotalesSemana();renderLecheKpis();
+  if(typeof recomputeMensual==='function')recomputeMensual();   // refresca histórico y scatter (no toca esta tabla)
 }
 
 /* ===== Registrar leche por vaca ===== */
@@ -584,7 +664,7 @@ function renderMensual(){
   tc+='<td class="r" style="font-weight:800">'+grandTotal+' L</td>';
   trT.innerHTML=tc;tb.appendChild(trT);
 }
-renderMesPicker();renderMensual();
+renderMesPicker();renderMensual();renderSemana();renderLecheKpis();
 /* ===== Cableado a Supabase: producción mensual =====
    Se baja TODO el histórico una vez (crudo) y se re-mapea al año en consulta
    con recomputeMensual(), así cambiar de año no vuelve a pegarle a la red. */
@@ -619,6 +699,7 @@ function recomputeMensual(){
     try{_ordsRaw=await LCStore.getOrdenos()||[];}catch(_){_ordsRaw=[];}
     actualizarAniosDisponibles();
     recomputeMensual();
+    renderSemana();renderLecheKpis();   // ya hay ordeños cargados
   }catch(e){console.warn('Producción mensual: usando datos locales:',e.message||e);}
 })();
 
@@ -1438,7 +1519,8 @@ function animalAFila(a){
     if(typeof criaSeq!=='undefined'&&maxNum>criaSeq)criaSeq=maxNum;
     if(typeof altaSeq!=='undefined'&&maxNum>altaSeq)altaSeq=maxNum;
     hato=animales.filter(a=>a.grupo!=='baja').map(animalAFila);
-    renderHatoFiltros();renderHato();renderInicio();renderSanidadVacunas();
+    renderHatoFiltros();renderHato();renderSanidadVacunas();
+    renderSemana();renderLecheKpis();   // las filas del registro semanal son las vacas en ordeño
     if(typeof snack==='function')snack('Hato actualizado desde la base ('+hato.length+')');
   }catch(e){console.warn('Hato: usando datos locales (Supabase no disponible):',e.message||e);}
 })();
