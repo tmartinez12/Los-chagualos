@@ -254,6 +254,7 @@
       <!-- ============ REPRODUCCIÓN ============ -->
       <div class="page" id="pg-repro">
         <div class="kpis" id="reproKpis"></div>
+        <div id="reproResumen" class="card flat" style="display:none;margin-top:10px;font-size:13px;color:var(--ink-2);padding:12px;line-height:1.7"></div>
 
         <div class="section-label" style="margin-top:14px">Lista para la próxima palpación (se arma sola)</div>
         <div class="card">
@@ -267,7 +268,7 @@
         <div class="section-label" style="color:var(--red)" id="vaciasLabel">Vacas vacías</div>
         <div class="card" style="padding:8px">
           <table>
-            <thead><tr><th>Animal</th><th class="r">DEL</th><th class="r">Días vacía</th><th>Última palpación</th><th class="r">Último ordeño</th><th>Recomendación</th><th></th></tr></thead>
+            <thead><tr><th>Animal</th><th class="r">DEL</th><th class="r">Días abiertos</th><th>Última palpación</th><th class="r">Último ordeño</th><th>Recomendación</th><th></th></tr></thead>
             <tbody id="vaciasTbody"></tbody>
           </table>
         </div>
@@ -393,6 +394,11 @@
 
   <div class="p-label">Vaca</div>
   <div class="pchips" id="palpCows"></div>
+
+  <div class="p-label">Fecha de la palpación</div>
+  <input type="date" id="palpFecha"
+    style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);
+      font-family:inherit;font-size:14px;color:var(--ink);padding:10px 12px;outline:none;margin-bottom:6px">
 
   <div class="p-label">Anotación del veterinario</div>
   <div style="position:relative">

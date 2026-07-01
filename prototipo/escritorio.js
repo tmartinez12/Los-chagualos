@@ -5,6 +5,18 @@ const POTREROS_VISIBLE=false;
    corre antes de la línea donde se llena desde Supabase. */
 let animalesPorId={};
 let _palpaciones=[];   // todas las palpaciones (cache para la ficha y el historial)
+let _ultimoParto={};   // madre_id → fecha ISO del último parto
+let _partosPorMadre={};// madre_id → [fechas ISO] (para intervalo entre partos)
+function _diasEntre(isoA,isoB){return Math.round((new Date(isoA+'T00:00:00')-new Date(isoB+'T00:00:00'))/86400000);}
+/* días abiertos = días desde el último parto (si se conoce) */
+function _diasAbiertos(id){const f=_ultimoParto[id];if(!f)return null;const d=_diasEntre(isoHoy(),f);return d>=0?d:null;}
+/* intervalo promedio entre partos (en días) del hato */
+function _intervaloPartosProm(){
+  const gaps=[];
+  Object.values(_partosPorMadre).forEach(fs=>{if(!fs||fs.length<2)return;
+    const s=fs.slice().sort();for(let i=1;i<s.length;i++)gaps.push(_diasEntre(s[i],s[i-1]));});
+  return gaps.length?gaps.reduce((a,b)=>a+b,0)/gaps.length:null;
+}
 const titles={
   'pg-leche':['Producción de leche','Ordeño, histórico y días en leche'],
   'pg-hato':['Hato','Animales · unidad leche'],
@@ -1029,6 +1041,20 @@ function renderReproKpis(){
       '<div class="card kpi"><div class="k-label">Vacías &gt;120 días</div><div class="k-value'+(vacasVacias.filter(v=>v.decision).length?' down':'')+'">'+vacasVacias.filter(v=>v.decision).length+'</div><div class="k-trend mut">de '+vacasVacias.length+' vacías</div></div>'+
       '<div class="card kpi"><div class="k-label">Por palpar</div><div class="k-value'+(porPalpar?' down':'')+'">'+porPalpar+'</div><div class="k-trend mut">servidas y vacías por confirmar</div></div>';
   }
+  renderReproResumen();
+}
+/* indicadores de fertilidad del hato: días abiertos promedio + intervalo entre partos */
+function renderReproResumen(){
+  const box=document.getElementById('reproResumen');if(!box)return;
+  const abiertas=Object.values(animalesPorId||{}).filter(a=>a.sexo==='H'&&(a.estadoRepro==='vacia'||a.estadoRepro==='servida'));
+  const das=abiertas.map(a=>_diasAbiertos(a.id)).filter(d=>d!=null);
+  const daProm=das.length?Math.round(das.reduce((s,d)=>s+d,0)/das.length):null;
+  const iv=_intervaloPartosProm();
+  const parts=[];
+  if(daProm!=null)parts.push('Días abiertos promedio <b style="color:var(--ink)">'+daProm+' días</b> <span class="mut">(meta 90–110)</span>');
+  if(iv!=null)parts.push('Intervalo entre partos <b style="color:var(--ink)">'+(iv/30.44).toFixed(1)+' meses</b> <span class="mut">(meta 12–13)</span>');
+  if(!parts.length){box.style.display='none';return;}
+  box.style.display='';box.innerHTML=parts.join(' · ');
 }
 /* vacas vacías que requieren decisión */
 let vacasVacias=[];
@@ -1260,6 +1286,7 @@ function openPalp(cow){
   const info=palpCandidatas.find(x=>x.cow===palp.cow);
   document.getElementById('palpInfo').textContent=info?info.motivo:'Confirma el resultado de la palpación';
   document.getElementById('palpNota').value='';
+  const fIn=document.getElementById('palpFecha');if(fIn)fIn.value=isoHoy();   // por defecto hoy, editable
   renderPalpCows();renderPalpInterp();
   document.getElementById('palpScrim').classList.add('show');
   document.getElementById('palpModal').classList.add('show');
@@ -1276,6 +1303,8 @@ function savePalp(){
   const num=cow.split('·')[0].trim();
   const p=palp.parsed;if(!p)return;
   const nota=palp.nota.trim();
+  const fIn=document.getElementById('palpFecha');
+  const fechaPalp=(fIn&&fIn.value)?fIn.value:isoHoy();   // fecha real de la palpación
   closePalp();
   /* quitar de la lista de candidatas */
   const ci=palpCandidatas.findIndex(c=>c.cow===cow);
@@ -1286,11 +1315,11 @@ function savePalp(){
   let pSavePalp=Promise.resolve(),palpId=null;
   const reproAntes=animalesPorId[num]?snapshotReproDB(animalesPorId[num]):null;
   if(typeof LCStore!=='undefined'){
-    const campos={ultima_palpacion:isoHoy()};let prenezMeses=null;
+    const campos={ultima_palpacion:fechaPalp};let prenezMeses=null;
     if(p.tipo==='prenada'){const m=Math.round(p.meses);prenezMeses=m;
       campos.estado_repro='prenada';campos.prenez_meses=m;}
     else if(p.tipo==='vacia'){campos.estado_repro='vacia';campos.prenez_meses=null;}
-    pSavePalp=LCStore.registrarPalpacion({animalId:num,resultado:nota,
+    pSavePalp=LCStore.registrarPalpacion({animalId:num,resultado:nota,fecha:fechaPalp,
       motivo:removedCand?removedCand.motivo:null,prenezMeses:prenezMeses})
       .then(r=>{palpId=r&&r.id;return LCStore.updateAnimalCampos(num,campos);})
       .catch(e=>{console.warn('Palpación no guardada en la base:',e.message||e);
@@ -1406,6 +1435,11 @@ const fmtFechaCorta=LCRules.fmtFechaCorta;   // compartido en core/rules.js
     const porId={};animales.forEach(a=>porId[a.id]=a);
     const ref=id=>porId[id]?(id+' '+porId[id].nombre):id;
     const refPunto=id=>porId[id]?(id+' · '+porId[id].nombre):id;
+    /* fecha del último parto por madre (para días abiertos e intervalo entre partos) */
+    _ultimoParto={};_partosPorMadre={};
+    (partos||[]).forEach(p=>{if(!p.madre_id||!p.fecha)return;
+      (_partosPorMadre[p.madre_id]=_partosPorMadre[p.madre_id]||[]).push(p.fecha);
+      if(!_ultimoParto[p.madre_id]||p.fecha>_ultimoParto[p.madre_id])_ultimoParto[p.madre_id]=p.fecha;});
     /* próximos partos: preñadas con fecha estimada, más cercanas primero */
     proximosPartos=animales
       .filter(a=>a.estadoRepro==='prenada'&&a.prenez&&a.prenez.partoEstimado)
@@ -1420,10 +1454,11 @@ const fmtFechaCorta=LCRules.fmtFechaCorta;   // compartido en core/rules.js
           :'vacía'+(a.diasVacia?' hace '+a.diasVacia+' días':', confirmar estado')}));
     /* TODAS las vacas vacías (solo hembras); las de ≥120 días requieren decisión */
     vacasVacias=animales.filter(a=>a.sexo==='H'&&a.estadoRepro==='vacia')
-      .map(a=>{const decision=(a.diasVacia!=null&&a.diasVacia>=120);
+      .map(a=>{const daAb=_diasAbiertos(a.id);
+        const decision=(daAb!=null?daAb>=120:(a.diasVacia!=null&&a.diasVacia>=120));
         return {cow:refPunto(a.id),num:a.id,del:a.del,
         sub:(a.partos?ordinalParto(a.partos):'')+(a.raza?' · '+a.raza:''),
-        dias:a.diasVacia,ultima:fmtFechaCorta(a.ultimaPalpacion),
+        dias:daAb,ultima:fmtFechaCorta(a.ultimaPalpacion),
         ayer:(a.leche&&a.leche.ayer!=null?a.leche.ayer+' L':'—'),
         decision:decision,
         rec:decision?(a.del>300?'Lactancia extendida sin preñez — evaluar descarte':'Producción muy baja para su etapa — evaluar descarte')
