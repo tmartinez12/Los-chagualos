@@ -1038,7 +1038,7 @@ function renderReproKpis(){
     box.innerHTML=
       '<div class="card kpi"><div class="k-label">Preñez</div><div class="k-value">'+pct+'<span class="k-unit">%</span></div><div class="k-trend mut">'+pren+' de '+eleg.length+' elegibles</div></div>'+
       '<div class="card kpi"><div class="k-label">Preñadas</div><div class="k-value">'+pren+'</div><div class="k-trend mut">en el hato</div></div>'+
-      '<div class="card kpi"><div class="k-label">Vacías &gt;120 días</div><div class="k-value'+(vacasVacias.filter(v=>v.decision).length?' down':'')+'">'+vacasVacias.filter(v=>v.decision).length+'</div><div class="k-trend mut">de '+vacasVacias.length+' vacías</div></div>'+
+      '<div class="card kpi"><div class="k-label">Vacías &gt;120 días</div><div class="k-value'+(vacasVacias.filter(v=>v.decision).length?' down':'')+'">'+vacasVacias.filter(v=>v.decision).length+'</div><div class="k-trend mut">de '+vacasVacias.filter(v=>v.estado==='vacia').length+' vacías</div></div>'+
       '<div class="card kpi"><div class="k-label">Por palpar</div><div class="k-value'+(porPalpar?' down':'')+'">'+porPalpar+'</div><div class="k-trend mut">servidas y vacías por confirmar</div></div>';
   }
   renderReproResumen();
@@ -1076,15 +1076,18 @@ function renderPartos(){
 }
 function renderVacias(){
   const tb=document.getElementById('vaciasTbody');if(!tb)return;tb.innerHTML='';
-  if(!vacasVacias.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:16px;color:var(--ink-3)">No hay vacas vacías ahora.</td></tr>';}
+  if(!vacasVacias.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:16px;color:var(--ink-3)">No hay vacas por revisar ahora.</td></tr>';}
   vacasVacias.forEach(v=>{
     const tr=document.createElement('tr');
+    const servida=v.estado==='servida';
     const diasBadge=v.dias!=null?('<span class="badge'+(v.decision?' bad':'')+'">'+v.dias+' d</span>'):'—';
+    const ultimaTxt=v.ultima&&v.ultima!=='—'?(v.ultima+' → '+(servida?'servida':'vacía')):(servida?'servida (por confirmar)':'sin palpación');
+    const recColor=v.decision?'color:var(--red)':(servida?'color:var(--ink-2)':'color:var(--ink-3)');
     tr.innerHTML='<td><div class="cell-animal"><div class="cini">'+v.num+'</div><div><div class="cn">'+
       v.cow.split('·')[1].trim()+'</div><div class="cs">'+v.sub+'</div></div></div></td>'+
       '<td class="r">'+(v.del==null||v.del==='—'?'—':v.del)+'</td><td class="r">'+diasBadge+'</td>'+
-      '<td>'+(v.ultima&&v.ultima!=='—'?v.ultima+' → vacía':'sin palpación')+'</td><td class="r"><b>'+v.ayer+'</b></td>'+
-      '<td style="'+(v.decision?'color:var(--red)':'color:var(--ink-3)')+';font-size:12px">'+v.rec+'</td>'+
+      '<td>'+ultimaTxt+'</td><td class="r"><b>'+v.ayer+'</b></td>'+
+      '<td style="'+recColor+';font-size:12px">'+v.rec+'</td>'+
       '<td class="r" style="white-space:nowrap"><button class="btn outl small vPalp">Palpar</button> '+
       '<button class="btn outl small vSeca">Secar</button> '+
       '<button class="btn outl small vBaja" style="color:var(--red);border-color:var(--red)">Baja</button></td>';
@@ -1094,8 +1097,10 @@ function renderVacias(){
     tb.appendChild(tr);
   });
   const dec=vacasVacias.filter(v=>v.decision).length;
+  const serv=vacasVacias.filter(v=>v.estado==='servida').length;
   const lbl=document.getElementById('vaciasLabel');
-  if(lbl)lbl.textContent='Vacas vacías · '+vacasVacias.length+(dec?' ('+dec+' requiere'+(dec===1?'':'n')+' decisión)':'');
+  if(lbl){let extra=[];if(serv)extra.push(serv+' servida'+(serv===1?'':'s')+' por confirmar');if(dec)extra.push(dec+' requiere'+(dec===1?'':'n')+' decisión');
+    lbl.textContent='Vacas por revisar · '+vacasVacias.length+(extra.length?' ('+extra.join(' · ')+')':'');}
   refreshHeader();renderNavBadges();
 }
 
@@ -1365,7 +1370,7 @@ function savePalp(){
     let added=null;
     if(!vacasVacias.find(v=>v.cow===cow)){
       const num=cow.split('·')[0].trim();const fi=fichas[num];
-      added={cow:cow,num:num,del:fi?fi.del:'—',sub:fi?(fi.parto+'° parto · '+fi.raza):'—',
+      added={cow:cow,num:num,del:fi?fi.del:'—',sub:fi?(fi.parto+'° parto · '+fi.raza):'—',estado:'vacia',
         dias:1,ultima:fmtFechaCorta(isoHoy())+' '+new Date().getFullYear(),ayer:fi?fi.ayer+' L':'—',
         rec:p.subtipo==='fisiologica'?'Vacía fisiológica — programar servicio':'Vacía — evaluar siguiente paso'};
       vacasVacias.push(added);
@@ -1457,17 +1462,20 @@ const fmtFechaCorta=LCRules.fmtFechaCorta;   // compartido en core/rules.js
       .map(a=>({cow:refPunto(a.id),
         motivo:a.estadoRepro==='servida'?'servida, por confirmar'
           :'vacía'+(a.diasVacia?' hace '+a.diasVacia+' días':', confirmar estado')}));
-    /* TODAS las vacas vacías (solo hembras); las de ≥120 días requieren decisión */
-    vacasVacias=animales.filter(a=>a.sexo==='H'&&a.estadoRepro==='vacia')
+    /* Vacas por revisar: vacías + servidas por confirmar (solo hembras).
+       Las vacías de ≥120 días requieren decisión. */
+    vacasVacias=animales.filter(a=>a.sexo==='H'&&(a.estadoRepro==='vacia'||a.estadoRepro==='servida'))
       .map(a=>{const daAb=_diasAbiertos(a.id);
-        const decision=(daAb!=null?daAb>=120:(a.diasVacia!=null&&a.diasVacia>=120));
-        return {cow:refPunto(a.id),num:a.id,del:a.del,
+        const servida=a.estadoRepro==='servida';
+        const decision=(!servida)&&(daAb!=null?daAb>=120:(a.diasVacia!=null&&a.diasVacia>=120));
+        return {cow:refPunto(a.id),num:a.id,del:a.del,estado:a.estadoRepro,
         sub:(a.partos?ordinalParto(a.partos):'')+(a.raza?' · '+a.raza:''),
         dias:daAb,ultima:fmtFechaCorta(a.ultimaPalpacion),
         ayer:(a.leche&&a.leche.ayer!=null?a.leche.ayer+' L':'—'),
         decision:decision,
-        rec:decision?(a.del>300?'Lactancia extendida sin preñez — evaluar descarte':'Producción muy baja para su etapa — evaluar descarte')
-                    :'En rango — servir o confirmar con palpación'};})
+        rec:servida?'Servida — palpar para confirmar preñez'
+           :(decision?(a.del>300?'Lactancia extendida sin preñez — evaluar descarte':'Producción muy baja para su etapa — evaluar descarte')
+                     :'En rango — servir o confirmar con palpación')};})
       .sort((x,y)=>(y.dias||0)-(x.dias||0));
     /* partos recientes desde la tabla partos (vacío si no hay) */
     const GP={ternera:'Terneras',macho:'Machos'};

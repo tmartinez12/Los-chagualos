@@ -256,18 +256,14 @@
         <div class="kpis" id="reproKpis"></div>
         <div id="reproResumen" class="card flat" style="display:none;margin-top:10px;font-size:13px;color:var(--ink-2);padding:12px;line-height:1.7"></div>
 
-        <div class="section-label" style="margin-top:14px">Lista para la próxima palpación (se arma sola)</div>
-        <div class="card">
-          <div id="palpListaBox" style="font-size:13px;line-height:1.9;color:var(--ink-2)"></div>
-          <div style="display:flex;gap:8px;margin-top:14px">
-            <button class="btn filled small" onclick="openPalp()">Registrar palpación</button>
-          </div>
+        <div style="margin-top:14px">
+          <button class="btn filled small" onclick="openPalp()"><svg class="ic-s ic"><use href="#i-check"/></svg>Registrar palpación</button>
         </div>
 
-        <div class="section-label" style="color:var(--red)" id="vaciasLabel">Vacas vacías</div>
+        <div class="section-label" id="vaciasLabel" style="margin-top:14px">Vacas por revisar</div>
         <div class="card" style="padding:8px">
           <table>
-            <thead><tr><th>Animal</th><th class="r">DEL</th><th class="r">Días abiertos</th><th>Última palpación</th><th class="r">Último ordeño</th><th>Recomendación</th><th></th></tr></thead>
+            <thead><tr><th>Animal</th><th class="r">DEL</th><th class="r">Días abiertos</th><th>Última palpación</th><th class="r">Último ordeño</th><th>Estado / recomendación</th><th></th></tr></thead>
             <tbody id="vaciasTbody"></tbody>
           </table>
         </div>
