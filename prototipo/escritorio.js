@@ -908,6 +908,8 @@ function fmtEdadLarga(a){
   return (n%1===0?String(n):n.toFixed(1).replace('.',','))+' años';
 }
 function nombreRef(id){const x=animalesPorId[id];return x?(id+' '+x.nombre):id;}
+/* fecha corta CON año — para historiales que cruzan años ("17 feb 2025") */
+function fmtFechaAno(iso){if(!iso)return '—';return fmtFechaCorta(iso)+' '+String(iso).slice(0,4);}
 function deriveReproFicha(a){
   const retiroD=a.retiroLecheHasta?diasHasta(a.retiroLecheHasta):null;
   if(retiroD!=null&&retiroD>=0)return {badge:'bad',text:'Retiro de leche · '+retiroD+(retiroD===1?' día':' días')+' más',sub:'No vender su leche hasta terminar el retiro'};
@@ -932,7 +934,9 @@ function buildFichaBasica(a){
   if(a.prenez&&a.prenez.ultimaPalpacion){const d=new Date(a.prenez.ultimaPalpacion+'T00:00:00');
     historia.push({fecha:d.getDate()+' '+LCRules.MESC[d.getMonth()].toUpperCase()+' '+d.getFullYear(),texto:'Palpación: <b>preñada '+a.prenez.meses+' meses</b>'});}
   if(!sanOk)historia.push({fecha:'EN CURSO',texto:'Tratamiento con retiro de leche',miss:true});
-  if(a.partos)historia.push({fecha:'—',texto:a.partos+(a.partos===1?'er':'°')+' parto registrado'});
+  if(a.partos){const up=_ultimoParto[a.id];
+    const f=up?(new Date(up+'T00:00:00').getDate()+' '+LCRules.MESC[new Date(up+'T00:00:00').getMonth()].toUpperCase()+' '+up.slice(0,4)):'—';
+    historia.push({fecha:f,texto:a.partos+(a.partos===1?'er':'°')+' parto registrado'});}
   return {num:a.id,n:a.nombre,raza:a.raza||'—',color:a.color||null,nota:a.nota||null,edad:fmtEdadLarga(a),grupo:GRUPO_DISPLAY[a.grupo]||a.grupo,
     origen:a.origen==='comprado'?'Comprada':a.origen==='nacido_finca'?'Nació en finca':'—',
     procedencia:a.procedencia||null,valorCompra:a.valorCompra||null,
@@ -942,7 +946,7 @@ function buildFichaBasica(a){
     peso:a.pesoKg?a.pesoKg+' kg':'—',fechaPeso:a.fechaPeso||null,
     madre:a.madreId?nombreRef(a.madreId):'—',padre:a.padreId?nombreRef(a.padreId):'—',
     crias:crias,repro:deriveReproFicha(a),
-    sanidad:sanOk?'Sanidad al día — sin retiros activos':'Retiro de leche activo — no vender su leche',sanOk:sanOk,
+    sanidad:sanOk?'sin retiros activos':'retiro de leche activo — no vender su leche',sanOk:sanOk,
     historia:historia};
 }
 function goVaca(num,from){
@@ -982,7 +986,8 @@ function goVaca(num,from){
     '<div class="card kpi"><div class="k-label">Días abiertos</div><div class="k-value'+(cow.diasAbiertos>120?' down':'')+'">'+(cow.diasAbiertos!=null?cow.diasAbiertos:'—')+'</div>'+
       '<div class="k-trend mut">desde el último parto</div></div>'+
     '<div class="card kpi"><div class="k-label">Partos</div><div class="k-value">'+cow.parto+'</div>'+
-      '<div class="k-trend mut">registrados</div></div>';
+      '<div class="k-trend mut">'+(function(){const iv=intervaloPartosVaca(cow.num);
+        return iv!=null?'pare cada '+(iv/30.44).toFixed(1)+' m':(cow.parto===1?'primer parto':'registrados');})()+'</div></div>';
   /* datos del animal: identificación, cuerpo y familia */
   document.getElementById('vacaGenea').innerHTML=
     '<b style="color:var(--ink)">Nacimiento:</b> '+fmtNacimiento(animalesPorId[cow.num])+
@@ -1015,7 +1020,7 @@ function goVaca(num,from){
       .sort((x,y)=>String(y.fecha).localeCompare(String(x.fecha)));
     if(!ps.length)ptb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:12px;color:var(--ink-3)">Sin partos registrados.</td></tr>';
     ps.forEach(p=>{
-      ptb.innerHTML+='<tr><td>'+fmtFechaCorta(p.fecha)+'</td>'+
+      ptb.innerHTML+='<tr><td>'+fmtFechaAno(p.fecha)+'</td>'+
         '<td>'+(p.cria_id?('<b>'+p.cria_id+'</b> '+(animalesPorId[p.cria_id]?animalesPorId[p.cria_id].nombre:'')):'—')+'</td>'+
         '<td class="r">'+(p.sexo_cria==='H'?'♀':'♂')+'</td><td class="r">'+(p.peso_kg?p.peso_kg+' kg':'—')+'</td>'+
         '<td>'+(p.tipo||'normal')+'</td>'+
@@ -1031,9 +1036,9 @@ function goVaca(num,from){
     const lacts=produccionPorLactancia(cow.num);
     if(!lacts.length)ltb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:12px;color:var(--ink-3)">Sin partos registrados — la lactancia se agrupa de parto a parto.</td></tr>';
     lacts.forEach(L=>{
-      const estado=L.fin?('hasta '+fmtFechaCorta(L.fin)):'<span class="badge ok">en curso</span>';
+      const estado=L.fin?('hasta '+fmtFechaAno(L.fin)):'<span class="badge ok">en curso</span>';
       ltb.innerHTML+='<tr><td><b>Lactancia '+L.n+'</b></td>'+
-        '<td>parto '+fmtFechaCorta(L.inicio)+(String(L.inicio).length>=10?' '+String(L.inicio).slice(0,4):'')+'</td>'+
+        '<td>parto '+fmtFechaAno(L.inicio)+'</td>'+
         '<td>'+estado+'</td>'+
         '<td class="r"><b>'+(L.total?L.total.toLocaleString('es-CO')+' L':'—')+'</b></td>'+
         '<td class="r">'+(L.prom!=null?L.prom.toFixed(1)+' L/día ('+L.diasReg+' registros)':'sin ordeños')+'</td></tr>';
@@ -1052,30 +1057,41 @@ function goVaca(num,from){
     const enElAnio=(_tratamientosTodos||[]).filter(t=>String(t.animal_id)===String(cow.num)&&t.inicio&&new Date(t.inicio+'T00:00:00')>=hace12m).length;
     if(enElAnio>=3)lineas.push('<span style="color:var(--red)">⚠ '+enElAnio+' tratamientos en 12 meses — patrón a vigilar</span>');
     pasados.slice(0,4).forEach(t=>{
-      lineas.push('💊 '+fmtFechaCorta(t.inicio)+' · '+(t.problema||'')+(t.medicamento?' · '+t.medicamento.toLowerCase():'')+' <span style="color:var(--ink-3)">(terminado)</span>');});
+      lineas.push('💊 '+fmtFechaAno(t.inicio)+' · '+(t.problema||'')+(t.medicamento?' · '+t.medicamento.toLowerCase():'')+' <span style="color:var(--ink-3)">(terminado)</span>');});
     (_vacunaciones||[]).filter(v=>String(v.animal_id)===String(cow.num)||v.alcance==='hato').slice(0,3).forEach(v=>{
       lineas.push('💉 '+fmtFechaCorta(v.fecha)+' · '+v.tipo+(v.alcance==='hato'?' (todo el hato)':''));});
     if(lineas.length){sl.style.display='';sl.innerHTML=lineas.join('<br>');}
     else{sl.style.display='none';sl.innerHTML='';}
   }
-  /* produccion mensual individual */
+  /* producción mensual individual: solo los meses CON datos, con suma real
+     de los ordeños y los días realmente ordeñados (no los del calendario) */
   const md=mensualData.find(c=>c.num===num);
   const mtb=document.getElementById('vacaMensualTb');mtb.innerHTML='';
+  const lblM=document.getElementById('vacaMensualLabel');
+  if(lblM)lblM.textContent='Producción mensual · '+ANIO_SEL;
+  const diasRegMes={};(_ordsRaw||[]).forEach(o=>{if(String(o.animal_id)===String(num)){
+    const k=String(o.fecha).slice(0,7);diasRegMes[k]=(diasRegMes[k]||0)+1;}});
+  let filas=0,totalL=0,totalDias=0;
   if(md){
-    let total=0;
     md.m.forEach((v,i)=>{
+      const real=Math.round((md.sum&&md.sum[i])||0),dias=diasRegMes[MESES_INFO[i].key]||0;
+      if(v===null&&!dias)return;   // mes sin datos: no ensucia la tabla
+      filas++;totalL+=real;totalDias+=dias;
       const tr=document.createElement('tr');
-      if(v===null){tr.innerHTML='<td>'+MESES_L[i]+' '+MESES_INFO[i].year+'</td><td class="r pending">—</td><td class="r pending">—</td><td class="r pending">—</td><td class="sub">sin ordeño</td>';}
-      else{const t=Math.round(v*DIAS_MES[i]);total+=t;
-        tr.innerHTML='<td><b>'+MESES_L[i]+' '+MESES_INFO[i].year+'</b></td><td class="r">'+v.toFixed(1)+'</td><td class="r"><b>'+t+' L</b></td><td class="r">'+DIAS_MES[i]+'</td><td class="sub">'+(v<8?'bajo':'normal')+'</td>';}
-      tr.style.cursor='pointer';
-      tr.onclick=()=>{mensualMes=i;renderMesPicker();renderMensual();go('pg-leche',document.querySelector('[data-pg="pg-leche"]'));
-        document.querySelector('.content').scrollTop=document.getElementById('mesPicker').offsetTop-60;};
+      tr.innerHTML='<td><b>'+MESES_L[i]+' '+MESES_INFO[i].year+'</b></td><td class="r">'+(v!==null?v.toFixed(1):'—')+'</td>'+
+        '<td class="r"><b>'+real+' L</b></td><td class="r">'+dias+'</td><td class="sub">'+(v!==null&&v<8?'bajo':'normal')+'</td>';
+      tr.style.cursor='pointer';tr.title='Ver ese mes en la tabla de registro';
+      tr.onclick=()=>{const now=new Date();
+        MES_OFFSET=Math.min(0,(MESES_INFO[i].year-now.getFullYear())*12+(MESES_INFO[i].month-now.getMonth()));
+        setVistaRegistro('mes');go('pg-leche',document.querySelector('[data-pg="pg-leche"]'));};
       mtb.appendChild(tr);
     });
-    const avgM=md.m.filter(v=>v!==null);
+  }
+  if(!filas){mtb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:12px;color:var(--ink-3)">Sin ordeños registrados en '+ANIO_SEL+'.</td></tr>';}
+  else{
     const trT=document.createElement('tr');trT.style.cssText='font-weight:700;background:var(--surface)';
-    trT.innerHTML='<td>Total</td><td class="r">'+(avgM.length?(avgM.reduce((a,b)=>a+b,0)/avgM.length).toFixed(1):'—')+'</td><td class="r">'+total+' L</td><td class="r">'+DIAS_MES.slice(0,md.m.filter(v=>v!==null).length).reduce((a,b)=>a+b,0)+'</td><td></td>';
+    trT.innerHTML='<td>Total</td><td class="r">'+(totalDias?(totalL/totalDias).toFixed(1):'—')+'</td>'+
+      '<td class="r">'+totalL+' L</td><td class="r">'+totalDias+'</td><td></td>';
     mtb.appendChild(trT);
   }
 }
@@ -1528,7 +1544,7 @@ function renderVacaPalpaciones(num){
   ps.forEach(p=>{
     const esPren=(p.prenez_meses!=null)||/pre/i.test(p.resultado||'');
     const res=p.resultado||(esPren?'preñada':'vacía');
-    tb.innerHTML+='<tr><td>'+(typeof fmtFechaCorta==='function'?fmtFechaCorta(p.fecha):p.fecha)+'</td>'+
+    tb.innerHTML+='<tr><td>'+fmtFechaAno(p.fecha)+'</td>'+
       '<td><span class="badge'+(esPren?' ok':'')+'">'+res+'</span></td>'+
       '<td class="r">'+(p.prenez_meses!=null?p.prenez_meses+' m':'—')+'</td>'+
       '<td style="font-size:12px;color:var(--ink-3)">'+(p.motivo||'')+'</td></tr>';
