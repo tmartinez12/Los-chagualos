@@ -239,9 +239,9 @@
   <!-- ============ HATO ============ -->
   <div class="screen" id="scr-hato">
     <div class="kpi-row" style="margin-top:4px">
-      <div class="kpi"><div class="k-label">Animales</div><div class="k-value">80</div></div>
-      <div class="kpi"><div class="k-label">En ordeño</div><div class="k-value">26</div></div>
-      <div class="kpi"><div class="k-label">Preñadas</div><div class="k-value">19</div></div>
+      <div class="kpi"><div class="k-label">Animales</div><div class="k-value" id="hmTotal">—</div></div>
+      <div class="kpi"><div class="k-label">En ordeño</div><div class="k-value" id="hmOrdeno">—</div></div>
+      <div class="kpi"><div class="k-label">Preñadas</div><div class="k-value" id="hmPrenadas">—</div></div>
     </div>
 
     <div class="section-label">Grupos del hato · toca uno para ver sus animales</div>
@@ -249,70 +249,43 @@
       <div class="list-item" onclick="openGroup('ordeno')">
         <div class="li-leading"><svg class="ic"><use href="#i-drop"/></svg></div>
         <div class="li-body"><div class="li-title">Vacas en ordeño</div>
-          <div class="li-sub">Ayer: 11,4 L/vaca · DEL promedio: 164</div></div>
-        <div class="li-trail"><div class="li-num">26</div></div><svg class="ic chev"><use href="#i-chev"/></svg>
+          <div class="li-sub" id="hsub-ordeno"></div></div>
+        <div class="li-trail"><div class="li-num" id="cnt-ordeno">0</div></div><svg class="ic chev"><use href="#i-chev"/></svg>
       </div>
       <div class="list-item" onclick="openGroup('horras')">
         <div class="li-leading"><svg class="ic"><use href="#i-cal"/></svg></div>
         <div class="li-body"><div class="li-title">Vacas horras (secas)</div>
-          <div class="li-sub">6 paren antes de octubre</div></div>
-        <div class="li-trail"><div class="li-num">9</div></div><svg class="ic chev"><use href="#i-chev"/></svg>
+          <div class="li-sub" id="hsub-horras"></div></div>
+        <div class="li-trail"><div class="li-num" id="cnt-horras">0</div></div><svg class="ic chev"><use href="#i-chev"/></svg>
       </div>
       <div class="list-item" onclick="openGroup('novillas')">
         <div class="li-leading"><svg class="ic"><use href="#i-tag"/></svg></div>
         <div class="li-body"><div class="li-title">Novillas de vientre</div>
-          <div class="li-sub">4 con peso para servicio</div></div>
-        <div class="li-trail"><div class="li-num">14</div></div><svg class="ic chev"><use href="#i-chev"/></svg>
+          <div class="li-sub" id="hsub-novillas"></div></div>
+        <div class="li-trail"><div class="li-num" id="cnt-novillas">0</div></div><svg class="ic chev"><use href="#i-chev"/></svg>
       </div>
       <div class="list-item" onclick="openGroup('levante')">
         <div class="li-leading"><svg class="ic"><use href="#i-leaf"/></svg></div>
         <div class="li-body"><div class="li-title">Hembras de levante</div>
-          <div class="li-sub">Peso mensual al día</div></div>
-        <div class="li-trail"><div class="li-num">18</div></div><svg class="ic chev"><use href="#i-chev"/></svg>
+          <div class="li-sub" id="hsub-levante"></div></div>
+        <div class="li-trail"><div class="li-num" id="cnt-levante">0</div></div><svg class="ic chev"><use href="#i-chev"/></svg>
       </div>
       <div class="list-item" onclick="openGroup('terneras')">
         <div class="li-leading"><svg class="ic"><use href="#i-sprout"/></svg></div>
         <div class="li-body"><div class="li-title">Terneras</div>
-          <div class="li-sub">2 destetes próximos</div></div>
-        <div class="li-trail"><div class="li-num">11</div></div><svg class="ic chev"><use href="#i-chev"/></svg>
+          <div class="li-sub" id="hsub-terneras"></div></div>
+        <div class="li-trail"><div class="li-num" id="cnt-terneras">0</div></div><svg class="ic chev"><use href="#i-chev"/></svg>
       </div>
       <div class="list-item" onclick="openGroup('machos')">
         <div class="li-leading"><svg class="ic"><use href="#i-male"/></svg></div>
         <div class="li-body"><div class="li-title">Machos / toros</div>
-          <div class="li-sub">Sansón + 1 torete</div></div>
-        <div class="li-trail"><div class="li-num">2</div></div><svg class="ic chev"><use href="#i-chev"/></svg>
+          <div class="li-sub" id="hsub-machos"></div></div>
+        <div class="li-trail"><div class="li-num" id="cnt-machos">0</div></div><svg class="ic chev"><use href="#i-chev"/></svg>
       </div>
     </div>
 
-    <div class="section-label">Histórico</div>
-    <div class="list">
-      <div class="list-item" onclick="openGroup('bajas')">
-        <div class="li-leading"><svg class="ic"><use href="#i-out"/></svg></div>
-        <div class="li-body"><div class="li-title">Bajas · vendidas, muertas, perdidas</div>
-          <div class="li-sub">Animales que salieron del hato — quedan en el histórico</div></div>
-        <div class="li-trail"><div class="li-num">7</div></div><svg class="ic chev"><use href="#i-chev"/></svg>
-      </div>
-    </div>
-
-    <div class="section-label">Inventario del hato</div>
-    <div class="card">
-      <div class="row" style="background:var(--surface);border:1px solid var(--border);
-        border-radius:100px;padding:9px 14px;margin-bottom:10px;color:var(--ink-3)">
-        <svg class="ic-s ic"><use href="#i-search"/></svg>
-        <span style="font-size:13px">Buscar por número o nombre…</span>
-      </div>
-      <div class="chips">
-        <button class="chip sel" onclick="snack('Mostrando todos los animales')">Todas</button>
-        <button class="chip" onclick="snack('Filtro: 19 preñadas')">Preñadas</button>
-        <button class="chip" onclick="snack('Filtro: 5 vacías >120 DEL')">Vacías</button>
-        <button class="chip" onclick="snack('Filtro: 1 en tratamiento')">En tratamiento</button>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <button class="btn text small" style="flex:1;justify-content:center"
-          onclick="snack('Cada animal abre su ficha')">Ver la lista completa</button>
-        <button class="btn outl small" onclick="openNuevaVaca()">＋ Vaca nueva</button>
-        <button class="btn outl small" onclick="snack('Exportado: inventario_hato_jun2026.xlsx')"><svg class="ic-s ic"><use href="#i-export"/></svg></button>
-      </div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn filled" style="flex:1;justify-content:center" onclick="openNuevaVaca()">＋ Registrar animal</button>
     </div>
 
     <div style="display:flex;gap:8px;margin-top:12px">
@@ -326,12 +299,10 @@
   <!-- ============ REPRODUCCIÓN ============ -->
   <div class="screen" id="scr-repro">
     <div class="kpi-row" style="margin-top:4px">
-      <div class="kpi"><div class="k-label">Preñez</div><div class="k-value">73<span class="k-unit">%</span></div></div>
-      <div class="kpi"><div class="k-label">Entre partos</div><div class="k-value">14,2<span class="k-unit">m</span></div></div>
-      <div class="kpi"><div class="k-label">Vacías >120d</div><div class="k-value down" id="kpiVacias">2</div></div>
+      <div class="kpi"><div class="k-label">Preñez</div><div class="k-value" id="kpiPrenez">—<span class="k-unit">%</span></div></div>
+      <div class="kpi"><div class="k-label">Entre partos</div><div class="k-value" id="kpiIntervalo">—<span class="k-unit">m</span></div></div>
+      <div class="kpi"><div class="k-label">Vacías >120d</div><div class="k-value down" id="kpiVacias">0</div></div>
     </div>
-
-    <div class="card" id="reproToroM" style="display:flex;gap:12px;align-items:center"></div>
 
     <div class="card flat" style="display:flex;gap:10px;align-items:center;padding:12px 14px;cursor:pointer"
       onclick="go('scr-partos')">
@@ -544,11 +515,11 @@
     <button class="btn filled" style="width:100%;justify-content:center;margin-top:2px" onclick="openParto()">
       <svg class="ic-s ic"><use href="#i-sprout"/></svg>Registrar un parto</button>
 
-    <div class="alert info" style="margin-top:12px">
+    <div class="alert info" id="partoProxAlerta" style="margin-top:12px;display:none">
       <div class="a-icon"><svg class="ic"><use href="#i-cal"/></svg></div>
       <div class="a-body">
-        <div class="a-title">011 “Violeta” pare en ~3 semanas</div>
-        <div class="a-sub">Confirma el secado y pásala al potrero de maternidad. Tras parir entra al ordeño en DEL 0.</div>
+        <div class="a-title" id="partoProxTitulo"></div>
+        <div class="a-sub">Confirma el secado a tiempo. Tras parir entra al ordeño en DEL 0.</div>
       </div>
     </div>
 

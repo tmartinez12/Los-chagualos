@@ -72,6 +72,23 @@ const grupos={
 };
 /* sin demo: las listas de cada grupo arrancan vacías y se llenan desde Supabase */
 Object.keys(grupos).forEach(k=>{grupos[k].animales=[];});
+/* landing del hato móvil: KPIs y contadores por grupo desde datos reales */
+function renderHatoM(){
+  const A=Object.values(animalesPorIdM);if(!A.length)return;
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  set('hmTotal',A.filter(a=>a.grupo!=='baja').length);
+  set('hmOrdeno',A.filter(a=>a.grupo==='ordeño').length);
+  set('hmPrenadas',A.filter(a=>a.estadoRepro==='prenada').length);
+  const cnt={};A.forEach(a=>{const k=GRUPO_KEY[a.grupo];if(k)cnt[k]=(cnt[k]||0)+1;});
+  ['ordeno','horras','novillas','levante','terneras','machos'].forEach(k=>set('cnt-'+k,cnt[k]||0));
+  const ordeno=A.filter(a=>a.grupo==='ordeño'),dels=ordeno.map(a=>a.del).filter(d=>typeof d==='number');
+  set('hsub-ordeno',dels.length?('DEL promedio '+Math.round(dels.reduce((s,d)=>s+d,0)/dels.length)):(ordeno.length+' vacas'));
+  set('hsub-horras',A.filter(a=>a.grupo==='horra'&&a.estadoRepro==='prenada').length+' preñadas');
+  set('hsub-novillas',A.filter(a=>a.grupo==='novilla'&&a.pesoKg>=330).length+' con peso para servicio');
+  set('hsub-levante',A.filter(a=>a.grupo==='levante').length+' hembras');
+  set('hsub-terneras',A.filter(a=>a.grupo==='ternera'&&a.desteteProximo).length+' con destete próximo');
+  set('hsub-machos',A.filter(a=>a.grupo==='macho').map(a=>a.nombre).slice(0,2).join(', ')||'sin machos');
+}
 function openGroup(k){const g=grupos[k];
   titles['scr-grupo']=[g.nombre,g.sub];
   document.getElementById('grpHeader').innerHTML=g.header;
@@ -184,7 +201,7 @@ function renderFicha(num){
   if(a.partos)ev.push([a.partos+(a.partos===1?'er':'°')+' parto registrado',null]);
   const hist=document.getElementById('vmHistoria');
   hist.innerHTML=ev.length?ev.map((e,i)=>'<div class="tl-item"'+(i===ev.length-1?' style="padding-bottom:0"':'')+'>'+
-    '<div class="tl-date">'+(e[1]?fmtFechaCortaM(e[1]).toUpperCase()+' 2026':'—')+'</div>'+
+    '<div class="tl-date">'+(e[1]?fmtFechaCortaM(e[1]).toUpperCase()+' '+String(e[1]).slice(0,4):'—')+'</div>'+
     '<div class="tl-text">'+e[0]+'</div></div>').join(''):'<div class="tl-item" style="padding-bottom:0"><div class="tl-text" style="color:var(--ink-2)">Sin eventos registrados todavía</div></div>';
   return true;
 }
@@ -413,7 +430,7 @@ let animalesPorIdM={};
     Object.keys(grupos).forEach(k=>{const n=grupos[k].animales.length;
       grupos[k].sub=n+' '+GRUPO_LABEL[k];
       grupos[k].header='<b>'+n+' '+GRUPO_LABEL[k]+'.</b>';});
-    renderInicioM();renderSanidadVacunasM();
+    renderInicioM();renderSanidadVacunasM();renderHatoM();
   }catch(e){console.warn('Cache/hato móvil:',e.message||e);}
 })();
 /* animal canónico (BD) → tarjeta de ordeño de la móvil */
@@ -768,17 +785,24 @@ const fechaParto=LCRules.fechaParto;
     animales.filter(a=>a.estadoRepro==='servida'||a.estadoRepro==='vacia').forEach(a=>{
       palpCandidatas[refP(a.id)]=a.estadoRepro==='servida'?'servida, por confirmar'
         :'vacía'+(a.diasVacia?' hace '+a.diasVacia+' días':', confirmar estado');});
-    /* toro y resumen de partos (datos reales) */
     const A=Object.values(animalesPorIdM);
-    const toro=A.find(a=>a.grupo==='macho'&&a.rolToro)||A.find(a=>a.grupo==='macho');
-    const tEl=document.getElementById('reproToroM');
-    if(tEl){ if(toro){const hijas=A.filter(x=>x.padreId===toro.id).length;
-      tEl.innerHTML='<div class="li-leading"><svg class="ic"><use href="#i-male"/></svg></div>'+
-        '<div style="flex:1"><div style="font-size:14px;font-weight:700">'+toro.id+' · '+toro.nombre+' — toro</div>'+
-        '<div style="font-size:12px;color:var(--ink-2)">'+(toro.edadAnios?Math.round(toro.edadAnios)+' años · ':'')+'monta natural'+(hijas?' · '+hijas+' hijas':'')+'</div></div>';
-      } else tEl.innerHTML='<div style="font-size:12.5px;color:var(--ink-3);padding:6px">Sin toro registrado.</div>'; }
+    /* KPIs reproductivos reales: preñez % e intervalo entre partos */
+    const eleg=A.filter(a=>a.sexo==='H'&&['ordeño','horra','novilla'].includes(a.grupo));
+    const pren=eleg.filter(a=>a.estadoRepro==='prenada').length;
+    const kPz=document.getElementById('kpiPrenez');
+    if(kPz)kPz.innerHTML=(eleg.length?Math.round(pren/eleg.length*100):0)+'<span class="k-unit">%</span>';
+    /* intervalo entre partos (meses) desde las fechas reales */
+    const porMadre={};(partosDB||[]).forEach(p=>{if(p.madre_id&&p.fecha)(porMadre[p.madre_id]=porMadre[p.madre_id]||[]).push(p.fecha);});
+    const gaps=[];Object.values(porMadre).forEach(fs=>{if(fs.length<2)return;const s=fs.slice().sort();
+      for(let i=1;i<s.length;i++)gaps.push((new Date(s[i])-new Date(s[i-1]))/86400000);});
+    const kIv=document.getElementById('kpiIntervalo');
+    if(kIv)kIv.innerHTML=(gaps.length?(gaps.reduce((a,b)=>a+b,0)/gaps.length/30.44).toFixed(1).replace('.',','):'—')+'<span class="k-unit">m</span>';
     const pEl=document.getElementById('reproPartosM');
     if(pEl)pEl.textContent=porParir+' por parir'+(proximosPartos[0]?' · próximo '+proximosPartos[0].short:'');
+    /* alerta del próximo parto (real, no fija) */
+    const pa=document.getElementById('partoProxAlerta'),pt=document.getElementById('partoProxTitulo');
+    if(pa&&pt){ if(proximosPartos[0]){pa.style.display='';pt.textContent=proximosPartos[0].cow.replace(' · ',' ')+' — próximo parto '+proximosPartos[0].short;}
+      else pa.style.display='none'; }
     renderPartos();renderVacias();renderPalpListaM();
   }catch(e){console.warn('Reproducción móvil: usando datos locales:',e.message||e);}
 })();
