@@ -509,8 +509,42 @@ function renderSanidadVacunasM(){
       el.querySelector('.a-title').textContent='Brucelosis: '+t.length+' ternera'+(t.length>1?'s':'')+' en ventana';
       el.querySelector('.a-sub').textContent=t.slice(0,6).map(x=>x.id).join(', ')+' · vacuna única entre los 3 y 8 meses';
     }else el.style.display='none';}
-  const mes=new Date().getMonth(),cal=document.getElementById('sanCalendarioM');
-  if(cal)Array.prototype.forEach.call(cal.children,(c,i)=>c.classList.toggle('now',i===mes));
+  renderSanCalendarioM();renderSanProximaM();
+}
+const PROTOCOLO_SAN_M={despar:[0,3,6,9],aftosa:[4,10]};
+let _vacunacionesM=[];
+function _ultimaVacM(tipo){const v=(_vacunacionesM||[]).filter(x=>x.tipo===tipo&&x.fecha).sort((a,b)=>a.fecha<b.fecha?1:-1);return v.length?v[0].fecha:null;}
+function renderSanCalendarioM(){
+  const cal=document.getElementById('sanCalendarioM');if(!cal)return;
+  const now=new Date(),mesActual=now.getMonth();
+  const hecho={};(_vacunacionesM||[]).forEach(v=>{if(!v.fecha||new Date(v.fecha).getFullYear()!==now.getFullYear())return;
+    const m=parseInt(String(v.fecha).slice(5,7),10)-1;(hecho[m]=hecho[m]||new Set()).add(v.tipo);});
+  const ABR={aftosa:'aftosa',desparasitacion:'despar.',brucelosis:'brucel.',vitaminas:'vitam.',otra:'otra'};
+  let h='';
+  for(let m=0;m<12;m++){
+    const plan=[];if(PROTOCOLO_SAN_M.despar.includes(m))plan.push('despar.');if(PROTOCOLO_SAN_M.aftosa.includes(m))plan.push('aftosa');
+    const hh=hecho[m]?[...hecho[m]].map(t=>ABR[t]||t):[];
+    const cls='pot'+(hh.length?'':' off')+(m===mesActual?' now':'');
+    const cap=hh.length?'<span style="color:var(--green);font-weight:700">✓ '+hh.join(' + ')+'</span>':(plan.length?plan.join(' + '):'—');
+    h+='<div class="'+cls+'"><div class="p-top"><span class="p-name">'+LCRules.MESC[m].toUpperCase()+'</span>'+
+       (plan.length&&!hh.length?'<span class="dot"></span>':'')+'</div><div class="p-cap" style="margin-top:6px">'+cap+'</div></div>';
+  }
+  cal.innerHTML=h;
+}
+function renderSanProximaM(){
+  const tit=document.getElementById('sanProximaTituloM'),sub=document.getElementById('sanProximaSubM');if(!tit||!sub)return;
+  const hoy=new Date();hoy.setHours(0,0,0,0);const cands=[];
+  const ud=_ultimaVacM('desparasitacion');
+  if(ud){const d=new Date(ud+'T00:00:00');d.setMonth(d.getMonth()+3);cands.push({t:'Desparasitación',f:d,b:'última: '+fmtFechaCortaM(ud)});}
+  else cands.push({t:'Desparasitación',f:hoy,b:'sin registro aún'});
+  const ua=_ultimaVacM('aftosa');
+  {let prox=null;for(const m of [4,10,16,22]){const d=new Date(hoy.getFullYear(),m,1);
+    const ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    if(d>=hoy&&(!ua||ym>String(ua).slice(0,7))){prox=d;break;}}
+   if(prox)cands.push({t:'Aftosa (ciclo ICA)',f:prox,b:ua?('última: '+fmtFechaCortaM(ua)):'sin registro aún'});}
+  cands.sort((a,b)=>a.f-b.f);const p=cands[0],venc=p.f<=hoy;
+  tit.innerHTML='Próxima: '+p.t+(venc?' · ya toca':' · ~'+p.f.getDate()+' '+LCRules.MESC[p.f.getMonth()]);
+  sub.textContent=p.b+' · despar. cada 3 meses · aftosa may/nov';
 }
 /* ===== Vacunaciones (móvil) ===== */
 const vacM={tipo:'aftosa',alcance:'hato',animal:'',producto:'',lote:''};
@@ -540,9 +574,12 @@ function saveVacunaM(){
   snack('Vacunación registrada: '+vacM.tipo+(individual?(animalId?' · '+animalId:''):' · todo el hato'));
 }
 function renderVacunacionesM(lista){
+  if(lista)_vacunacionesM=lista;
+  renderSanCalendarioM();renderSanProximaM();
   const box=document.getElementById('vacListaHistM');if(!box)return;
-  if(!lista||!lista.length){box.innerHTML='<span style="color:var(--ink-3)">Aún no hay vacunaciones registradas.</span>';return;}
-  box.innerHTML=lista.slice(0,8).map(v=>{
+  const arr=_vacunacionesM||[];
+  if(!arr.length){box.innerHTML='<span style="color:var(--ink-3)">Aún no hay vacunaciones registradas.</span>';return;}
+  box.innerHTML=arr.slice(0,8).map(v=>{
     const quien=v.alcance==='individual'
       ?((v.animales&&v.animales.nombre)?v.animal_id+' '+v.animales.nombre:(v.animal_id||'animal'))
       :('todo el hato'+(v.n_animales?' ('+v.n_animales+')':''));
@@ -571,7 +608,7 @@ function confirmMove(){
   });
 }
 /* sincronización offline: cuántos registros faltan por subir */
-let pendientes=3;
+let pendientes=0;
 function updateSync(){const c=document.getElementById('syncChip');if(!c)return;
   c.textContent=pendientes>0?(pendientes+' sin subir'):'al día ✓';
   c.classList.toggle('pending',pendientes>0);}

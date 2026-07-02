@@ -420,14 +420,13 @@
       <div class="row">
         <svg class="ic" style="color:var(--ink-2)"><use href="#i-shield"/></svg>
         <div style="flex:1">
-          <div style="font-size:14.5px;font-weight:700">Próxima: desparasitación + vitaminas</div>
-          <div style="font-size:12px;color:var(--ink-2)">Programa de vacunación del hato</div>
+          <div style="font-size:14.5px;font-weight:700" id="sanProximaTituloM">Próxima vacunación</div>
+          <div style="font-size:12px;color:var(--ink-2)" id="sanProximaSubM">Se calcula del protocolo y de lo registrado</div>
         </div>
       </div>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button class="btn filled small" style="flex:1;justify-content:center"
-          onclick="snack('Tarea de sanidad creada')">Crear tarea</button>
-        <button class="btn text small" onclick="snack('Fecha de tarea actualizada')">Cambiar fecha</button>
+          onclick="openVacunaM()"><svg class="ic-s ic"><use href="#i-shield"/></svg>Registrar vacunación</button>
       </div>
     </div>
 
@@ -441,20 +440,7 @@
     </div>
 
     <div class="section-label">Calendario de vacunación · protocolo</div>
-    <div class="pgrid" id="sanCalendarioM" style="grid-template-columns:repeat(4,1fr)">
-      <div class="pot off"><div class="p-name">ENE</div><div class="p-cap" style="margin-top:6px">despar.</div></div>
-      <div class="pot off"><div class="p-name">FEB</div><div class="p-cap" style="margin-top:6px">—</div></div>
-      <div class="pot off"><div class="p-name">MAR</div><div class="p-cap" style="margin-top:6px">—</div></div>
-      <div class="pot off"><div class="p-name">ABR</div><div class="p-cap" style="margin-top:6px">despar.</div></div>
-      <div class="pot warn"><div class="p-top"><span class="p-name">MAY</span><span class="dot"></span></div><div class="p-cap" style="margin-top:6px">aftosa</div></div>
-      <div class="pot off"><div class="p-name">JUN</div><div class="p-cap" style="margin-top:6px">—</div></div>
-      <div class="pot off"><div class="p-name">JUL</div><div class="p-cap" style="margin-top:6px">despar.</div></div>
-      <div class="pot off"><div class="p-name">AGO</div><div class="p-cap" style="margin-top:6px">—</div></div>
-      <div class="pot off"><div class="p-name">SEP</div><div class="p-cap" style="margin-top:6px">—</div></div>
-      <div class="pot off"><div class="p-name">OCT</div><div class="p-cap" style="margin-top:6px">despar.</div></div>
-      <div class="pot warn"><div class="p-top"><span class="p-name">NOV</span><span class="dot"></span></div><div class="p-cap" style="margin-top:6px">aftosa</div></div>
-      <div class="pot off"><div class="p-name">DIC</div><div class="p-cap" style="margin-top:6px">—</div></div>
-    </div>
+    <div class="pgrid" id="sanCalendarioM" style="grid-template-columns:repeat(4,1fr)"></div>
 
     <div class="list mt12">
       <div class="list-item" onclick="snack('Protocolos: aftosa ICA may/nov · brucelosis 3-8 meses · desparasitación cada 3 meses · baño garrapaticida — se configuran una vez')">
