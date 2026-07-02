@@ -52,7 +52,7 @@
     const mesesDeriv = (r.prenez_meses_actual != null) ? r.prenez_meses_actual : r.prenez_meses;
     return {
       id: r.id, nombre: r.nombre, unidad: r.unidad_id, especie: r.especie,
-      raza: r.raza, color: r.color, grupo: r.grupo, sexo: r.sexo,
+      raza: r.raza, color: r.color, nota: r.nota, grupo: r.grupo, sexo: r.sexo,
       edadAnios: (r.edad_calc != null) ? r.edad_calc : r.edad_anios, nacimiento: r.nacimiento, origen: r.origen,
       del: delDerivado, partos: r.partos, inicioLactancia: r.inicio_lactancia,
       leche: { ayer: lecheDerivada, hoy: r.leche_hoy },
@@ -79,7 +79,7 @@
      * secar_estimado y retiro_leche_hasta se DERIVAN en la vista v_animales
      * (no se guardan, para no tener dos verdades que se contradigan). */
     const o = {
-      id: a.id, nombre: a.nombre, raza: a.raza, color: a.color || null, grupo: a.grupo, sexo: a.sexo,
+      id: a.id, nombre: a.nombre, raza: a.raza, color: a.color || null, nota: a.nota || null, grupo: a.grupo, sexo: a.sexo,
       edad_anios: a.edadAnios, nacimiento: a.nacimiento || null, origen: a.origen || null,
       partos: a.partos ?? 0,
       leche_hoy: a.leche ? a.leche.hoy : null,

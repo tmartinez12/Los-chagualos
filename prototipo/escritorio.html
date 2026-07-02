@@ -206,13 +206,19 @@
               ＋ Registrar evento</button>
           </div>
         </div>
+        <div class="section-label" style="margin-top:18px">Producción por lactancia (de parto a parto)</div>
+        <div class="card" style="padding:8px;overflow-x:auto">
+          <table><thead><tr><th>Lactancia</th><th>Inicio</th><th>Fin</th><th class="r">Total L</th><th class="r">Promedio</th></tr></thead>
+          <tbody id="vacaLactTb"></tbody></table>
+        </div>
+
         <div class="section-label" style="margin-top:18px">Producción mensual</div>
         <div class="card" style="padding:8px;overflow-x:auto">
           <table><thead><tr><th>Mes</th><th class="r">L/día prom</th><th class="r">Total L</th><th class="r">Días ordeño</th><th>Nota</th></tr></thead>
           <tbody id="vacaMensualTb"></tbody></table>
         </div>
 
-        <div class="section-label" style="margin-top:18px">Partos de esta vaca</div>
+        <div class="section-label" style="margin-top:18px" id="vacaPartosLabel">Partos de esta vaca</div>
         <div class="card" style="padding:8px;overflow-x:auto">
           <table><thead><tr><th>Fecha</th><th>Cría</th><th class="r">Sexo</th><th class="r">Peso</th><th>Tipo</th><th class="r">Resultado</th></tr></thead>
           <tbody id="vacaPartosTb"></tbody></table>

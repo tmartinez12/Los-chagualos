@@ -167,7 +167,7 @@ function renderFicha(num){
   document.getElementById('vmGenea').innerHTML='<b style="color:var(--ink)">Nacimiento:</b> '+fmtNacimientoM(a)+'<br>'+
     '<b style="color:var(--ink)">Madre:</b> '+madre+
     ' &nbsp;·&nbsp; <b style="color:var(--ink)">Padre:</b> '+padre+
-    '<br><b style="color:var(--ink)">Crías:</b> '+(crias.length?crias.join(', '):'sin crías registradas');
+    '<br><b style="color:var(--ink)">Crías:</b> '+(crias.length?crias.join(', '):'sin crías registradas')+(a.nota?'<br><b style="color:var(--ink)">📝 Nota:</b> '+a.nota:'');
   /* curva */
   renderFichaCurva(a.del||0,ayer);
   document.getElementById('vmCurvaSub').textContent='Pico típico ~DEL 55 · hoy va en DEL '+(a.del==null?'—':a.del);
@@ -192,13 +192,14 @@ const editM={};
 function openEditVaca(){
   const num=fichaActualM;const a=num&&animalesPorIdM[num];
   if(!a){snack('Abre una ficha primero');return;}
-  editM.num=num;editM.nombre=a.nombre||'';editM.raza=a.raza||'';editM.color=a.color||'';
+  editM.num=num;editM.nombre=a.nombre||'';editM.raza=a.raza||'';editM.color=a.color||'';editM.nota=a.nota||'';
   editM.nacimiento=a.nacimiento||'';editM.peso=(a.pesoKg!=null?a.pesoKg:'');
   editM.inicio=a.inicioLactancia||'';editM.leche=(a.leche&&a.leche.ayer!=null?a.leche.ayer:'');
   document.getElementById('editCow').textContent=(a.id+' · '+a.nombre).toUpperCase();
   document.getElementById('editNombre').value=editM.nombre;
   document.getElementById('editRaza').value=editM.raza;
   const ec=document.getElementById('editColor');if(ec)ec.value=editM.color;
+  const en=document.getElementById('editNota');if(en)en.value=editM.nota;
   document.getElementById('editNac').value=editM.nacimiento||'';
   document.getElementById('editPeso').value=editM.peso;
   document.getElementById('editInicio').value=editM.inicio||'';
@@ -213,15 +214,16 @@ function saveEditVaca(){
   const nombre=(editM.nombre||'').trim()||a.nombre;
   const raza=(editM.raza||'').trim()||null;
   const color=(editM.color||'').trim()||null;
+  const nota=(editM.nota||'').trim()||null;
   const nacimiento=editM.nacimiento||null;
   const peso=(editM.peso!==''&&editM.peso!=null)?parseFloat(editM.peso):null;
   const inicio=editM.inicio||null;
   const leche=(editM.leche!==''&&editM.leche!=null)?parseFloat(editM.leche):null;
   closeEdit();
-  const campos={nombre:nombre,raza:raza,color:color,nacimiento:nacimiento,inicio_lactancia:inicio};
+  const campos={nombre:nombre,raza:raza,color:color,nota:nota,nacimiento:nacimiento,inicio_lactancia:inicio};
   if(peso!=null&&!isNaN(peso)){campos.peso_kg=peso;campos.fecha_peso=isoHoyM();}
   const delCalc=inicio?Math.max(0,Math.round((new Date()-new Date(inicio+'T00:00:00'))/86400000)):a.del;
-  Object.assign(a,{nombre:nombre,raza:raza,color:color,nacimiento:nacimiento,inicioLactancia:inicio,del:delCalc});
+  Object.assign(a,{nombre:nombre,raza:raza,color:color,nota:nota,nacimiento:nacimiento,inicioLactancia:inicio,del:delCalc});
   a.leche=a.leche||{};if(leche!=null&&!isNaN(leche))a.leche.ayer=leche;
   if(peso!=null&&!isNaN(peso)){a.pesoKg=peso;a.fechaPeso=isoHoyM();}
   /* refrescar la entrada del hato y la tarjeta de ordeño */

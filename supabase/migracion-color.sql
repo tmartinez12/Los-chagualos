@@ -1,12 +1,14 @@
 -- =============================================================================
--- Los Chagualos · Agregar el COLOR del animal
+-- Los Chagualos · Agregar COLOR y NOTA del animal
 -- =============================================================================
--- Nueva columna animales.color (texto libre: "negra", "pinta roja", etc.).
+-- Nuevas columnas animales.color ("negra", "pinta roja"…) y animales.nota
+-- (texto libre: "patea al ordeño", "propensa a mastitis"…).
 -- La vista v_animales usa a.*, pero las columnas nuevas NO entran solas a una
 -- vista ya creada: hay que recrearla. Idempotente (se puede correr 2 veces).
 -- =============================================================================
 
 ALTER TABLE animales ADD COLUMN IF NOT EXISTS color TEXT;
+ALTER TABLE animales ADD COLUMN IF NOT EXISTS nota TEXT;
 
 DROP VIEW IF EXISTS v_animales CASCADE;
 CREATE VIEW v_animales AS

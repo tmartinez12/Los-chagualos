@@ -17,6 +17,29 @@ function _intervaloPartosProm(){
     const s=fs.slice().sort();for(let i=1;i<s.length;i++)gaps.push(_diasEntre(s[i],s[i-1]));});
   return gaps.length?gaps.reduce((a,b)=>a+b,0)/gaps.length:null;
 }
+/* intervalo entre partos de UNA vaca (días); null si tiene menos de 2 partos */
+function intervaloPartosVaca(id){
+  const fs=(_partosPorMadre[id]||[]).slice().sort();
+  if(fs.length<2)return null;
+  const gaps=[];for(let i=1;i<fs.length;i++)gaps.push(_diasEntre(fs[i],fs[i-1]));
+  return gaps.reduce((a,b)=>a+b,0)/gaps.length;
+}
+/* producción por lactancia: los ordeños agrupados entre parto y parto.
+   Devuelve [{n, inicio, fin(null=en curso), total, diasReg, prom}] reciente primero. */
+function produccionPorLactancia(id){
+  const fechas=(_partosPorMadre[id]||[]).slice().sort();
+  if(!fechas.length)return [];
+  const ords=(_ordsRaw||[]).filter(o=>String(o.animal_id)===String(id));
+  const out=[];
+  for(let i=0;i<fechas.length;i++){
+    const ini=fechas[i],fin=(i+1<fechas.length)?fechas[i+1]:null;
+    const enRango=ords.filter(o=>o.fecha>=ini&&(!fin||o.fecha<fin));
+    const total=enRango.reduce((s,o)=>s+(Number(o.litros)||0),0);
+    out.push({n:i+1,inicio:ini,fin:fin,total:Math.round(total),diasReg:enRango.length,
+      prom:enRango.length?total/enRango.length:null});
+  }
+  return out.reverse();
+}
 const titles={
   'pg-leche':['Producción de leche','Ordeño, histórico y días en leche'],
   'pg-hato':['Hato','Animales · unidad leche'],
@@ -910,7 +933,7 @@ function buildFichaBasica(a){
     historia.push({fecha:d.getDate()+' '+LCRules.MESC[d.getMonth()].toUpperCase()+' '+d.getFullYear(),texto:'Palpación: <b>preñada '+a.prenez.meses+' meses</b>'});}
   if(!sanOk)historia.push({fecha:'EN CURSO',texto:'Tratamiento con retiro de leche',miss:true});
   if(a.partos)historia.push({fecha:'—',texto:a.partos+(a.partos===1?'er':'°')+' parto registrado'});
-  return {num:a.id,n:a.nombre,raza:a.raza||'—',color:a.color||null,edad:fmtEdadLarga(a),grupo:GRUPO_DISPLAY[a.grupo]||a.grupo,
+  return {num:a.id,n:a.nombre,raza:a.raza||'—',color:a.color||null,nota:a.nota||null,edad:fmtEdadLarga(a),grupo:GRUPO_DISPLAY[a.grupo]||a.grupo,
     origen:a.origen==='comprado'?'Comprada':a.origen==='nacido_finca'?'Nació en finca':'—',
     procedencia:a.procedencia||null,valorCompra:a.valorCompra||null,
     del:(a.del==null?0:a.del),parto:a.partos||0,ayer:(a.leche&&a.leche.ayer!=null?a.leche.ayer:0),
@@ -967,7 +990,8 @@ function goVaca(num,from){
     ' &nbsp;·&nbsp; <b style="color:var(--ink)">Peso:</b> '+cow.peso+(cow.fechaPeso?' <span style="color:var(--ink-3)">('+fmtFechaCorta(cow.fechaPeso)+')</span>':'')+'<br>'+
     (cow.procedencia||cow.valorCompra?'<b style="color:var(--ink)">Compra:</b> '+(cow.procedencia||'')+(cow.valorCompra?' · $'+Number(cow.valorCompra).toLocaleString('es-CO'):'')+'<br>':'')+
     '<b style="color:var(--ink)">Madre:</b> '+cow.madre+' &nbsp;·&nbsp; <b style="color:var(--ink)">Padre:</b> '+cow.padre+
-    '<br><b style="color:var(--ink)">Crías:</b> '+(cow.crias.length?cow.crias.join(', '):'sin crías registradas');
+    '<br><b style="color:var(--ink)">Crías:</b> '+(cow.crias.length?cow.crias.join(', '):'sin crías registradas')+
+    (cow.nota?'<br><b style="color:var(--ink)">📝 Nota:</b> '+cow.nota:'');
   /* curva de lactancia (modelo de Wood) */
   renderVacaCurva(cow.del,cow.ayer);
   document.getElementById('vacaCurvaSub').textContent='Hoy va en DEL '+cow.del+' · pico típico ~DEL 55 · '+cow.parto+(cow.parto===1?'er':'°')+' parto';
@@ -984,7 +1008,7 @@ function goVaca(num,from){
   });
   /* historial de palpaciones de esta vaca */
   if(typeof renderVacaPalpaciones==='function')renderVacaPalpaciones(cow.num);
-  /* partos de esta vaca (de la tabla partos) */
+  /* partos de esta vaca (de la tabla partos) + su intervalo entre partos */
   const ptb=document.getElementById('vacaPartosTb');
   if(ptb){ptb.innerHTML='';
     const ps=(_partosRaw||[]).filter(p=>String(p.madre_id)===String(cow.num))
@@ -997,13 +1021,38 @@ function goVaca(num,from){
         '<td>'+(p.tipo||'normal')+'</td>'+
         '<td class="r"><span class="badge '+(p.estado_cria==='viva'?'ok':'bad')+'">'+(p.estado_cria==='viva'?'viva':'mortinato')+'</span></td></tr>';
     });
+    const lblP=document.getElementById('vacaPartosLabel');
+    if(lblP){const iv=intervaloPartosVaca(cow.num);
+      lblP.textContent='Partos de esta vaca'+(iv!=null?' · pare cada '+(iv/30.44).toFixed(1)+' meses (meta 12–13)':'');}
   }
-  /* sanidad de esta vaca: tratamientos activos + vacunaciones que la cubren */
+  /* producción por lactancia (la medida real de la vaca) */
+  const ltb=document.getElementById('vacaLactTb');
+  if(ltb){ltb.innerHTML='';
+    const lacts=produccionPorLactancia(cow.num);
+    if(!lacts.length)ltb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:12px;color:var(--ink-3)">Sin partos registrados — la lactancia se agrupa de parto a parto.</td></tr>';
+    lacts.forEach(L=>{
+      const estado=L.fin?('hasta '+fmtFechaCorta(L.fin)):'<span class="badge ok">en curso</span>';
+      ltb.innerHTML+='<tr><td><b>Lactancia '+L.n+'</b></td>'+
+        '<td>parto '+fmtFechaCorta(L.inicio)+(String(L.inicio).length>=10?' '+String(L.inicio).slice(0,4):'')+'</td>'+
+        '<td>'+estado+'</td>'+
+        '<td class="r"><b>'+(L.total?L.total.toLocaleString('es-CO')+' L':'—')+'</b></td>'+
+        '<td class="r">'+(L.prom!=null?L.prom.toFixed(1)+' L/día ('+L.diasReg+' registros)':'sin ordeños')+'</td></tr>';
+    });
+  }
+  /* sanidad de esta vaca: activos + historial de enfermedades + vacunas */
   const sl=document.getElementById('vacaSanidadLista');
   if(sl){
     const lineas=[];
     (tratamientos||[]).filter(t=>String(t.num)===String(cow.num)).forEach(t=>{
       lineas.push('💊 <b style="color:var(--ink)">'+t.desc+'</b>'+(t.retiro?' · <span style="color:var(--red)">'+t.retiro+'</span>':' · sin retiro'));});
+    const pasados=(_tratamientosTodos||[]).filter(t=>!t.activo&&String(t.animal_id)===String(cow.num))
+      .sort((x,y)=>String(y.inicio).localeCompare(String(x.inicio)));
+    /* patrón: 3+ tratamientos en los últimos 12 meses = vaca repetidora */
+    const hace12m=new Date();hace12m.setMonth(hace12m.getMonth()-12);
+    const enElAnio=(_tratamientosTodos||[]).filter(t=>String(t.animal_id)===String(cow.num)&&t.inicio&&new Date(t.inicio+'T00:00:00')>=hace12m).length;
+    if(enElAnio>=3)lineas.push('<span style="color:var(--red)">⚠ '+enElAnio+' tratamientos en 12 meses — patrón a vigilar</span>');
+    pasados.slice(0,4).forEach(t=>{
+      lineas.push('💊 '+fmtFechaCorta(t.inicio)+' · '+(t.problema||'')+(t.medicamento?' · '+t.medicamento.toLowerCase():'')+' <span style="color:var(--ink-3)">(terminado)</span>');});
     (_vacunaciones||[]).filter(v=>String(v.animal_id)===String(cow.num)||v.alcance==='hato').slice(0,3).forEach(v=>{
       lineas.push('💉 '+fmtFechaCorta(v.fecha)+' · '+v.tipo+(v.alcance==='hato'?' (todo el hato)':''));});
     if(lineas.length){sl.style.display='';sl.innerHTML=lineas.join('<br>');}
@@ -1161,12 +1210,14 @@ function tratamientoAFila(t){
     retiro:conRetiro?'retiro de leche hasta '+fmtFechaCorta(t.retiro_leche_hasta):'',
     badge:conRetiro?'retiro '+retiroD+'d':'sin retiro',badgeCls:conRetiro?'bad':'ok'};
 }
+let _tratamientosTodos=[];   // historial completo (activos y terminados) para la ficha
 (async function cargarTratamientosDesdeSupabase(){
   if(typeof LCStore==='undefined')return;
   try{
-    const ts=await LCStore.getTratamientos(true);
+    const ts=await LCStore.getTratamientos();   // TODOS
     if(!ts)return;
-    tratamientos=ts.map(tratamientoAFila);
+    _tratamientosTodos=ts;
+    tratamientos=ts.filter(t=>t.activo).map(tratamientoAFila);
     renderTratamientos();
   }catch(e){console.warn('Tratamientos: usando datos locales:',e.message||e);}
 })();
@@ -1820,7 +1871,7 @@ function openEditarVaca(num){
   const a=animalesPorId[num];
   if(!a){snack('No tengo los datos de '+num+' desde la base — sincroniza primero');return;}
   editState.num=num;
-  editState.nombre=a.nombre||'';editState.raza=a.raza||'';editState.color=a.color||'';
+  editState.nombre=a.nombre||'';editState.raza=a.raza||'';editState.color=a.color||'';editState.nota=a.nota||'';
   editState.nacimiento=a.nacimiento||'';editState.peso=(a.pesoKg!=null?a.pesoKg:'');
   editState.inicio=a.inicioLactancia||'';editState.leche=(a.leche&&a.leche.ayer!=null?a.leche.ayer:'');
   openReg('Editar datos de '+num,'La producción se calcula de los ordeños y del inicio de lactancia');
@@ -1834,6 +1885,7 @@ function openEditarVaca(num){
   body.appendChild(regHint('El DEL se calcula solo desde esta fecha (hoy − inicio de lactancia).'));
   body.appendChild(regTexto('Leche de ayer (L)','registra el ordeño de ayer',v=>editState.leche=v,'number',editState.leche));
   body.appendChild(regHint('“Leche de ayer” crea un registro de ordeño; lo demás (promedios, histórico) se calcula solo.'));
+  body.appendChild(regTexto('Nota 📝','Ej. patea al ordeño, propensa a mastitis…',v=>editState.nota=v,'text',editState.nota));
   document.getElementById('regSaveBtn').onclick=guardarEditarVaca;
 }
 function diasDesdeReal(iso){if(!iso)return null;const d=new Date(iso+'T00:00:00');return Math.max(0,Math.round((new Date()-d)/86400000));}
@@ -1843,17 +1895,18 @@ function guardarEditarVaca(){
   const nombre=(editState.nombre||'').trim()||a.nombre;
   const raza=(editState.raza||'').trim()||null;
   const color=(editState.color||'').trim()||null;
+  const nota=(editState.nota||'').trim()||null;
   const nacimiento=editState.nacimiento||null;
   const peso=(editState.peso!==''&&editState.peso!=null)?parseFloat(editState.peso):null;
   const inicio=editState.inicio||null;
   const leche=(editState.leche!==''&&editState.leche!=null)?parseFloat(editState.leche):null;
   closeReg();
   /* persistir datos básicos + inicio de lactancia (fuente del DEL) */
-  const campos={nombre:nombre,raza:raza,color:color,nacimiento:nacimiento,inicio_lactancia:inicio};
+  const campos={nombre:nombre,raza:raza,color:color,nota:nota,nacimiento:nacimiento,inicio_lactancia:inicio};
   if(peso!=null&&!isNaN(peso)){campos.peso_kg=peso;campos.fecha_peso=isoHoy();}
   /* DEL y leche se DERIVAN: actualizo la caché para reflejarlo de inmediato */
   const delCalc=inicio?diasDesdeReal(inicio):a.del;
-  Object.assign(a,{nombre:nombre,raza:raza,color:color,nacimiento:nacimiento,inicioLactancia:inicio,del:delCalc});
+  Object.assign(a,{nombre:nombre,raza:raza,color:color,nota:nota,nacimiento:nacimiento,inicioLactancia:inicio,del:delCalc});
   a.leche=a.leche||{};if(leche!=null&&!isNaN(leche))a.leche.ayer=leche;
   if(peso!=null&&!isNaN(peso)){a.pesoKg=peso;a.fechaPeso=isoHoy();}
   if(fichas[num]){fichas[num].n=nombre;fichas[num].raza=raza;if(peso!=null&&!isNaN(peso))fichas[num].peso=peso+' kg';}

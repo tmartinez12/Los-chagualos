@@ -58,6 +58,7 @@ CREATE TABLE animales (
   especie             TEXT NOT NULL DEFAULT 'bovino',
   raza                TEXT,
   color               TEXT,
+  nota                TEXT,                  -- nota libre ("patea al ordeño"…)
   grupo               grupo_animal NOT NULL,
   sexo                sexo_animal NOT NULL,
   edad_anios          NUMERIC(5,2),
