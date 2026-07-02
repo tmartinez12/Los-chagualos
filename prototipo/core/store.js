@@ -50,24 +50,26 @@
     const secarDeriv = (r.secar_calc != null) ? r.secar_calc : r.secar_estimado;
     const diasVaciaDeriv = (r.dias_vacia_calc != null) ? r.dias_vacia_calc : r.dias_vacia;
     const mesesDeriv = (r.prenez_meses_actual != null) ? r.prenez_meses_actual : r.prenez_meses;
+    const edadDeriv = (r.edad_calc != null) ? r.edad_calc : r.edad_anios;
     return {
       id: r.id, nombre: r.nombre, unidad: r.unidad_id, especie: r.especie,
       raza: r.raza, color: r.color, nota: r.nota, grupo: r.grupo, sexo: r.sexo,
-      edadAnios: (r.edad_calc != null) ? r.edad_calc : r.edad_anios, nacimiento: r.nacimiento, origen: r.origen,
+      edadAnios: edadDeriv, nacimiento: r.nacimiento, origen: r.origen,
       del: delDerivado, partos: r.partos, inicioLactancia: r.inicio_lactancia,
-      leche: { ayer: lecheDerivada, hoy: r.leche_hoy },
+      leche: { ayer: lecheDerivada },
       estadoRepro: r.estado_repro,
       prenez: (r.prenez_meses != null || partoEstDeriv)
         ? { meses: mesesDeriv, partoEstimado: partoEstDeriv, ultimaPalpacion: r.ultima_palpacion }
         : null,
       diasVacia: diasVaciaDeriv, ultimaPalpacion: r.ultima_palpacion,
-      listaServicio: r.lista_servicio, secarEstimado: secarDeriv,
+      secarEstimado: secarDeriv,
       retiroLecheHasta: retiroDerivado,
       madreId: r.madre_id, padreId: r.padre_id,
       pesoKg: r.peso_kg, fechaPeso: r.fecha_peso, gananciaDiaG: r.ganancia_dia_g,
-      desteteProximo: r.destete_proximo, rolToro: r.rol_toro,
-      montaNatural: r.monta_natural, hijasVivas: r.hijas_vivas,
-      sanidadAlDia: r.sanidad_al_dia, ventaProgramada: r.venta_programada,
+      rolToro: r.rol_toro,
+      /* DERIVADOS (antes columnas): lista para servicio y destete próximo */
+      listaServicio: (r.grupo === 'novilla' && r.peso_kg != null && Number(r.peso_kg) >= 330),
+      desteteProximo: (r.grupo === 'ternera' && edadDeriv != null && edadDeriv >= 0.58),
       baja: r.baja_motivo ? { motivo: r.baja_motivo, fecha: r.baja_fecha, valor: r.baja_valor, nota: r.baja_nota } : null,
       procedencia: r.procedencia, valorCompra: r.valor_compra,
     };
@@ -81,16 +83,12 @@
     const o = {
       id: a.id, nombre: a.nombre, raza: a.raza, color: a.color || null, nota: a.nota || null, grupo: a.grupo, sexo: a.sexo,
       edad_anios: a.edadAnios, nacimiento: a.nacimiento || null, origen: a.origen || null,
-      partos: a.partos ?? 0,
-      leche_hoy: a.leche ? a.leche.hoy : null,
       estado_repro: a.estadoRepro || null,
       prenez_meses: a.prenez ? a.prenez.meses : null,
       ultima_palpacion: a.ultimaPalpacion || (a.prenez ? a.prenez.ultimaPalpacion : null) || null,
-      lista_servicio: a.listaServicio ?? null,
       madre_id: a.madreId || null, padre_id: a.padreId || null,
       peso_kg: a.pesoKg ?? null, fecha_peso: a.fechaPeso || null,
       ganancia_dia_g: a.gananciaDiaG ?? null,
-      destete_proximo: a.desteteProximo ?? null,
       procedencia: a.procedencia || null, valor_compra: a.valorCompra ?? null,
       inicio_lactancia: a.inicioLactancia || null,
     };
@@ -201,7 +199,7 @@
       id: t.id || ('T-' + Date.now()), animal_id: t.animalId,
       problema: t.problema, medicamento: t.medicamento || null,
       inicio: t.inicio || new Date().toISOString().slice(0, 10),
-      dias_retiro: t.diasRetiro || 0, retiro_leche_hasta: t.retiroLecheHasta || null,
+      dias_retiro: t.diasRetiro || 0,   // el retiro va hasta inicio + dias_retiro (derivado)
       activo: true,
     };
     const { data, error } = await client().from('tratamientos').insert(fila).select().single();
@@ -306,12 +304,21 @@
 
   async function getTratamientos(soloActivos) {
     let q = client().from('tratamientos')
-      .select('id, animal_id, problema, medicamento, inicio, dias_retiro, retiro_leche_hasta, activo, animales(nombre)')
+      .select('id, animal_id, problema, medicamento, inicio, dias_retiro, activo, animales(nombre)')
       .order('inicio', { ascending: false });
     if (soloActivos) q = q.eq('activo', true);
     const { data, error } = await q;
     if (error) throw error;
-    return data || [];
+    /* retiro_leche_hasta se DERIVA (inicio + dias_retiro); se agrega al vuelo
+     * para que la UI siga leyendo el mismo campo de siempre. */
+    return (data || []).map(t => {
+      if (t.inicio && t.dias_retiro > 0) {
+        const d = new Date(t.inicio + 'T00:00:00');
+        d.setDate(d.getDate() + t.dias_retiro);
+        t.retiro_leche_hasta = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      } else t.retiro_leche_hasta = null;
+      return t;
+    });
   }
 
   async function terminarTratamiento(id) {

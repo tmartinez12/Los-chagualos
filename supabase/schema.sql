@@ -65,16 +65,13 @@ CREATE TABLE animales (
   nacimiento          DATE,
   origen              origen_animal,
 
-  -- Lactancia (DEL y "leche de ayer" se DERIVAN en la vista v_animales)
+  -- Lactancia (DEL, "leche de ayer" y el CONTEO de partos se DERIVAN en v_animales)
   inicio_lactancia    DATE,                  -- DEL = hoy − inicio_lactancia
-  partos              INTEGER NOT NULL DEFAULT 0,
-  leche_hoy           NUMERIC(6,1),
 
   -- Reproducción (parto_estimado, dias_vacia y secar se DERIVAN en v_animales)
   estado_repro        estado_repro,
   prenez_meses        NUMERIC(4,1),
   ultima_palpacion    DATE,
-  lista_servicio      BOOLEAN,
 
   -- Genealogía
   madre_id            TEXT REFERENCES animales(id),
@@ -85,13 +82,8 @@ CREATE TABLE animales (
   fecha_peso          DATE,
   ganancia_dia_g      NUMERIC(6,1),
 
-  -- Ternera / macho
-  destete_proximo     BOOLEAN,
+  -- Macho (el toro designado; hijas/destete/lista-servicio se derivan)
   rol_toro            BOOLEAN,
-  monta_natural       BOOLEAN,
-  hijas_vivas         INTEGER,
-  sanidad_al_dia      BOOLEAN,
-  venta_programada    DATE,
 
   -- Baja
   baja_motivo         motivo_baja,
@@ -169,8 +161,7 @@ CREATE TABLE tratamientos (
   problema            TEXT NOT NULL,
   medicamento         TEXT,
   inicio              DATE NOT NULL,
-  dias_retiro         INTEGER,
-  retiro_leche_hasta  DATE,
+  dias_retiro         INTEGER,               -- el retiro va hasta inicio + dias_retiro (derivado)
   activo              BOOLEAN NOT NULL DEFAULT TRUE,
   nota                TEXT,
   registrado_por      UUID REFERENCES profiles(id),
@@ -301,6 +292,7 @@ ALTER TABLE profiles            DISABLE ROW LEVEL SECURITY;
 -- nunca guarda estos valores: así no hay dos verdades que se contradigan.
 CREATE VIEW v_animales AS
 SELECT a.*,
+  (SELECT count(*)::int FROM partos p WHERE p.madre_id = a.id) AS partos,
   CASE WHEN a.nacimiento IS NOT NULL
        THEN round(((CURRENT_DATE - a.nacimiento) / 365.25)::numeric, 1) END AS edad_calc,
   CASE WHEN a.inicio_lactancia IS NOT NULL
@@ -308,9 +300,9 @@ SELECT a.*,
   ( SELECT o.litros FROM ordenos o
     WHERE o.animal_id = a.id AND o.turno = 'dia'
     ORDER BY o.fecha DESC LIMIT 1 ) AS leche_ultima,
-  ( SELECT max(t.retiro_leche_hasta) FROM tratamientos t
-    WHERE t.animal_id = a.id AND t.activo
-      AND t.retiro_leche_hasta >= CURRENT_DATE ) AS retiro_calc,
+  ( SELECT max(t.inicio + t.dias_retiro) FROM tratamientos t
+    WHERE t.animal_id = a.id AND t.activo AND t.dias_retiro > 0
+      AND (t.inicio + t.dias_retiro) >= CURRENT_DATE ) AS retiro_calc,
   CASE WHEN a.estado_repro = 'prenada' AND a.prenez_meses IS NOT NULL AND a.ultima_palpacion IS NOT NULL
        THEN (a.ultima_palpacion + (round((9 - a.prenez_meses))::int * INTERVAL '1 month'))::date END AS parto_estimado_calc,
   CASE WHEN a.estado_repro = 'prenada' AND a.prenez_meses IS NOT NULL AND a.ultima_palpacion IS NOT NULL

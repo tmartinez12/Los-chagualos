@@ -927,7 +927,8 @@ function deriveReproFicha(a){
   if(a.estadoRepro==='vacia'){const da=(typeof _diasAbiertos==='function'?_diasAbiertos(a.id):null)??a.diasVacia;
     return {badge:'bad',text:'Vacía'+(da?' · '+da+' días abiertos':''),sub:da>120?'Evaluar descarte o tratamiento reproductivo':'Esperar para servicio'};}
   if(a.grupo==='novilla')return {badge:a.listaServicio?'warn':'',text:a.listaServicio?'Novilla lista para servicio':'Novilla en desarrollo',sub:a.pesoKg?a.pesoKg+' kg':''};
-  if(a.grupo==='macho'&&a.rolToro)return {badge:'',text:'Toro reproductor activo',sub:(a.hijasVivas?a.hijasVivas+' hijas vivas':'')};
+  if(a.grupo==='macho'&&a.rolToro){const h=Object.values(animalesPorId).filter(x=>x.padreId===a.id&&x.grupo!=='baja').length;
+    return {badge:'',text:'Toro reproductor activo',sub:(h?h+' hijas en la finca':'')};}
   return {badge:'',text:a.grupo,sub:''};
 }
 function buildFichaBasica(a){
@@ -1350,7 +1351,7 @@ function aplicarTratamientos(num,nombre,trats,contexto){
   /* persistir en la BD (sanidad lee de Supabase); el undo abajo es solo local */
   if(typeof LCStore!=='undefined'){
     LCStore.registrarTratamiento({animalId:num,problema:'Aplicado en palpación',
-      medicamento:trats.join(', '),diasRetiro:0,retiroLecheHasta:null})
+      medicamento:trats.join(', '),diasRetiro:0})
       .then(r=>{if(r&&r.id)reg.id=r.id;}).catch(()=>{});
   }
   /* queda en la historia clínica de la ficha del animal */
@@ -1771,9 +1772,11 @@ function deriveRepro(a){
   if(a.grupo==='levante'){const g=a.gananciaDiaG?' · '+a.gananciaDiaG+' g/día':'';
     return a.pesoKg?'<span class="sub">'+a.pesoKg+' kg'+g+'</span>':'';}
   if(a.grupo==='ternera')return a.desteteProximo?'<span class="badge warn">destete próximo</span>':'';
-  if(a.grupo==='macho')return a.rolToro
-    ?'<span class="badge">toro activo'+(a.hijasVivas?' · '+a.hijasVivas+' hijas':'')+'</span>'
-    :(a.ventaProgramada?'<span class="sub">venta programada</span>':'');
+  if(a.grupo==='macho'){
+    if(!a.rolToro)return '';
+    const h=Object.values(animalesPorId).filter(x=>x.padreId===a.id&&x.grupo!=='baja').length;
+    return '<span class="badge">toro activo'+(h?' · '+h+' hijas':'')+'</span>';
+  }
   return '';
 }
 function deriveTags(a){
@@ -1984,8 +1987,7 @@ function saveTrata(){
   go('pg-sanitario',navFor('pg-sanitario'));
   if(typeof LCStore!=='undefined'){
     LCStore.registrarTratamiento({animalId:tratState.num,problema:tratState.problema,
-      medicamento:tratState.medicina,diasRetiro:tratState.retiro,
-      retiroLecheHasta:conRetiro?isoMasDias(tratState.retiro):null}).catch(e=>{
+      medicamento:tratState.medicina,diasRetiro:tratState.retiro}).catch(e=>{
       console.warn('Tratamiento no guardado en la base:',e.message||e);
       snack('⚠ Tratamiento guardado local, falta sincronizar');});
   }

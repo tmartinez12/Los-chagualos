@@ -137,7 +137,8 @@ function deriveReproFichaM(a){
   if(a.estadoRepro==='servida')return {cls:'',title:'Servida · por palpar',sub:'Confirmar preñez en la próxima palpación'};
   if(a.estadoRepro==='vacia')return {cls:'bad',title:'Vacía'+(a.diasVacia?' '+a.diasVacia+' días':''),sub:a.diasVacia>120?'Evaluar descarte o tratamiento reproductivo':'Esperar para servicio'};
   if(a.grupo==='novilla')return {cls:'',title:a.listaServicio?'Novilla lista para servicio':'Novilla en desarrollo',sub:a.pesoKg?a.pesoKg+' kg':''};
-  if(a.grupo==='macho'&&a.rolToro)return {cls:'',title:'Toro reproductor activo',sub:a.hijasVivas?a.hijasVivas+' hijas vivas':''};
+  if(a.grupo==='macho'&&a.rolToro){const h=Object.values(animalesPorIdM).filter(x=>x.padreId===a.id&&x.grupo!=='baja').length;
+  return {cls:'',title:'Toro reproductor activo',sub:h?h+' hijas en la finca':''};}
   return {cls:'',title:GRUPO_DISPLAY_M[a.grupo]||a.grupo,sub:''};
 }
 let fichaActualM=null;
@@ -333,7 +334,7 @@ function subAnimalM(a){
     case 'novilla':return edadTextoM(a)+(a.pesoKg?' · '+a.pesoKg+' kg':'')+(a.listaServicio?' · lista para servicio':'');
     case 'levante':return edadTextoM(a)+(a.pesoKg?' · '+a.pesoKg+' kg':'')+(a.gananciaDiaG?' · '+a.gananciaDiaG+' g/día':'');
     case 'ternera':return edadTextoM(a)+(a.desteteProximo?' · destete próximo':'');
-    case 'macho':return a.rolToro?('Toro · '+edadTextoM(a)+(a.sanidadAlDia?' · sanidad al día':'')):(edadTextoM(a)+(a.ventaProgramada?' · venta programada':''));
+    case 'macho':return (a.rolToro?'Toro · ':'')+edadTextoM(a);
     case 'baja':return a.baja?((a.baja.motivo||'').toUpperCase()+(a.baja.fecha?' · '+fmtFechaCortaM(a.baja.fecha):'')+(a.baja.nota?' · '+a.baja.nota:'')):'baja';
   }
   return '';
@@ -906,8 +907,7 @@ function saveTrata(){
   renderCows();encolar();
   if(typeof LCStore!=='undefined'){
     LCStore.registrarTratamiento({animalId:numDe(trata.cow),problema:trata.problema,
-      medicamento:trata.medicina,diasRetiro:trata.retiro,
-      retiroLecheHasta:trata.retiro>0?isoMasDiasM(trata.retiro):null})
+      medicamento:trata.medicina,diasRetiro:trata.retiro})
       .then(()=>desencolar()).catch(e=>console.warn('Tratamiento móvil no guardado:',e.message||e));
   }
   setTimeout(()=>go('scr-ordeno'),300);
