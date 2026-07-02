@@ -60,7 +60,7 @@ function subFor(id){
     if(id==='pg-hato'){
       const ordeño=hato.filter(a=>a.grupo==='En ordeño').length;
       const prenadas=hato.filter(a=>a.tags.includes('prenada')).length;
-      return hato.length+' animales · '+ordeño+' en ordeño · '+prenadas+' preñadas';
+      return hato.length+' animales · '+ordeño+' en ordeño · '+prenadas+(prenadas===1?' preñada':' preñadas');
     }
     if(id==='pg-partos'){
       const np=(typeof partosDelAnio==='function'?partosDelAnio().length:partosRecientes.length);
@@ -1880,6 +1880,25 @@ function animalAFila(a){
     edad:fmtEdad(a),repro:deriveRepro(a),
     del:(a.del==null?'—':a.del),ayer:(a.leche&&a.leche.ayer!=null?a.leche.ayer:'—'),
     var:'—',vc:'',tags:deriveTags(a)};
+}
+/* Exportar el inventario del hato a CSV real (todos los animales activos) */
+function exportarHatoCSV(){
+  const A=Object.values(animalesPorId).filter(a=>a.grupo!=='baja')
+    .sort((a,b)=>String(a.id).localeCompare(String(b.id),undefined,{numeric:true}));
+  if(!A.length){snack('No hay animales en el hato para exportar');return;}
+  const esc=x=>'"'+String(x==null?'':x).replace(/"/g,'""')+'"';
+  const head=['numero','nombre','raza','color','grupo','sexo','edad_anios','nacimiento','estado_repro','del','partos','madre','padre','nota'];
+  const csv='﻿'+head.join(';')+'\n'+A.map(a=>[
+    a.id,a.nombre,a.raza,a.color,a.grupo,a.sexo,
+    (a.edadAnios!=null?a.edadAnios:''),a.nacimiento,a.estadoRepro,
+    (a.del!=null?a.del:''),(a.partos!=null?a.partos:''),
+    a.madreId,a.padreId,a.nota].map(esc).join(';')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement('a');link.href=url;link.download='hato-los-chagualos-'+isoHoy()+'.csv';
+  document.body.appendChild(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+  snack('Inventario exportado: '+A.length+' animales');
 }
 (async function cargarHatoDesdeSupabase(){
   if(typeof LCStore==='undefined')return;

@@ -125,7 +125,7 @@
           <div class="spacer" style="flex:1"></div>
           <div id="hatoFiltros" style="display:flex;gap:6px;flex-wrap:wrap"></div>
           <button class="btn outl small" onclick="openNuevaVaca()">＋ Vaca nueva</button>
-          <button class="btn outl small" onclick="snack('Inventario del hato exportado')"><svg class="ic-s ic"><use href="#i-export"/></svg>Exportar</button>
+          <button class="btn outl small" onclick="exportarHatoCSV()"><svg class="ic-s ic"><use href="#i-export"/></svg>Exportar CSV</button>
         </div>
         <div class="card" style="padding:8px">
           <table>
@@ -297,7 +297,6 @@
                 <thead><tr><th>Vaca</th><th>Preñez</th><th class="r">Parto estimado</th></tr></thead>
                 <tbody id="partosTbody"></tbody>
               </table>
-              <div style="text-align:center;padding:10px"><button class="btn outl small" onclick="snack('Próximos partos según las palpaciones')">Ver el calendario de partos</button></div>
             </div>
           </div>
           <div>
