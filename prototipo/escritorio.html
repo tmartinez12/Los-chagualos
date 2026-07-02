@@ -323,11 +323,11 @@
         <div class="section-label" style="display:flex;justify-content:space-between;align-items:center">Vacunas
           <button class="btn outl small" onclick="openVacuna()">＋ Registrar vacunación</button></div>
         <div class="grid" style="grid-template-columns:1fr 1fr">
-          <div class="card" style="border:1.5px solid var(--ink);display:flex;align-items:center;gap:14px">
+          <div class="card" id="sanProxima" style="border:1.5px solid var(--ink);display:flex;align-items:center;gap:14px">
             <svg class="ic" style="color:var(--ink-2)"><use href="#i-shield"/></svg>
-            <div style="flex:1"><div style="font-size:14.5px;font-weight:700">Próxima: desparasitación + vitaminas</div>
-              <div style="font-size:12px;color:var(--ink-2)">Programa de vacunación del hato</div></div>
-            <button class="btn filled small" onclick="snack('Tarea de sanidad creada')">Crear tarea</button>
+            <div style="flex:1"><div style="font-size:14.5px;font-weight:700" id="sanProximaTitulo">Próxima vacunación</div>
+              <div style="font-size:12px;color:var(--ink-2)" id="sanProximaSub">Se calcula del protocolo y de lo registrado</div></div>
+            <button class="btn filled small" onclick="openVacuna()">Registrar</button>
           </div>
           <div class="alert warn" id="sanBrucelosis" style="margin:0;display:none">
             <svg class="ic" style="color:var(--amber)"><use href="#i-sprout"/></svg>
@@ -338,20 +338,7 @@
         </div>
 
         <div class="section-label">Calendario de vacunación · protocolo</div>
-        <div class="pgrid" id="sanCalendario" style="grid-template-columns:repeat(12,1fr)">
-          <div class="pot off"><div class="p-name">ENE</div><div class="p-cap" style="margin-top:6px">despar.</div></div>
-          <div class="pot off"><div class="p-name">FEB</div><div class="p-cap" style="margin-top:6px">—</div></div>
-          <div class="pot off"><div class="p-name">MAR</div><div class="p-cap" style="margin-top:6px">—</div></div>
-          <div class="pot off"><div class="p-name">ABR</div><div class="p-cap" style="margin-top:6px">despar.</div></div>
-          <div class="pot warn"><div class="p-top"><span class="p-name">MAY</span><span class="dot"></span></div><div class="p-cap" style="margin-top:6px">aftosa</div></div>
-          <div class="pot off"><div class="p-name">JUN</div><div class="p-cap" style="margin-top:6px">—</div></div>
-          <div class="pot off"><div class="p-name">JUL</div><div class="p-cap" style="margin-top:6px">despar.</div></div>
-          <div class="pot off"><div class="p-name">AGO</div><div class="p-cap" style="margin-top:6px">—</div></div>
-          <div class="pot off"><div class="p-name">SEP</div><div class="p-cap" style="margin-top:6px">—</div></div>
-          <div class="pot off"><div class="p-name">OCT</div><div class="p-cap" style="margin-top:6px">despar.</div></div>
-          <div class="pot warn"><div class="p-top"><span class="p-name">NOV</span><span class="dot"></span></div><div class="p-cap" style="margin-top:6px">aftosa</div></div>
-          <div class="pot off"><div class="p-name">DIC</div><div class="p-cap" style="margin-top:6px">—</div></div>
-        </div>
+        <div class="pgrid" id="sanCalendario" style="grid-template-columns:repeat(12,1fr)"></div>
 
         <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:14px">
           <div class="card">
@@ -363,7 +350,7 @@
           <div class="card">
             <div class="chart-title" style="font-size:13.5px">Historial · soporte ICA</div>
             <div id="vacListaHist" style="font-size:12.5px;color:var(--ink-2);line-height:1.7;margin-top:8px"></div>
-            <button class="btn outl small" style="margin-top:12px" onclick="snack('Soporte ICA exportado')"><svg class="ic-s ic"><use href="#i-export"/></svg>Exportar soporte</button>
+            <button class="btn outl small" style="margin-top:12px" onclick="exportarSoporteICA()"><svg class="ic-s ic"><use href="#i-export"/></svg>Exportar soporte ICA (CSV)</button>
           </div>
         </div>
       </div>

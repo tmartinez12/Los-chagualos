@@ -1265,9 +1265,87 @@ function renderSanidadVacunas(){
       el.querySelector('.a-sub').textContent=t.slice(0,6).map(x=>x.id+(x.nombre?' '+x.nombre:'')).join(', ')+' · vacuna única entre los 3 y 8 meses';
     }else el.style.display='none';
   }
-  const mes=new Date().getMonth();
-  const cal=document.getElementById('sanCalendario');
-  if(cal)Array.prototype.forEach.call(cal.children,(c,i)=>c.classList.toggle('now',i===mes));
+  renderSanCalendario();
+  renderSanProxima();
+}
+/* Protocolo sanitario del hato (meses 0-11) */
+const PROTOCOLO_SAN={despar:[0,3,6,9],aftosa:[4,10]};
+/* última vacunación registrada de un tipo (fecha ISO o null) */
+function _ultimaVac(tipo){
+  const v=(_vacunaciones||[]).filter(x=>x.tipo===tipo&&x.fecha).sort((a,b)=>a.fecha<b.fecha?1:-1);
+  return v.length?v[0].fecha:null;
+}
+/* Calendario: el PLAN (protocolo) + lo HECHO (vacunaciones reales del año) */
+function renderSanCalendario(){
+  const cal=document.getElementById('sanCalendario');if(!cal)return;
+  const mesActual=new Date().getMonth(),anioActual=new Date().getFullYear();
+  /* tipos registrados por mes del año en consulta */
+  const hechoPorMes={};
+  (_vacunaciones||[]).forEach(v=>{
+    if(!v.fecha||String(v.fecha).slice(0,4)!==String(ANIO_SEL))return;
+    const m=parseInt(String(v.fecha).slice(5,7),10)-1;
+    (hechoPorMes[m]=hechoPorMes[m]||new Set()).add(v.tipo);
+  });
+  const ABR={aftosa:'aftosa',desparasitacion:'despar.',brucelosis:'brucel.',vitaminas:'vitam.',otra:'otra'};
+  let h='';
+  for(let m=0;m<12;m++){
+    const plan=[];
+    if(PROTOCOLO_SAN.despar.includes(m))plan.push('despar.');
+    if(PROTOCOLO_SAN.aftosa.includes(m))plan.push('aftosa');
+    const hecho=hechoPorMes[m]?[...hechoPorMes[m]].map(t=>ABR[t]||t):[];
+    const esAhora=(m===mesActual&&String(ANIO_SEL)===String(anioActual));
+    const cls='pot'+(hecho.length?'':' off')+(esAhora?' now':'');
+    const cap=hecho.length
+      ?'<span style="color:var(--green);font-weight:700">✓ '+hecho.join(' + ')+'</span>'
+      :(plan.length?plan.join(' + '):'—');
+    h+='<div class="'+cls+'"><div class="p-top"><span class="p-name">'+LCRules.MESC[m].toUpperCase()+'</span>'+
+       (plan.length&&!hecho.length?'<span class="dot"></span>':'')+'</div>'+
+       '<div class="p-cap" style="margin-top:6px">'+cap+'</div></div>';
+  }
+  cal.innerHTML=h;
+}
+/* Próxima vacunación REAL: del protocolo + lo último registrado */
+function renderSanProxima(){
+  const tit=document.getElementById('sanProximaTitulo'),sub=document.getElementById('sanProximaSub');
+  if(!tit||!sub)return;
+  const hoy=new Date();hoy.setHours(0,0,0,0);   // new Date() directo: corre en el arranque (antes de HOY_LC)
+  const cands=[];
+  /* desparasitación: cada 3 meses desde la última registrada */
+  const ud=_ultimaVac('desparasitacion');
+  if(ud){const d=new Date(ud+'T00:00:00');d.setMonth(d.getMonth()+3);
+    cands.push({tipo:'Desparasitación',fecha:d,base:'última: '+fmtFechaCorta(ud)});}
+  else cands.push({tipo:'Desparasitación',fecha:hoy,base:'sin registro aún'});
+  /* aftosa: ciclos ICA de mayo y noviembre */
+  const ua=_ultimaVac('aftosa');
+  {let y=hoy.getFullYear();let prox=null;
+   for(const m of [4,10,16,22]){const d=new Date(y,m,1);
+     const ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+     if(d>=hoy&&(!ua||ym>String(ua).slice(0,7))){prox=d;break;}}
+   if(prox)cands.push({tipo:'Aftosa (ciclo ICA)',fecha:prox,base:ua?('última: '+fmtFechaCorta(ua)+' '+String(ua).slice(0,4)):'sin registro aún'});}
+  cands.sort((a,b)=>a.fecha-b.fecha);
+  const p=cands[0];
+  const vencida=p.fecha<=hoy;
+  const f=p.fecha;
+  tit.innerHTML='Próxima: '+p.tipo+(vencida?' <span style="color:var(--red)">· ya toca</span>'
+    :' · ~'+f.getDate()+' '+LCRules.MESC[f.getMonth()]);
+  sub.textContent=p.base+' · protocolo: desparasitación cada 3 meses · aftosa may/nov';
+}
+/* Exportar soporte ICA: CSV real con las vacunaciones del año en consulta */
+function exportarSoporteICA(){
+  const filas=(_vacunaciones||[]).filter(v=>!v.fecha||String(v.fecha).slice(0,4)===String(ANIO_SEL));
+  if(!filas.length){snack('No hay vacunaciones registradas en '+ANIO_SEL);return;}
+  const esc=x=>'"'+String(x==null?'':x).replace(/"/g,'""')+'"';
+  const head=['fecha','tipo','alcance','animal','n_animales','producto','lote','nota'];
+  const csv='﻿'+head.join(';')+'\n'+filas.map(v=>[
+    v.fecha,v.tipo,v.alcance,
+    v.alcance==='individual'?(v.animal_id+(v.animales&&v.animales.nombre?' '+v.animales.nombre:'')):'todo el hato',
+    v.n_animales,v.producto,v.lote,v.nota].map(esc).join(';')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='soporte-ica-'+ANIO_SEL+'.csv';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+  snack('Soporte ICA descargado: '+filas.length+' registro'+(filas.length===1?'':'s')+' de '+ANIO_SEL);
 }
 /* ===== Registro de vacunaciones ===== */
 const TIPO_VAC=[{val:'aftosa',label:'Aftosa'},{val:'brucelosis',label:'Brucelosis'},
@@ -1307,14 +1385,16 @@ function saveVacuna(){
 let _vacunaciones=[];
 function renderVacunaciones(lista){
   if(lista)_vacunaciones=lista;
+  renderSanCalendario();renderSanProxima();   // calendario y próxima salen de lo registrado
   const box=document.getElementById('vacListaHist');if(!box)return;
   const arr=(_vacunaciones||[]).filter(v=>!v.fecha||String(v.fecha).slice(0,4)===String(ANIO_SEL));
   if(!arr.length){box.innerHTML='<span style="color:var(--ink-3)">Sin vacunaciones en '+ANIO_SEL+'.</span>';return;}
-  box.innerHTML=arr.slice(0,8).map(v=>{
+  box.innerHTML=arr.slice(0,10).map(v=>{
     const quien=v.alcance==='individual'
       ?((v.animales&&v.animales.nombre)?v.animal_id+' '+v.animales.nombre:(v.animal_id||'animal'))
       :('todo el hato'+(v.n_animales?' ('+v.n_animales+')':''));
-    return '<div><b style="color:var(--ink)">'+fmtFechaCorta(v.fecha)+'</b> · '+v.tipo+' · '+quien+(v.lote?' · lote '+v.lote:'')+'</div>';
+    return '<div><b style="color:var(--ink)">'+fmtFechaCorta(v.fecha)+'</b> · '+v.tipo+' · '+quien+
+      (v.producto?' · '+v.producto:'')+(v.lote?' · lote '+v.lote:'')+'</div>';
   }).join('');
 }
 async function cargarVacunaciones(){
