@@ -1025,11 +1025,12 @@ function goVaca(num,from){
       .sort((x,y)=>String(y.fecha).localeCompare(String(x.fecha)));
     if(!ps.length)ptb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:12px;color:var(--ink-3)">Sin partos registrados.</td></tr>';
     ps.forEach(p=>{
+      const sinDetalle=!p.cria_id&&!p.sexo_cria;   // parto histórico del registro inicial
       ptb.innerHTML+='<tr><td>'+fmtFechaAno(p.fecha)+'</td>'+
         '<td>'+(p.cria_id?('<b>'+p.cria_id+'</b> '+(animalesPorId[p.cria_id]?animalesPorId[p.cria_id].nombre:'')):'—')+'</td>'+
-        '<td class="r">'+(p.sexo_cria==='H'?'♀':'♂')+'</td><td class="r">'+(p.peso_kg?p.peso_kg+' kg':'—')+'</td>'+
+        '<td class="r">'+(p.sexo_cria==='H'?'♀':p.sexo_cria==='M'?'♂':'—')+'</td><td class="r">'+(p.peso_kg?p.peso_kg+' kg':'—')+'</td>'+
         '<td>'+(p.tipo||'normal')+'</td>'+
-        '<td class="r"><span class="badge '+(p.estado_cria==='viva'?'ok':'bad')+'">'+(p.estado_cria==='viva'?'viva':'mortinato')+'</span></td></tr>';
+        '<td class="r">'+(sinDetalle?'<span class="badge">histórico</span>':'<span class="badge '+(p.estado_cria==='viva'?'ok':'bad')+'">'+(p.estado_cria==='viva'?'viva':'mortinato')+'</span>')+'</td></tr>';
     });
     const lblP=document.getElementById('vacaPartosLabel');
     if(lblP){const iv=intervaloPartosVaca(cow.num);
@@ -1118,8 +1119,9 @@ function renderPartosRecientes(){
   partosDelAnio().forEach(p=>{
     const tr=document.createElement('tr');
     if(p.estado==='viva'){
+      const historico=!p.sexo&&(!p.cria||p.cria==='—');
       tr.innerHTML='<td>'+p.madre+' → '+p.cria+'</td><td>'+p.fecha+'</td>'+
-        '<td class="r"><span class="badge ok">'+(p.sexo==='H'?'♀':'♂')+' en '+p.grupo+'</span></td>';
+        '<td class="r">'+(historico?'<span class="badge">histórico</span>':'<span class="badge ok">'+(p.sexo==='H'?'♀':'♂')+' en '+p.grupo+'</span>')+'</td>';
     }else{
       tr.innerHTML='<td>'+p.madre+' → cría</td><td>'+p.fecha+'</td>'+
         '<td class="r"><span class="badge bad">mortinato</span></td>';
@@ -2182,7 +2184,7 @@ function openCompra(){
   compraState.tipo='Vaca en ordeño';compraState.raza='Holstein × Gyr';compraState.razaOtra='';
   compraState.edad=4;compraState.nacimiento='';compraState.nombre='';compraState.color='';
   compraState.procedencia='';compraState.valor='';compraState.madre='';
-  compraState.ultParto='';compraState.partos=0;
+  compraState.partosFechas=[''];
   compraState.num=_siguienteNumeroLibre();
   renderAltaForm();
 }
@@ -2211,12 +2213,29 @@ function renderAltaForm(){
     body.appendChild(regTexto('Procedencia (opcional)','Finca o vendedor',v=>compraState.procedencia=v,'text',compraState.procedencia));
     body.appendChild(regTexto('Valor de compra (opcional)','$',v=>compraState.valor=v,'number',compraState.valor));
   }
-  /* solo para vacas adultas: arranque de la lactancia e historial de partos */
+  /* solo para vacas adultas: las FECHAS de sus partos (el conteo sale solo) */
   if(compraState.tipo==='Vaca en ordeño'||compraState.tipo==='Vaca horra'){
-    body.appendChild(regTexto('Fecha del último parto (opcional)','',v=>compraState.ultParto=v,'date',compraState.ultParto));
-    body.appendChild(regHint('Si está en ordeño, de esta fecha sale el DEL (días en leche).'));
-    body.appendChild(regLabel('Número de partos que lleva (opcional)'));
-    body.appendChild(regStepper(()=>compraState.partos,v=>compraState.partos=v,0,15,'partos'));
+    body.appendChild(regLabel('Partos: la fecha de cada uno (las que recuerdes)'));
+    const list=document.createElement('div');list.style.cssText='display:flex;flex-direction:column;gap:6px';
+    compraState.partosFechas.forEach((f,i)=>{
+      const row=document.createElement('div');row.style.cssText='display:flex;gap:6px;align-items:center';
+      const inp=document.createElement('input');inp.type='date';if(f)inp.value=f;
+      inp.style.cssText='flex:1;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);padding:9px 12px;outline:none';
+      inp.onchange=()=>{compraState.partosFechas[i]=inp.value;};
+      row.appendChild(inp);
+      if(compraState.partosFechas.length>1){
+        const del=document.createElement('button');del.className='btn outl small';del.textContent='✕';del.title='Quitar este parto';
+        del.onclick=()=>{compraState.partosFechas.splice(i,1);renderAltaForm();};
+        row.appendChild(del);
+      }
+      list.appendChild(row);
+    });
+    body.appendChild(list);
+    const add=document.createElement('button');add.className='btn outl small';add.style.cssText='margin-top:6px';
+    add.textContent='＋ Agregar otro parto';
+    add.onclick=()=>{compraState.partosFechas.push('');renderAltaForm();};
+    body.appendChild(add);
+    body.appendChild(regHint('El número de partos se cuenta solo. El más reciente marca el inicio de la lactancia (DEL) si está en ordeño.'));
   }
   document.getElementById('regSaveBtn').onclick=saveCompra;
 }
@@ -2243,8 +2262,13 @@ function saveCompra(){
     ?Math.round(((new Date()-new Date(nacimiento+'T00:00:00'))/86400000/365.25)*10)/10
     :compraState.edad;
   const esVaca=(compraState.tipo==='Vaca en ordeño'||compraState.tipo==='Vaca horra');
-  const inicioLact=(esVaca&&compraState.tipo==='Vaca en ordeño'&&compraState.ultParto)?compraState.ultParto:null;
-  const partos=esVaca?(compraState.partos||0):0;
+  /* fechas de parto válidas, sin repetidas, de la más vieja a la más nueva */
+  const fechasParto=esVaca
+    ?[...new Set((compraState.partosFechas||[]).filter(f=>/^\d{4}-\d{2}-\d{2}$/.test(f)))].sort()
+    :[];
+  const ultParto=fechasParto.length?fechasParto[fechasParto.length-1]:null;
+  const inicioLact=(compraState.tipo==='Vaca en ordeño'&&ultParto)?ultParto:null;
+  const partos=fechasParto.length;   // el conteo sale de las fechas
   /* cache canónico primero: la ficha abre de una con los datos completos */
   animalesPorId[num]={id:num,nombre:nombre,raza:raza,color:color,
     grupo:GRUPO_MODELO[grupo]||'novilla',sexo:grupo==='Macho'?'M':'H',
@@ -2255,7 +2279,12 @@ function saveCompra(){
     partos:partos,inicioLactancia:inicioLact,
     del:inicioLact?Math.max(0,Math.round((new Date()-new Date(inicioLact+'T00:00:00'))/86400000)):null,
     leche:{}};
-  if(esVaca&&compraState.ultParto)_ultimoParto[num]=compraState.ultParto;   // días abiertos desde ya
+  /* caches locales: los partos alimentan lactancias, intervalo y días abiertos */
+  const partoRows=fechasParto.map((f,i)=>({id:'P-'+num+'-'+i+'-'+Date.now(),madre_id:num,cria_id:null,
+    fecha:f,sexo_cria:null,peso_kg:null,tipo:'normal',estado_cria:'viva'}));
+  if(ultParto)_ultimoParto[num]=ultParto;
+  if(fechasParto.length)_partosPorMadre[num]=fechasParto.slice();
+  partoRows.forEach(r=>_partosRaw.push(r));
   const nuevo={num,n:nombre,raza:raza,grupo,edad:fmtEdadLarga(animalesPorId[num]),
     repro:'<span class="badge">'+(esNacida?'registro inicial':'recién comprada')+'</span>',
     del:(animalesPorId[num].del!=null?animalesPorId[num].del:'—'),ayer:'—',var:'—',vc:'',tags:[]};
@@ -2263,6 +2292,7 @@ function saveCompra(){
   const nInt=parseInt(num,10);if(!isNaN(nInt)&&nInt>altaSeq)altaSeq=nInt;
   hatoFiltro='todas';renderHatoFiltros();renderHato();
   if(typeof LCStore!=='undefined'){
+    /* orden: primero el animal (FK), luego sus partos históricos */
     LCStore.insertAnimal({id:num,nombre:nombre,raza:raza,color:color,
       grupo:GRUPO_MODELO[grupo]||'novilla',sexo:grupo==='Macho'?'M':'H',
       edadAnios:edadAnios,nacimiento:nacimiento,
@@ -2270,15 +2300,19 @@ function saveCompra(){
       partos:partos,inicioLactancia:inicioLact,
       procedencia:esNacida?null:(compraState.procedencia||null),
       valorCompra:(!esNacida&&compraState.valor)?parseInt(String(compraState.valor).replace(/\D/g,'')):null
-    }).catch(e=>{console.warn('Alta no guardada en la base:',e.message||e);
+    }).then(()=>Promise.all(partoRows.map(r=>LCStore.registrarParto({id:r.id,madreId:num,criaId:null,fecha:r.fecha,sexo:null,tipo:'normal',estadoCria:'viva'}))))
+      .catch(e=>{console.warn('Alta no guardada en la base:',e.message||e);
       snack('⚠ '+num+' guardado local, falta sincronizar');});
   }
   goVaca(num,'pg-hato');   /* aterrizar en la ficha del animal recién creado */
-  snack(num+' · '+nombre+' ('+compraState.tipo.toLowerCase()+', '+raza+') entró al hato'+madreAviso,'Deshacer',()=>{
+  const partosTxt=partos?(' · '+partos+' parto'+(partos===1?'':'s')+' registrados'):'';
+  snack(num+' · '+nombre+' ('+compraState.tipo.toLowerCase()+', '+raza+') entró al hato'+partosTxt+madreAviso,'Deshacer',()=>{
     const i=hato.indexOf(nuevo);if(i>=0)hato.splice(i,1);
-    delete animalesPorId[num];delete _ultimoParto[num];
+    delete animalesPorId[num];delete _ultimoParto[num];delete _partosPorMadre[num];
+    partoRows.forEach(r=>{const j=_partosRaw.indexOf(r);if(j>=0)_partosRaw.splice(j,1);});
     renderHatoFiltros();renderHato();go('pg-hato',navFor('pg-hato'));
-    if(typeof LCStore!=='undefined')LCStore.deleteAnimal(num).catch(()=>{});});
+    if(typeof LCStore!=='undefined')Promise.all(partoRows.map(r=>LCStore.deleteParto(r.id).catch(()=>{})))
+      .then(()=>LCStore.deleteAnimal(num)).catch(()=>{});});
 }
 
 /* --- baja (venta / muerte / descarte / pérdida) --- */

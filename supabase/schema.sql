@@ -150,7 +150,7 @@ CREATE TABLE partos (
   madre_id        TEXT NOT NULL REFERENCES animales(id),
   cria_id         TEXT REFERENCES animales(id),
   fecha           DATE NOT NULL,
-  sexo_cria       sexo_animal NOT NULL,
+  sexo_cria       sexo_animal,           -- null en partos históricos sin detalle
   peso_kg         NUMERIC(5,1),
   tipo            tipo_parto NOT NULL DEFAULT 'normal',
   estado_cria     estado_cria NOT NULL DEFAULT 'viva',

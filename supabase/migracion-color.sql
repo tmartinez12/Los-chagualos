@@ -10,6 +10,10 @@
 ALTER TABLE animales ADD COLUMN IF NOT EXISTS color TEXT;
 ALTER TABLE animales ADD COLUMN IF NOT EXISTS nota TEXT;
 
+-- Partos históricos (registro inicial del hato): a veces no se recuerda el
+-- sexo de la cría de hace años. La columna deja de ser obligatoria.
+ALTER TABLE partos ALTER COLUMN sexo_cria DROP NOT NULL;
+
 DROP VIEW IF EXISTS v_animales CASCADE;
 CREATE VIEW v_animales AS
 SELECT a.*,
