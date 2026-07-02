@@ -232,13 +232,6 @@ function renderLecheKpis(){
       '<div class="k-value">'+(promDia||'—')+' <span class="k-unit">L/día</span></div><div class="k-trend">'+trend+'</div></div>'+
     '<div class="card kpi"><div class="k-label">Por secar este mes</div>'+
       '<div class="k-value'+(porSecar.length?' down':'')+'">'+porSecar.length+'</div><div class="k-trend mut">a 7 meses de preñez</div></div>';
-  /* por secar (lista) */
-  const listBox=document.getElementById('porSecarLista');
-  if(listBox){ if(porSecar.length){listBox.style.display='';
-      listBox.innerHTML='<b style="color:var(--ink)">Por secar este mes (7 meses de preñez):</b> '+
-        porSecar.map(a=>'<a onclick="goVaca(\''+a.id+'\',\'pg-leche\')" style="cursor:pointer;text-decoration:underline">'+a.id+' '+a.nombre+'</a>'+
-          (a.prenez&&a.prenez.meses!=null?' ('+a.prenez.meses+'m)':'')).join(' · ');
-    }else listBox.style.display='none';}
   /* bajón por vaca: cayó >15% respecto a su propia semana anterior */
   const bajon=[];
   if(semana.length&&prevSemana.length){
@@ -253,7 +246,7 @@ function renderLecheKpis(){
       bajonBox.innerHTML='<b style="color:var(--red)">⚠ Bajaron esta semana</b> (revisa mastitis, celo o alimentación): '+
         bajon.map(b=>'<a onclick="goVaca(\''+b.a.id+'\',\'pg-leche\')" style="cursor:pointer;text-decoration:underline">'+b.a.id+' '+b.a.nombre+'</a> −'+b.pct+'% ('+b.ap+'→'+b.at+' L)').join(' · ');
     }else bajonBox.style.display='none';}
-  /* resumen del hato: DEL promedio · en ordeño/secas · paren este mes · faltan registrar */
+  /* TARJETA-RESUMEN única: hato · por secar · producción del año · sin registrar */
   const resBox=document.getElementById('hatoResumenLeche');
   if(resBox){
     const dels=enOrdeno.map(a=>a.del).filter(d=>typeof d==='number');
@@ -262,14 +255,19 @@ function renderLecheKpis(){
     const paren=Object.values(animalesPorId).filter(a=>a.prenez&&a.prenez.partoEstimado&&String(a.prenez.partoEstimado).slice(0,7)===ym).length;
     const ult7=[];for(let i=0;i<7;i++){const d=new Date(now);d.setDate(now.getDate()-i);ult7.push(_isoDe(d));}
     const faltan=enOrdeno.filter(a=>{const c=porCow[a.id]||{};return !ult7.some(f=>c[f]!=null);});
+    const totalAnio=Math.round((mensualData||[]).reduce((s,c)=>s+((c.sum||[]).reduce((a,b)=>a+b,0)),0));
     const parts=[];
     if(delProm!=null)parts.push('DEL promedio <b style="color:var(--ink)">'+delProm+' días</b>');
     parts.push('<b style="color:var(--ink)">'+nOrdeno+'</b> en ordeño / <b style="color:var(--ink)">'+secas+'</b> secas');
     if(paren)parts.push('<b style="color:var(--ink)">'+paren+'</b> paren este mes (entran a producir)');
-    let html=parts.join(' · ');
-    if(faltan.length&&faltan.length<nOrdeno)html+='<br><span style="color:var(--red)">Sin registrar esta semana:</span> '+
-      faltan.map(a=>'<a onclick="goVaca(\''+a.id+'\',\'pg-leche\')" style="cursor:pointer;text-decoration:underline">'+a.id+' '+a.nombre+'</a>').join(' · ');
-    resBox.style.display='';resBox.innerHTML=html;
+    if(totalAnio)parts.push('producción '+ANIO_SEL+': <b style="color:var(--ink)">'+totalAnio.toLocaleString('es-CO')+' L</b>');
+    const lineas=[parts.join(' · ')];
+    if(porSecar.length)lineas.push('<b style="color:var(--ink)">Por secar este mes:</b> '+
+      porSecar.map(a=>'<a onclick="goVaca(\''+a.id+'\',\'pg-leche\')" style="cursor:pointer;text-decoration:underline">'+a.id+' '+a.nombre+'</a>'+
+        (a.prenez&&a.prenez.meses!=null?' ('+a.prenez.meses+'m)':'')).join(' · '));
+    if(faltan.length&&faltan.length<nOrdeno)lineas.push('<span style="color:var(--red)">Sin registrar esta semana:</span> '+
+      faltan.map(a=>'<a onclick="goVaca(\''+a.id+'\',\'pg-leche\')" style="cursor:pointer;text-decoration:underline">'+a.id+' '+a.nombre+'</a>').join(' · '));
+    resBox.style.display='';resBox.innerHTML=lineas.join('<br>');
   }
   if(typeof refreshHeader==='function')refreshHeader();
   if(typeof renderNavBadges==='function')renderNavBadges();
@@ -317,20 +315,28 @@ function renderRegistro(){
     .sort((a,b)=>String(a.id).localeCompare(String(b.id),undefined,{numeric:true}));
   tb.innerHTML='';
   if(!enOrdeno.length){tb.innerHTML='<tr><td colspan="'+(dias.length+2)+'" style="text-align:center;padding:20px;color:var(--ink-3)">No hay vacas en ordeño todavía.</td></tr>';return;}
-  enOrdeno.forEach(a=>{
+  const esPeriodoActual=(regVista==='mes'?MES_OFFSET===0:SEMANA_OFFSET===0);
+  enOrdeno.forEach((a,fila)=>{
     const tr=document.createElement('tr');
     let cells='<td><div class="cell-animal"><div class="cini">'+a.id+'</div><div class="cn">'+a.nombre+'</div></div></td>';
-    let tot=0;
-    dias.forEach(d=>{const iso=_isoDe(d),fut=iso>hoyIso,v=ordenosDiaMap[a.id+'|'+iso];
-      if(v!=null)tot+=Number(v)||0;
+    let tot=0,tieneDatos=false;
+    dias.forEach((d,col)=>{const iso=_isoDe(d),fut=iso>hoyIso,v=ordenosDiaMap[a.id+'|'+iso];
+      if(v!=null){tot+=Number(v)||0;tieneDatos=true;}
       cells+='<td class="r" style="padding:4px">'+
         (fut?'<span class="pending">—</span>':
-         '<input type="number" inputmode="numeric" min="0" value="'+(v!=null?v:'')+'" onchange="guardarCeldaSemana(\''+a.id+'\',\''+iso+'\',this)" '+
+         '<input type="number" inputmode="numeric" min="0" value="'+(v!=null?v:'')+'" data-f="'+fila+'" data-c="'+col+'" '+
+         'onchange="guardarCeldaSemana(\''+a.id+'\',\''+iso+'\',this)" onkeydown="regKeyNav(event,this)" '+
          'style="width:42px;text-align:center;border:none;border-bottom:1.5px solid var(--border);background:transparent;font-family:inherit;font-size:13px;padding:3px;outline:none">')+
         '</td>';
     });
     cells+='<td class="r" style="font-weight:700" id="regtot-'+a.id+'">'+(tot?Math.round(tot):'—')+'</td>';
-    tr.innerHTML=cells;tb.appendChild(tr);
+    tr.innerHTML=cells;
+    /* la vaca sin ningún registro en el período actual se nota AQUÍ mismo */
+    if(!tieneDatos&&esPeriodoActual){
+      tr.style.background='rgba(196,74,58,.05)';
+      const nc=tr.querySelector('.cn');if(nc)nc.innerHTML=a.nombre+' <span style="color:var(--red);font-size:10.5px;font-weight:600">· sin datos</span>';
+    }
+    tb.appendChild(tr);
   });
   const trT=document.createElement('tr');trT.style.cssText='background:var(--surface);font-weight:700';
   let tc='<td>Total día</td>';for(let i=0;i<dias.length;i++)tc+='<td class="r" id="regday-'+i+'">—</td>';
@@ -349,6 +355,16 @@ function actualizarTotalesRegistro(){
   });
   totDia.forEach((t,i)=>{const c=document.getElementById('regday-'+i);if(c)c.textContent=t?Math.round(t):'—';});
   const g=document.getElementById('reggrand');if(g)g.textContent=grand?Math.round(grand):'—';
+}
+/* Enter baja por la COLUMNA del mismo día (como se transcribe el cuaderno:
+   un día, todas las vacas). Guarda la casilla actual y enfoca la siguiente. */
+function regKeyNav(e,inp){
+  if(e.key!=='Enter')return;
+  e.preventDefault();
+  inp.blur();   // dispara el guardado (onchange)
+  const f=parseInt(inp.dataset.f,10),c=inp.dataset.c;
+  const next=document.querySelector('#semanaBody input[data-f="'+(f+1)+'"][data-c="'+c+'"]');
+  if(next){next.focus();next.select();}
 }
 /* alias para no romper llamadas antiguas */
 function renderSemana(){renderRegistro();}
@@ -545,7 +561,8 @@ function renderScatter(svgId){
   }
   const pad={l:45,r:15,t:12,b:28},w=560,h=180;
   const pw=w-pad.l-pad.r,ph=h-pad.t-pad.b;
-  const maxDel=Math.max(450,...cows.map(c=>c.del+20));
+  /* eje X adaptado al hato: hasta la vaca más avanzada + margen (redondeado a 60) */
+  const maxDel=Math.max(240,Math.ceil(Math.max(...cows.map(c=>c.del+40))/60)*60);
   const maxL=Math.max(22,...cows.map(c=>c.l+2));
   function x(del){return pad.l+del/maxDel*pw;}
   function y(l){return pad.t+(1-l/maxL)*ph;}
@@ -784,15 +801,7 @@ function recomputeMensual(){
   ordenosDiaMap={};(_ordsRaw||[]).forEach(o=>{ordenosDiaMap[o.animal_id+'|'+o.fecha]=o.litros;});
   renderMensual();
   if(typeof renderScatters==='function')renderScatters();   // el scatter usa el promedio de 5 días
-  renderProduccionAnio();
-}
-/* producción total del AÑO seleccionado (suma real de los ordeños de ese año) */
-function renderProduccionAnio(){
-  const box=document.getElementById('produccionAnioTotal');if(!box)return;
-  const total=Math.round((mensualData||[]).reduce((s,c)=>s+((c.sum||[]).reduce((a,b)=>a+b,0)),0));
-  const dias=(mensualData||[]).length; // nº de vacas con datos (informativo)
-  box.innerHTML='Producción registrada en <b style="color:var(--ink)">'+ANIO_SEL+'</b>: '+
-    '<b style="color:var(--ink)">'+total.toLocaleString('es-CO')+' L</b>'+(total?'':' <span style="color:var(--ink-3)">(sin datos de ese año)</span>');
+  renderLecheKpis();   // la producción del año vive en la tarjeta-resumen
 }
 (async function cargarMensualDesdeSupabase(){
   if(typeof LCStore==='undefined')return;

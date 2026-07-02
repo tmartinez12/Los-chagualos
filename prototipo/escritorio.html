@@ -74,9 +74,7 @@
         <!-- NIVEL 1: Resumen del ordeño -->
         <div class="kpis" id="lecheKpis"></div>
         <div id="bajonLista" class="card flat" style="display:none;margin-top:10px;font-size:13px;color:var(--ink-2);padding:12px;line-height:1.7"></div>
-        <div id="hatoResumenLeche" class="card flat" style="display:none;margin-top:8px;font-size:13px;color:var(--ink-2);padding:12px;line-height:1.7"></div>
-        <div id="porSecarLista" class="card flat" style="display:none;margin-top:8px;font-size:13px;color:var(--ink-2);padding:12px;line-height:1.7"></div>
-        <div id="produccionAnioTotal" class="card flat" style="margin-top:8px;font-size:13px;color:var(--ink-2);padding:12px"></div>
+        <div id="hatoResumenLeche" class="card flat" style="display:none;margin-top:8px;font-size:13px;color:var(--ink-2);padding:12px;line-height:1.8"></div>
 
         <!-- Registro del ordeño: tabla editable · vista semanal (Sáb–Vie) o mensual -->
         <div class="section-label" style="display:flex;justify-content:space-between;align-items:baseline;margin-top:16px;flex-wrap:wrap;gap:6px">
@@ -86,7 +84,7 @@
             <button class="btn outl small" id="btnVistaMes" onclick="setVistaRegistro('mes')">Mes</button>
             <span style="width:1px;height:18px;background:var(--border);display:inline-block;margin:0 2px"></span>
             <button class="btn outl small" onclick="cambiarPeriodo(-1)">‹</button>
-            <button class="btn outl small" onclick="cambiarPeriodo(0)">Hoy</button>
+            <button class="btn outl small" onclick="cambiarPeriodo(0)">Actual</button>
             <button class="btn outl small" onclick="cambiarPeriodo(1)">›</button>
           </span>
         </div>
