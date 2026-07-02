@@ -2138,7 +2138,7 @@ function saveParto(){
 
 /* --- alta (compra / ingreso) --- */
 /* --- vaca nueva (comprada o nacida) --- */
-const altaGrupoMap={'Novilla':'Novilla','Vaca en ordeño':'En ordeño','Ternera':'Ternera','Levante':'Levante','Toro':'Macho'};
+const altaGrupoMap={'Vaca en ordeño':'En ordeño','Vaca horra':'Horra','Novilla':'Novilla','Levante':'Levante','Ternera':'Ternera','Toro':'Macho'};
 let altaSeq=0;   // se sincroniza con el mayor número real del hato al cargar
 const compraState={};
 /* helper: campo de texto/número dentro del modal de registro */
@@ -2151,14 +2151,14 @@ function regTexto(label,ph,onInput,type,value){
   inp.oninput=()=>onInput(inp.value);
   wrap.appendChild(inp);return wrap;
 }
-/* paso 1: ¿de dónde viene el animal? */
+/* paso 1: ¿qué animal vas a registrar? */
 function openNuevaVaca(){
-  openReg('Registrar vaca nueva','¿De dónde viene el animal?');
+  openReg('Registrar animal','¿Qué animal vas a registrar?');
   const body=document.getElementById('regBody');body.innerHTML='';
   document.getElementById('regActions').style.display='none';
   const opts=[
-    ['🛒 Comprada','Entra de otra finca o feria',()=>openCompra()],
-    ['🐄 Nacida en la finca','Se registra como el parto de su madre',()=>{closeReg();openParto();}],
+    ['🐄 Un animal que ya está en la finca','Para armar tu hato: nacida aquí (ya grande) o comprada',()=>openCompra()],
+    ['🍼 Una cría que acaba de nacer','Se registra como el parto de su madre',()=>{closeReg();openParto();}],
   ];
   const wrap=document.createElement('div');wrap.style.cssText='display:flex;flex-direction:column;gap:8px;margin-top:8px';
   opts.forEach(([label,sub,fn])=>{const b=document.createElement('button');b.className='btn outl';
@@ -2174,29 +2174,50 @@ function _siguienteNumeroLibre(){
   const max=Math.max(altaSeq,...(nums.length?nums:[0]));
   return String(max+1).padStart(3,'0');
 }
-/* compra: datos del animal que entra */
+/* registro inicial / compra: datos del animal que entra al hato.
+   Sirve para armar el hato desde cero (nacidas en la finca ya grandes)
+   y para compras. El formulario cambia según el origen. */
 function openCompra(){
-  compraState.tipo='Novilla';compraState.raza='Holstein × Gyr';compraState.razaOtra='';
-  compraState.edad=2;compraState.nacimiento='';compraState.nombre='';compraState.color='';
-  compraState.procedencia='';compraState.valor='';
+  compraState.origen='nacida';
+  compraState.tipo='Vaca en ordeño';compraState.raza='Holstein × Gyr';compraState.razaOtra='';
+  compraState.edad=4;compraState.nacimiento='';compraState.nombre='';compraState.color='';
+  compraState.procedencia='';compraState.valor='';compraState.madre='';
+  compraState.ultParto='';compraState.partos=0;
   compraState.num=_siguienteNumeroLibre();
-  openReg('Animal comprado','Entra al hato con su ficha lista');
+  renderAltaForm();
+}
+function renderAltaForm(){
+  openReg('Registrar animal del hato','Nacida en la finca o comprada — queda con su ficha lista');
   const body=document.getElementById('regBody');body.innerHTML='';
   document.getElementById('regActions').style.display='';
   body.appendChild(regTexto('Número (chapeta)','',v=>compraState.num=v,'text',compraState.num));
   body.appendChild(regHint('El número del arete del animal. Te sugerimos el siguiente libre; puedes cambiarlo.'));
-  body.appendChild(regTexto('Nombre','Ej. Esperanza',v=>compraState.nombre=v));
+  body.appendChild(regTexto('Nombre','Ej. Esperanza',v=>compraState.nombre=v,'text',compraState.nombre));
+  body.appendChild(regLabel('Origen'));
+  body.appendChild(regChips([{val:'nacida',label:'🐄 Nacida en la finca'},{val:'comprada',label:'🛒 Comprada'}],
+    compraState.origen,v=>{compraState.origen=v;renderAltaForm();}));
   body.appendChild(regLabel('Tipo de animal'));
-  body.appendChild(regChips(Object.keys(altaGrupoMap).map(t=>({val:t,label:t})),compraState.tipo,v=>compraState.tipo=v));
+  body.appendChild(regChips(Object.keys(altaGrupoMap).map(t=>({val:t,label:t})),compraState.tipo,v=>{compraState.tipo=v;renderAltaForm();}));
   body.appendChild(regLabel('Raza'));
   body.appendChild(regChips(['Holstein × Gyr','Gyrolando','Holstein','Normando'].map(r=>({val:r,label:r})),compraState.raza,v=>compraState.raza=v));
-  body.appendChild(regTexto('Otra raza (si no está arriba)','Ej. Jersey, criolla…',v=>compraState.razaOtra=v));
-  body.appendChild(regTexto('Color (opcional)','Ej. negra, pinta roja…',v=>compraState.color=v));
-  body.appendChild(regTexto('Fecha de nacimiento (si la conoces)','',v=>compraState.nacimiento=v,'date'));
+  body.appendChild(regTexto('Otra raza (si no está arriba)','Ej. Jersey, criolla…',v=>compraState.razaOtra=v,'text',compraState.razaOtra));
+  body.appendChild(regTexto('Color (opcional)','Ej. negra, pinta roja…',v=>compraState.color=v,'text',compraState.color));
+  body.appendChild(regTexto('Fecha de nacimiento (si la conoces)','',v=>compraState.nacimiento=v,'date',compraState.nacimiento));
   body.appendChild(regLabel('Edad aproximada (si no tienes la fecha)'));
   body.appendChild(regStepper(()=>compraState.edad,v=>compraState.edad=v,0,15,'años'));
-  body.appendChild(regTexto('Procedencia (opcional)','Finca o vendedor',v=>compraState.procedencia=v));
-  body.appendChild(regTexto('Valor de compra (opcional)','$',v=>compraState.valor=v,'number'));
+  if(compraState.origen==='nacida'){
+    body.appendChild(regTexto('Madre (número, si la conoces)','Ej. 042 — debe estar ya registrada',v=>compraState.madre=v,'text',compraState.madre));
+  }else{
+    body.appendChild(regTexto('Procedencia (opcional)','Finca o vendedor',v=>compraState.procedencia=v,'text',compraState.procedencia));
+    body.appendChild(regTexto('Valor de compra (opcional)','$',v=>compraState.valor=v,'number',compraState.valor));
+  }
+  /* solo para vacas adultas: arranque de la lactancia e historial de partos */
+  if(compraState.tipo==='Vaca en ordeño'||compraState.tipo==='Vaca horra'){
+    body.appendChild(regTexto('Fecha del último parto (opcional)','',v=>compraState.ultParto=v,'date',compraState.ultParto));
+    body.appendChild(regHint('Si está en ordeño, de esta fecha sale el DEL (días en leche).'));
+    body.appendChild(regLabel('Número de partos que lleva (opcional)'));
+    body.appendChild(regStepper(()=>compraState.partos,v=>compraState.partos=v,0,15,'partos'));
+  }
   document.getElementById('regSaveBtn').onclick=saveCompra;
 }
 function saveCompra(){
@@ -2204,40 +2225,58 @@ function saveCompra(){
   /* validación de duplicado ANTES de cerrar: se corrige ahí mismo */
   if(animalesPorId[num]||hato.find(x=>String(x.num)===String(num))){
     snack('El número '+num+' ya existe en el hato — usa otro');return;}
+  const esNacida=compraState.origen==='nacida';
+  /* madre: solo se enlaza si ya está registrada (la FK lo exige) */
+  let madreId=null,madreAviso='';
+  if(esNacida&&String(compraState.madre||'').trim()){
+    const m=String(compraState.madre).trim();
+    if(animalesPorId[m])madreId=m;
+    else madreAviso=' · la madre '+m+' no está registrada aún (quedó sin enlazar)';
+  }
   closeReg();
   const grupo=altaGrupoMap[compraState.tipo];
-  const nombre=(compraState.nombre||'').trim()||'(compra)';
+  const nombre=(compraState.nombre||'').trim()||'(sin nombre)';
   const raza=(compraState.razaOtra||'').trim()||compraState.raza;
   const color=(compraState.color||'').trim()||null;
   const nacimiento=compraState.nacimiento||null;
   const edadAnios=nacimiento
     ?Math.round(((new Date()-new Date(nacimiento+'T00:00:00'))/86400000/365.25)*10)/10
     :compraState.edad;
+  const esVaca=(compraState.tipo==='Vaca en ordeño'||compraState.tipo==='Vaca horra');
+  const inicioLact=(esVaca&&compraState.tipo==='Vaca en ordeño'&&compraState.ultParto)?compraState.ultParto:null;
+  const partos=esVaca?(compraState.partos||0):0;
   /* cache canónico primero: la ficha abre de una con los datos completos */
   animalesPorId[num]={id:num,nombre:nombre,raza:raza,color:color,
     grupo:GRUPO_MODELO[grupo]||'novilla',sexo:grupo==='Macho'?'M':'H',
-    edadAnios:edadAnios,nacimiento:nacimiento,origen:'comprado',
-    procedencia:compraState.procedencia||null,
-    valorCompra:compraState.valor?parseInt(String(compraState.valor).replace(/\D/g,'')):null,
-    partos:0,leche:{}};
+    edadAnios:edadAnios,nacimiento:nacimiento,
+    origen:esNacida?'nacido_finca':'comprado',madreId:madreId,
+    procedencia:esNacida?null:(compraState.procedencia||null),
+    valorCompra:(!esNacida&&compraState.valor)?parseInt(String(compraState.valor).replace(/\D/g,'')):null,
+    partos:partos,inicioLactancia:inicioLact,
+    del:inicioLact?Math.max(0,Math.round((new Date()-new Date(inicioLact+'T00:00:00'))/86400000)):null,
+    leche:{}};
+  if(esVaca&&compraState.ultParto)_ultimoParto[num]=compraState.ultParto;   // días abiertos desde ya
   const nuevo={num,n:nombre,raza:raza,grupo,edad:fmtEdadLarga(animalesPorId[num]),
-    repro:'<span class="badge">recién comprada</span>',del:'—',ayer:'—',var:'—',vc:'',tags:[]};
+    repro:'<span class="badge">'+(esNacida?'registro inicial':'recién comprada')+'</span>',
+    del:(animalesPorId[num].del!=null?animalesPorId[num].del:'—'),ayer:'—',var:'—',vc:'',tags:[]};
   hato.unshift(nuevo);
   const nInt=parseInt(num,10);if(!isNaN(nInt)&&nInt>altaSeq)altaSeq=nInt;
   hatoFiltro='todas';renderHatoFiltros();renderHato();
   if(typeof LCStore!=='undefined'){
     LCStore.insertAnimal({id:num,nombre:nombre,raza:raza,color:color,
       grupo:GRUPO_MODELO[grupo]||'novilla',sexo:grupo==='Macho'?'M':'H',
-      edadAnios:edadAnios,nacimiento:nacimiento,origen:'comprado',
-      procedencia:compraState.procedencia||null,
-      valorCompra:compraState.valor?parseInt(String(compraState.valor).replace(/\D/g,'')):null
-    }).catch(e=>{console.warn('Compra no guardada en la base:',e.message||e);
-      snack('⚠ Compra guardada local, falta sincronizar');});
+      edadAnios:edadAnios,nacimiento:nacimiento,
+      origen:esNacida?'nacido_finca':'comprado',madreId:madreId,
+      partos:partos,inicioLactancia:inicioLact,
+      procedencia:esNacida?null:(compraState.procedencia||null),
+      valorCompra:(!esNacida&&compraState.valor)?parseInt(String(compraState.valor).replace(/\D/g,'')):null
+    }).catch(e=>{console.warn('Alta no guardada en la base:',e.message||e);
+      snack('⚠ '+num+' guardado local, falta sincronizar');});
   }
   goVaca(num,'pg-hato');   /* aterrizar en la ficha del animal recién creado */
-  snack(num+' · '+nombre+' ('+compraState.tipo.toLowerCase()+', '+raza+') entró al hato','Deshacer',()=>{
+  snack(num+' · '+nombre+' ('+compraState.tipo.toLowerCase()+', '+raza+') entró al hato'+madreAviso,'Deshacer',()=>{
     const i=hato.indexOf(nuevo);if(i>=0)hato.splice(i,1);
-    delete animalesPorId[num];
+    delete animalesPorId[num];delete _ultimoParto[num];
     renderHatoFiltros();renderHato();go('pg-hato',navFor('pg-hato'));
     if(typeof LCStore!=='undefined')LCStore.deleteAnimal(num).catch(()=>{});});
 }
