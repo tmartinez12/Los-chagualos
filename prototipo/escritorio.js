@@ -930,13 +930,6 @@ function buildFichaBasica(a){
   const crias=Object.values(animalesPorId).filter(x=>x.madreId===a.id).map(x=>x.id+' '+x.nombre);
   const retiroD=a.retiroLecheHasta?diasHasta(a.retiroLecheHasta):null;
   const sanOk=!(retiroD!=null&&retiroD>=0);
-  const historia=[];
-  if(a.prenez&&a.prenez.ultimaPalpacion){const d=new Date(a.prenez.ultimaPalpacion+'T00:00:00');
-    historia.push({fecha:d.getDate()+' '+LCRules.MESC[d.getMonth()].toUpperCase()+' '+d.getFullYear(),texto:'Palpación: <b>preñada '+a.prenez.meses+' meses</b>'});}
-  if(!sanOk)historia.push({fecha:'EN CURSO',texto:'Tratamiento con retiro de leche',miss:true});
-  if(a.partos){const up=_ultimoParto[a.id];
-    const f=up?(new Date(up+'T00:00:00').getDate()+' '+LCRules.MESC[new Date(up+'T00:00:00').getMonth()].toUpperCase()+' '+up.slice(0,4)):'—';
-    historia.push({fecha:f,texto:a.partos+(a.partos===1?'er':'°')+' parto registrado'});}
   return {num:a.id,n:a.nombre,raza:a.raza||'—',color:a.color||null,nota:a.nota||null,edad:fmtEdadLarga(a),grupo:GRUPO_DISPLAY[a.grupo]||a.grupo,
     origen:a.origen==='comprado'?'Comprada':a.origen==='nacido_finca'?'Nació en finca':'—',
     procedencia:a.procedencia||null,valorCompra:a.valorCompra||null,
@@ -946,8 +939,7 @@ function buildFichaBasica(a){
     peso:a.pesoKg?a.pesoKg+' kg':'—',fechaPeso:a.fechaPeso||null,
     madre:a.madreId?nombreRef(a.madreId):'—',padre:a.padreId?nombreRef(a.padreId):'—',
     crias:crias,repro:deriveReproFicha(a),
-    sanidad:sanOk?'sin retiros activos':'retiro de leche activo — no vender su leche',sanOk:sanOk,
-    historia:historia};
+    sanidad:sanOk?'sin retiros activos':'retiro de leche activo — no vender su leche',sanOk:sanOk};
 }
 function goVaca(num,from){
   let cow=fichas[num];
@@ -970,9 +962,6 @@ function goVaca(num,from){
   document.getElementById('vacaFotoInput').value='';
   document.getElementById('vacaNombre').textContent=cow.num+' · '+cow.n;
   document.getElementById('vacaSub').textContent=[cow.raza,cow.color,cow.edad,cow.grupo,cow.origen].filter(x=>x&&x!=='—').join(' · ');
-  const bd=document.getElementById('vacaBadge');
-  if(cow.repro.badge)bd.innerHTML='<span class="badge '+cow.repro.badge+'">'+cow.repro.text.split('·')[0].trim()+'</span>';
-  else bd.innerHTML='';
   const al=document.getElementById('vacaAlerta');
   al.innerHTML='<div class="alert '+(cow.repro.badge==='bad'?'urgent':cow.repro.badge==='warn'?'warn':'info')+'">'+
     '<div style="flex:1"><div class="a-title">'+cow.repro.text+'</div>'+
@@ -1004,13 +993,6 @@ function goVaca(num,from){
   const san=document.getElementById('vacaSanidad');
   san.innerHTML='<svg class="ic-s ic" style="color:var('+(cow.sanOk?'--green':'--red')+')"><use href="#i-shield"/></svg>'+
     '<div style="font-size:12.5px;color:var(--ink-2)"><b style="color:var(--ink)">'+(cow.sanOk?'Sanidad al día':'Alerta sanitaria')+'</b> — '+cow.sanidad+'</div>';
-  /* historia */
-  const hist=document.getElementById('vacaHistoria');hist.innerHTML='';
-  cow.historia.forEach((h,i)=>{
-    hist.innerHTML+='<div class="f-item'+(h.miss?' miss':'')+'">'+
-      '<span class="f-time" style="width:auto;font-size:10px;white-space:nowrap">'+h.fecha+'</span>'+
-      '<span class="f-text">'+h.texto+(h.sub?'<br><span class="sub">'+h.sub+'</span>':'')+'</span></div>';
-  });
   /* historial de palpaciones de esta vaca */
   if(typeof renderVacaPalpaciones==='function')renderVacaPalpaciones(cow.num);
   /* partos de esta vaca (de la tabla partos) + su intervalo entre partos */
