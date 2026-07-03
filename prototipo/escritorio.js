@@ -1124,17 +1124,61 @@ let proximosPartos=[];
 let partosRecientes=[];
 /* partos del año en consulta (ANIO_SEL) */
 function partosDelAnio(){return partosRecientes.filter(p=>!p.fechaISO||String(p.fechaISO).slice(0,4)===String(ANIO_SEL));}
+/* clasifica cada parto para filtrar/mostrar: viva | mortinato | historico
+ * (histórico = parto del registro inicial, sin cría ni sexo detallado). */
+function _claseParto(p){
+  if(p.estado!=='viva')return 'mortinato';
+  return (!p.sexo&&(!p.cria||p.cria==='—'))?'historico':'viva';
+}
+let _partosBusq='';           // texto de búsqueda (vaca/cría)
+let _partosFiltro='todos';    // todos | viva | mortinato | historico
+function onPartosBuscar(v){_partosBusq=(v||'').toLowerCase().trim();renderPartosRecientes();}
+function onPartosFiltro(f,btn){
+  _partosFiltro=f;
+  if(btn)[...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));
+  renderPartosRecientes();
+}
+/* partos del año, aplicando filtro y búsqueda, más recientes primero */
+function _partosRecientesFiltrados(){
+  let arr=partosDelAnio();
+  if(_partosFiltro!=='todos')arr=arr.filter(p=>_claseParto(p)===_partosFiltro);
+  if(_partosBusq)arr=arr.filter(p=>((p.madre||'')+' '+(p.cria||'')).toLowerCase().includes(_partosBusq));
+  return arr.slice().sort((a,b)=>String(b.fechaISO||'').localeCompare(String(a.fechaISO||'')));
+}
 function renderPartosRecientes(){
   const tb=document.getElementById('partosRecientesTbody');if(!tb)return;tb.innerHTML='';
-  partosDelAnio().forEach(p=>{
+  const arr=_partosRecientesFiltrados();
+  const total=partosDelAnio().length;
+  const filtrando=_partosBusq||_partosFiltro!=='todos';
+  const cnt=document.getElementById('recCount');
+  if(cnt)cnt.textContent=filtrando?('· '+arr.length+' de '+total):('· '+total);
+  if(!arr.length){
+    tb.innerHTML='<tr class="emptyrow"><td colspan="3">'+
+      (total?'Ningún parto coincide con la búsqueda o el filtro.':'Sin partos registrados en '+ANIO_SEL+'.')+'</td></tr>';
+    return;
+  }
+  /* agrupados por mes (encabezado fijo por grupo) */
+  let mesActual=null;
+  arr.forEach(p=>{
+    const ym=String(p.fechaISO||'').slice(0,7);
+    if(ym&&ym!==mesActual){
+      mesActual=ym;
+      const mo=parseInt(ym.slice(5,7),10)-1;
+      const gr=document.createElement('tr');gr.className='grouprow';
+      gr.innerHTML='<td colspan="3">'+((LCRules.MESC[mo]||ym).toUpperCase())+' '+ym.slice(0,4)+'</td>';
+      tb.appendChild(gr);
+    }
     const tr=document.createElement('tr');
-    if(p.estado==='viva'){
-      const historico=!p.sexo&&(!p.cria||p.cria==='—');
-      tr.innerHTML='<td>'+p.madre+' → '+p.cria+'</td><td>'+p.fecha+'</td>'+
-        '<td class="r">'+(historico?'<span class="badge">histórico</span>':'<span class="badge ok">'+(p.sexo==='H'?'♀':'♂')+' en '+p.grupo+'</span>')+'</td>';
-    }else{
+    const cls=_claseParto(p);
+    if(cls==='mortinato'){
       tr.innerHTML='<td>'+p.madre+' → cría</td><td>'+p.fecha+'</td>'+
         '<td class="r"><span class="badge bad">mortinato</span></td>';
+    }else if(cls==='historico'){
+      tr.innerHTML='<td>'+p.madre+' → '+p.cria+'</td><td>'+p.fecha+'</td>'+
+        '<td class="r"><span class="badge">histórico</span></td>';
+    }else{
+      tr.innerHTML='<td>'+p.madre+' → '+p.cria+'</td><td>'+p.fecha+'</td>'+
+        '<td class="r"><span class="badge ok">'+(p.sexo==='H'?'♀':'♂')+' en '+p.grupo+'</span></td>';
     }
     tb.appendChild(tr);
   });
@@ -1152,6 +1196,16 @@ function renderPartosKpis(){
     '<div class="card kpi"><div class="k-label">Por parir</div><div class="k-value">'+porParir+'</div><div class="k-trend mut">de las palpaciones</div></div>'+
     '<div class="card kpi"><div class="k-label">Próximo</div><div class="k-value" style="font-size:20px">'+(prox?prox.parto:'—')+'</div><div class="k-trend mut">'+(prox?prox.cow:'sin próximos')+'</div></div>'+
     '<div class="card kpi"><div class="k-label">Mortinatos</div><div class="k-value'+(mortinatos?' down':'')+'">'+mortinatos+'</div><div class="k-trend mut">de '+total+' partos</div></div>';
+  /* línea de resumen: fertilidad (intervalo entre partos) y % mortinatos */
+  const res=document.getElementById('partosResumen');
+  if(res){
+    const parts=[];
+    const iv=(typeof _intervaloPartosProm==='function')?_intervaloPartosProm():null;
+    if(iv!=null)parts.push('Intervalo entre partos <b style="color:var(--ink)">'+(iv/30.44).toFixed(1)+' meses</b> <span class="mut">(meta 12–13)</span>');
+    if(total)parts.push('Mortinatos <b style="color:var(--ink)">'+Math.round(mortinatos/total*100)+'%</b> <span class="mut">'+mortinatos+' de '+total+'</span>');
+    if(parts.length){res.style.display='';res.innerHTML=parts.join(' &nbsp;·&nbsp; ');}
+    else res.style.display='none';
+  }
   refreshHeader();
 }
 /* KPIs de la página de reproducción (datos reales) */
@@ -1188,6 +1242,10 @@ function renderReproResumen(){
 let vacasVacias=[];
 function renderPartos(){
   const tb=document.getElementById('partosTbody');if(!tb)return;tb.innerHTML='';
+  const cnt=document.getElementById('proxCount');if(cnt)cnt.textContent='· '+proximosPartos.length;
+  if(!proximosPartos.length){
+    tb.innerHTML='<tr class="emptyrow"><td colspan="3">Ninguna preñez confirmada por ahora.</td></tr>';return;
+  }
   proximosPartos.forEach(p=>{
     const tr=document.createElement('tr');
     const num=p.cow.split('·')[0].trim();

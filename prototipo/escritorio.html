@@ -288,21 +288,31 @@
         <button class="btn filled" style="margin-bottom:14px" onclick="openParto()">
           <svg class="ic-s ic"><use href="#i-sprout"/></svg>Registrar parto</button>
         <div class="kpis" id="partosKpis"></div>
+        <div class="resumen-line" id="partosResumen" style="display:none"></div>
 
-        <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:12px">
+        <div class="grid" style="grid-template-columns:1fr 1.2fr;margin-top:14px;align-items:start">
           <div>
-            <div class="section-label" style="margin-top:4px">Próximos partos · de las palpaciones</div>
-            <div class="card" style="padding:8px">
-              <table>
+            <div class="section-label" style="margin-top:4px">Próximos partos <span class="lbl-count" id="proxCount"></span></div>
+            <div class="card tbl-wrap" style="padding:8px">
+              <table class="tbl-sticky">
                 <thead><tr><th>Vaca</th><th>Preñez</th><th class="r">Parto estimado</th></tr></thead>
                 <tbody id="partosTbody"></tbody>
               </table>
             </div>
           </div>
           <div>
-            <div class="section-label" style="margin-top:4px">Partos recientes</div>
-            <div class="card" style="padding:8px">
-              <table>
+            <div class="section-label" style="margin-top:4px">Partos recientes <span class="lbl-count" id="recCount"></span></div>
+            <div class="tbl-toolbar">
+              <input class="tbl-search" id="partosBuscar" placeholder="Buscar por vaca o cría…" oninput="onPartosBuscar(this.value)">
+              <div class="pchips" id="partosFiltros">
+                <button class="pchip sel" onclick="onPartosFiltro('todos',this)">Todos</button>
+                <button class="pchip" onclick="onPartosFiltro('viva',this)">Vivas</button>
+                <button class="pchip" onclick="onPartosFiltro('mortinato',this)">Mortinatos</button>
+                <button class="pchip" onclick="onPartosFiltro('historico',this)">Históricos</button>
+              </div>
+            </div>
+            <div class="card tbl-wrap" style="padding:8px">
+              <table class="tbl-sticky">
                 <thead><tr><th>Madre → cría</th><th>Fecha</th><th class="r">Resultado</th></tr></thead>
                 <tbody id="partosRecientesTbody"></tbody>
               </table>
