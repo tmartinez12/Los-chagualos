@@ -621,16 +621,17 @@ function sincronizar(){
 }
 updateSync();
 /* ===== Partos ===== */
-const partoInfo={
-  '011 · Violeta':'Preñada 8,5 meses · esperado ~3 jul',
-  '019 · Canela' :'Preñada 8 meses · esperado ~18 jul',
-  '045 · Morena' :'Preñada 7,5 meses · esperado ~2 ago'
-};
-/* próximos partos (salen de las palpaciones) e historial reciente */
+/* info por vaca: se llena con datos reales; el subtítulo de la hoja cae a un
+ * texto genérico si no hay nada específico. */
+const partoInfo={};
+/* próximos partos (salen de las palpaciones) e historial reciente.
+ * Arrancan en CERO: los valores reales los pone cargarReproMovil desde la BD.
+ * (No hardcodear conteos de demo: si no hay conexión, mejor mostrar 0 que un
+ *  número inventado.) */
 let proximosPartos=[];
 let partosRecientes=[];
-let partos2026=7, porParir=9, criaNum=71, nTerneras=11, nMachos=2;
-const parto={cow:'011 · Violeta',sexo:'H',tipo:'normal',estado:'viva',peso:38};
+let partos2026=0, porParir=0, criaNum=71, nTerneras=11, nMachos=2;
+const parto={cow:'',sexo:'H',tipo:'normal',estado:'viva',peso:38};
 function renderPartos(){
   document.getElementById('kpiPartos2026').textContent=partos2026;
   document.getElementById('kpiPorParir').textContent=porParir;
