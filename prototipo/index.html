@@ -45,7 +45,7 @@
 </svg>
 
 <div class="phone">
-  <div class="statusbar"><span>7:42</span><span>sin señal · 86%</span></div>
+  <div class="statusbar"><span id="mClock">—</span><span>Los Chagualos</span></div>
 
   <!-- TOP BAR -->
   <div class="topbar">
@@ -588,11 +588,10 @@
     <div class="m-label" id="partoCow">011 · VIOLETA</div>
     <div class="m-del" id="partoDel" style="margin-bottom:14px">Preñada 8,5 meses · esperado ~3 jul</div>
 
-    <div class="section-label" style="margin-top:0">Fecha</div>
-    <div class="chips">
-      <button class="chip sel">Hoy</button>
-      <button class="chip" onclick="snack('En la app real abre el calendario')">Otra fecha…</button>
-    </div>
+    <div class="section-label" style="margin-top:0">Fecha del parto</div>
+    <input type="date" id="partoFecha" oninput="parto.fecha=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);padding:10px 12px;outline:none">
+
 
     <div class="section-label">Sexo de la cría</div>
     <div class="chips">
@@ -724,12 +723,6 @@
       <button class="chip" onclick="secaCow('027 · Estrella')">027 Estrella</button>
       <button class="chip" onclick="secaCow('033 · Paloma')">033 Paloma</button>
       <button class="chip" onclick="secaCow('029 · Pinta')">029 Pinta</button>
-    </div>
-
-    <div class="section-label">Fecha de secado</div>
-    <div class="chips">
-      <button class="chip sel">Hoy</button>
-      <button class="chip" onclick="snack('En la app real abre el calendario')">Otra fecha…</button>
     </div>
 
     <button class="btn filled" style="width:100%;justify-content:center;margin-top:16px" onclick="saveSeca()">

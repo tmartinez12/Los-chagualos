@@ -661,7 +661,8 @@ function renderPartos(){
 function openParto(cow){
   const horras=Object.values(animalesPorIdM).filter(a=>a.grupo==='horra').map(a=>a.id+' · '+a.nombre);
   parto.cow=cow||horras[0]||'';
-  parto.sexo='H';parto.tipo='normal';parto.estado='viva';parto.peso=38;
+  parto.sexo='H';parto.tipo='normal';parto.estado='viva';parto.peso=38;parto.fecha=isoHoyM();
+  const fp=document.getElementById('partoFecha');if(fp)fp.value=parto.fecha;
   document.getElementById('partoCow').textContent=(parto.cow||'—').toUpperCase();
   document.getElementById('partoDel').textContent=partoInfo[parto.cow]||'Confirma la fecha y los datos de la cría';
   document.getElementById('partoPesoVal').textContent=parto.peso;
@@ -678,6 +679,7 @@ function partoPeso(d){parto.peso=Math.max(20,Math.min(60,parto.peso+d));
   document.getElementById('partoPesoVal').textContent=parto.peso;}
 function saveParto(){
   closeParto();
+  const fechaP=parto.fecha||isoHoyM();
   const nombre=parto.cow.split('·')[1].trim();
   const sexoTxt=parto.sexo==='H'?'♀ hembra':'♂ macho';
   const tipoTxt=parto.tipo==='asistido'?'parto asistido':'parto normal';
@@ -708,14 +710,14 @@ function saveParto(){
       grupos.machos.header='<b>'+nMachos+' machos.</b> Toros y terneros machos del hato.';}
     grupos[grupo].animales.unshift([num+' · (cría de '+nombre+')','recién nacid'+(parto.sexo==='H'?'a':'o')+' · '+parto.peso+' kg · 0 meses',0]);
     partosRecientes.unshift({t:parto.cow+' → cría '+num,
-      s:fmtFechaCortaM(isoHoyM())+' · '+sexoTxt+' · viva · '+parto.peso+' kg · '+tipoTxt,badge:'en '+destino,bw:'ok'});
+      s:fmtFechaCortaM(fechaP)+' · '+sexoTxt+' · viva · '+parto.peso+' kg · '+tipoTxt,badge:'en '+destino,bw:'ok'});
     deshacerCria=()=>{grupos[grupo].animales.shift();grupos[grupo].sub=prevSub;grupos[grupo].header=prevHeader;
       if(parto.sexo==='H')nTerneras--;else nMachos--;criaNum--;};
     msg='Parto de '+nombre+' · cría '+num+' ('+sexoTxt+', '+parto.peso+' kg) creada en '+destino+' y vinculada · '+nombre+' al ordeño en DEL 0';
   }else{
     // mortinato: no entra al hato, pero queda registrado
     partosRecientes.unshift({t:parto.cow+' → cría',
-      s:fmtFechaCortaM(isoHoyM())+' · '+sexoTxt+' · nació muerta · '+parto.peso+' kg · '+tipoTxt,badge:'mortinato',bw:'bad'});
+      s:fmtFechaCortaM(fechaP)+' · '+sexoTxt+' · nació muerta · '+parto.peso+' kg · '+tipoTxt,badge:'mortinato',bw:'bad'});
     msg='Parto de '+nombre+' · la cría nació muerta — queda en el historial · '+nombre+' al ordeño en DEL 0';
   }
   encolar();
@@ -727,11 +729,11 @@ function saveParto(){
     pSaveParto=Promise.resolve()
       .then(()=>{ if(criaIdNueva)return LCStore.insertAnimal({id:criaIdNueva,nombre:'Cría de '+nombre,
         raza:madreRaza,grupo:parto.sexo==='H'?'ternera':'macho',sexo:parto.sexo,
-        edadAnios:0,origen:'nacido_finca',madreId:numMadre,pesoKg:parto.peso}); })
-      .then(()=>LCStore.registrarParto({id:partoId,madreId:numMadre,criaId:criaIdNueva,fecha:isoHoyM(),
+        edadAnios:0,nacimiento:fechaP,origen:'nacido_finca',madreId:numMadre,pesoKg:parto.peso}); })
+      .then(()=>LCStore.registrarParto({id:partoId,madreId:numMadre,criaId:criaIdNueva,fecha:fechaP,
         sexo:parto.sexo,pesoKg:parto.peso,tipo:parto.tipo,estadoCria:parto.estado}))
       .then(()=>LCStore.updateAnimalCampos(numMadre,{grupo:'ordeño',
-        inicio_lactancia:new Date().toISOString().slice(0,10),estado_repro:null,
+        inicio_lactancia:fechaP,estado_repro:null,
         prenez_meses:null,ultima_palpacion:null}))
       .then(()=>desencolar())
       .catch(e=>console.warn('Parto móvil no guardado:',e.message||e));
@@ -1152,5 +1154,13 @@ function saveBaja(){
       {grupo:(animalesPorIdM[numBaja]||{}).grupo||'ordeño',baja_motivo:null,baja_fecha:null,baja_valor:null,baja_nota:null}).catch(()=>{});
   });
 }
+/* reloj real en la barra de estado */
+function tickReloj(){
+  const el=document.getElementById('mClock');if(!el)return;
+  const d=new Date();
+  el.textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+tickReloj();setInterval(tickReloj,15000);
+
 /* la app arranca en el selector de línea de negocio */
 go('scr-selector');
