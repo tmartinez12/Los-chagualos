@@ -121,7 +121,7 @@
       <div class="list-item" onclick="go('scr-potreros')" style="display:none">
         <div class="li-leading" id="rut-hato"><svg class="ic"><use href="#i-pin"/></svg></div>
         <div class="li-body"><div class="li-title">3 · Mover el hato</div>
-          <div class="li-sub">Está en P7 (día 2) · sugerido: P4</div></div>
+          <div class="li-sub">Rotación de potreros</div></div>
         <svg class="ic chev"><use href="#i-chev"/></svg>
       </div>
     </div>
@@ -132,13 +132,13 @@
       <div class="kpi-row">
         <div class="kpi">
           <div class="k-label">Silo restante</div>
-          <div class="k-value">45 <span class="k-unit">días</span></div>
-          <div class="k-trend down">sembrar ya</div>
+          <div class="k-value">— <span class="k-unit">días</span></div>
+          <div class="k-trend"></div>
         </div>
         <div class="kpi">
           <div class="k-label">Lote en crecimiento</div>
-          <div class="k-value">38 <span class="k-unit">días</span></div>
-          <div class="k-trend">cosecha ~ 75 días</div>
+          <div class="k-value">— <span class="k-unit">días</span></div>
+          <div class="k-trend"></div>
         </div>
       </div>
     </div>
@@ -151,18 +151,9 @@
     <!-- 1. LA pregunta: ¿cómo va la producción? -->
     <div class="card chart-card" style="margin-top:4px">
       <div style="display:flex;align-items:baseline;gap:10px">
-        <div style="font-size:40px;font-weight:700;letter-spacing:-1.5px">184 <span style="font-size:18px;color:var(--ink-2);font-weight:500">L hoy</span></div>
-        <div class="up" style="font-size:13px;font-weight:600">↑ 5% sobre tu semana (175 L)</div>
+        <div style="font-size:40px;font-weight:700;letter-spacing:-1.5px"><span id="ordHoyTotal">0</span> <span style="font-size:18px;color:var(--ink-2);font-weight:500">L hoy</span></div>
       </div>
-      <svg class="chart" viewBox="0 0 320 54" style="margin-top:6px">
-        <polyline points="10,38 60,40 110,34 160,36 210,30 260,28 305,22"
-          fill="none" stroke="#2F7E33" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="305" cy="22" r="4" fill="#2F7E33"/>
-        <g font-family="Work Sans,sans-serif" font-size="9" fill="#A8ACA0">
-          <text x="10" y="52">vie</text><text x="60" y="52">sáb</text><text x="110" y="52">dom</text>
-          <text x="160" y="52">lun</text><text x="210" y="52">mar</text><text x="258" y="52">mié</text><text x="298" y="52">hoy</text>
-        </g>
-      </svg>
+      <div class="chart-sub" style="font-size:12.5px;color:var(--ink-2);margin-top:4px">Total registrado en el ordeño de hoy</div>
     </div>
 
 
@@ -179,60 +170,9 @@
 
   <!-- ============ POTREROS ============ -->
   <div class="screen" id="scr-potreros">
-    <div class="card" style="display:flex;gap:12px;align-items:center;margin-top:4px">
-      <div class="a-icon" style="width:34px;height:34px;border-radius:10px;display:flex;align-items:center;
-        justify-content:center;background:var(--red-soft);color:var(--red)"><svg class="ic"><use href="#i-pin"/></svg></div>
-      <div style="flex:1">
-        <div style="font-size:14px;font-weight:700">El hato está en el potrero 7 · día 2</div>
-        <div style="font-size:12px;color:var(--ink-2)">Regla de la finca: 1 día, máximo 2 — hay que mover hoy</div>
-      </div>
-    </div>
-
-    <div class="card" style="border:1.5px solid var(--ink)">
-      <div class="row">
-        <svg class="ic" style="color:var(--ink-2)"><use href="#i-star"/></svg>
-        <div style="flex:1">
-          <div style="font-size:14.5px;font-weight:700">Sugerido: Potrero 4</div>
-          <div style="font-size:12px;color:var(--ink-2)">35 días de descanso · aforo 2.900 kg MV/ha · agua ok</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <button class="btn filled" style="flex:1;justify-content:center" onclick="confirmMove()">Mover al P4</button>
-        <button class="btn text" onclick="snack('Toca cualquier potrero en verde para elegirlo')">Elegir otro</button>
-      </div>
-    </div>
-
-    <div class="section-label">Potreros · días de descanso</div>
-    <div class="pgrid">
-      <div class="pot warn" onclick="snack('Potrero 1: 9 días de descanso · aún recuperando')"><div class="p-top"><span class="p-name">P1</span><span class="dot"></span></div><div class="p-days">9</div><div class="p-cap">recuperando</div></div>
-      <div class="pot warn" onclick="snack('Potrero 2: 14 días de descanso · aún recuperando')"><div class="p-top"><span class="p-name">P2</span><span class="dot"></span></div><div class="p-days">14</div><div class="p-cap">recuperando</div></div>
-      <div class="pot ok" onclick="snack('Potrero 3: 29 días de descanso · aforo pendiente')"><div class="p-top"><span class="p-name">P3</span><span class="dot"></span></div><div class="p-days">29</div><div class="p-cap">listo</div></div>
-      <div class="pot ok suggested" onclick="confirmMove()"><div class="p-tag">SUGERIDO</div><div class="p-top"><span class="p-name">P4</span><span class="dot"></span></div><div class="p-days">35</div><div class="p-cap">listo · aforo ok</div></div>
-      <div class="pot ok" onclick="snack('Potrero 5: 31 días de descanso · listo')"><div class="p-top"><span class="p-name">P5</span><span class="dot"></span></div><div class="p-days">31</div><div class="p-cap">listo</div></div>
-      <div class="pot warn" onclick="snack('Potrero 6: 18 días de descanso · aún recuperando')"><div class="p-top"><span class="p-name">P6</span><span class="dot"></span></div><div class="p-days">18</div><div class="p-cap">recuperando</div></div>
-      <div class="pot bad now" onclick="snack('El hato está aquí · día 2 de ocupación — hay que mover hoy')"><div class="p-tag">HATO AQUÍ</div><div class="p-top"><span class="p-name">P7</span><span class="dot"></span></div><div class="p-days">2º</div><div class="p-cap">día de ocupación</div></div>
-      <div class="pot bad off" onclick="snack('Potrero 8: recién pastoreado hace 1 día — necesita descanso')"><div class="p-top"><span class="p-name">P8</span><span class="dot"></span></div><div class="p-days">1</div><div class="p-cap">recién pastoreado</div></div>
-      <div class="pot bad off" onclick="snack('Potrero 9: recién pastoreado hace 3 días — necesita descanso')"><div class="p-top"><span class="p-name">P9</span><span class="dot"></span></div><div class="p-days">3</div><div class="p-cap">recién pastoreado</div></div>
-      <div class="pot warn" onclick="snack('Potrero 10: 12 días de descanso · aún recuperando')"><div class="p-top"><span class="p-name">P10</span><span class="dot"></span></div><div class="p-days">12</div><div class="p-cap">recuperando</div></div>
-      <div class="pot warn" onclick="snack('Potrero 11: 21 días · ojo: cerca dañada, revisar antes de usar')"><div class="p-top"><span class="p-name">P11</span><span class="dot"></span></div><div class="p-days">21</div><div class="p-cap">cerca dañada</div></div>
-      <div class="pot ok" onclick="snack('Potrero 12: 26 días de descanso · listo')"><div class="p-top"><span class="p-name">P12</span><span class="dot"></span></div><div class="p-days">26</div><div class="p-cap">listo</div></div>
-    </div>
-
-    <div class="card mt12">
-      <div class="chart-title" style="font-size:13.5px">Vuelta proyectada (próximos 7 días)</div>
-      <div class="chips mt8">
-        <span class="chip sel">Hoy → P4</span><span class="chip">vie P5</span><span class="chip">sáb P3</span>
-        <span class="chip">dom P12</span><span class="chip">lun P11</span><span class="chip">mar P2</span><span class="chip">mié P6</span>
-      </div>
-      <div class="chart-sub mt8 mb0">Días de descanso por potrero.
-        En seca el sistema pedirá ampliar la vuelta.</div>
-    </div>
-
-    <div class="card flat" style="display:flex;gap:10px;align-items:center;padding:12px 14px">
-      <svg class="ic-s ic" style="color:var(--ink-2)"><use href="#i-rain"/></svg>
-      <div style="flex:1;font-size:13px">Descanso de potreros
-        <span style="color:var(--ink-2)">(el pasto crece con esto)</span></div>
-      <button class="btn outl small" onclick="snack('Registro guardado')">Registrar</button>
+    <div class="card" style="text-align:center;padding:32px 20px;margin-top:8px">
+      <div style="font-size:15px;font-weight:700;margin-bottom:6px">Potreros</div>
+      <div style="font-size:13px;color:var(--ink-2);line-height:1.5">La rotación de potreros se administra desde el escritorio.<br>Aquí aparecerá el resumen cuando esté conectado a la base.</div>
     </div>
   </div>
 
@@ -348,8 +288,8 @@
     <div class="cow-hero">
       <div class="cow-photo"><svg class="ic-l ic"><use href="#i-tag"/></svg></div>
       <div style="flex:1">
-        <h2 id="vmNombre">042 · Lucero</h2>
-        <div class="c-sub" id="vmSub">Holstein × Gyr · 5,2 años · En ordeño · Nació en finca</div>
+        <h2 id="vmNombre">—</h2>
+        <div class="c-sub" id="vmSub"></div>
       </div>
       <button class="btn outl small" onclick="openEditVaca()">✏️ Editar</button>
     </div>
@@ -357,49 +297,27 @@
     <div class="alert warn" id="vmAlerta">
       <div class="a-icon"><svg class="ic"><use href="#i-cal"/></svg></div>
       <div class="a-body">
-        <div class="a-title">Preñada · 6 meses (palpación 2 may)</div>
-        <div class="a-sub">Parto probable ~12 sep · <b>Secar ~12 jul</b></div>
-        <button class="btn outl small mt8" onclick="openSeca('042 · Lucero')">Programar secado</button>
+        <div class="a-title"></div>
+        <div class="a-sub"></div>
+        <button class="btn outl small mt8" onclick="openSeca(fichaActualM)">Programar secado</button>
       </div>
     </div>
 
-    <div class="statgrid" id="vmStats">
-      <div class="stat"><div class="s-label">Último ordeño</div><div class="s-value">18 L</div></div>
-      <div class="stat"><div class="s-label">DEL</div><div class="s-value">152 días</div></div>
-      <div class="stat"><div class="s-label">Peso (abr)</div><div class="s-value">480 kg</div></div>
-      <div class="stat"><div class="s-label">Partos</div><div class="s-value">3</div></div>
-    </div>
+    <div class="statgrid" id="vmStats"></div>
 
-    <div class="card flat" id="vmGenea" style="font-size:13px;color:var(--ink-2);line-height:1.6;margin-top:8px">
-      <b style="color:var(--ink)">Madre:</b> 017 Azucena &nbsp;·&nbsp; <b style="color:var(--ink)">Padre:</b> Sansón<br>
-      <b style="color:var(--ink)">Crías:</b> 038 Mona, 051 Careta, 064
-    </div>
+    <div class="card flat" id="vmGenea" style="font-size:13px;color:var(--ink-2);line-height:1.6;margin-top:8px"></div>
 
     <div class="card chart-card mt12">
       <div class="chart-title" style="font-size:13.5px">Curva de lactancia</div>
-      <div class="chart-sub" id="vmCurvaSub">Pico típico ~DEL 55 · hoy va en DEL 152</div>
+      <div class="chart-sub" id="vmCurvaSub"></div>
       <svg id="vacaCurvaM" class="chart" viewBox="0 0 320 130"></svg>
     </div>
 
-    <div class="card flat" id="vmSanidad" style="display:flex;gap:10px;align-items:center;padding:12px 14px">
-      <svg class="ic-s ic" style="color:var(--green)"><use href="#i-shield"/></svg>
-      <div style="font-size:12.5px;color:var(--ink-2)">
-        <b style="color:var(--ink)">Sanidad al día</b> — vacunas ok (aftosa may 2026) · sin tratamientos ni retiros activos</div>
-    </div>
+    <div class="card flat" id="vmSanidad" style="display:flex;gap:10px;align-items:center;padding:12px 14px"></div>
 
     <div class="section-label">Historia</div>
     <div class="card">
-      <div class="timeline" id="vmHistoria">
-        <div class="tl-item"><div class="tl-date">02 MAY 2026</div>
-          <div class="tl-text">Palpación: <b>preñada 6 meses</b></div>
-          <div class="tl-sub">Dr. Restrepo · parto calculado ~12 sep</div></div>
-        <div class="tl-item"><div class="tl-date">15 MAR 2026</div>
-          <div class="tl-text">Mastitis — tratamiento + retiro 4 días</div></div>
-        <div class="tl-item"><div class="tl-date">11 ENE 2026</div>
-          <div class="tl-text">Parto #3 — nació la 064 · arranca lactancia (DEL 0)</div></div>
-        <div class="tl-item" style="padding-bottom:0"><div class="tl-date">03 DIC 2025</div>
-          <div class="tl-text">Monta de Sansón vista</div></div>
-      </div>
+      <div class="timeline" id="vmHistoria"></div>
     </div>
     <button class="btn filled mt12" style="width:100%;justify-content:center" onclick="openSheet()">
       ＋ Registrar evento en esta vaca</button>
@@ -564,10 +482,10 @@
   <div class="sheet" id="milkSheet">
     <div class="handle"></div>
     <div style="text-align:center">
-      <div class="m-label" id="cowName">042 · LUCERO</div>
-      <div class="m-del" id="cowDel">DEL 152 · 3er parto</div>
-      <div class="milk-value"><span id="milkNum">18</span> <span class="u">L</span></div>
-      <div class="milk-ref" id="cowRef">Ayer dio 18 L — acepta ✓ si dio igual</div>
+      <div class="m-label" id="cowName">—</div>
+      <div class="m-del" id="cowDel"></div>
+      <div class="milk-value"><span id="milkNum">0</span> <span class="u">L</span></div>
+      <div class="milk-ref" id="cowRef"></div>
       <div class="keypad">
         <button onclick="key(1)">1</button><button onclick="key(2)">2</button><button onclick="key(3)">3</button>
         <button onclick="key(4)">4</button><button onclick="key(5)">5</button><button onclick="key(6)">6</button>
@@ -629,16 +547,11 @@
   <div class="sheet" id="palpSheet">
     <div class="handle"></div>
     <h3>Registrar palpación</h3>
-    <div class="m-label" id="palpCow">027 · ESTRELLA</div>
-    <div class="m-del" id="palpInfo" style="margin-bottom:14px">celo sin repetir — ¿preñada?</div>
+    <div class="m-label" id="palpCow">—</div>
+    <div class="m-del" id="palpInfo" style="margin-bottom:14px"></div>
 
     <div class="section-label" style="margin-top:0">Vaca</div>
-    <div class="chips" id="palpCows">
-      <button class="chip sel" onclick="palpCow('027 · Estrella')">027 Estrella</button>
-      <button class="chip" onclick="palpCow('051 · Careta')">051 Careta</button>
-      <button class="chip" onclick="palpCow('033 · Paloma')">033 Paloma</button>
-      <button class="chip" onclick="palpCow('029 · Pinta')">029 Pinta</button>
-    </div>
+    <div class="chips" id="palpCows"></div>
 
     <div class="section-label">Resultado</div>
     <div class="chips">
@@ -666,18 +579,11 @@
   <div class="sheet" id="trataSheet">
     <div class="handle"></div>
     <h3>Registrar enfermedad / tratamiento</h3>
-    <div class="m-label" id="trataCow">033 · PALOMA</div>
-    <div class="m-del" id="trataInfo" style="margin-bottom:14px">DEL 95 · 4to parto</div>
+    <div class="m-label" id="trataCow">—</div>
+    <div class="m-del" id="trataInfo" style="margin-bottom:14px"></div>
 
     <div class="section-label" style="margin-top:0">Vaca</div>
-    <div class="chips" id="trataCows">
-      <button class="chip" onclick="trataCow('042 · Lucero')">042 Lucero</button>
-      <button class="chip" onclick="trataCow('038 · Mona')">038 Mona</button>
-      <button class="chip" onclick="trataCow('051 · Careta')">051 Careta</button>
-      <button class="chip" onclick="trataCow('027 · Estrella')">027 Estrella</button>
-      <button class="chip sel" onclick="trataCow('033 · Paloma')">033 Paloma</button>
-      <button class="chip" onclick="trataCow('029 · Pinta')">029 Pinta</button>
-    </div>
+    <div class="chips" id="trataCows"></div>
 
     <div class="section-label">Problema</div>
     <div class="chips">
@@ -712,18 +618,11 @@
   <div class="sheet" id="secaSheet">
     <div class="handle"></div>
     <h3>Registrar secado</h3>
-    <div class="m-label" id="secaCow">042 · LUCERO</div>
-    <div class="m-del" id="secaInfo" style="margin-bottom:14px">Preñada 6 meses · parto ~12 sep</div>
+    <div class="m-label" id="secaCow">—</div>
+    <div class="m-del" id="secaInfo" style="margin-bottom:14px"></div>
 
     <div class="section-label" style="margin-top:0">Vaca</div>
-    <div class="chips" id="secaCows">
-      <button class="chip sel" onclick="secaCow('042 · Lucero')">042 Lucero</button>
-      <button class="chip" onclick="secaCow('038 · Mona')">038 Mona</button>
-      <button class="chip" onclick="secaCow('051 · Careta')">051 Careta</button>
-      <button class="chip" onclick="secaCow('027 · Estrella')">027 Estrella</button>
-      <button class="chip" onclick="secaCow('033 · Paloma')">033 Paloma</button>
-      <button class="chip" onclick="secaCow('029 · Pinta')">029 Pinta</button>
-    </div>
+    <div class="chips" id="secaCows"></div>
 
     <button class="btn filled" style="width:100%;justify-content:center;margin-top:16px" onclick="saveSeca()">
       <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar secado</button>
@@ -793,7 +692,7 @@
   <div class="sheet" id="editSheet">
     <div class="handle"></div>
     <h3>Editar datos</h3>
-    <div class="m-label" id="editCow">042 · LUCERO</div>
+    <div class="m-label" id="editCow">—</div>
     <div class="section-label" style="margin-top:8px">Nombre</div>
     <input id="editNombre" placeholder="Nombre del animal" oninput="editM.nombre=this.value"
       style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
@@ -828,18 +727,11 @@
   <div class="sheet" id="bajaSheet">
     <div class="handle"></div>
     <h3>Registrar baja</h3>
-    <div class="m-label" id="bajaCow">033 · PALOMA</div>
-    <div class="m-del" id="bajaInfo" style="margin-bottom:14px">DEL 95 · 4to parto</div>
+    <div class="m-label" id="bajaCow">—</div>
+    <div class="m-del" id="bajaInfo" style="margin-bottom:14px"></div>
 
     <div class="section-label" style="margin-top:0">Animal</div>
-    <div class="chips" id="bajaCows">
-      <button class="chip" onclick="bajaCow('042 · Lucero')">042 Lucero</button>
-      <button class="chip" onclick="bajaCow('038 · Mona')">038 Mona</button>
-      <button class="chip" onclick="bajaCow('051 · Careta')">051 Careta</button>
-      <button class="chip" onclick="bajaCow('027 · Estrella')">027 Estrella</button>
-      <button class="chip sel" onclick="bajaCow('033 · Paloma')">033 Paloma</button>
-      <button class="chip" onclick="bajaCow('029 · Pinta')">029 Pinta</button>
-    </div>
+    <div class="chips" id="bajaCows"></div>
 
     <div class="section-label">Motivo</div>
     <div class="chips">

@@ -2,7 +2,7 @@ const titles={
   'scr-selector':['Los Chagualos','Elige una línea de negocio'],
   'scr-inicio':['Dashboard','Resumen del día'],
   'scr-ordeno':['Leche','Producción y ordeño del día'],
-  'scr-potreros':['Potreros','12 potreros · ocupación 1 día (máx 2)'],
+  'scr-potreros':['Potreros',''],
   'scr-hato':['Hato','Inventario del hato'],
   'scr-vaca':['Ficha del animal','Se consulta mucho, se edita poco'],
   'scr-sanitario':['Sanidad','Tratamientos, retiros y vacunas'],
@@ -11,64 +11,17 @@ const titles={
   'scr-grupo':['Grupo',''],
 };
 /* drill-down: hato → grupo → animal */
+/* Grupos del hato: SOLO la estructura (nombre). Las listas de animales, los
+ * subtítulos y los headers se llenan desde Supabase en cacheAnimalesMovil;
+ * arrancan vacíos para no mostrar datos inventados. */
 const grupos={
-  ordeno:{nombre:'Vacas en ordeño',sub:'26 vacas · ayer 11,4 L/vaca · DEL prom. 164',
-    header:'<b>26 vacas en ordeño.</b> Ordenadas como entran al ordeño. Ayer: 296 L en total.',
-    animales:[
-      ['042 · Lucero','DEL 152 · preñada 6m · ayer 18 L',1],
-      ['038 · Mona','DEL 98 · servida (por confirmar) · ayer 16 L'],
-      ['051 · Careta','DEL 121 · ayer 14 L'],
-      ['027 · Estrella','DEL 64 · pico de lactancia · ayer 13 L'],
-      ['017 · Azucena','DEL 201 · retiro 2 días más · ayer 11 L'],
-      ['033 · Paloma','DEL 95 · vacía 132 días · ayer 6 L'],
-      ['029 · Pinta','DEL 412 · vacía 150 días · ayer 5 L'],
-      ['Ver las 19 restantes','',0,1]]},
-  horras:{nombre:'Vacas horras (secas)',sub:'9 vacas · 6 paren antes de octubre',
-    header:'<b>9 vacas horras.</b> Ordenadas por fecha de parto: las 3 primeras entran al ordeño antes de agosto.',
-    animales:[
-      ['011 · Violeta','preñada 8,5 meses · parto ~3 jul'],
-      ['019 · Canela','preñada 8 meses · parto ~18 jul'],
-      ['045 · Morena','preñada 7,5 meses · parto ~2 ago'],
-      ['008 · Golondrina','preñada 7 meses · parto ~12 sep'],
-      ['036 · Cereza','preñada 7 meses · parto ~15 sep'],
-      ['041 · Garza','preñada 6,5 meses · parto ~28 sep'],
-      ['014 · Nube','preñada 6 meses · parto ~10 oct'],
-      ['048 · Flor','preñada 5,5 meses · parto ~25 oct'],
-      ['022 · Luna','preñada 5 meses · parto ~8 nov']]},
-  novillas:{nombre:'Novillas de vientre',sub:'14 novillas · 4 listas para servicio',
-    header:'<b>14 novillas de vientre.</b> 4 ya tienen peso para servicio (>330 kg).',
-    animales:[
-      ['055 · Princesa','2,1 años · 342 kg · lista para servicio'],
-      ['058 · Alondra','2 años · 335 kg · lista para servicio'],
-      ['061 · Café','1,9 años · 318 kg · le faltan ~12 kg'],
-      ['Ver las 11 restantes','',0,1]]},
-  levante:{nombre:'Hembras de levante',sub:'18 hembras · peso mensual al día',
-    header:'<b>18 hembras de levante.</b> Crecimiento promedio: 480 g/día (meta: 500).',
-    animales:[
-      ['066 · Esmeralda','14 meses · 218 kg'],
-      ['068 · Perla','13 meses · 201 kg'],
-      ['Ver las 16 restantes','',0,1]]},
-  terneras:{nombre:'Terneras',sub:'11 terneras · 2 destetes próximos',
-    header:'<b>11 terneras.</b> Consumen 40 L/día de la leche del ordeño.',
-    animales:[
-      ['064 · (cría de Lucero)','5 meses · destete próximo'],
-      ['071 · (cría de Canela)','4,5 meses · destete próximo'],
-      ['Ver las 9 restantes','',0,1]]},
-  machos:{nombre:'Machos / toros',sub:'2 machos',
-    header:'<b>2 machos.</b> Toros y terneros machos del hato.',
-    animales:[
-      ['T01 · Sansón','Toro · 6 años · sanidad al día'],
-      ['T02 · Torete','11 meses · venta programada ago']]},
-  bajas:{nombre:'Bajas · histórico',sub:'7 animales fuera del hato · 2026',
-    header:'<b>7 bajas en 2026.</b> Vendidas, muertas o perdidas — ya no están en el hato, pero su historia se conserva.',
-    animales:[
-      ['021 · Lucía','VENDIDA · 4 may · descarte por baja producción ($2,1 M)'],
-      ['009 · Manzana','MUERTA · 18 abr · timpanismo'],
-      ['T02 · (cría 058)','VENDIDO · 2 abr · ternero macho ($0,9 M)'],
-      ['044 · Estrella vieja','MUERTA · 11 mar · parto complicado'],
-      ['016 · Perla','VENDIDA · 20 feb · descarte por edad ($1,8 M)'],
-      ['033 · (cría de Paloma)','MUERTA · 20 abr · mortinato'],
-      ['052 · Nube','PERDIDA · 6 ene · no apareció tras tormenta']]}
+  ordeno:{nombre:'Vacas en ordeño',sub:'',header:'',animales:[]},
+  horras:{nombre:'Vacas horras (secas)',sub:'',header:'',animales:[]},
+  novillas:{nombre:'Novillas de vientre',sub:'',header:'',animales:[]},
+  levante:{nombre:'Hembras de levante',sub:'',header:'',animales:[]},
+  terneras:{nombre:'Terneras',sub:'',header:'',animales:[]},
+  machos:{nombre:'Machos / toros',sub:'',header:'',animales:[]},
+  bajas:{nombre:'Bajas · histórico',sub:'',header:'',animales:[]}
 };
 /* sin demo: las listas de cada grupo arrancan vacías y se llenan desde Supabase */
 Object.keys(grupos).forEach(k=>{grupos[k].animales=[];});
@@ -95,10 +48,10 @@ function openGroup(k){const g=grupos[k];
   const list=document.getElementById('grpList');list.innerHTML='';
   g.animales.forEach(a=>{const d=document.createElement('div');d.className='list-item';
     if(a[3]){d.innerHTML='<div class="li-body" style="text-align:center"><div class="li-sub" style="font-weight:600;text-decoration:underline;text-underline-offset:3px">'+a[0]+'</div></div>';
-      d.onclick=()=>snack('La lista completa, con scroll, en la app real');}
+      d.onclick=()=>snack('Ver la lista completa');}
     else{d.innerHTML='<div class="li-body"><div class="li-title">'+a[0]+'</div>'+
       '<div class="li-sub">'+a[1]+'</div></div><svg class="ic chev"><use href="#i-chev"/></svg>';
-      d.onclick=a[2]?(()=>openCow(numDe(a[0]))):()=>snack('Ficha de '+a[0]+' — misma estructura que la de Lucero');}
+      d.onclick=a[2]?(()=>openCow(numDe(a[0]))):()=>snack('Ficha de '+a[0]);}
     list.appendChild(d);});
   go('scr-grupo');}
 /* pestañas de primer nivel y a qué pestaña pertenece cada pantalla hija */
@@ -283,7 +236,7 @@ function renderFichaCurva(del,ayer){
   o+='<text x="'+(hx+dx)+'" y="'+(hy-6)+'" font-family="Work Sans,sans-serif" font-size="9.5" font-weight="700" fill="#16181B" text-anchor="'+ta+'">hoy: '+ayer+' L</text>';
   svg.innerHTML=o;
 }
-renderFichaCurva(152,18);   // ficha (estática) = Lucero 042
+renderFichaCurva(0,0);   // curva vacía; openCow la redibuja con datos reales
 /* rutina de la mañana (Potreros oculto por ahora → sin el paso "mover el hato") */
 const rutina={ordeno:false};
 const rutinaIcono={ordeno:'i-drop',hato:'i-pin'};
@@ -357,7 +310,7 @@ function subAnimalM(a){
   return '';
 }
 const GRUPO_KEY={'ordeño':'ordeno','horra':'horras','novilla':'novillas','levante':'levante','ternera':'terneras','macho':'machos','baja':'bajas'};
-const GRUPO_LABEL={ordeno:'vacas en ordeño',horras:'vacas horras',novillas:'novillas',levante:'hembras de levante',terneras:'terneras',machos:'machos',bajas:'bajas en 2026'};
+const GRUPO_LABEL={ordeno:'vacas en ordeño',horras:'vacas horras',novillas:'novillas',levante:'hembras de levante',terneras:'terneras',machos:'machos',bajas:'bajas'};
 /* Sanidad: tratamientos activos reales (sin demo). */
 function renderTratamientosM(lista){
   const box=document.getElementById('tratListaM');if(!box)return;
@@ -430,6 +383,13 @@ let animalesPorIdM={};
     Object.keys(grupos).forEach(k=>{const n=grupos[k].animales.length;
       grupos[k].sub=n+' '+GRUPO_LABEL[k];
       grupos[k].header='<b>'+n+' '+GRUPO_LABEL[k]+'.</b>';});
+    /* sincronizar los contadores del hato con los conteos reales, para que las
+     * acciones (parto/baja/secado) muestren números correctos y no un demo. */
+    if(typeof nOrdeno!=='undefined'){
+      nOrdeno=grupos.ordeno.animales.length; nHorras=grupos.horras.animales.length;
+      nNovillas=grupos.novillas.animales.length; nTerneras=grupos.terneras.animales.length;
+      nMachos=grupos.machos.animales.length; nBajas=grupos.bajas.animales.length;
+    }
     renderInicioM();renderSanidadVacunasM();renderHatoM();
   }catch(e){console.warn('Cache/hato móvil:',e.message||e);}
 })();
@@ -464,8 +424,10 @@ function renderCows(){
       '<div class="ct-sub">'+sub+'</div>';
     d.onclick=()=>pickCow(i);g.appendChild(d);});
   const done=cows.filter(c=>c.done);
+  const totalHoy=done.reduce((s,c)=>s+c.v,0);
   document.getElementById('milkProg').textContent=
-    done.length+' de '+cows.length+' · Σ '+done.reduce((s,c)=>s+c.v,0)+' L';
+    done.length+' de '+cows.length+' · Σ '+totalHoy+' L';
+  const th=document.getElementById('ordHoyTotal');if(th)th.textContent=totalHoy;   // cabecera real
 }
 function pickCow(i){ci=i;const c=cows[i];typing=false;
   document.getElementById('cowName').textContent=c.num+' · '+c.n.toUpperCase();
@@ -602,7 +564,7 @@ aplicarMaiz();
 function confirmMove(){
   const yaEstaba=rutina.hato;
   markRutina('hato');encolar();
-  snack('Hato movido al P4 · descanso del P7 reiniciado','Deshacer',()=>{
+  snack('Movimiento de potrero registrado','Deshacer',()=>{
     if(!yaEstaba)unmarkRutina('hato');
     desencolar();snack('Movimiento deshecho');
   });
@@ -630,7 +592,7 @@ const partoInfo={};
  *  número inventado.) */
 let proximosPartos=[];
 let partosRecientes=[];
-let partos2026=0, porParir=0, criaNum=71, nTerneras=11, nMachos=2;
+let partos2026=0, porParir=0, criaNum=0, nTerneras=0, nMachos=0;
 const parto={cow:'',sexo:'H',tipo:'normal',estado:'viva',peso:38};
 function renderPartos(){
   document.getElementById('kpiPartos2026').textContent=partos2026;
@@ -703,12 +665,8 @@ function saveParto(){
     const grupo=parto.sexo==='H'?'terneras':'machos';
     const destino=parto.sexo==='H'?'Terneras':'Machos';
     const prevSub=grupos[grupo].sub, prevHeader=grupos[grupo].header;
-    if(parto.sexo==='H'){nTerneras++;
-      grupos.terneras.sub=nTerneras+' terneras · 2 destetes próximos';
-      grupos.terneras.header='<b>'+nTerneras+' terneras.</b> Consumen ~40 L/día de la leche del ordeño.';
-    }else{nMachos++;
-      grupos.machos.sub=nMachos+' machos';
-      grupos.machos.header='<b>'+nMachos+' machos.</b> Toros y terneros machos del hato.';}
+    if(parto.sexo==='H'){nTerneras++;subTerneras();}
+    else{nMachos++;subMachos();}
     grupos[grupo].animales.unshift([num+' · (cría de '+nombre+')','recién nacid'+(parto.sexo==='H'?'a':'o')+' · '+parto.peso+' kg · 0 meses',0]);
     partosRecientes.unshift({t:parto.cow+' → cría '+num,
       s:fmtFechaCortaM(fechaP)+' · '+sexoTxt+' · viva · '+parto.peso+' kg · '+tipoTxt,badge:'en '+destino,bw:'ok'});
@@ -787,7 +745,7 @@ function renderVacias(){
 }
 renderVacias();   // init: tras declarar vacasVacias y renderVacias (evita TDZ)
 /* ===== Palpación (la fuente de verdad de la reproducción) ===== */
-const palp={cow:'027 · Estrella',resultado:'prenada',meses:2};
+const palp={cow:'',resultado:'prenada',meses:2};
 /* reglas puras compartidas (core/rules.js) */
 const MESC=LCRules.MESC;
 const fechaParto=LCRules.fechaParto;
@@ -933,7 +891,7 @@ function savePalp(){
 }
 /* ===== Enfermedad / tratamiento (activa el retiro de leche) ===== */
 const fechaDias=LCRules.fechaDias;
-const trata={cow:'033 · Paloma',problema:'Mastitis',medicina:'Antibiótico',retiro:4};
+const trata={cow:'',problema:'Mastitis',medicina:'Antibiótico',retiro:4};
 function trataMarcarVaca(){document.querySelectorAll('#trataCows .chip').forEach(c=>
   c.classList.toggle('sel',c.textContent.trim().startsWith(trata.cow.split('·')[0].trim())));}
 function openTrata(cow){
@@ -984,17 +942,12 @@ function saveTrata(){
   });
 }
 /* ===== Secado (sale del ordeño → pasa a horras) ===== */
-const secaInfo={
-  '042 · Lucero':'Preñada 6 meses · parto ~12 sep',
-  '038 · Mona':'Servida, por confirmar — palpa antes de secar',
-  '051 · Careta':'DEL 121 · confirma preñez antes de secar',
-  '027 · Estrella':'DEL 64 · muy temprano para secar',
-  '033 · Paloma':'Vacía — el secado no aplica',
-  '029 · Pinta':'Vacía — el secado no aplica'
-};
-const secaNoAplica={'033 · Paloma':1,'029 · Pinta':1};
-const seca={cow:'042 · Lucero'};
-let nHorras=9;
+/* info de secado por vaca: vacío; el subtítulo cae a texto genérico.
+ * (Antes tenía fichas demo por id de vaca.) */
+const secaInfo={};
+const secaNoAplica={};
+const seca={cow:''};
+let nHorras=0;
 function secaMarcar(){document.querySelectorAll('#secaCows .chip').forEach(c=>
   c.classList.toggle('sel',c.textContent.trim().startsWith(seca.cow.split('·')[0].trim())));}
 function openSeca(cow){
@@ -1022,9 +975,7 @@ function saveSeca(){
   if(idx>=0)cows.splice(idx,1);
   renderCows();
   const prevSub=grupos.horras.sub, prevHeader=grupos.horras.header;
-  nHorras++;
-  grupos.horras.sub=nHorras+' vacas · 6 paren antes de octubre';
-  grupos.horras.header='<b>'+nHorras+' vacas horras.</b> Ordenadas por fecha de parto; tras parir vuelven al ordeño.';
+  nHorras++;subHorras();
   grupos.horras.animales.unshift([seca.cow,'recién secada — '+(secaInfo[seca.cow]||'preñada')]);
   encolar();
   if(typeof LCStore!=='undefined'){
@@ -1040,19 +991,20 @@ function saveSeca(){
   });
 }
 /* ===== Alta y Baja (inventario del hato) ===== */
-let nOrdeno=26, nNovillas=14, nBajas=7;   // nHorras, nTerneras, nMachos ya existen
-function subOrdeno(){grupos.ordeno.sub=nOrdeno+' vacas · DEL prom. 164';
-  grupos.ordeno.header='<b>'+nOrdeno+' vacas en ordeño.</b> Ordenadas como entran al ordeño.';}
-function subNovillas(){grupos.novillas.sub=nNovillas+' novillas · 4 listas para servicio';
-  grupos.novillas.header='<b>'+nNovillas+' novillas de vientre.</b> 4 ya tienen peso para servicio (>330 kg).';}
-function subTerneras(){grupos.terneras.sub=nTerneras+' terneras · 2 destetes próximos';
-  grupos.terneras.header='<b>'+nTerneras+' terneras.</b> Consumen ~40 L/día de la leche del ordeño.';}
+let nOrdeno=0, nNovillas=0, nBajas=0;   // se sincronizan con datos reales en cacheAnimalesMovil
+/* subtítulos/headers derivados del CONTEO real (sin cualitativos inventados) */
+function subOrdeno(){grupos.ordeno.sub=nOrdeno+' vacas en ordeño';
+  grupos.ordeno.header='<b>'+nOrdeno+' vacas en ordeño.</b>';}
+function subNovillas(){grupos.novillas.sub=nNovillas+' novillas';
+  grupos.novillas.header='<b>'+nNovillas+' novillas de vientre.</b>';}
+function subTerneras(){grupos.terneras.sub=nTerneras+' terneras';
+  grupos.terneras.header='<b>'+nTerneras+' terneras.</b>';}
 function subMachos(){grupos.machos.sub=nMachos+' machos';
-  grupos.machos.header='<b>'+nMachos+' machos.</b> Toros y terneros machos del hato.';}
-function subHorras(){grupos.horras.sub=nHorras+' vacas · 6 paren antes de octubre';
-  grupos.horras.header='<b>'+nHorras+' vacas horras.</b> Ordenadas por fecha de parto; tras parir vuelven al ordeño.';}
-function subBajas(){grupos.bajas.sub=nBajas+' animales fuera del hato · 2026';
-  grupos.bajas.header='<b>'+nBajas+' bajas en 2026.</b> Vendidas, muertas o perdidas — su historia se conserva.';}
+  grupos.machos.header='<b>'+nMachos+' machos.</b>';}
+function subHorras(){grupos.horras.sub=nHorras+' vacas horras';
+  grupos.horras.header='<b>'+nHorras+' vacas horras.</b>';}
+function subBajas(){grupos.bajas.sub=nBajas+' fuera del hato';
+  grupos.bajas.header='<b>'+nBajas+' bajas.</b> Su historia se conserva.';}
 function incGrupo(g,d){
   if(g==='ordeno'){nOrdeno+=d;subOrdeno();}
   else if(g==='novillas'){nNovillas+=d;subNovillas();}
@@ -1069,7 +1021,7 @@ function closeNueva(){document.getElementById('nuevaSheet').classList.remove('sh
 /* --- Alta (compra) --- */
 const altaGrupo={'Vaca en ordeño':'ordeno','Novilla':'novillas','Ternera':'terneras','Toro':'machos'};
 const alta={tipo:'Novilla',raza:'Holstein × Gyr',edad:2,procedencia:'',valor:''};
-let altaSeq=79, toroSeq=2;
+let altaSeq=0, toroSeq=0;   // se re-siembran desde el mayor id real
 function openAlta(){alta.tipo='Novilla';alta.raza='Holstein × Gyr';alta.edad=2;alta.procedencia='';alta.valor='';
   const grupos2=document.querySelectorAll('#altaSheet .chips');
   grupos2[0].querySelectorAll('.chip').forEach(c=>c.classList.toggle('sel',c.textContent.trim()==='Novilla'));
@@ -1109,7 +1061,7 @@ function saveAlta(){
   });
 }
 /* --- Baja (venta / muerte / descarte / pérdida) --- */
-const baja={cow:'033 · Paloma',motivo:'Venta'};
+const baja={cow:'',motivo:'Venta'};
 function bajaMarcar(){document.querySelectorAll('#bajaCows .chip').forEach(c=>
   c.classList.toggle('sel',c.textContent.trim().startsWith(baja.cow.split('·')[0].trim())));}
 function openBaja(cow){

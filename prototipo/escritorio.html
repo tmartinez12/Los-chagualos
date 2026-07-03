@@ -176,8 +176,8 @@
           </div>
           <input type="file" id="vacaFotoInput" accept="image/*" style="display:none" onchange="setVacaFoto(this)">
           <div style="flex:1">
-            <div style="font-size:20px;font-weight:700;letter-spacing:-.3px" id="vacaNombre">042 · Lucero</div>
-            <div style="font-size:13px;color:var(--ink-2);margin-top:2px" id="vacaSub">Holstein × Gyr · 5,2 años · En ordeño · Nació en finca</div>
+            <div style="font-size:20px;font-weight:700;letter-spacing:-.3px" id="vacaNombre">—</div>
+            <div style="font-size:13px;color:var(--ink-2);margin-top:2px" id="vacaSub"></div>
           </div>
         </div>
         <div id="vacaAlerta" style="margin-top:10px"></div>
@@ -193,7 +193,7 @@
         </div>
         <div class="card" style="margin-top:12px" id="vacaCurvaCard">
           <div class="chart-title" style="font-size:13.5px">Curva de lactancia</div>
-          <div class="chart-sub" id="vacaCurvaSub">Pico típico ~DEL 55 · hoy va en DEL 152</div>
+          <div class="chart-sub" id="vacaCurvaSub"></div>
           <svg id="vacaCurva" viewBox="0 0 560 150" style="width:100%"></svg>
         </div>
         <div class="section-label" style="margin-top:18px">Producción por lactancia (de parto a parto)</div>
@@ -223,38 +223,8 @@
 
       <!-- ============ POTREROS ============ -->
       <div class="page" id="pg-potreros">
-        <div class="grid" style="grid-template-columns:1fr 1fr;margin-bottom:14px">
-          <div class="alert urgent" style="margin:0">
-            <div style="flex:1"><div class="a-title">El hato está en el P7 · día 2 — mover hoy</div>
-              <div class="a-sub">Regla: 1 día, máximo 2 · Pedro aún no registra el movimiento</div></div>
-          </div>
-          <div class="card" style="border:1.5px solid var(--ink);padding:13px 16px;display:flex;align-items:center;gap:12px">
-            <div style="flex:1"><div style="font-size:13.5px;font-weight:700">Sugerido: Potrero 4</div>
-              <div style="font-size:12px;color:var(--ink-2)">35 días de descanso · aforo ok · agua ok</div></div>
-            <button class="btn filled small" onclick="snack('Hato movido al P4 — registrado a nombre tuyo')">Mover al P4</button>
-          </div>
-        </div>
-        <div class="section-label" style="margin-top:4px">32 potreros · ordenados por estado (listos primero)</div>
+        <div class="section-label" style="margin-top:4px">Potreros · días de descanso</div>
         <div class="pgrid" id="pgrid"></div>
-
-        <div class="card" style="margin-top:14px">
-          <div class="chart-title" style="font-size:13.5px">Vuelta proyectada (próximos 7 días)</div>
-          <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
-            <span class="badge sel" style="background:var(--black);color:#fff;border-color:var(--black)">Hoy → P4</span>
-            <span class="badge">vie P5</span><span class="badge">sáb P3</span>
-            <span class="badge">dom P12</span><span class="badge">lun P11</span>
-            <span class="badge">mar P2</span><span class="badge">mié P6</span>
-          </div>
-          <div style="font-size:12.5px;color:var(--ink-2);margin-top:10px">Días de descanso por potrero.
-            En seca el sistema pedirá ampliar la vuelta.</div>
-        </div>
-
-        <div class="card" style="margin-top:14px;display:flex;gap:12px;align-items:center;padding:12px 16px">
-          <svg class="ic-s ic" style="color:var(--ink-2)"><use href="#i-rain"/></svg>
-          <span style="font-size:13px">Descanso de potreros</span>
-          <div style="flex:1"></div>
-          <button class="btn outl small" onclick="snack('Registro guardado')">Registrar lluvia</button>
-        </div>
       </div>
 
       <!-- ============ REPRODUCCIÓN ============ -->
@@ -326,7 +296,7 @@
         <button class="btn filled" style="margin-bottom:14px" onclick="openTrata()">
           <svg class="ic-s ic"><use href="#i-shield"/></svg>Registrar enfermedad o tratamiento</button>
 
-        <div class="section-label" style="margin-top:0">En tratamiento ahora · <span style="color:var(--red)" id="tratCount">1</span></div>
+        <div class="section-label" style="margin-top:0">En tratamiento ahora · <span style="color:var(--red)" id="tratCount">0</span></div>
         <div id="tratActivos" style="margin-bottom:14px"></div>
 
         <div class="section-label" style="display:flex;justify-content:space-between;align-items:center">Vacunas
@@ -370,13 +340,13 @@
 <!-- MODAL: registrar leche de la vaca elegida -->
 <div class="scrim" id="scrim" onclick="closeMilk()"></div>
 <div class="modal" id="milkModal">
-  <div class="m-cow" id="mCow">042 · LUCERO</div>
-  <div class="m-del" id="mDel">DEL 152 · 3er parto</div>
+  <div class="m-cow" id="mCow">—</div>
+  <div class="m-del" id="mDel"></div>
   <div class="m-input">
     <input id="mInput" type="number" inputmode="numeric" min="0" max="60"
       onkeydown="if(event.key==='Enter')saveMilk()"><span class="u">L</span>
   </div>
-  <div class="m-ref" id="mRef">Ayer dio 18 L — acepta si dio igual</div>
+  <div class="m-ref" id="mRef"></div>
   <div class="m-actions">
     <button class="btn outl" onclick="closeMilk()">Cancelar</button>
     <button class="btn filled" onclick="saveMilk()"><svg class="ic-s ic"><use href="#i-check"/></svg>Guardar</button>

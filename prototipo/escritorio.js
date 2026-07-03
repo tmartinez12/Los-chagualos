@@ -43,7 +43,7 @@ function produccionPorLactancia(id){
 const titles={
   'pg-leche':['Producción de leche','Ordeño, histórico y días en leche'],
   'pg-hato':['Hato','Animales · unidad leche'],
-  'pg-potreros':['Potreros','32 potreros · ocupación 1 día (máx 2)'],
+  'pg-potreros':['Potreros','Descanso y rotación del hato'],
   'pg-repro':['Reproducción','Monta natural · la palpación manda'],
   'pg-partos':['Partos','Las palpaciones marcan las fechas'],
   'pg-sanitario':['Plan sanitario','Calendario anual · protocolos · soporte ICA'],
@@ -1514,7 +1514,7 @@ function aplicarTratamientos(num,nombre,trats,contexto){
     renderTratamientos();
   };
 }
-const palp={cow:'027 · Estrella',nota:'',parsed:null};
+const palp={cow:'',nota:'',parsed:null};
 function renderPalpCows(){
   const c=document.getElementById('palpCows');if(!c)return;c.innerHTML='';
   palpCandidatas.forEach(it=>{
@@ -2513,15 +2513,9 @@ function saveBaja(){
       {grupo:GRUPO_MODELO[a.grupo]||'ordeño',baja_motivo:null,baja_fecha:null,baja_valor:null,baja_nota:null}).catch(()=>{});});
 }
 
-/* 32 potreros ordenados por estado: listos → recuperando → recién pastoreados */
+/* Potreros: arranca vacío y se llena desde Supabase (cargarPotrerosDesdeSupabase).
+ * Antes había 32 potreros con días de descanso inventados. */
 let pots=[];
-for(let i=1;i<=32;i++){
-  let d;
-  if(i===7)d=-2;            // hato aquí
-  else if(i===8)d=1; else if(i===9)d=3; else if(i===14)d=2; else if(i===21)d=4;
-  else d=5+((i*7)%31);
-  pots.push({n:i,d:d,sugerido:i===4});
-}
 function stateOf(p){if(p.d<0)return'now';if(p.d<=5)return'bad';if(p.d<25)return'warn';return'ok';}
 const orderPot={ok:0,warn:1,bad:2,now:3};
 function renderPotreros(){
