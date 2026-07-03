@@ -2311,7 +2311,7 @@ function renderAltaForm(){
   body.appendChild(regLabel('Tipo de animal'));
   body.appendChild(regChips(Object.keys(altaGrupoMap).map(t=>({val:t,label:t})),compraState.tipo,v=>{compraState.tipo=v;renderAltaForm();}));
   body.appendChild(regLabel('Raza'));
-  body.appendChild(regChips(['Holstein × Gyr','Gyrolando','Holstein','Normando'].map(r=>({val:r,label:r})),compraState.raza,v=>compraState.raza=v));
+  body.appendChild(regChips(['Holstein × Gyr','F1','Gyrolando','Holstein','Normando'].map(r=>({val:r,label:r})),compraState.raza,v=>compraState.raza=v));
   body.appendChild(regTexto('Otra raza (si no está arriba)','Ej. Jersey, criolla…',v=>compraState.razaOtra=v,'text',compraState.razaOtra));
   body.appendChild(regTexto('Color (opcional)','Ej. negra, pinta roja…',v=>compraState.color=v,'text',compraState.color));
   body.appendChild(regTexto('Fecha de nacimiento (si la conoces)','',v=>compraState.nacimiento=v,'date',compraState.nacimiento));
