@@ -36,6 +36,18 @@
     return _client;
   }
 
+  /* --- "Hoy" en la zona de la finca (Colombia) ------------------------------ *
+   * NUNCA usar new Date().toISOString() para la fecha de un registro: eso da
+   * UTC y en Colombia (UTC−5), entre las 7pm y medianoche, ya marca el día
+   * SIGUIENTE — un ordeño o parto de la tarde-noche quedaría mal fechado.
+   * Intl con timeZone funciona igual en el navegador y en Node.               */
+  const TZ_FINCA = 'America/Bogota';
+  function hoyFinca() {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: TZ_FINCA, year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(new Date());   // 'en-CA' → 'YYYY-MM-DD'
+  }
+
   /* --- Mapeo BD → modelo canónico ------------------------------------------- */
   function animalFromDB(r) {
     if (!r) return null;
@@ -188,7 +200,7 @@
     return updateAnimalCampos(id, {
       grupo: 'baja',
       baja_motivo: MOTIVO_BAJA[baja.motivo] || baja.motivo,
-      baja_fecha: baja.fecha || new Date().toISOString().slice(0, 10),
+      baja_fecha: baja.fecha || hoyFinca(),
       baja_valor: baja.valor || null,
       baja_nota: baja.nota || null,
     });
@@ -198,7 +210,7 @@
     const fila = {
       id: t.id || ('T-' + Date.now()), animal_id: t.animalId,
       problema: t.problema, medicamento: t.medicamento || null,
-      inicio: t.inicio || new Date().toISOString().slice(0, 10),
+      inicio: t.inicio || hoyFinca(),
       dias_retiro: t.diasRetiro || 0,   // el retiro va hasta inicio + dias_retiro (derivado)
       activo: true,
     };
@@ -212,7 +224,7 @@
 
   async function registrarPalpacion(p) {
     const fila = {
-      animal_id: p.animalId, fecha: p.fecha || new Date().toISOString().slice(0, 10),
+      animal_id: p.animalId, fecha: p.fecha || hoyFinca(),
       motivo: p.motivo || null, resultado: p.resultado || null,
       prenez_meses: p.prenezMeses != null ? p.prenezMeses : null,
     };
@@ -224,7 +236,7 @@
   async function registrarParto(p) {
     const fila = {
       id: p.id || ('P-' + Date.now()), madre_id: p.madreId, cria_id: p.criaId || null,
-      fecha: p.fecha || new Date().toISOString().slice(0, 10),
+      fecha: p.fecha || hoyFinca(),
       sexo_cria: p.sexo, peso_kg: p.pesoKg || null,
       tipo: p.tipo || 'normal', estado_cria: p.estadoCria || 'viva',
     };
@@ -237,8 +249,9 @@
    * turno fijo 'dia' (total del día) para que el UNIQUE(animal,fecha,turno)
    * permita corregir (upsert) sin duplicar. fecha omitida = CURRENT_DATE.     */
   async function registrarOrdeno(animalId, litros, fecha) {
-    const fila = { animal_id: animalId, litros: litros, turno: 'dia' };
-    if (fecha) fila.fecha = fecha;
+    /* fecha en la zona de la finca (no UTC): el UNIQUE(animal,fecha,turno) y el
+     * histórico dependen de que "hoy" sea el día real en Colombia. */
+    const fila = { animal_id: animalId, litros: litros, turno: 'dia', fecha: fecha || hoyFinca() };
     const { data, error } = await client()
       .from('ordenos')
       .upsert(fila, { onConflict: 'animal_id,fecha,turno' })
@@ -250,7 +263,7 @@
   /* Ordeños de una fecha (default: hoy real) → mapa { animalId: litros } */
   async function getOrdenosFecha(fecha) {
     let q = client().from('ordenos').select('animal_id, litros').eq('turno', 'dia');
-    q = fecha ? q.eq('fecha', fecha) : q.eq('fecha', new Date().toISOString().slice(0, 10));
+    q = fecha ? q.eq('fecha', fecha) : q.eq('fecha', hoyFinca());
     const { data, error } = await q;
     if (error) throw error;
     const map = {};
@@ -274,7 +287,7 @@
       animal_id: v.alcance === 'individual' ? (v.animalId || null) : null,
       n_animales: v.alcance === 'hato' ? (v.nAnimales != null ? v.nAnimales : null) : null,
       producto: v.producto || null, lote: v.lote || null,
-      fecha: v.fecha || new Date().toISOString().slice(0, 10),
+      fecha: v.fecha || hoyFinca(),
       proxima: v.proxima || null, nota: v.nota || null,
     };
     const { data, error } = await client().from('vacunaciones').insert(fila).select().single();

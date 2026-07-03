@@ -28,6 +28,14 @@ CREATE TYPE estado_cria AS ENUM ('viva', 'muerta');
 
 CREATE TYPE rol_usuario AS ENUM ('admin', 'operario');
 
+-- ─── ZONA HORARIA DE LA FINCA ───────────────────────────────────────────────
+-- now()/CURRENT_DATE en Supabase corren en UTC. Colombia es UTC−5: entre las
+-- 7pm y medianoche "hoy" en UTC ya es mañana. hoy_finca() da la fecha REAL de
+-- la finca; se usa en los DEFAULT de eventos y en la vista v_animales.
+CREATE OR REPLACE FUNCTION hoy_finca() RETURNS date
+  LANGUAGE sql STABLE
+  AS $$ SELECT (now() AT TIME ZONE 'America/Bogota')::date $$;
+
 -- ─── PERFILES / AUTH POR PIN ────────────────────────────────────────────────
 
 CREATE TABLE profiles (
@@ -110,7 +118,7 @@ CREATE INDEX idx_animales_estado_repro ON animales(estado_repro);
 CREATE TABLE ordenos (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   animal_id   TEXT NOT NULL REFERENCES animales(id) ON DELETE CASCADE,
-  fecha       DATE NOT NULL DEFAULT CURRENT_DATE,
+  fecha       DATE NOT NULL DEFAULT hoy_finca(),
   litros      NUMERIC(6,1) NOT NULL,
   turno       TEXT,                       -- 'am', 'pm' o null (total día)
   registrado_por UUID REFERENCES profiles(id),
@@ -125,7 +133,7 @@ CREATE INDEX idx_ordenos_fecha ON ordenos(fecha);
 CREATE TABLE palpaciones (
   id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   animal_id       TEXT NOT NULL REFERENCES animales(id) ON DELETE CASCADE,
-  fecha           DATE NOT NULL DEFAULT CURRENT_DATE,
+  fecha           DATE NOT NULL DEFAULT hoy_finca(),
   motivo          TEXT,
   resultado       TEXT,                   -- texto del veterinario
   prenez_meses    NUMERIC(4,1),
@@ -182,7 +190,7 @@ CREATE TABLE vacunaciones (
   n_animales  INTEGER,
   producto    TEXT,
   lote        TEXT,
-  fecha       DATE NOT NULL DEFAULT CURRENT_DATE,
+  fecha       DATE NOT NULL DEFAULT hoy_finca(),
   proxima     DATE,
   nota        TEXT,
   registrado_por UUID REFERENCES profiles(id),
@@ -210,7 +218,7 @@ CREATE TABLE potreros (
 CREATE TABLE movimientos_potrero (
   id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   potrero_id      TEXT NOT NULL REFERENCES potreros(id),
-  fecha           DATE NOT NULL DEFAULT CURRENT_DATE,
+  fecha           DATE NOT NULL DEFAULT hoy_finca(),
   tipo            TEXT NOT NULL,          -- 'entrada', 'salida'
   registrado_por  UUID REFERENCES profiles(id),
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -294,23 +302,23 @@ CREATE VIEW v_animales AS
 SELECT a.*,
   (SELECT count(*)::int FROM partos p WHERE p.madre_id = a.id) AS partos,
   CASE WHEN a.nacimiento IS NOT NULL
-       THEN round(((CURRENT_DATE - a.nacimiento) / 365.25)::numeric, 1) END AS edad_calc,
+       THEN round(((hoy_finca() - a.nacimiento) / 365.25)::numeric, 1) END AS edad_calc,
   CASE WHEN a.inicio_lactancia IS NOT NULL
-       THEN (CURRENT_DATE - a.inicio_lactancia) END AS del_calc,
+       THEN (hoy_finca() - a.inicio_lactancia) END AS del_calc,
   ( SELECT o.litros FROM ordenos o
     WHERE o.animal_id = a.id AND o.turno = 'dia'
     ORDER BY o.fecha DESC LIMIT 1 ) AS leche_ultima,
   ( SELECT max(t.inicio + t.dias_retiro) FROM tratamientos t
     WHERE t.animal_id = a.id AND t.activo AND t.dias_retiro > 0
-      AND (t.inicio + t.dias_retiro) >= CURRENT_DATE ) AS retiro_calc,
+      AND (t.inicio + t.dias_retiro) >= hoy_finca() ) AS retiro_calc,
   CASE WHEN a.estado_repro = 'prenada' AND a.prenez_meses IS NOT NULL AND a.ultima_palpacion IS NOT NULL
        THEN (a.ultima_palpacion + (round((9 - a.prenez_meses))::int * INTERVAL '1 month'))::date END AS parto_estimado_calc,
   CASE WHEN a.estado_repro = 'prenada' AND a.prenez_meses IS NOT NULL AND a.ultima_palpacion IS NOT NULL
        THEN (a.ultima_palpacion + (round((7 - a.prenez_meses))::int * INTERVAL '1 month'))::date END AS secar_calc,
   CASE WHEN a.estado_repro = 'vacia' AND a.ultima_palpacion IS NOT NULL
-       THEN (CURRENT_DATE - a.ultima_palpacion) END AS dias_vacia_calc,
+       THEN (hoy_finca() - a.ultima_palpacion) END AS dias_vacia_calc,
   CASE WHEN a.estado_repro = 'prenada' AND a.prenez_meses IS NOT NULL AND a.ultima_palpacion IS NOT NULL
-       THEN least(9, round((a.prenez_meses + (CURRENT_DATE - a.ultima_palpacion) / 30.44)::numeric, 1)) END AS prenez_meses_actual
+       THEN least(9, round((a.prenez_meses + (hoy_finca() - a.ultima_palpacion) / 30.44)::numeric, 1)) END AS prenez_meses_actual
 FROM animales a;
 
 -- v_produccion_mensual: histórico mensual DERIVADO de los ordeños diarios.
