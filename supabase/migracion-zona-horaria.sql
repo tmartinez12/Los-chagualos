@@ -18,10 +18,12 @@ CREATE OR REPLACE FUNCTION hoy_finca() RETURNS date
 GRANT EXECUTE ON FUNCTION hoy_finca() TO anon, authenticated;
 
 -- 2) Defaults de las tablas de eventos: hoy real en Colombia, no UTC.
-ALTER TABLE ordenos             ALTER COLUMN fecha SET DEFAULT hoy_finca();
-ALTER TABLE palpaciones         ALTER COLUMN fecha SET DEFAULT hoy_finca();
-ALTER TABLE vacunaciones        ALTER COLUMN fecha SET DEFAULT hoy_finca();
-ALTER TABLE movimientos_potrero ALTER COLUMN fecha SET DEFAULT hoy_finca();
+--    IF EXISTS: si alguna tabla aún no está creada en esta base (p.ej.
+--    vacunaciones, que vive en su propia migración), se salta sin romper.
+ALTER TABLE IF EXISTS ordenos             ALTER COLUMN fecha SET DEFAULT hoy_finca();
+ALTER TABLE IF EXISTS palpaciones         ALTER COLUMN fecha SET DEFAULT hoy_finca();
+ALTER TABLE IF EXISTS vacunaciones        ALTER COLUMN fecha SET DEFAULT hoy_finca();
+ALTER TABLE IF EXISTS movimientos_potrero ALTER COLUMN fecha SET DEFAULT hoy_finca();
 
 -- 3) Recrear la vista usando hoy_finca() en vez de CURRENT_DATE, para que la
 --    edad, el DEL, el retiro de leche y los días vacía se calculen contra el
