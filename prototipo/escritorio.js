@@ -944,24 +944,15 @@ function fmtEdadLarga(a){
 function nombreRef(id){const x=animalesPorId[id];return x?(id+' '+x.nombre):id;}
 /* fecha corta CON año — para historiales que cruzan años ("17 feb 2025") */
 function fmtFechaAno(iso){if(!iso)return '—';return fmtFechaCorta(iso)+' '+String(iso).slice(0,4);}
+/* adaptador: la lógica canónica vive en LCRules.deriveReproFicha (compartida
+ * con el móvil); aquí solo se mapea a la forma {badge,text,sub} de esta UI. */
 function deriveReproFicha(a){
-  const retiroD=a.retiroLecheHasta?diasHasta(a.retiroLecheHasta):null;
-  if(retiroD!=null&&retiroD>=0)return {badge:'bad',text:'Retiro de leche · '+retiroD+(retiroD===1?' día':' días')+' más',sub:'No vender su leche hasta terminar el retiro'};
-  if(a.estadoRepro==='prenada'&&a.prenez){
-    const m=a.prenez.meses;let sub='';
-    if(a.prenez.partoEstimado){const d=new Date(a.prenez.partoEstimado+'T00:00:00');sub='Parto probable ~'+d.getDate()+' '+LCRules.MESC[d.getMonth()];}
-    if(a.secarEstimado){const d=new Date(a.secarEstimado+'T00:00:00');sub+=(sub?' · ':'')+'Secar ~'+d.getDate()+' '+LCRules.MESC[d.getMonth()];}
-    /* preñada es buena noticia (verde); amarillo SOLO cuando ya toca secarla */
-    if(m>=7&&a.grupo==='ordeño')return {badge:'warn',text:'Preñada · '+m+' meses — programar secado',sub:sub||'Secar ~2 meses antes del parto'};
-    return {badge:'ok',text:'Preñada · '+m+' meses',sub:sub||'Gestación en curso'};
-  }
-  if(a.estadoRepro==='servida')return {badge:'',text:'Servida · por palpar',sub:'Confirmar preñez en la próxima palpación'};
-  if(a.estadoRepro==='vacia'){const da=(typeof _diasAbiertos==='function'?_diasAbiertos(a.id):null)??a.diasVacia;
-    return {badge:'bad',text:'Vacía'+(da?' · '+da+' días abiertos':''),sub:da>120?'Evaluar descarte o tratamiento reproductivo':'Esperar para servicio'};}
-  if(a.grupo==='novilla')return {badge:a.listaServicio?'warn':'',text:a.listaServicio?'Novilla lista para servicio':'Novilla en desarrollo',sub:a.pesoKg?a.pesoKg+' kg':''};
-  if(a.grupo==='macho'&&a.rolToro){const h=Object.values(animalesPorId).filter(x=>x.padreId===a.id&&x.grupo!=='baja').length;
-    return {badge:'',text:'Toro reproductor activo',sub:(h?h+' hijas en la finca':'')};}
-  return {badge:'',text:a.grupo,sub:''};
+  const r=LCRules.deriveReproFicha(a,{
+    retiroDias:a.retiroLecheHasta?diasHasta(a.retiroLecheHasta):null,
+    diasAbiertos:(typeof _diasAbiertos==='function'?_diasAbiertos(a.id):null)??a.diasVacia,
+    hijas:(a.grupo==='macho'&&a.rolToro)?Object.values(animalesPorId).filter(x=>x.padreId===a.id&&x.grupo!=='baja').length:0,
+    fmtFecha:iso=>{const d=new Date(iso+'T00:00:00');return d.getDate()+' '+LCRules.MESC[d.getMonth()];}});
+  return r?{badge:r.nivel,text:r.titulo,sub:r.sub}:{badge:'',text:a.grupo,sub:''};
 }
 function buildFichaBasica(a){
   const crias=Object.values(animalesPorId).filter(x=>x.madreId===a.id).map(x=>x.id+' '+x.nombre);
@@ -1951,11 +1942,7 @@ function isoMasDias(n){const d=new Date(HOY_LC.getTime());d.setDate(d.getDate()+
 function isoParto(meses){const d=new Date(HOY_LC.getTime());d.setMonth(d.getMonth()+Math.max(0,Math.round(9-meses)));return isoDe(d);}
 const snapshotReproDB=LCRules.snapshotReproDB;   // compartido en core/rules.js
 /* fecha de nacimiento: exacta si se conoce; si no, estimada desde la edad */
-function fmtNacimiento(a){
-  if(a&&a.nacimiento){const d=new Date(a.nacimiento+'T00:00:00');return d.getDate()+' '+LCRules.MESC[d.getMonth()]+' '+d.getFullYear();}
-  if(a&&a.edadAnios!=null){const d=new Date(HOY_LC.getTime());d.setMonth(d.getMonth()-Math.round(a.edadAnios*12));return '~'+LCRules.MESC[d.getMonth()]+' '+d.getFullYear()+' (estimada)';}
-  return '—';
-}
+function fmtNacimiento(a){return LCRules.fmtNacimiento(a);}   // canónica en rules.js
 const HOY_LC=new Date();   // hoy real (la base trae datos reales)
 function fmtEdad(a){
   const n=a.edadAnios;if(n==null)return '—';
@@ -2621,19 +2608,20 @@ function renderPotreros(){
     const div=document.createElement('div');
     div.className='pot '+(st==='now'?'bad now':st)+(st==='bad'?' off':'');
     const cap=st==='now'?'día de ocupación':st==='ok'?'listo':st==='warn'?'recuperando':'recién pastoreado';
-    const days=st==='now'?'2º':p.d;
+    const days=st==='now'?(Math.abs(p.d)||1)+'º':p.d;   // días de ocupación reales, no demo
     div.innerHTML=(st==='now'?'<div class="p-tag">HATO AQUÍ</div>':'')+
       (p.sugerido?'<div class="p-tag">SUGERIDO</div>':'')+
       '<div class="p-top"><span class="p-name">P'+p.n+'</span><span class="dot"></span></div>'+
       '<div class="p-days">'+days+'</div><div class="p-cap">'+cap+'</div>';
     if(p.sugerido){div.classList.add('suggested');}
-    div.onclick=()=>snack('Potrero '+p.n+': '+(st==='now'?'el hato está aquí (día 2)':p.d+' días de descanso · '+cap));
+    div.onclick=()=>snack('Potrero '+p.n+': '+(st==='now'?'el hato está aquí (día '+(Math.abs(p.d)||1)+')':p.d+' días de descanso · '+cap));
     grid.appendChild(div);
   });
 }
 renderPotreros();
 renderInicio();   /* pintado inicial del dashboard (los cargadores lo refinan) */
 (async function cargarPotrerosDesdeSupabase(){
+  if(!POTREROS_VISIBLE)return;   // módulo oculto: no gastar una consulta en él
   if(typeof LCStore==='undefined')return;
   try{
     const ps=await LCStore.getPotreros();
@@ -2642,6 +2630,12 @@ renderInicio();   /* pintado inicial del dashboard (los cargadores lo refinan) *
     renderPotreros();renderInicio();
   }catch(e){console.warn('Potreros: usando datos locales:',e.message||e);}
 })();
+
+/* accesibilidad: modales anunciados como diálogo y cierre con Escape */
+document.querySelectorAll('.modal').forEach(el=>{el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')document.querySelectorAll('.scrim.show').forEach(sc=>sc.click());
+});
 
 /* si la pestaña queda abierta de un día para otro, recargar al cambiar la
  * fecha (solo sin modales abiertos) para que "hoy" no quede congelado en ayer */

@@ -49,7 +49,7 @@
 
   <!-- TOP BAR -->
   <div class="topbar">
-    <button class="icon-btn" id="backBtn" style="display:none" onclick="goBack()"><svg class="ic"><use href="#i-back"/></svg></button>
+    <button class="icon-btn" id="backBtn" style="display:none" aria-label="Volver" onclick="goBack()"><svg class="ic"><use href="#i-back"/></svg></button>
     <div class="titles">
       <div class="title" id="barTitle">Los Chagualos</div>
       <div class="subtitle" id="barSub">Resumen del día</div>
@@ -435,7 +435,7 @@
   </div>
 
   <!-- FAB -->
-  <button class="fab" onclick="openSheet()"><svg class="ic"><use href="#i-plus"/></svg></button>
+  <button class="fab" aria-label="Registrar novedad" onclick="openSheet()"><svg class="ic"><use href="#i-plus"/></svg></button>
 
   <!-- NAV -->
   <div class="navbar">
@@ -490,7 +490,7 @@
         <button onclick="key(1)">1</button><button onclick="key(2)">2</button><button onclick="key(3)">3</button>
         <button onclick="key(4)">4</button><button onclick="key(5)">5</button><button onclick="key(6)">6</button>
         <button onclick="key(7)">7</button><button onclick="key(8)">8</button><button onclick="key(9)">9</button>
-        <button onclick="keyClear()">⌫</button>
+        <button aria-label="Borrar" onclick="keyClear()">⌫</button>
         <button onclick="key(0)">0</button>
         <button class="confirm" onclick="saveMilk()"><svg class="ic"><use href="#i-check"/></svg></button>
       </div>

@@ -48,7 +48,22 @@ inputs; litros con tope 99,9 en la tabla semanal) · M14 parcial (PROTOCOLO_SAN
 M15 (supabase-js 2.110.0 vendorizado, sin CDN flotante) · M16 (cache-busting
 ?v= en scripts y CSS) · B12 (snack ruidoso de carga eliminado).
 
-**Sin tocar aún:** A1 (auth+RLS), M19-M20, y los B restantes.
+**Tercera ronda, corregidos:** M14 parcial ampliado (deriveReproFicha y
+fmtNacimiento canónicos en rules.js con adaptadores; los flujos de guardado
+siguen duplicados) · M19 (insertAnimal deriva nacimiento de la edad +
+`migracion-nacimiento.sql` de backfill) · M20 (contraste ink-3 AA, role=dialog
++ aria-modal, Escape cierra modales/hojas, aria-labels en botones de icono) ·
+B2 (matching exacto en todos los sitios; chips por primer token) · B3 (animales
+creados en móvil quedan clicables y en caché al confirmarse el guardado) · B4
+(el undo de alta ya no reusa IDs) · B6 (año dinámico en fechaParto; era 2026
+fijo) · B7 (fallbacks muertos de animalFromDB y secaInfo/secaNoAplica
+eliminados) · B13 (potreros no consulta si el módulo está oculto; textos "día
+2" derivados del dato) · B16 (CI: workflow que corre sintaxis + smoke en cada
+push) · B17 (model.js marcado "solo tests") · B18 (README con sección "estado
+actual vs visión").
+
+**Sin tocar aún:** A1 (auth+RLS), M11b (corregir ordeños pasados en móvil),
+M14 completo (flujos), B1 sufijo aleatorio, B8, B11, B14, B15, B19.
 
 ## Mapa rápido del proyecto
 

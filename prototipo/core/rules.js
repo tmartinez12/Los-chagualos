@@ -24,7 +24,8 @@
   }
 
   /* Fecha estimada de parto: hoy + lo que falta de gestación (~9 meses).
-   * Devuelve { corta:'~13 sep', mes:'sep', larga:'13 sep' } (con año si != 2026). */
+   * Devuelve { corta:'~13 sep', mes:'sep', larga:'13 sep' } (con año si no es
+   * el año en curso — antes estaba clavado 2026 y en 2027 fallaría). */
   function fechaParto(meses, hoy) {
     const d = baseHoy(hoy);
     d.setMonth(d.getMonth() + Math.max(0, 9 - meses));
@@ -32,7 +33,7 @@
     return {
       corta: '~' + d.getDate() + ' ' + mes,
       mes: mes,
-      larga: d.getDate() + ' ' + mes + (y !== 2026 ? ' ' + String(y).slice(2) : ''),
+      larga: d.getDate() + ' ' + mes + (y !== baseHoy(hoy).getFullYear() ? ' ' + String(y).slice(2) : ''),
     };
   }
 
@@ -176,9 +177,45 @@
    * aftosa en los ciclos ICA (mayo/noviembre). ÚNICA fuente para las dos UIs. */
   const PROTOCOLO_SAN = { despar: [0, 3, 6, 9], aftosa: [4, 10] };
 
+  /* Fecha de nacimiento para la ficha: la real, o estimada desde la edad.
+   * ÚNICA fuente para las dos UIs (antes estaba duplicada y podía divergir). */
+  function fmtNacimiento(a, hoy) {
+    if (a && a.nacimiento) { const d = new Date(a.nacimiento + 'T00:00:00'); return d.getDate() + ' ' + MESC[d.getMonth()] + ' ' + d.getFullYear(); }
+    if (a && a.edadAnios != null) { const d = baseHoy(hoy); d.setMonth(d.getMonth() - Math.round(a.edadAnios * 12)); return '~' + MESC[d.getMonth()] + ' ' + d.getFullYear() + ' (estimada)'; }
+    return '—';
+  }
+
+  /* Estado reproductivo/sanitario de la ficha, canónico para las dos UIs.
+   * Devuelve {nivel:''|'ok'|'warn'|'bad', titulo, sub, secar?} o null (la UI
+   * decide el texto por grupo). aux: {retiroDias, diasAbiertos, hijas, fmtFecha}.
+   * Regla unificada: preñada es buena noticia (verde); amarillo SOLO cuando
+   * ya toca programar el secado (≥7 meses y sigue en ordeño). */
+  function deriveReproFicha(a, aux) {
+    aux = aux || {};
+    const f = aux.fmtFecha || function (x) { return x; };
+    if (aux.retiroDias != null && aux.retiroDias >= 0)
+      return { nivel: 'bad', titulo: 'Retiro de leche · ' + aux.retiroDias + (aux.retiroDias === 1 ? ' día' : ' días') + ' más', sub: 'No vender su leche hasta terminar el retiro' };
+    if (a.estadoRepro === 'prenada' && a.prenez) {
+      const m = a.prenez.meses; let sub = '';
+      if (a.prenez.partoEstimado) sub = 'Parto probable ~' + f(a.prenez.partoEstimado);
+      if (a.secarEstimado) sub += (sub ? ' · ' : '') + 'Secar ~' + f(a.secarEstimado);
+      if (m >= 7 && a.grupo === 'ordeño')
+        return { nivel: 'warn', titulo: 'Preñada · ' + m + ' meses — programar secado', sub: sub || 'Secar ~2 meses antes del parto', secar: true };
+      return { nivel: 'ok', titulo: 'Preñada · ' + m + ' meses', sub: sub || 'Gestación en curso', secar: true };
+    }
+    if (a.estadoRepro === 'servida') return { nivel: '', titulo: 'Servida · por palpar', sub: 'Confirmar preñez en la próxima palpación' };
+    if (a.estadoRepro === 'vacia') {
+      const da = aux.diasAbiertos != null ? aux.diasAbiertos : a.diasVacia;
+      return { nivel: 'bad', titulo: 'Vacía' + (da ? ' · ' + da + ' días abiertos' : ''), sub: da > 120 ? 'Evaluar descarte o tratamiento reproductivo' : 'Esperar para servicio' };
+    }
+    if (a.grupo === 'novilla') return { nivel: a.listaServicio ? 'warn' : '', titulo: a.listaServicio ? 'Novilla lista para servicio' : 'Novilla en desarrollo', sub: a.pesoKg ? a.pesoKg + ' kg' : '' };
+    if (a.grupo === 'macho' && a.rolToro) return { nivel: '', titulo: 'Toro reproductor activo', sub: aux.hijas ? aux.hijas + ' hijas en la finca' : '' };
+    return null;
+  }
+
   return {
     MESC, fechaParto, fechaDias, esBajonLeche, parseTrat, parsePalpNota, curvaLactancia,
     diasHasta, ordinalParto, fmtFechaCorta, snapshotReproDB, fechaLarga, isoHoy, esc,
-    PROTOCOLO_SAN,
+    PROTOCOLO_SAN, fmtNacimiento, deriveReproFicha,
   };
 });

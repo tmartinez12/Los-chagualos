@@ -105,24 +105,16 @@ function openCow(num){if(num)renderFicha(num);go('scr-vaca');}
 /* Ficha por-animal: rellena scr-vaca con datos reales de la base (cache). */
 const GRUPO_DISPLAY_M={'ordeño':'En ordeño','horra':'Horra','novilla':'Novilla','levante':'Levante','ternera':'Ternera','macho':'Macho','baja':'Baja'};
 function origenM(a){return a.origen==='comprado'?'Comprada':a.origen==='nacido_finca'?'Nació en finca':'';}
-function fmtNacimientoM(a){
-  if(a&&a.nacimiento){const d=new Date(a.nacimiento+'T00:00:00');return d.getDate()+' '+MESC[d.getMonth()]+' '+d.getFullYear();}
-  if(a&&a.edadAnios!=null){const d=new Date(HOY_LC.getTime());d.setMonth(d.getMonth()-Math.round(a.edadAnios*12));return '~'+MESC[d.getMonth()]+' '+d.getFullYear()+' (estimada)';}
-  return '—';
-}
+function fmtNacimientoM(a){return LCRules.fmtNacimiento(a);}   // canónica en rules.js
+/* adaptador: la lógica canónica vive en LCRules.deriveReproFicha (compartida
+ * con el escritorio); aquí solo se mapea a la forma {cls,title,sub} móvil. */
 function deriveReproFichaM(a){
-  const retiroD=a.retiroLecheHasta?diasHastaM(a.retiroLecheHasta):null;
-  if(retiroD!=null&&retiroD>=0)return {cls:'bad',title:'Retiro de leche · '+retiroD+(retiroD===1?' día':' días')+' más',sub:'No vender su leche hasta terminar el retiro'};
-  if(a.estadoRepro==='prenada'&&a.prenez){const m=a.prenez.meses;let sub='';
-    if(a.prenez.partoEstimado)sub='Parto probable ~'+fmtFechaCortaM(a.prenez.partoEstimado);
-    if(a.secarEstimado)sub+=(sub?' · ':'')+'Secar ~'+fmtFechaCortaM(a.secarEstimado);
-    return {cls:'warn',title:'Preñada · '+m+' meses',sub:sub||'Gestación en curso',secar:true};}
-  if(a.estadoRepro==='servida')return {cls:'',title:'Servida · por palpar',sub:'Confirmar preñez en la próxima palpación'};
-  if(a.estadoRepro==='vacia')return {cls:'bad',title:'Vacía'+(a.diasVacia?' '+a.diasVacia+' días':''),sub:a.diasVacia>120?'Evaluar descarte o tratamiento reproductivo':'Esperar para servicio'};
-  if(a.grupo==='novilla')return {cls:'',title:a.listaServicio?'Novilla lista para servicio':'Novilla en desarrollo',sub:a.pesoKg?a.pesoKg+' kg':''};
-  if(a.grupo==='macho'&&a.rolToro){const h=Object.values(animalesPorIdM).filter(x=>x.padreId===a.id&&x.grupo!=='baja').length;
-  return {cls:'',title:'Toro reproductor activo',sub:h?h+' hijas en la finca':''};}
-  return {cls:'',title:GRUPO_DISPLAY_M[a.grupo]||a.grupo,sub:''};
+  const r=LCRules.deriveReproFicha(a,{
+    retiroDias:a.retiroLecheHasta?diasHastaM(a.retiroLecheHasta):null,
+    hijas:(a.grupo==='macho'&&a.rolToro)?Object.values(animalesPorIdM).filter(x=>x.padreId===a.id&&x.grupo!=='baja').length:0,
+    fmtFecha:fmtFechaCortaM});
+  return r?{cls:r.nivel==='ok'?'':r.nivel,title:r.titulo,sub:r.sub,secar:r.secar}
+          :{cls:'',title:GRUPO_DISPLAY_M[a.grupo]||a.grupo,sub:''};
 }
 let fichaActualM=null;
 function renderFicha(num){
@@ -701,7 +693,11 @@ function saveParto(){
     const prevSub=grupos[grupo].sub, prevHeader=grupos[grupo].header;
     if(parto.sexo==='H'){nTerneras++;subTerneras();}
     else{nMachos++;subMachos();}
-    grupos[grupo].animales.unshift([num+' · (cría de '+nombre+')','recién nacid'+(parto.sexo==='H'?'a':'o')+' · '+parto.peso+' kg · 0 meses',0]);
+    const filaCria=[num+' · (cría de '+nombre+')','recién nacid'+(parto.sexo==='H'?'a':'o')+' · '+parto.peso+' kg · 0 meses',0];
+    grupos[grupo].animales.unshift(filaCria);
+    /* clicable y en caché apenas se confirme el guardado (ver pSaveParto) */
+    parto._filaCria=filaCria;parto._criaDatos={id:num,nombre:'Cría de '+nombre,grupo:parto.sexo==='H'?'ternera':'macho',
+      sexo:parto.sexo,pesoKg:parto.peso,nacimiento:fechaP,madreId:numMadre,leche:{},prenez:null};
     partosRecientes.unshift({t:parto.cow+' → cría '+num,
       s:fmtFechaCortaM(fechaP)+' · '+sexoTxt+' · viva · '+parto.peso+' kg · '+tipoTxt,badge:'en '+destino,bw:'ok'});
     deshacerCria=()=>{grupos[grupo].animales.shift();grupos[grupo].sub=prevSub;grupos[grupo].header=prevHeader;
@@ -723,7 +719,9 @@ function saveParto(){
     pSaveParto=LCStore.registrarPartoCompleto({id:partoId,madreId:numMadre,fecha:fechaP,
         sexo:parto.sexo,pesoKg:parto.peso,tipo:parto.tipo,estadoCria:parto.estado,
         criaId:criaIdNueva,criaNombre:criaIdNueva?('Cría de '+nombre):null,criaRaza:madreRaza})
-      .then(()=>desencolar())
+      .then(()=>{desencolar();
+        if(criaIdNueva&&parto._criaDatos){animalesPorIdM[criaIdNueva]=parto._criaDatos;
+          if(parto._filaCria)parto._filaCria[2]=1;}})
       .catch(e=>{console.warn('Parto móvil no guardado:',e.message||e);
         snack('⚠ El parto NO se guardó en la base — revisa la señal y regístralo de nuevo');});
   }
@@ -849,7 +847,7 @@ function pintarCowChips(containerId,lista,current,onPick){
 function listaCows(){return cows.map(c=>c.num+' · '+c.n);}
 function listaTodos(){return Object.values(animalesPorIdM).filter(a=>a.grupo!=='baja').map(a=>a.id+' · '+a.nombre);}
 function palpMarcarVaca(){document.querySelectorAll('#palpCows .chip').forEach(c=>
-  c.classList.toggle('sel',c.textContent.trim().startsWith(palp.cow.split('·')[0].trim())));}
+  c.classList.toggle('sel',c.textContent.trim().split(' ')[0]===numDe(palp.cow)));}
 function openPalp(cow){
   const lista=Object.keys(palpCandidatas).length?Object.keys(palpCandidatas):listaCows();
   palp.cow=cow||lista[0]||'';
@@ -928,14 +926,14 @@ function savePalp(){
 const fechaDias=LCRules.fechaDias;
 const trata={cow:'',problema:'Mastitis',medicina:'Antibiótico',retiro:4};
 function trataMarcarVaca(){document.querySelectorAll('#trataCows .chip').forEach(c=>
-  c.classList.toggle('sel',c.textContent.trim().startsWith(trata.cow.split('·')[0].trim())));}
+  c.classList.toggle('sel',c.textContent.trim().split(' ')[0]===numDe(trata.cow)));}
 function openTrata(cow){
   const lista=listaTodos();
   trata.cow=cow||lista[0]||'';
   trata.problema='Mastitis';trata.medicina='Antibiótico';trata.retiro=4;
   pintarCowChips('trataCows',lista,trata.cow,trataCow);
   document.getElementById('trataCow').textContent=(trata.cow||'—').toUpperCase();
-  const cd=cows.find(c=>trata.cow.startsWith(c.num));
+  const cd=cows.find(c=>numDe(trata.cow)===c.num);
   document.getElementById('trataInfo').textContent=cd?cd.del:'Selecciona el problema y el tratamiento';
   document.getElementById('trataRetiroVal').textContent=trata.retiro;
   // problema y tratamiento vuelven a la primera opción
@@ -948,7 +946,7 @@ function closeTrata(){document.getElementById('trataSheet').classList.remove('sh
   document.getElementById('scrim').classList.remove('show');}
 function trataCow(cow){trata.cow=cow;
   document.getElementById('trataCow').textContent=cow.toUpperCase();
-  const cd=cows.find(c=>cow.startsWith(c.num));
+  const cd=cows.find(c=>numDe(cow)===c.num);
   document.getElementById('trataInfo').textContent=cd?cd.del:'Selecciona el problema y el tratamiento';
   trataMarcarVaca();}
 function trataPick(btn,campo,val){trata[campo]=val;
@@ -986,20 +984,16 @@ function saveTrata(){
   });
 }
 /* ===== Secado (sale del ordeño → pasa a horras) ===== */
-/* info de secado por vaca: vacío; el subtítulo cae a texto genérico.
- * (Antes tenía fichas demo por id de vaca.) */
-const secaInfo={};
-const secaNoAplica={};
 const seca={cow:''};
 let nHorras=0;
 function secaMarcar(){document.querySelectorAll('#secaCows .chip').forEach(c=>
-  c.classList.toggle('sel',c.textContent.trim().startsWith(seca.cow.split('·')[0].trim())));}
+  c.classList.toggle('sel',c.textContent.trim().split(' ')[0]===numDe(seca.cow)));}
 function openSeca(cow){
   const lista=listaCows();
   seca.cow=cow||lista[0]||'';
   pintarCowChips('secaCows',lista,seca.cow,secaCow);
   document.getElementById('secaCow').textContent=(seca.cow||'—').toUpperCase();
-  document.getElementById('secaInfo').textContent=secaInfo[seca.cow]||'Confirma la preñez antes de secar';
+  document.getElementById('secaInfo').textContent='Confirma la preñez antes de secar';
   document.getElementById('scrim').classList.add('show');
   document.getElementById('secaSheet').classList.add('show');
 }
@@ -1007,14 +1001,12 @@ function closeSeca(){document.getElementById('secaSheet').classList.remove('show
   document.getElementById('scrim').classList.remove('show');}
 function secaCow(cow){seca.cow=cow;
   document.getElementById('secaCow').textContent=cow.toUpperCase();
-  document.getElementById('secaInfo').textContent=secaInfo[cow]||'Confirma la preñez antes de secar';
+  document.getElementById('secaInfo').textContent='Confirma la preñez antes de secar';
   secaMarcar();}
 function saveSeca(){
   if(!seca.cow||seca.cow.indexOf('·')<0){closeSeca();
     snack('No hay vaca seleccionada para secar');return;}
   const nombre=seca.cow.split('·')[1].trim();
-  if(secaNoAplica[seca.cow]){closeSeca();
-    snack(nombre+' está vacía — el secado es para vacas preñadas. Confírmalo con palpación.');return;}
   closeSeca();
   const numSeca=numDe(seca.cow);
   const idx=cows.findIndex(c=>numSeca===c.num);
@@ -1023,7 +1015,7 @@ function saveSeca(){
   renderCows();
   const prevSub=grupos.horras.sub, prevHeader=grupos.horras.header;
   nHorras++;subHorras();
-  grupos.horras.animales.unshift([seca.cow,'recién secada — '+(secaInfo[seca.cow]||'preñada')]);
+  grupos.horras.animales.unshift([seca.cow,'recién secada — preñada']);
   encolar();
   /* para poder DESHACER también en la base: sin esto, deshacer el secado
    * dejaba a la vaca horra y con el inicio de lactancia (DEL) borrado. */
@@ -1036,7 +1028,7 @@ function saveSeca(){
         snack('⚠ El secado NO se guardó en la base — revisa la señal y reintenta');});
   }
   setTimeout(()=>openGroup('horras'),300);
-  snack(nombre+' secada · sale del ordeño y pasa a horras · '+(secaInfo[seca.cow]||'se planea su parto'),'Deshacer',()=>{
+  snack(nombre+' secada · sale del ordeño y pasa a horras · '+'se planea su parto','Deshacer',()=>{
     if(removed)cows.splice(Math.min(idx,cows.length),0,removed);
     renderCows();
     nHorras--; grupos.horras.sub=prevSub; grupos.horras.header=prevHeader; grupos.horras.animales.shift();
@@ -1097,7 +1089,8 @@ function saveAlta(){
   closeAlta();
   const g=altaGrupo[alta.tipo];
   const num=g==='machos'?'T0'+(++toroSeq):String(++altaSeq).padStart(3,'0');
-  grupos[g].animales.unshift([num+' · (compra)',alta.raza+' · '+alta.edad+' años · '+alta.tipo.toLowerCase()+' comprada',0]);
+  const fila=[num+' · (compra)',alta.raza+' · '+alta.edad+' años · '+alta.tipo.toLowerCase()+' comprada',0];
+  grupos[g].animales.unshift(fila);
   incGrupo(g,1);encolar();
   if(typeof LCStore!=='undefined'){
     const GM={ordeno:'ordeño',novillas:'novilla',terneras:'ternera',machos:'macho'};
@@ -1105,13 +1098,19 @@ function saveAlta(){
       sexo:g==='machos'?'M':'H',edadAnios:alta.edad,origen:'comprado',
       procedencia:alta.procedencia||null,
       valorCompra:alta.valor?parseInt(String(alta.valor).replace(/\D/g,'')):null})
-      .then(()=>desencolar()).catch(e=>console.warn('Compra móvil no guardada:',e.message||e));
+      .then(a=>{desencolar();
+        /* al caché y clicable: su ficha abre sin recargar la página */
+        if(a)animalesPorIdM[a.id]=a;fila[2]=1;})
+      .catch(e=>{console.warn('Compra móvil no guardada:',e.message||e);
+        snack('⚠ La compra NO se guardó en la base — revisa la señal y reintenta');});
   }
   setTimeout(()=>openGroup(g),300);
   const extra=(alta.procedencia?' · '+alta.procedencia:'')+(alta.valor?' · $'+alta.valor:'');
   snack('Compra: '+num+' ('+alta.tipo.toLowerCase()+', '+alta.raza+')'+extra+' — entró al hato','Deshacer',()=>{
     grupos[g].animales.shift();incGrupo(g,-1);
-    if(g==='machos')toroSeq--;else altaSeq--;
+    /* NO decrementar las secuencias: reusar el id puede chocar con la PK si
+     * hubo otra alta en el medio; mejor saltar el número. */
+    delete animalesPorIdM[num];
     desencolar();openGroup(g);snack('Alta deshecha');
     if(typeof LCStore!=='undefined')LCStore.deleteAnimal(num).catch(()=>{});
   });
@@ -1119,13 +1118,13 @@ function saveAlta(){
 /* --- Baja (venta / muerte / descarte / pérdida) --- */
 const baja={cow:'',motivo:'Venta'};
 function bajaMarcar(){document.querySelectorAll('#bajaCows .chip').forEach(c=>
-  c.classList.toggle('sel',c.textContent.trim().startsWith(baja.cow.split('·')[0].trim())));}
+  c.classList.toggle('sel',c.textContent.trim().split(' ')[0]===numDe(baja.cow)));}
 function openBaja(cow){
   const lista=listaTodos();
   baja.cow=cow||lista[0]||'';baja.motivo='Venta';
   pintarCowChips('bajaCows',lista,baja.cow,bajaCow);
   document.getElementById('bajaCow').textContent=(baja.cow||'—').toUpperCase();
-  const cd=cows.find(c=>baja.cow.startsWith(c.num));
+  const cd=cows.find(c=>numDe(baja.cow)===c.num);
   document.getElementById('bajaInfo').textContent=cd?cd.del:'Elige el animal y el motivo';
   document.querySelectorAll('#bajaSheet .chips')[1].querySelectorAll('.chip')
     .forEach((c,i)=>c.classList.toggle('sel',i===0));
@@ -1135,7 +1134,7 @@ function closeBaja(){document.getElementById('bajaSheet').classList.remove('show
   document.getElementById('scrim').classList.remove('show');}
 function bajaCow(cow){baja.cow=cow;
   document.getElementById('bajaCow').textContent=cow.toUpperCase();
-  const cd=cows.find(c=>cow.startsWith(c.num));
+  const cd=cows.find(c=>numDe(cow)===c.num);
   document.getElementById('bajaInfo').textContent=cd?cd.del:'Elige el animal y el motivo';
   bajaMarcar();}
 function bajaPick(btn,campo,val){baja[campo]=val;
@@ -1178,6 +1177,13 @@ function saveBaja(){
       {grupo:prevGrupoCache||'ordeño',baja_motivo:null,baja_fecha:null,baja_valor:null,baja_nota:null}).catch(()=>{});
   });
 }
+/* accesibilidad: hojas anunciadas como diálogo y cierre con Escape */
+document.querySelectorAll('.sheet').forEach(el=>{el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){const sc=document.getElementById('scrim');
+    if(sc&&sc.classList.contains('show'))sc.click();}
+});
+
 /* si la pestaña queda abierta de un día para otro, recargar al cambiar la
  * fecha (solo sin hojas abiertas) para que "hoy" no quede congelado en ayer */
 (function(){

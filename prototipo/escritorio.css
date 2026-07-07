@@ -1,7 +1,7 @@
 @font-face{font-family:'Work Sans';font-style:normal;font-weight:100 900;font-display:swap;src:url(fonts/worksans.woff2) format('woff2');}
 :root{
   --bg:#EEF0E4; --surface:#FAFAF7; --card:#FFFFFF; --border:#E7E7DF;
-  --ink:#161813; --ink-2:#70756A; --ink-3:#A8ACA0;
+  --ink:#161813; --ink-2:#70756A; --ink-3:#878C7F;   /* ink-3 subido para contraste AA */
   --green:#2F7E33; --green-soft:#EAF4EA;
   --red:#C2362B; --red-soft:#FBEDEB;
   --amber:#9A6B00; --amber-soft:#F8F1DF;

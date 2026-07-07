@@ -1,6 +1,10 @@
 /* =============================================================================
  * Los Chagualos · MODELO CANÓNICO DE DATOS  (core/model.js)
  * -----------------------------------------------------------------------------
+ * ⚠️ SOLO PARA TESTS: la app NO carga este archivo (los datos reales vienen de
+ * Supabase vía core/store.js). Lo usa únicamente test/smoke.js como fixture
+ * del contrato de datos. Sus animales/valores internos son de ejemplo.
+ * -----------------------------------------------------------------------------
  * Fuente única de verdad con forma de base de datos. NO contiene presentación
  * (nada de HTML, badges, clases CSS ni textos armados): eso se deriva en la UI.
  * NO contiene lógica de negocio: eso vive en core/rules.js y core/actions.js.

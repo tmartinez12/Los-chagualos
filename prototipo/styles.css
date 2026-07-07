@@ -8,7 +8,7 @@
   --border:#E7E7DF;
   --ink:#161813;           /* texto principal */
   --ink-2:#70756A;         /* texto secundario */
-  --ink-3:#A8ACA0;         /* terciario / placeholders */
+  --ink-3:#878C7F;         /* terciario / placeholders (contraste AA en texto pequeño) */
   --green:#2F7E33;         /* ÚNICO acento: positivo, listo, ok */
   --green-soft:#EAF4EA;
   --red:#C2362B;           /* solo negativo/urgente */

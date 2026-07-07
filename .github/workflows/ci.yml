@@ -1,0 +1,21 @@
+name: CI (prueba de humo)
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sintaxis de todo el JS
+        run: |
+          node --check prototipo/app.js
+          node --check prototipo/escritorio.js
+          node --check prototipo/core/store.js
+          node --check prototipo/core/rules.js
+          node --check prototipo/core/model.js
+      - name: Prueba de humo (contratos UI ↔ núcleo ↔ esquema)
+        run: node prototipo/test/smoke.js

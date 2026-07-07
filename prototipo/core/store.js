@@ -54,13 +54,15 @@
     /* del y leche.ayer pueden venir DERIVADOS de la vista v_animales
      * (del_calc desde inicio_lactancia, leche_ultima desde el último ordeño);
      * si no hay vista/derivado, se usa la columna guardada como respaldo. */
-    const delDerivado = (r.del_calc != null) ? r.del_calc : r.del;
-    const lecheDerivada = (r.leche_ultima != null) ? r.leche_ultima : r.leche_ayer;
-    const retiroDerivado = (r.retiro_calc !== undefined) ? r.retiro_calc : r.retiro_leche_hasta;
-    /* reproducción derivada de la palpación (con respaldo a la columna guardada) */
-    const partoEstDeriv = (r.parto_estimado_calc != null) ? r.parto_estimado_calc : r.parto_estimado;
-    const secarDeriv = (r.secar_calc != null) ? r.secar_calc : r.secar_estimado;
-    const diasVaciaDeriv = (r.dias_vacia_calc != null) ? r.dias_vacia_calc : r.dias_vacia;
+    /* *_calc vienen de la vista v_animales; al leer la tabla base (solo si la
+     * vista no existe) simplemente quedan null. Las columnas viejas del/leche_
+     * ayer/retiro_leche_hasta/parto_estimado/… ya NO existen en la BD. */
+    const delDerivado = r.del_calc != null ? r.del_calc : null;
+    const lecheDerivada = r.leche_ultima != null ? r.leche_ultima : null;
+    const retiroDerivado = r.retiro_calc !== undefined ? r.retiro_calc : null;
+    const partoEstDeriv = r.parto_estimado_calc != null ? r.parto_estimado_calc : null;
+    const secarDeriv = r.secar_calc != null ? r.secar_calc : null;
+    const diasVaciaDeriv = r.dias_vacia_calc != null ? r.dias_vacia_calc : null;
     const mesesDeriv = (r.prenez_meses_actual != null) ? r.prenez_meses_actual : r.prenez_meses;
     const edadDeriv = (r.edad_calc != null) ? r.edad_calc : r.edad_anios;
     return {
@@ -159,7 +161,15 @@
   /* --- API de escritura ----------------------------------------------------- */
   async function insertAnimal(a) {
     _invalidarAnimales();
-    const { data, error } = await client().from('animales').insert(animalToDB(a)).select().single();
+    const o = animalToDB(a);
+    /* sin nacimiento la edad quedaría CONGELADA en edad_anios (la vista solo
+     * deriva edad desde nacimiento): se estima desde la edad dada. */
+    if (!o.nacimiento && o.edad_anios != null && !isNaN(Number(o.edad_anios))) {
+      const d = new Date(hoyFinca() + 'T00:00:00');
+      d.setDate(d.getDate() - Math.round(Number(o.edad_anios) * 365.25));
+      o.nacimiento = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+    const { data, error } = await client().from('animales').insert(o).select().single();
     if (error) throw error;
     return animalFromDB(data);
   }

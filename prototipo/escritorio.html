@@ -119,7 +119,7 @@
             <svg class="ic-s ic"><use href="#i-tag"/></svg>
             <input type="text" id="hatoBuscar" placeholder="Buscar por número o nombre…" autocomplete="off"
               oninput="renderHato()">
-            <button id="hatoBuscarClear" onclick="document.getElementById('hatoBuscar').value='';renderHato();document.getElementById('hatoBuscar').focus()" style="display:none">✕</button>
+            <button id="hatoBuscarClear" aria-label="Limpiar búsqueda" onclick="document.getElementById('hatoBuscar').value='';renderHato();document.getElementById('hatoBuscar').focus()" style="display:none">✕</button>
           </div>
           <span style="font-size:13px;color:var(--ink-2)" id="hatoResumen"></span>
           <div class="spacer" style="flex:1"></div>

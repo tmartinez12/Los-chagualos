@@ -17,6 +17,7 @@ más de una vez sin daño):
 | 1 | `migracion-vacunaciones.sql` | Crea la tabla `vacunaciones` | correr si el registro de vacunas falla |
 | 2 | `migracion-zona-horaria.sql` | Fechas en hora de Colombia (`hoy_finca`) | jul 2026 |
 | 3 | `migracion-integridad.sql` | Constraints, FKs coherentes, índice, parto transaccional (RPC), revokes | **pendiente** |
+| 4 | `migracion-nacimiento.sql` | Backfill: estima `nacimiento` desde `edad_anios` (sin él la edad no avanza) | **pendiente** |
 
 Utilidades (no son migraciones):
 
