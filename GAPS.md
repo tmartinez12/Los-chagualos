@@ -1,8 +1,8 @@
 # GAPS.md — Auditoría sin anestesia
 
 > Estado real del proyecto a julio 2026, DESPUÉS de tres rondas de correcciones
-> (ver `AUDITORIA.md` para el historial). Esto es lo que sigue mal, frágil o
-> feo, dicho sin diplomacia. Complementa a `AUDITORIA.md`: aquello es el
+> (ver `docs/AUDITORIA.md` para el historial). Esto es lo que sigue mal, frágil o
+> feo, dicho sin diplomacia. Complementa a `docs/AUDITORIA.md`: aquello es el
 > inventario de arreglos; esto es la foto cruda de las debilidades que quedan.
 
 ---
@@ -46,7 +46,7 @@ incompleto en silencio.
 vacío pero `saveTrata`/`aplicarTratamientos` le escriben historia que nadie
 lee); `diaOverrides`/`editDiaCell` descableados; `partoInfo={}` móvil (siempre
 vacío); la edge function `login-pin` huérfana con debilidades conocidas (B8);
-`PLAN-arquitectura.md` y `PLAN-backend.md` describen un diseño que ya divergió
+`docs/PLAN-arquitectura.md` y `docs/PLAN-backend.md` describen un diseño que ya divergió
 de la realidad. `estadoBase()` está copiada idéntica en los dos JS (ironía:
 se creó para un fix y nació duplicada).
 
@@ -153,7 +153,7 @@ El CI (nuevo) corre sintaxis + ese smoke. Nada más.
   `snapshotReproDB/M`, etc. Mitad compartido, mitad clonado — el peor punto
   intermedio para navegar el código.
 - **Documentación que se contradice:** README ya tiene la sección "estado
-  actual vs visión" (bien), pero `PLAN-arquitectura.md` y `PLAN-backend.md`
+  actual vs visión" (bien), pero `docs/PLAN-arquitectura.md` y `docs/PLAN-backend.md`
   siguen describiendo `core/actions.js` (no existe), auth por PIN (no existe)
   y outbox (no existe) como si fueran el plan vigente.
 
