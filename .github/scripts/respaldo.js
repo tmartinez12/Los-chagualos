@@ -12,7 +12,7 @@ const fs = require('fs');
 async function bajarTabla(t) {
   const filas = [];
   for (let desde = 0; ; desde += 1000) {
-    const r = await fetch(URL_BASE + '/rest/v1/' + t + '?select=*&order=created_at.asc', {
+    const r = await fetch(URL_BASE + '/rest/v1/' + t + '?select=*&order=created_at.asc%2Cid.asc', {
       headers: {
         apikey: ANON, Authorization: 'Bearer ' + ANON,
         Range: desde + '-' + (desde + 999), 'Range-Unit': 'items',

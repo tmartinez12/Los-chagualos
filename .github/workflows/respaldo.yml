@@ -3,6 +3,7 @@ name: Respaldo semanal de la base
 on:
   schedule:
     - cron: '0 9 * * 1'   # lunes 4:00 am hora de Colombia (9:00 UTC)
+    - cron: '0 9 * * 4'   # jueves también: el free tier pausa a los ~7 días justos
   workflow_dispatch:        # también se puede lanzar a mano
 
 jobs:

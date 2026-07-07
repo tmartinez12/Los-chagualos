@@ -468,7 +468,7 @@
     const filas = [];
     for (let desde = 0; ; desde += 1000) {
       const { data, error } = await client().from(t).select('*')
-        .order('created_at', { ascending: true }).range(desde, desde + 999);
+        .order('created_at', { ascending: true }).order('id', { ascending: true }).range(desde, desde + 999);
       if (error) {
         if (error.code === '42P01') return filas;   // tabla aún no creada → vacía
         throw new Error(t + ': ' + error.message);  // error real: el respaldo ABORTA, no calla
