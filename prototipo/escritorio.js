@@ -5,6 +5,19 @@ const POTREROS_VISIBLE=false;
    corre antes de la línea donde se llena desde Supabase. */
 let animalesPorId={};
 let _palpaciones=[];   // todas las palpaciones (cache para la ficha y el historial)
+/* Banner de estado de la conexión: "cargando…" al abrir, error visible si la
+ * base no responde (antes un fallo de red se veía igual que una finca vacía). */
+function estadoBase(txt,esError){
+  let b=document.getElementById('estadoBase');
+  if(!txt){if(b)b.remove();return;}
+  if(!b){b=document.createElement('div');b.id='estadoBase';
+    b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:200;text-align:center;font-size:12.5px;font-weight:600;padding:7px 12px;color:#fff';
+    document.body.appendChild(b);}
+  b.style.background=esError?'#B3261E':'#5f6659';
+  b.innerHTML=txt+(esError?' — <a onclick="location.reload()" style="color:#fff;text-decoration:underline;cursor:pointer">reintentar</a>':'');
+}
+estadoBase('Cargando los datos de la finca…');
+
 let _ultimoParto={};   // madre_id → fecha ISO del último parto
 let _partosPorMadre={};// madre_id → [fechas ISO] (para intervalo entre partos)
 function _diasEntre(isoA,isoB){return Math.round((new Date(isoA+'T00:00:00')-new Date(isoB+'T00:00:00'))/86400000);}
@@ -375,7 +388,7 @@ function guardarCeldaSemana(animalId,iso,input){
     if(typeof LCStore!=='undefined')LCStore.deleteOrdeno(animalId,iso)
       .catch(e=>snack('⚠ No se borró en la base: '+(e.message||e)));
     return;}
-  const litros=Math.max(0,parseFloat(raw));
+  const litros=Math.min(99.9,Math.max(0,parseFloat(raw)));   // mismo rango que el CHECK de la BD
   if(isNaN(litros)){input.value=ordenosDiaMap[animalId+'|'+iso]!=null?ordenosDiaMap[animalId+'|'+iso]:'';return;}
   ordenosDiaMap[animalId+'|'+iso]=litros;
   if(_ordsRaw){const ex=_ordsRaw.find(o=>o.animal_id===animalId&&o.fecha===iso);if(ex)ex.litros=litros;else _ordsRaw.push({animal_id:animalId,fecha:iso,litros:litros});}
@@ -1180,18 +1193,40 @@ function renderPartosRecientes(){
     }
     const tr=document.createElement('tr');
     const cls=_claseParto(p);
+    const x=p.id?'<span class="del-x" title="Eliminar este parto" onclick="eliminarPartoHist(\''+LCRules.esc(p.id)+'\',event)">✕</span>':'';
     if(cls==='mortinato'){
-      tr.innerHTML='<td>'+p.madre+' → cría</td><td>'+p.fecha+'</td>'+
-        '<td class="r"><span class="badge bad">mortinato</span></td>';
+      tr.innerHTML='<td>'+LCRules.esc(p.madre)+' → cría</td><td>'+p.fecha+'</td>'+
+        '<td class="r"><span class="badge bad">mortinato</span>'+x+'</td>';
     }else if(cls==='historico'){
-      tr.innerHTML='<td>'+p.madre+' → '+p.cria+'</td><td>'+p.fecha+'</td>'+
-        '<td class="r"><span class="badge">histórico</span></td>';
+      tr.innerHTML='<td>'+LCRules.esc(p.madre)+' → '+LCRules.esc(p.cria)+'</td><td>'+p.fecha+'</td>'+
+        '<td class="r"><span class="badge">histórico</span>'+x+'</td>';
     }else{
-      tr.innerHTML='<td>'+p.madre+' → '+p.cria+'</td><td>'+p.fecha+'</td>'+
-        '<td class="r"><span class="badge ok">'+(p.sexo==='H'?'♀':'♂')+' en '+p.grupo+'</span></td>';
+      tr.innerHTML='<td>'+LCRules.esc(p.madre)+' → '+LCRules.esc(p.cria)+'</td><td>'+p.fecha+'</td>'+
+        '<td class="r"><span class="badge ok">'+(p.sexo==='H'?'♀':'♂')+' en '+p.grupo+'</span>'+x+'</td>';
     }
     tb.appendChild(tr);
   });
+}
+/* eliminar un parto del historial (error de dedo): confirma y borra en la base */
+function eliminarPartoHist(id,ev){
+  if(ev)ev.stopPropagation();
+  const p=partosRecientes.find(x=>x.id===id);if(!p)return;
+  if(!confirm('¿Eliminar el parto de '+p.madre+' ('+p.fecha+')? El conteo de partos de la vaca baja.'))return;
+  const fin=()=>{
+    const i=partosRecientes.findIndex(x=>x.id===id);if(i>=0)partosRecientes.splice(i,1);
+    const j=_partosRaw.findIndex(x=>x.id===id);
+    if(j>=0){const raw=_partosRaw[j];_partosRaw.splice(j,1);
+      if(_partosPorMadre[raw.madre_id]){const k=_partosPorMadre[raw.madre_id].lastIndexOf(raw.fecha);
+        if(k>=0)_partosPorMadre[raw.madre_id].splice(k,1);}
+      if(_ultimoParto[raw.madre_id]===raw.fecha){const fs=(_partosPorMadre[raw.madre_id]||[]).slice().sort();
+        if(fs.length)_ultimoParto[raw.madre_id]=fs[fs.length-1];else delete _ultimoParto[raw.madre_id];}
+      if(animalesPorId[raw.madre_id]&&animalesPorId[raw.madre_id].partos>0)animalesPorId[raw.madre_id].partos--;}
+    renderPartosRecientes();renderPartosKpis();
+    snack('Parto eliminado');
+  };
+  if(typeof LCStore!=='undefined')LCStore.deleteParto(id).then(fin)
+    .catch(e=>snack('⚠ No se pudo eliminar: '+(e.message||e)));
+  else fin();
 }
 function renderPartosKpis(){
   const box=document.getElementById('partosKpis');if(!box)return;
@@ -1337,7 +1372,7 @@ function renderSanidadVacunas(){
   renderSanProxima();
 }
 /* Protocolo sanitario del hato (meses 0-11) */
-const PROTOCOLO_SAN={despar:[0,3,6,9],aftosa:[4,10]};
+const PROTOCOLO_SAN=LCRules.PROTOCOLO_SAN;   // única fuente compartida (rules.js)
 /* última vacunación registrada de un tipo (fecha ISO o null) */
 function _ultimaVac(tipo){
   const v=(_vacunaciones||[]).filter(x=>x.tipo===tipo&&x.fecha).sort((a,b)=>a.fecha<b.fecha?1:-1);
@@ -1461,9 +1496,19 @@ function renderVacunaciones(lista){
     const quien=v.alcance==='individual'
       ?((v.animales&&v.animales.nombre)?v.animal_id+' '+v.animales.nombre:(v.animal_id||'animal'))
       :('todo el hato'+(v.n_animales?' ('+v.n_animales+')':''));
-    return '<div><b style="color:var(--ink)">'+fmtFechaCorta(v.fecha)+'</b> · '+v.tipo+' · '+quien+
-      (v.producto?' · '+v.producto:'')+(v.lote?' · lote '+v.lote:'')+'</div>';
+    return '<div><b style="color:var(--ink)">'+fmtFechaCorta(v.fecha)+'</b> · '+LCRules.esc(v.tipo)+' · '+LCRules.esc(quien)+
+      (v.producto?' · '+LCRules.esc(v.producto):'')+(v.lote?' · lote '+LCRules.esc(v.lote):'')+
+      ' <span class="del-x" title="Eliminar esta vacunación" onclick="eliminarVacHist(\''+LCRules.esc(v.id)+'\')">✕</span></div>';
   }).join('');
+}
+/* eliminar una vacunación del historial (error de dedo) */
+function eliminarVacHist(id){
+  if(!confirm('¿Eliminar esta vacunación del registro?'))return;
+  const fin=()=>{const i=_vacunaciones.findIndex(v=>String(v.id)===String(id));
+    if(i>=0)_vacunaciones.splice(i,1);renderVacunaciones();snack('Vacunación eliminada');};
+  if(typeof LCStore!=='undefined')LCStore.deleteVacunacion(id).then(fin)
+    .catch(e=>snack('⚠ No se pudo eliminar: '+(e.message||e)));
+  else fin();
 }
 async function cargarVacunaciones(){
   if(typeof LCStore==='undefined')return;
@@ -1690,9 +1735,20 @@ function renderPalpHistorial(lista){
       '<td><b>'+p.animal_id+'</b> '+nombre+'</td>'+
       '<td><span class="badge'+(esPren?' ok':'')+'">'+res+'</span></td>'+
       '<td class="r">'+(p.prenez_meses!=null?p.prenez_meses+' m':'—')+'</td>'+
-      '<td style="font-size:12px;color:var(--ink-3)">'+LCRules.esc(p.motivo||'')+'</td>';
+      '<td style="font-size:12px;color:var(--ink-3)">'+LCRules.esc(p.motivo||'')+
+      ' <span class="del-x" title="Eliminar esta palpación" onclick="eliminarPalpHist(\''+LCRules.esc(p.id)+'\',event)">✕</span></td>';
     tb.appendChild(tr);
   });
+}
+/* eliminar una palpación del historial (error de dedo) */
+function eliminarPalpHist(id,ev){
+  if(ev)ev.stopPropagation();
+  if(!confirm('¿Eliminar esta palpación del historial?'))return;
+  const fin=()=>{const i=_palpaciones.findIndex(p=>String(p.id)===String(id));
+    if(i>=0)_palpaciones.splice(i,1);renderPalpHistorial(_palpaciones);snack('Palpación eliminada');};
+  if(typeof LCStore!=='undefined')LCStore.deletePalpacion(id).then(fin)
+    .catch(e=>snack('⚠ No se pudo eliminar: '+(e.message||e)));
+  else fin();
 }
 async function cargarPalpHistorial(){
   if(typeof LCStore==='undefined'){renderPalpHistorial([]);return;}
@@ -1765,7 +1821,7 @@ const fmtFechaCorta=LCRules.fmtFechaCorta;   // compartido en core/rules.js
     partosRecientes=_partosRaw.map(p=>{
       const criaGrupo=p.cria_id&&porId[p.cria_id]?(GP[porId[p.cria_id].grupo]||'Terneras')
         :(p.sexo_cria==='M'?'Machos':'Terneras');
-      return {madre:ref(p.madre_id),cria:p.cria_id||'—',fecha:fmtFechaCorta(p.fecha),fechaISO:p.fecha,
+      return {id:p.id,madre:ref(p.madre_id),cria:p.cria_id||'—',fecha:fmtFechaCorta(p.fecha),fechaISO:p.fecha,
         sexo:p.sexo_cria,peso:p.peso_kg||0,tipo:p.tipo,
         estado:p.estado_cria,grupo:p.estado_cria==='viva'?criaGrupo:null};
     });
@@ -1887,7 +1943,9 @@ const GRUPO_MODELO={'En ordeño':'ordeño','Horra':'horra','Novilla':'novilla',
    días de retiro y vacía). Anclamos las escrituras a esta misma base para que
    diasHasta() lea consistente. Formateo local para evitar corrimientos de zona. */
 function isoDe(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+dd;}
-function isoHoy(){return isoDe(HOY_LC);}
+/* "hoy" SIEMPRE al momento y en la zona de la finca (America/Bogota) — no la
+ * fecha de cuando se abrió la pestaña ni la TZ del dispositivo. */
+function isoHoy(){return (typeof LCStore!=='undefined'&&LCStore.hoyFinca)?LCStore.hoyFinca():isoDe(new Date());}
 function isoMasDias(n){const d=new Date(HOY_LC.getTime());d.setDate(d.getDate()+(n||0));return isoDe(d);}
 /* fecha estimada de parto: hoy + lo que falta de gestación (~9 meses) */
 function isoParto(meses){const d=new Date(HOY_LC.getTime());d.setMonth(d.getMonth()+Math.max(0,Math.round(9-meses)));return isoDe(d);}
@@ -1982,8 +2040,9 @@ function exportarHatoCSV(){
     hato=animales.filter(a=>a.grupo!=='baja').map(animalAFila);
     renderHatoFiltros();renderHato();renderSanidadVacunas();
     renderSemana();renderLecheKpis();   // las filas del registro semanal son las vacas en ordeño
-    if(typeof snack==='function')snack('Hato actualizado desde la base ('+hato.length+')');
-  }catch(e){console.warn('Hato: usando datos locales (Supabase no disponible):',e.message||e);}
+    estadoBase(null);   // datos abajo: quitar el "cargando…"
+  }catch(e){console.warn('Hato: Supabase no disponible:',e.message||e);
+    estadoBase('Sin conexión con la base — lo que ves puede estar vacío o incompleto',true);}
 })();
 
 /* ===== Flujos de registro (tratamiento, secado, parto, alta, baja) ===== */
@@ -2278,17 +2337,27 @@ function saveParto(){
   }
   /* registrar en partos recientes */
   const fechaParto=partoState.fecha||isoHoy();
-  const reciente={madre:partoState.num+' '+nombre,cria:cria?cria.num:'—',fecha:fmtFechaCorta(fechaParto),fechaISO:fechaParto,
+  const partoId='P-'+Date.now();
+  const reciente={id:partoId,madre:partoState.num+' '+nombre,cria:cria?cria.num:'—',fecha:fmtFechaCorta(fechaParto),fechaISO:fechaParto,
     sexo:partoState.sexo,peso:partoState.peso,tipo:partoState.tipo,
     estado:partoState.estado,grupo:partoState.estado==='viva'?(criaGrupo==='Ternera'?'Terneras':'Machos'):null};
   partosRecientes.push(reciente);
-  renderHatoFiltros();renderHato();renderPartos();renderPartosRecientes();renderPartosKpis();
-  go('pg-partos',navFor('pg-partos'));
   /* persistencia + datos para revertir en la base si se deshace */
   let pSaveParto=Promise.resolve();
-  const partoId='P-'+Date.now();
   const criaId=cria?cria.num:null;
   const numMadre=partoState.num;
+  /* mantener los cachés canónicos al día (KPIs, ficha y alertas sin recargar) */
+  const madrePrevCache=animalesPorId[numMadre]?{...animalesPorId[numMadre]}:null;
+  if(animalesPorId[numMadre])Object.assign(animalesPorId[numMadre],
+    {grupo:'ordeño',del:0,inicioLactancia:fechaParto,estadoRepro:null,prenez:null,
+     partos:(animalesPorId[numMadre].partos||0)+1});
+  _partosRaw.push({id:partoId,madre_id:numMadre,cria_id:criaId,fecha:fechaParto,
+    sexo_cria:partoState.sexo,peso_kg:partoState.peso,tipo:partoState.tipo,estado_cria:partoState.estado});
+  (_partosPorMadre[numMadre]=_partosPorMadre[numMadre]||[]).push(fechaParto);
+  if(!_ultimoParto[numMadre]||fechaParto>_ultimoParto[numMadre])_ultimoParto[numMadre]=fechaParto;
+  renderHatoFiltros();renderHato();renderPartos();renderPartosRecientes();renderPartosKpis();
+  if(typeof renderInicio==='function')renderInicio();
+  go('pg-partos',navFor('pg-partos'));
   const madreAntes=animalesPorId[numMadre]?snapshotReproDB(animalesPorId[numMadre]):null;
   if(typeof LCStore!=='undefined'){
     /* UNA transacción en la base (cría + parto + madre): o entra todo o nada */
@@ -2306,7 +2375,15 @@ function saveParto(){
     if(cria){const ci=hato.indexOf(cria);if(ci>=0)hato.splice(ci,1);criaSeq--;}
     if(prevParto)proximosPartos.splice(Math.min(pi,proximosPartos.length),0,prevParto);
     const ri=partosRecientes.indexOf(reciente);if(ri>=0)partosRecientes.splice(ri,1);
+    /* revertir también los cachés canónicos */
+    if(madrePrevCache&&animalesPorId[numMadre])animalesPorId[numMadre]=madrePrevCache;
+    const pri=_partosRaw.findIndex(p=>p.id===partoId);if(pri>=0)_partosRaw.splice(pri,1);
+    if(_partosPorMadre[numMadre]){const fi2=_partosPorMadre[numMadre].lastIndexOf(fechaParto);
+      if(fi2>=0)_partosPorMadre[numMadre].splice(fi2,1);}
+    if(_ultimoParto[numMadre]===fechaParto){const fs=(_partosPorMadre[numMadre]||[]).slice().sort();
+      if(fs.length)_ultimoParto[numMadre]=fs[fs.length-1];else delete _ultimoParto[numMadre];}
     renderHatoFiltros();renderHato();renderPartos();renderPartosRecientes();renderPartosKpis();
+    if(typeof renderInicio==='function')renderInicio();
     /* revertir en la base: esperar a que termine de guardar y compensar */
     if(typeof LCStore!=='undefined')pSaveParto.then(()=>Promise.all([
       LCStore.deleteParto(partoId),
@@ -2326,6 +2403,7 @@ function regTexto(label,ph,onInput,type,value){
   const wrap=document.createElement('div');
   wrap.appendChild(regLabel(label));
   const inp=document.createElement('input');inp.type=type||'text';inp.placeholder=ph||'';
+  if(inp.type==='date')inp.max=isoHoy();   // los registros no pueden ser del futuro
   if(value!=null&&value!=='')inp.value=value;
   inp.style.cssText='width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);padding:10px 12px;outline:none';
   inp.oninput=()=>onInput(inp.value);
@@ -2512,14 +2590,20 @@ function saveBaja(){
   const a=hato[idx];const nombre=a.n;
   closeReg();
   hato.splice(idx,1);renderHatoFiltros();renderHato();
+  /* caché canónico al día: alertas y KPIs dejan de contarla sin recargar */
+  const prevGrupoCache=animalesPorId[bajaState.num]?animalesPorId[bajaState.num].grupo:null;
+  if(animalesPorId[bajaState.num])animalesPorId[bajaState.num].grupo='baja';
+  if(typeof renderInicio==='function')renderInicio();
   go('pg-hato',navFor('pg-hato'));
   if(typeof LCStore!=='undefined'){
     LCStore.darDeBaja(bajaState.num,{motivo:bajaState.motivo,fecha:isoHoy()}).catch(e=>{
       console.warn('Baja no guardada en la base:',e.message||e);
-      snack('⚠ Baja guardada local, falta sincronizar');});
+      snack('⚠ La baja NO se guardó en la base — revisa la conexión y reintenta');});
   }
   snack(nombre+': baja por '+bajaState.motivo.toLowerCase()+' — sale del hato, su historia se conserva','Deshacer',()=>{
     hato.splice(Math.min(idx,hato.length),0,a);renderHatoFiltros();renderHato();
+    if(prevGrupoCache&&animalesPorId[bajaState.num])animalesPorId[bajaState.num].grupo=prevGrupoCache;
+    if(typeof renderInicio==='function')renderInicio();
     if(typeof LCStore!=='undefined')LCStore.updateAnimalCampos(bajaState.num,
       {grupo:GRUPO_MODELO[a.grupo]||'ordeño',baja_motivo:null,baja_fecha:null,baja_valor:null,baja_nota:null}).catch(()=>{});});
 }
@@ -2557,4 +2641,13 @@ renderInicio();   /* pintado inicial del dashboard (los cargadores lo refinan) *
     pots=ps.map(p=>({n:p.numero,d:p.dias_descanso,sugerido:!!p.sugerido_siguiente}));
     renderPotreros();renderInicio();
   }catch(e){console.warn('Potreros: usando datos locales:',e.message||e);}
+})();
+
+/* si la pestaña queda abierta de un día para otro, recargar al cambiar la
+ * fecha (solo sin modales abiertos) para que "hoy" no quede congelado en ayer */
+(function(){
+  const dia0=isoHoy();
+  function chequearDia(){ if(isoHoy()!==dia0&&!document.querySelector('.modal.show'))location.reload(); }
+  setInterval(chequearDia,5*60*1000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)chequearDia();});
 })();

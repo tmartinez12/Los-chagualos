@@ -10,6 +10,19 @@ const titles={
   'scr-partos':['Partos','Las palpaciones marcan las fechas'],
   'scr-grupo':['Grupo',''],
 };
+/* Banner de estado de la conexión: "cargando…" al abrir, error visible si la
+ * base no responde (antes un fallo de red se veía igual que una finca vacía). */
+function estadoBase(txt,esError){
+  let b=document.getElementById('estadoBase');
+  if(!txt){if(b)b.remove();return;}
+  if(!b){b=document.createElement('div');b.id='estadoBase';
+    b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:200;text-align:center;font-size:12px;font-weight:600;padding:6px 10px;color:#fff';
+    document.body.appendChild(b);}
+  b.style.background=esError?'#B3261E':'#5f6659';
+  b.innerHTML=txt+(esError?' — <a onclick="location.reload()" style="color:#fff;text-decoration:underline;cursor:pointer">reintentar</a>':'');
+}
+estadoBase('Cargando los datos de la finca…');
+
 /* drill-down: hato → grupo → animal */
 /* Grupos del hato: SOLO la estructura (nombre). Las listas de animales, los
  * subtítulos y los headers se llenan desde Supabase en cacheAnimalesMovil;
@@ -288,7 +301,9 @@ const HOY_LC=new Date();   // hoy real (la base trae datos reales)
 const diasHastaM=LCRules.diasHasta;        // compartido en core/rules.js
 const ordinalPartoM=LCRules.ordinalParto;  // compartido en core/rules.js
 function isoDeM(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+dd;}
-function isoHoyM(){return isoDeM(HOY_LC);}
+/* "hoy" SIEMPRE al momento y en la zona de la finca (America/Bogota) — no la
+ * fecha de cuando se abrió la pestaña ni la TZ del dispositivo. */
+function isoHoyM(){return (typeof LCStore!=='undefined'&&LCStore.hoyFinca)?LCStore.hoyFinca():isoDeM(new Date());}
 function isoMasDiasM(n){const d=new Date(HOY_LC.getTime());d.setDate(d.getDate()+(n||0));return isoDeM(d);}
 function isoPartoM(meses){const d=new Date(HOY_LC.getTime());d.setMonth(d.getMonth()+Math.max(0,Math.round(9-meses)));return isoDeM(d);}
 function numDe(cow){return (''+cow).split('·')[0].trim();}
@@ -324,14 +339,27 @@ function renderTratamientosM(lista){
       '<div><div class="li-title">'+LCRules.esc(t.animal_id)+' · '+LCRules.esc(nombre)+'</div>'+
       '<div class="li-sub">'+LCRules.esc(t.problema||'')+(t.medicamento?' · '+LCRules.esc(t.medicamento.toLowerCase()):'')+
       (conRetiro?' · <b>retiro hasta '+fmtFechaCortaM(t.retiro_leche_hasta)+'</b>':'')+'</div></div>'+
-      (conRetiro?'<span class="badge bad">retiro '+retiroD+'d</span>':'<span class="badge ok">sin retiro</span>')+'</div></div>';
+      (conRetiro?'<span class="badge bad">retiro '+retiroD+'d</span>':'<span class="badge ok">sin retiro</span>')+'</div>'+
+      '<button class="btn outl small" style="margin-top:10px" onclick="terminarTrataM(\''+LCRules.esc(t.id)+'\')">✓ Marcar terminado</button></div>';
   }).join('');
 }
-(async function cargarTratamientosMovil(){
+/* recargable: se llama al abrir y tras registrar/terminar/deshacer un tratamiento */
+async function cargarTratamientosMovil(){
   if(typeof LCStore==='undefined'){renderTratamientosM([]);return;}
   try{const ts=await LCStore.getTratamientos(true);renderTratamientosM(ts||[]);}
   catch(e){console.warn('Tratamientos móvil:',e.message||e);renderTratamientosM([]);}
-})();
+}
+cargarTratamientosMovil();
+/* terminar un tratamiento desde el celular (antes era solo del escritorio) */
+function terminarTrataM(id){
+  if(typeof LCStore==='undefined')return;
+  LCStore.terminarTratamiento(id)
+    .then(()=>{snack('Tratamiento terminado — el retiro derivado se recalcula','Deshacer',()=>{
+      LCStore.reactivarTratamiento(id).then(()=>cargarTratamientosMovil())
+        .catch(()=>snack('⚠ No se pudo reactivar'));});
+      cargarTratamientosMovil();})
+    .catch(e=>snack('⚠ No se pudo terminar: '+(e.message||e)));
+}
 /* Lista de candidatas a palpar (se arma sola desde palpCandidatas).
    Declarada aquí arriba para evitar TDZ: el arranque (renderPalpListaM)
    corre antes de la línea donde estaba antes. */
@@ -391,7 +419,9 @@ let animalesPorIdM={};
       nMachos=grupos.machos.animales.length; nBajas=grupos.bajas.animales.length;
     }
     renderInicioM();renderSanidadVacunasM();renderHatoM();
-  }catch(e){console.warn('Cache/hato móvil:',e.message||e);}
+    estadoBase(null);   // datos abajo: quitar el "cargando…"
+  }catch(e){console.warn('Cache/hato móvil:',e.message||e);
+    estadoBase('Sin conexión con la base — lo que ves puede estar vacío o incompleto',true);}
 })();
 /* animal canónico (BD) → tarjeta de ordeño de la móvil */
 function animalACow(a){
@@ -474,7 +504,7 @@ function renderSanidadVacunasM(){
     }else el.style.display='none';}
   renderSanCalendarioM();renderSanProximaM();
 }
-const PROTOCOLO_SAN_M={despar:[0,3,6,9],aftosa:[4,10]};
+const PROTOCOLO_SAN_M=LCRules.PROTOCOLO_SAN;   // única fuente compartida (rules.js)
 let _vacunacionesM=[];
 function _ultimaVacM(tipo){const v=(_vacunacionesM||[]).filter(x=>x.tipo===tipo&&x.fecha).sort((a,b)=>a.fecha<b.fecha?1:-1);return v.length?v[0].fecha:null;}
 function renderSanCalendarioM(){
@@ -627,7 +657,7 @@ function openParto(cow){
   const horras=Object.values(animalesPorIdM).filter(a=>a.grupo==='horra').map(a=>a.id+' · '+a.nombre);
   parto.cow=cow||horras[0]||'';
   parto.sexo='H';parto.tipo='normal';parto.estado='viva';parto.peso=38;parto.fecha=isoHoyM();
-  const fp=document.getElementById('partoFecha');if(fp)fp.value=parto.fecha;
+  const fp=document.getElementById('partoFecha');if(fp){fp.value=parto.fecha;fp.max=isoHoyM();}
   document.getElementById('partoCow').textContent=(parto.cow||'—').toUpperCase();
   document.getElementById('partoDel').textContent=partoInfo[parto.cow]||'Confirma la fecha y los datos de la cría';
   document.getElementById('partoPesoVal').textContent=parto.peso;
@@ -783,7 +813,9 @@ const fechaParto=LCRules.fechaParto;
     animales.filter(a=>a.estadoRepro==='servida'||a.estadoRepro==='vacia').forEach(a=>{
       palpCandidatas[refP(a.id)]=a.estadoRepro==='servida'?'servida, por confirmar'
         :'vacía'+(a.diasVacia?' hace '+a.diasVacia+' días':', confirmar estado');});
-    const A=Object.values(animalesPorIdM);
+    /* usar la lista LOCAL (recién bajada): animalesPorIdM lo llena OTRO
+     * cargador y si este gana la carrera los KPIs saldrían en 0. */
+    const A=animales;
     /* KPIs reproductivos reales: preñez % e intervalo entre partos */
     const eleg=A.filter(a=>a.sexo==='H'&&['ordeño','horra','novilla'].includes(a.grupo));
     const pren=eleg.filter(a=>a.estadoRepro==='prenada').length;
@@ -937,7 +969,8 @@ function saveTrata(){
   if(typeof LCStore!=='undefined'){
     pSaveTrata=LCStore.registrarTratamiento({id:tid,animalId:numDe(trata.cow),problema:trata.problema,
       medicamento:trata.medicina,diasRetiro:trata.retiro})
-      .then(()=>desencolar()).catch(e=>{console.warn('Tratamiento móvil no guardado:',e.message||e);
+      .then(()=>{desencolar();cargarTratamientosMovil();})
+      .catch(e=>{console.warn('Tratamiento móvil no guardado:',e.message||e);
         snack('⚠ El tratamiento NO se guardó en la base — revisa la señal y reintenta');});
   }
   setTimeout(()=>go('scr-ordeno'),300);
@@ -948,6 +981,7 @@ function saveTrata(){
   snack(msg,'Deshacer',()=>{
     if(cd)cd.retiro=prev;renderCows();desencolar();snack('Tratamiento deshecho');
     if(typeof LCStore!=='undefined')pSaveTrata.then(()=>LCStore.deleteTratamiento(tid))
+      .then(()=>cargarTratamientosMovil())
       .catch(e=>console.warn('No se pudo revertir el tratamiento:',e.message||e));
   });
 }
@@ -1118,6 +1152,14 @@ function saveBaja(){
   grupos.bajas.animales.unshift([baja.cow,baja.motivo.toUpperCase()+' · '+fmtFechaCortaM(isoHoyM())+' · registrada']);
   encolar();
   const numBaja=numDe(baja.cow);
+  /* sacar del drill-down de su grupo y del caché (antes seguía apareciendo) */
+  let grupoBaja=null,idxGrupo=-1,filaGrupo=null;
+  Object.keys(grupos).forEach(k=>{ if(k==='bajas'||grupoBaja)return;
+    const i=grupos[k].animales.findIndex(x=>numDe(x[0])===numBaja);
+    if(i>=0){grupoBaja=k;idxGrupo=i;filaGrupo=grupos[k].animales[i];grupos[k].animales.splice(i,1);}});
+  const prevGrupoCache=animalesPorIdM[numBaja]?animalesPorIdM[numBaja].grupo:null;
+  if(animalesPorIdM[numBaja])animalesPorIdM[numBaja].grupo='baja';
+  renderHatoM();
   if(typeof LCStore!=='undefined'){
     LCStore.darDeBaja(numBaja,{motivo:baja.motivo,fecha:isoHoyM()})
       .then(()=>desencolar()).catch(e=>{console.warn('Baja móvil no guardada:',e.message||e);
@@ -1127,11 +1169,24 @@ function saveBaja(){
   snack(nombre+': baja por '+baja.motivo.toLowerCase()+' — sale del hato, su historia se conserva','Deshacer',()=>{
     if(removed){cows.splice(Math.min(idx,cows.length),0,removed);renderCows();incGrupo('ordeno',1);}
     nBajas--;subBajas();grupos.bajas.animales.shift();
+    /* reponer en su grupo y en el caché (con el grupo PREVIO, no 'baja') */
+    if(grupoBaja&&filaGrupo)grupos[grupoBaja].animales.splice(Math.min(idxGrupo,grupos[grupoBaja].animales.length),0,filaGrupo);
+    if(prevGrupoCache&&animalesPorIdM[numBaja])animalesPorIdM[numBaja].grupo=prevGrupoCache;
+    renderHatoM();
     desencolar();openGroup('bajas');snack('Baja deshecha');
     if(typeof LCStore!=='undefined')LCStore.updateAnimalCampos(numBaja,
-      {grupo:(animalesPorIdM[numBaja]||{}).grupo||'ordeño',baja_motivo:null,baja_fecha:null,baja_valor:null,baja_nota:null}).catch(()=>{});
+      {grupo:prevGrupoCache||'ordeño',baja_motivo:null,baja_fecha:null,baja_valor:null,baja_nota:null}).catch(()=>{});
   });
 }
+/* si la pestaña queda abierta de un día para otro, recargar al cambiar la
+ * fecha (solo sin hojas abiertas) para que "hoy" no quede congelado en ayer */
+(function(){
+  const dia0=isoHoyM();
+  function chequearDia(){ if(isoHoyM()!==dia0&&!document.querySelector('.sheet.show'))location.reload(); }
+  setInterval(chequearDia,5*60*1000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)chequearDia();});
+})();
+
 /* reloj real en la barra de estado */
 function tickReloj(){
   const el=document.getElementById('mClock');if(!el)return;

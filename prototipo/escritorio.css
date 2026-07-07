@@ -219,6 +219,10 @@ tr.grouprow:hover td{background:var(--card)}
 /* fila de estado vacío */
 tr.emptyrow td{text-align:center;padding:22px 12px;color:var(--ink-3);cursor:default}
 tr.emptyrow:hover td{background:transparent}
+/* botón ✕ para eliminar un registro histórico (con confirmación) */
+.del-x{display:inline-block;margin-left:8px;padding:0 6px;border-radius:6px;cursor:pointer;
+  color:var(--ink-3);font-size:12px;font-weight:700;user-select:none}
+.del-x:hover{color:#fff;background:var(--red,#B3261E)}
 .p-foot{font-size:11px;color:var(--ink-3);line-height:1.5;margin-top:12px;text-align:center}
 .cow-photo{width:92px;height:92px;border-radius:16px;background:var(--surface);
   border:1.5px dashed var(--border);display:flex;flex-direction:column;align-items:center;

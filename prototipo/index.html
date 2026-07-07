@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Los Chagualos · Prototipo</title>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=20260707">
 </head>
 <body>
 <!-- ÍCONOS DE LÍNEA (inline, funcionan offline) -->
@@ -750,9 +750,11 @@
   <!-- SNACKBAR -->
   <div class="snackbar" id="snackbar"><svg class="ic-s ic"><use href="#i-check"/></svg><span id="snackText"></span><button class="snack-action" id="snackAction" style="display:none"></button></div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="core/rules.js"></script>
-<script src="core/store.js"></script>
-<script src="app.js"></script>
+<!-- supabase-js vendorizado (versión FIJA local): sin CDN no hay sorpresas de
+     versión flotante ni dependencia de internet para cargar la librería -->
+<script src="core/vendor/supabase-js-2.110.0.js"></script>
+<script src="core/rules.js?v=20260707"></script>
+<script src="core/store.js?v=20260707"></script>
+<script src="app.js?v=20260707"></script>
 </body>
 </html>

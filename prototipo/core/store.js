@@ -328,13 +328,25 @@
     return map;
   }
 
+  /* Pagina una consulta completa de a 1000 (PostgREST corta en 1000 por
+   * defecto: sin esto los históricos se truncaban en silencio con el tiempo).
+   * mkQuery debe devolver una consulta NUEVA con orden determinista. */
+  async function _paginado(mkQuery) {
+    const filas = [];
+    for (let desde = 0; ; desde += 1000) {
+      const { data, error } = await mkQuery().range(desde, desde + 999);
+      if (error) throw error;
+      filas.push(...(data || []));
+      if (!data || data.length < 1000) return filas;
+    }
+  }
+
   /* Ordeños históricos (datos reales para el histórico de producción).
    * Devuelve filas planas; la UI las agrupa por día/mes. */
   async function getOrdenos() {
-    const { data, error } = await client().from('ordenos')
-      .select('animal_id, fecha, litros').eq('turno', 'dia');
-    if (error) throw error;
-    return data || [];
+    return _paginado(() => client().from('ordenos')
+      .select('animal_id, fecha, litros').eq('turno', 'dia')
+      .order('fecha', { ascending: true }).order('id', { ascending: true }));
   }
 
   /* --- Vacunaciones --------------------------------------------------------- */
@@ -352,11 +364,9 @@
     return data;
   }
   async function getVacunaciones() {
-    const { data, error } = await client().from('vacunaciones')
+    return _paginado(() => client().from('vacunaciones')
       .select('id, tipo, alcance, animal_id, n_animales, producto, lote, fecha, proxima, nota, animales(nombre)')
-      .order('fecha', { ascending: false });
-    if (error) throw error;
-    return data || [];
+      .order('fecha', { ascending: false }).order('id', { ascending: true }));
   }
   async function deleteVacunacion(id) {
     const { error } = await client().from('vacunaciones').delete().eq('id', id);
@@ -373,12 +383,13 @@
   }
 
   async function getTratamientos(soloActivos) {
-    let q = client().from('tratamientos')
-      .select('id, animal_id, problema, medicamento, inicio, dias_retiro, activo, animales(nombre)')
-      .order('inicio', { ascending: false });
-    if (soloActivos) q = q.eq('activo', true);
-    const { data, error } = await q;
-    if (error) throw error;
+    const data = await _paginado(() => {
+      let q = client().from('tratamientos')
+        .select('id, animal_id, problema, medicamento, inicio, dias_retiro, activo, animales(nombre)')
+        .order('inicio', { ascending: false }).order('id', { ascending: true });
+      if (soloActivos) q = q.eq('activo', true);
+      return q;
+    });
     /* retiro_leche_hasta se DERIVA (inicio + dias_retiro); se agrega al vuelo
      * para que la UI siga leyendo el mismo campo de siempre. */
     return (data || []).map(t => {
@@ -406,21 +417,15 @@
   }
 
   async function getPartos() {
-    const { data, error } = await client()
-      .from('partos')
+    return _paginado(() => client().from('partos')
       .select('id, madre_id, cria_id, fecha, sexo_cria, peso_kg, tipo, estado_cria')
-      .order('fecha', { ascending: false });
-    if (error) throw error;
-    return data || [];
+      .order('fecha', { ascending: false }).order('id', { ascending: true }));
   }
 
   async function getPalpaciones() {
-    const { data, error } = await client()
-      .from('palpaciones')
+    return _paginado(() => client().from('palpaciones')
       .select('id, animal_id, fecha, motivo, resultado, prenez_meses, animales(nombre)')
-      .order('fecha', { ascending: false });
-    if (error) throw error;
-    return data || [];
+      .order('fecha', { ascending: false }).order('id', { ascending: true }));
   }
 
   /* --- Respaldo y restauración --------------------------------------------- *

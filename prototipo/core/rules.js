@@ -172,8 +172,13 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
+  /* Plan sanitario de la finca (meses 0-11): desparasitación trimestral y
+   * aftosa en los ciclos ICA (mayo/noviembre). ÚNICA fuente para las dos UIs. */
+  const PROTOCOLO_SAN = { despar: [0, 3, 6, 9], aftosa: [4, 10] };
+
   return {
     MESC, fechaParto, fechaDias, esBajonLeche, parseTrat, parsePalpNota, curvaLactancia,
     diasHasta, ordinalParto, fmtFechaCorta, snapshotReproDB, fechaLarga, isoHoy, esc,
+    PROTOCOLO_SAN,
   };
 });

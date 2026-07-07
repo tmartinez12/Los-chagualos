@@ -34,7 +34,21 @@ listas/fichas/tablas principales; falta refactorizar los `onclick` en strings)
 **Pendiente del dueño:** correr `supabase/migracion-integridad.sql` en el SQL
 Editor (después de vacunaciones y zona-horaria, si faltan — ver `supabase/README.md`).
 
-**Sin tocar aún:** A1 (auth+RLS), M6-M12, M14-M16, M19-M20, y los B restantes.
+**Segunda ronda (M6–M16), corregidos:** M6 (carrera de KPIs repro móvil: usa la
+lista local) · M7 (cachés canónicos actualizados en parto/baja de ambas
+superficies, con reversa en el undo; lista de tratamientos móvil recargable) ·
+M8 (todas las lecturas paginan de a 1000) · M9 (isoHoy delega en hoyFinca y
+ambas superficies recargan solas al cambiar el día) · M10 (✕ eliminar con
+confirmación en historiales de partos/palpaciones/vacunaciones del escritorio)
+· M11 parcial (terminar/reactivar tratamiento desde el móvil; corrección de
+ordeños pasados en móvil sigue pendiente) · M12 (banner "cargando…" y banner
+rojo de error con reintentar en ambas superficies) · M13 (max=hoy en date
+inputs; litros con tope 99,9 en la tabla semanal) · M14 parcial (PROTOCOLO_SAN
+único en rules.js; el refactor grande a core/acciones.js sigue pendiente) ·
+M15 (supabase-js 2.110.0 vendorizado, sin CDN flotante) · M16 (cache-busting
+?v= en scripts y CSS) · B12 (snack ruidoso de carga eliminado).
+
+**Sin tocar aún:** A1 (auth+RLS), M19-M20, y los B restantes.
 
 ## Mapa rápido del proyecto
 
