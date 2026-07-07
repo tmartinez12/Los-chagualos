@@ -164,8 +164,16 @@
     };
   }
 
+  /* Escapa texto libre (nombres, notas, razas…) antes de meterlo en innerHTML.
+   * Sin esto, un nombre con "<img onerror=…>" ejecutaría código (XSS). */
+  function esc(s) {
+    return s == null ? '' : String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   return {
     MESC, fechaParto, fechaDias, esBajonLeche, parseTrat, parsePalpNota, curvaLactancia,
-    diasHasta, ordinalParto, fmtFechaCorta, snapshotReproDB, fechaLarga, isoHoy,
+    diasHasta, ordinalParto, fmtFechaCorta, snapshotReproDB, fechaLarga, isoHoy, esc,
   };
 });

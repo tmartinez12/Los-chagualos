@@ -49,8 +49,8 @@ function openGroup(k){const g=grupos[k];
   g.animales.forEach(a=>{const d=document.createElement('div');d.className='list-item';
     if(a[3]){d.innerHTML='<div class="li-body" style="text-align:center"><div class="li-sub" style="font-weight:600;text-decoration:underline;text-underline-offset:3px">'+a[0]+'</div></div>';
       d.onclick=()=>snack('Ver la lista completa');}
-    else{d.innerHTML='<div class="li-body"><div class="li-title">'+a[0]+'</div>'+
-      '<div class="li-sub">'+a[1]+'</div></div><svg class="ic chev"><use href="#i-chev"/></svg>';
+    else{d.innerHTML='<div class="li-body"><div class="li-title">'+LCRules.esc(a[0])+'</div>'+
+      '<div class="li-sub">'+LCRules.esc(a[1])+'</div></div><svg class="ic chev"><use href="#i-chev"/></svg>';
       d.onclick=a[2]?(()=>openCow(numDe(a[0]))):()=>snack('Ficha de '+a[0]);}
     list.appendChild(d);});
   go('scr-grupo');}
@@ -136,9 +136,9 @@ function renderFicha(num){
   const padre=a.padreId?(animalesPorIdM[a.padreId]?a.padreId+' '+animalesPorIdM[a.padreId].nombre:a.padreId):'—';
   const crias=Object.values(animalesPorIdM).filter(x=>x.madreId===a.id).map(x=>x.id+' '+x.nombre);
   document.getElementById('vmGenea').innerHTML='<b style="color:var(--ink)">Nacimiento:</b> '+fmtNacimientoM(a)+'<br>'+
-    '<b style="color:var(--ink)">Madre:</b> '+madre+
-    ' &nbsp;·&nbsp; <b style="color:var(--ink)">Padre:</b> '+padre+
-    '<br><b style="color:var(--ink)">Crías:</b> '+(crias.length?crias.join(', '):'sin crías registradas')+(a.nota?'<br><b style="color:var(--ink)">📝 Nota:</b> '+a.nota:'');
+    '<b style="color:var(--ink)">Madre:</b> '+LCRules.esc(madre)+
+    ' &nbsp;·&nbsp; <b style="color:var(--ink)">Padre:</b> '+LCRules.esc(padre)+
+    '<br><b style="color:var(--ink)">Crías:</b> '+(crias.length?LCRules.esc(crias.join(', ')):'sin crías registradas')+(a.nota?'<br><b style="color:var(--ink)">📝 Nota:</b> '+LCRules.esc(a.nota):'');
   /* curva */
   renderFichaCurva(a.del||0,ayer);
   document.getElementById('vmCurvaSub').textContent='Pico típico ~DEL 55 · hoy va en DEL '+(a.del==null?'—':a.del);
@@ -321,8 +321,8 @@ function renderTratamientosM(lista){
     const conRetiro=retiroD!=null&&retiroD>=0;
     const nombre=(t.animales&&t.animales.nombre)||t.animal_id;
     return '<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">'+
-      '<div><div class="li-title">'+t.animal_id+' · '+nombre+'</div>'+
-      '<div class="li-sub">'+(t.problema||'')+(t.medicamento?' · '+t.medicamento.toLowerCase():'')+
+      '<div><div class="li-title">'+LCRules.esc(t.animal_id)+' · '+LCRules.esc(nombre)+'</div>'+
+      '<div class="li-sub">'+LCRules.esc(t.problema||'')+(t.medicamento?' · '+LCRules.esc(t.medicamento.toLowerCase()):'')+
       (conRetiro?' · <b>retiro hasta '+fmtFechaCortaM(t.retiro_leche_hasta)+'</b>':'')+'</div></div>'+
       (conRetiro?'<span class="badge bad">retiro '+retiroD+'d</span>':'<span class="badge ok">sin retiro</span>')+'</div></div>';
   }).join('');
@@ -420,8 +420,8 @@ function renderCows(){
   cows.forEach((c,i)=>{const d=document.createElement('div');
     d.className='cow-tile'+(c.done?' done':'')+(c.retiro?' retiro':'');
     const sub=c.done?'✓ '+c.v+' L':(c.retiro?'⛔ retiro '+c.retiro+'d':'últ. '+c.ayer+' L');
-    d.innerHTML='<div class="ct-num">'+c.num+'</div><div class="ct-name">'+c.n+'</div>'+
-      '<div class="ct-sub">'+sub+'</div>';
+    d.innerHTML='<div class="ct-num">'+LCRules.esc(c.num)+'</div><div class="ct-name">'+LCRules.esc(c.n)+'</div>'+
+      '<div class="ct-sub">'+LCRules.esc(sub)+'</div>';
     d.onclick=()=>pickCow(i);g.appendChild(d);});
   const done=cows.filter(c=>c.done);
   const totalHoy=done.reduce((s,c)=>s+c.v,0);
@@ -454,10 +454,11 @@ function saveMilk(){
   c.done=true;c.v=v;renderCows();closeMilk();encolar();
   if(typeof LCStore!=='undefined'){
     LCStore.registrarOrdeno(c.num,v).then(()=>desencolar()).catch(e=>{
-      console.warn('Ordeño no guardado en la base:',e.message||e);});
+      console.warn('Ordeño no guardado en la base:',e.message||e);
+      snack('⚠ '+c.n+': NO se guardó en la base — revisa la señal y reintenta');});
   }
   if(drop)snack('Atención: '+c.n+' bajó '+(c.ayer-v)+' L vs ayer — ¿mastitis, celo, comida?');
-  else snack(c.n+': '+v+' L guardados (en cola offline)');
+  else snack(c.n+': '+v+' L guardados');
   if(cows.every(x=>x.done)){markRutina('ordeno');
     const tot=cows.reduce((s,x)=>s+x.v,0);
     setTimeout(()=>snack('Ordeño completo: '+tot+' L registrados hoy'),1500);}
@@ -545,7 +546,7 @@ function renderVacunacionesM(lista){
     const quien=v.alcance==='individual'
       ?((v.animales&&v.animales.nombre)?v.animal_id+' '+v.animales.nombre:(v.animal_id||'animal'))
       :('todo el hato'+(v.n_animales?' ('+v.n_animales+')':''));
-    return '<div><b style="color:var(--ink)">'+fmtFechaCortaM(v.fecha)+'</b> · '+v.tipo+' · '+quien+(v.lote?' · lote '+v.lote:'')+'</div>';
+    return '<div><b style="color:var(--ink)">'+fmtFechaCortaM(v.fecha)+'</b> · '+LCRules.esc(v.tipo)+' · '+LCRules.esc(quien)+(v.lote?' · lote '+LCRules.esc(v.lote):'')+'</div>';
   }).join('');
 }
 async function cargarVacunacionesM(){
@@ -577,9 +578,10 @@ function updateSync(){const c=document.getElementById('syncChip');if(!c)return;
 function encolar(n){pendientes+=(n||1);updateSync();}
 function desencolar(n){pendientes=Math.max(0,pendientes-(n||1));updateSync();}
 function sincronizar(){
+  /* honesto: no hay cola offline real todavía; lo no confirmado pudo perderse */
   snack(pendientes>0
-    ? pendientes+' registro(s) en cola — se suben solos cuando haya señal'
-    : 'Todo está subido ✓');
+    ? pendientes+' registro(s) sin confirmar en la base — verifica que existan y reintenta'
+    : 'Todo está confirmado en la base ✓');
 }
 updateSync();
 /* ===== Partos ===== */
@@ -641,6 +643,8 @@ function partoPick(btn,campo,val){parto[campo]=val;
 function partoPeso(d){parto.peso=Math.max(20,Math.min(60,parto.peso+d));
   document.getElementById('partoPesoVal').textContent=parto.peso;}
 function saveParto(){
+  if(!parto.cow||parto.cow.indexOf('·')<0){closeParto();
+    snack('No hay vaca seleccionada — registra primero el hato');return;}
   closeParto();
   const fechaP=parto.fecha||isoHoyM();
   const nombre=parto.cow.split('·')[1].trim();
@@ -685,17 +689,13 @@ function saveParto(){
   const madreAntes=animalesPorIdM[numMadre]?snapshotReproDBM(animalesPorIdM[numMadre]):null;
   if(typeof LCStore!=='undefined'){
     const madreRaza=(animalesPorIdM[numMadre]||{}).raza||null;
-    pSaveParto=Promise.resolve()
-      .then(()=>{ if(criaIdNueva)return LCStore.insertAnimal({id:criaIdNueva,nombre:'Cría de '+nombre,
-        raza:madreRaza,grupo:parto.sexo==='H'?'ternera':'macho',sexo:parto.sexo,
-        edadAnios:0,nacimiento:fechaP,origen:'nacido_finca',madreId:numMadre,pesoKg:parto.peso}); })
-      .then(()=>LCStore.registrarParto({id:partoId,madreId:numMadre,criaId:criaIdNueva,fecha:fechaP,
-        sexo:parto.sexo,pesoKg:parto.peso,tipo:parto.tipo,estadoCria:parto.estado}))
-      .then(()=>LCStore.updateAnimalCampos(numMadre,{grupo:'ordeño',
-        inicio_lactancia:fechaP,estado_repro:null,
-        prenez_meses:null,ultima_palpacion:null}))
+    /* UNA transacción en la base (cría + parto + madre): o entra todo o nada */
+    pSaveParto=LCStore.registrarPartoCompleto({id:partoId,madreId:numMadre,fecha:fechaP,
+        sexo:parto.sexo,pesoKg:parto.peso,tipo:parto.tipo,estadoCria:parto.estado,
+        criaId:criaIdNueva,criaNombre:criaIdNueva?('Cría de '+nombre):null,criaRaza:madreRaza})
       .then(()=>desencolar())
-      .catch(e=>console.warn('Parto móvil no guardado:',e.message||e));
+      .catch(e=>{console.warn('Parto móvil no guardado:',e.message||e);
+        snack('⚠ El parto NO se guardó en la base — revisa la señal y regístralo de nuevo');});
   }
   renderPartos();
   setTimeout(()=>go('scr-partos'),300);
@@ -844,6 +844,8 @@ function palpRes(btn,val){palp.resultado=val;
 function palpMes(d){palp.meses=Math.max(1,Math.min(9,palp.meses+d));
   document.getElementById('palpMesesVal').textContent=palp.meses;}
 function savePalp(){
+  if(!palp.cow||palp.cow.indexOf('·')<0){closePalp();
+    snack('No hay vaca seleccionada para palpar');return;}
   closePalp();
   const nombre=palp.cow.split('·')[1].trim();
   const numPalp=numDe(palp.cow);
@@ -857,7 +859,8 @@ function savePalp(){
       :{estado_repro:'vacia',prenez_meses:null,ultima_palpacion:isoHoyM()};
     pSavePalp=LCStore.registrarPalpacion({animalId:numPalp,resultado:palp.resultado,prenezMeses:esPren?palp.meses:null})
       .then(r=>{palpId=r&&r.id;return LCStore.updateAnimalCampos(numPalp,campos);}).then(()=>desencolar())
-      .catch(e=>console.warn('Palpación móvil no guardada:',e.message||e));
+      .catch(e=>{console.warn('Palpación móvil no guardada:',e.message||e);
+        snack('⚠ La palpación NO se guardó en la base — revisa la señal y reintenta');});
   }
   const revertirPalpEnBaseM=()=>{ if(typeof LCStore==='undefined')return;
     pSavePalp.then(()=>Promise.all([
@@ -921,16 +924,21 @@ function trataPick(btn,campo,val){trata[campo]=val;
 function trataRetiro(d){trata.retiro=Math.max(0,Math.min(10,trata.retiro+d));
   document.getElementById('trataRetiroVal').textContent=trata.retiro;}
 function saveTrata(){
+  if(!trata.cow){closeTrata();snack('No hay animales para tratar — registra el hato primero');return;}
   closeTrata();
-  const cd=cows.find(c=>trata.cow.startsWith(c.num));
+  const cd=cows.find(c=>numDe(trata.cow)===c.num);
   const nombre=trata.cow.split('·')[1].trim();
   const prev=cd?cd.retiro:undefined;
   if(cd)cd.retiro=trata.retiro||undefined;
   renderCows();encolar();
+  /* id conocido de antemano para poder BORRAR el tratamiento si se deshace */
+  const tid='T-'+Date.now();
+  let pSaveTrata=Promise.resolve();
   if(typeof LCStore!=='undefined'){
-    LCStore.registrarTratamiento({animalId:numDe(trata.cow),problema:trata.problema,
+    pSaveTrata=LCStore.registrarTratamiento({id:tid,animalId:numDe(trata.cow),problema:trata.problema,
       medicamento:trata.medicina,diasRetiro:trata.retiro})
-      .then(()=>desencolar()).catch(e=>console.warn('Tratamiento móvil no guardado:',e.message||e));
+      .then(()=>desencolar()).catch(e=>{console.warn('Tratamiento móvil no guardado:',e.message||e);
+        snack('⚠ El tratamiento NO se guardó en la base — revisa la señal y reintenta');});
   }
   setTimeout(()=>go('scr-ordeno'),300);
   const base='Tratamiento de '+trata.problema.toLowerCase()+' en '+nombre+' ('+trata.medicina.toLowerCase()+')';
@@ -939,6 +947,8 @@ function saveTrata(){
     : base+' · sin retiro de leche';
   snack(msg,'Deshacer',()=>{
     if(cd)cd.retiro=prev;renderCows();desencolar();snack('Tratamiento deshecho');
+    if(typeof LCStore!=='undefined')pSaveTrata.then(()=>LCStore.deleteTratamiento(tid))
+      .catch(e=>console.warn('No se pudo revertir el tratamiento:',e.message||e));
   });
 }
 /* ===== Secado (sale del ordeño → pasa a horras) ===== */
@@ -966,11 +976,14 @@ function secaCow(cow){seca.cow=cow;
   document.getElementById('secaInfo').textContent=secaInfo[cow]||'Confirma la preñez antes de secar';
   secaMarcar();}
 function saveSeca(){
+  if(!seca.cow||seca.cow.indexOf('·')<0){closeSeca();
+    snack('No hay vaca seleccionada para secar');return;}
   const nombre=seca.cow.split('·')[1].trim();
   if(secaNoAplica[seca.cow]){closeSeca();
     snack(nombre+' está vacía — el secado es para vacas preñadas. Confírmalo con palpación.');return;}
   closeSeca();
-  const idx=cows.findIndex(c=>seca.cow.startsWith(c.num));
+  const numSeca=numDe(seca.cow);
+  const idx=cows.findIndex(c=>numSeca===c.num);
   const removed=idx>=0?cows[idx]:null;
   if(idx>=0)cows.splice(idx,1);
   renderCows();
@@ -978,9 +991,15 @@ function saveSeca(){
   nHorras++;subHorras();
   grupos.horras.animales.unshift([seca.cow,'recién secada — '+(secaInfo[seca.cow]||'preñada')]);
   encolar();
+  /* para poder DESHACER también en la base: sin esto, deshacer el secado
+   * dejaba a la vaca horra y con el inicio de lactancia (DEL) borrado. */
+  const prevInicio=(animalesPorIdM[numSeca]||{}).inicioLactancia||null;
+  const prevGrupo=(animalesPorIdM[numSeca]||{}).grupo||'ordeño';
+  let pSaveSeca=Promise.resolve();
   if(typeof LCStore!=='undefined'){
-    LCStore.updateAnimalCampos(numDe(seca.cow),{grupo:'horra',inicio_lactancia:null})
-      .then(()=>desencolar()).catch(e=>console.warn('Secado móvil no guardado:',e.message||e));
+    pSaveSeca=LCStore.updateAnimalCampos(numSeca,{grupo:'horra',inicio_lactancia:null})
+      .then(()=>desencolar()).catch(e=>{console.warn('Secado móvil no guardado:',e.message||e);
+        snack('⚠ El secado NO se guardó en la base — revisa la señal y reintenta');});
   }
   setTimeout(()=>openGroup('horras'),300);
   snack(nombre+' secada · sale del ordeño y pasa a horras · '+(secaInfo[seca.cow]||'se planea su parto'),'Deshacer',()=>{
@@ -988,6 +1007,9 @@ function saveSeca(){
     renderCows();
     nHorras--; grupos.horras.sub=prevSub; grupos.horras.header=prevHeader; grupos.horras.animales.shift();
     desencolar(); openGroup('horras'); snack('Secado deshecho');
+    if(typeof LCStore!=='undefined')pSaveSeca.then(()=>
+      LCStore.updateAnimalCampos(numSeca,{grupo:prevGrupo,inicio_lactancia:prevInicio}))
+      .catch(e=>console.warn('No se pudo revertir el secado:',e.message||e));
   });
 }
 /* ===== Alta y Baja (inventario del hato) ===== */
@@ -1085,9 +1107,11 @@ function bajaCow(cow){baja.cow=cow;
 function bajaPick(btn,campo,val){baja[campo]=val;
   [...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));}
 function saveBaja(){
+  if(!baja.cow||baja.cow.indexOf('·')<0){closeBaja();
+    snack('No hay animal seleccionado para dar de baja');return;}
   closeBaja();
   const nombre=baja.cow.split('·')[1].trim();
-  const idx=cows.findIndex(c=>baja.cow.startsWith(c.num));
+  const idx=cows.findIndex(c=>numDe(baja.cow)===c.num);
   const removed=idx>=0?cows[idx]:null;
   if(idx>=0){cows.splice(idx,1);renderCows();incGrupo('ordeno',-1);}
   nBajas++;subBajas();
@@ -1096,7 +1120,8 @@ function saveBaja(){
   const numBaja=numDe(baja.cow);
   if(typeof LCStore!=='undefined'){
     LCStore.darDeBaja(numBaja,{motivo:baja.motivo,fecha:isoHoyM()})
-      .then(()=>desencolar()).catch(e=>console.warn('Baja móvil no guardada:',e.message||e));
+      .then(()=>desencolar()).catch(e=>{console.warn('Baja móvil no guardada:',e.message||e);
+        snack('⚠ La baja NO se guardó en la base — revisa la señal y reintenta');});
   }
   setTimeout(()=>openGroup('bajas'),300);
   snack(nombre+': baja por '+baja.motivo.toLowerCase()+' — sale del hato, su historia se conserva','Deshacer',()=>{

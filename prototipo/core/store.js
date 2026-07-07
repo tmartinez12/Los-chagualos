@@ -117,15 +117,19 @@
   /* Caché corto de la tabla de animales: en una carga, varias pantallas piden
    * getAnimales() casi a la vez; con esto se baja la tabla UNA sola vez.
    * Se invalida en cada escritura de animales. */
-  let _animCache = null, _animCacheAt = 0;
-  function _invalidarAnimales() { _animCache = null; }
+  let _animCache = null, _animCacheAt = 0, _animGen = 0;
+  function _invalidarAnimales() { _animCache = null; _animGen++; }
   async function _fetchAnimalesRaw() {
     if (_animCache && (Date.now() - _animCacheAt) < 3000) return _animCache;
+    const gen = _animGen;
     let resp = await client().from('v_animales').select('*').order('id');
-    if (resp.error) resp = await client().from('animales').select('*').order('id');
+    /* caer a la tabla base SOLO si la vista no existe (migración sin aplicar);
+     * cualquier otro error (red, permisos) debe verse, no esconderse. */
+    if (resp.error && resp.error.code === '42P01') resp = await client().from('animales').select('*').order('id');
     if (resp.error) throw resp.error;
-    _animCache = resp.data; _animCacheAt = Date.now();
-    return _animCache;
+    /* si hubo una escritura mientras bajábamos, no tapar el estado nuevo */
+    if (gen === _animGen) { _animCache = resp.data; _animCacheAt = Date.now(); }
+    return resp.data;
   }
 
   /* --- API de lectura ------------------------------------------------------- *
@@ -186,6 +190,24 @@
   async function deleteParto(id) {
     const { error } = await client().from('partos').delete().eq('id', id);
     if (error) throw error;
+    _invalidarAnimales();   // el conteo de partos derivado cambia
+    return true;
+  }
+
+  /* borra el ordeño de una vaca en una fecha (default: hoy de la finca).
+   * Lo usan el "Deshacer" del registro y el vaciado de celdas de la semana. */
+  async function deleteOrdeno(animalId, fecha) {
+    const { error } = await client().from('ordenos').delete()
+      .eq('animal_id', animalId).eq('fecha', fecha || hoyFinca()).eq('turno', 'dia');
+    if (error) throw error;
+    _invalidarAnimales();   // leche_ultima derivada puede cambiar
+    return true;
+  }
+
+  async function deleteTratamiento(id) {
+    const { error } = await client().from('tratamientos').delete().eq('id', id);
+    if (error) throw error;
+    _invalidarAnimales();   // el retiro derivado de la vaca se recalcula
     return true;
   }
 
@@ -242,7 +264,40 @@
     };
     const { data, error } = await client().from('partos').insert(fila).select().single();
     if (error) throw error;
+    _invalidarAnimales();
     return data;
+  }
+
+  /* --- Parto completo (cría + parto + madre) en UNA transacción -------------- *
+   * Usa la función registrar_parto_completo() de Postgres: o se guarda todo o
+   * no se guarda nada (antes eran 3 escrituras sueltas y un fallo a mitad
+   * dejaba la cría sin parto o la madre sin actualizar). Si la función aún no
+   * está instalada en la base, cae a la secuencia clásica.                    */
+  async function registrarPartoCompleto(p) {
+    _invalidarAnimales();
+    const partoId = p.id || ('P-' + Date.now());
+    const fecha = p.fecha || hoyFinca();
+    const { error } = await client().rpc('registrar_parto_completo', {
+      p_madre_id: p.madreId, p_fecha: fecha, p_sexo: p.sexo,
+      p_peso_kg: p.pesoKg || null, p_tipo: p.tipo || 'normal',
+      p_estado: p.estadoCria || 'viva', p_parto_id: partoId,
+      p_cria_id: p.criaId || null, p_cria_nombre: p.criaNombre || null,
+      p_cria_raza: p.criaRaza || null,
+    });
+    if (!error) return partoId;
+    /* función no instalada (migración pendiente) → secuencia clásica */
+    if (error.code !== 'PGRST202' && error.code !== '42883') throw error;
+    if (p.criaId) await insertAnimal({
+      id: p.criaId, nombre: p.criaNombre || '(cría)', raza: p.criaRaza || null,
+      grupo: p.sexo === 'H' ? 'ternera' : 'macho', sexo: p.sexo,
+      edadAnios: 0, nacimiento: fecha, origen: 'nacido_finca',
+      madreId: p.madreId, pesoKg: p.pesoKg,
+    });
+    await registrarParto({ id: partoId, madreId: p.madreId, criaId: p.criaId || null,
+      fecha: fecha, sexo: p.sexo, pesoKg: p.pesoKg, tipo: p.tipo, estadoCria: p.estadoCria });
+    await updateAnimalCampos(p.madreId, { grupo: 'ordeño', inicio_lactancia: fecha,
+      estado_repro: null, prenez_meses: null, ultima_palpacion: null });
+    return partoId;
   }
 
   /* --- Registro de ordeño --------------------------------------------------- *
@@ -251,7 +306,9 @@
   async function registrarOrdeno(animalId, litros, fecha) {
     /* fecha en la zona de la finca (no UTC): el UNIQUE(animal,fecha,turno) y el
      * histórico dependen de que "hoy" sea el día real en Colombia. */
-    const fila = { animal_id: animalId, litros: litros, turno: 'dia', fecha: fecha || hoyFinca() };
+    const L = Number(litros);
+    if (isNaN(L) || L < 0) throw new Error('Litros inválidos: ' + litros);
+    const fila = { animal_id: animalId, litros: L, turno: 'dia', fecha: fecha || hoyFinca() };
     const { data, error } = await client()
       .from('ordenos')
       .upsert(fila, { onConflict: 'animal_id,fecha,turno' })
@@ -373,27 +430,75 @@
     'potreros', 'animales', 'ordenos', 'palpaciones',
     'tratamientos', 'vacunaciones', 'partos', 'movimientos_potrero',
   ];
-  async function exportarTodo() {
-    const out = { app: 'Los Chagualos', version: 1, fecha: new Date().toISOString(), tablas: {} };
-    for (const t of TABLAS_RESPALDO) {
-      const { data, error } = await client().from(t).select('*');
-      out.tablas[t] = error ? [] : (data || []);   // tabla ausente → vacía, no rompe
+  /* columnas vigentes por tabla (espejo de schema.sql): la restauración filtra
+   * cualquier columna desconocida (p.ej. de un respaldo de un esquema viejo)
+   * para no reventar a mitad de carga. */
+  const COLUMNAS_RESPALDO = {
+    potreros: ['id', 'numero', 'dias_descanso', 'hato_actual', 'sugerido_siguiente', 'nota', 'created_at', 'updated_at'],
+    animales: ['id', 'nombre', 'unidad_id', 'especie', 'raza', 'color', 'nota', 'grupo', 'sexo',
+      'edad_anios', 'nacimiento', 'origen', 'inicio_lactancia', 'estado_repro', 'prenez_meses',
+      'ultima_palpacion', 'madre_id', 'padre_id', 'peso_kg', 'fecha_peso', 'ganancia_dia_g',
+      'rol_toro', 'baja_motivo', 'baja_fecha', 'baja_valor', 'baja_nota', 'procedencia',
+      'valor_compra', 'created_at', 'updated_at'],
+    ordenos: ['id', 'animal_id', 'fecha', 'litros', 'turno', 'registrado_por', 'created_at'],
+    palpaciones: ['id', 'animal_id', 'fecha', 'motivo', 'resultado', 'prenez_meses', 'registrado_por', 'created_at'],
+    tratamientos: ['id', 'animal_id', 'problema', 'medicamento', 'inicio', 'dias_retiro', 'activo', 'nota', 'registrado_por', 'created_at'],
+    vacunaciones: ['id', 'tipo', 'alcance', 'animal_id', 'n_animales', 'producto', 'lote', 'fecha', 'proxima', 'nota', 'registrado_por', 'created_at'],
+    partos: ['id', 'madre_id', 'cria_id', 'fecha', 'sexo_cria', 'peso_kg', 'tipo', 'estado_cria', 'nota', 'registrado_por', 'created_at'],
+    movimientos_potrero: ['id', 'potrero_id', 'fecha', 'tipo', 'registrado_por', 'created_at'],
+  };
+  /* baja una tabla COMPLETA paginando de a 1000 (PostgREST corta en 1000 por
+   * defecto: sin esto el respaldo truncaba el histórico en silencio). */
+  async function _bajarTablaCompleta(t) {
+    const filas = [];
+    for (let desde = 0; ; desde += 1000) {
+      const { data, error } = await client().from(t).select('*')
+        .order('created_at', { ascending: true }).range(desde, desde + 999);
+      if (error) {
+        if (error.code === '42P01') return filas;   // tabla aún no creada → vacía
+        throw new Error(t + ': ' + error.message);  // error real: el respaldo ABORTA, no calla
+      }
+      filas.push(...(data || []));
+      if (!data || data.length < 1000) return filas;
     }
+  }
+  async function exportarTodo() {
+    const out = { app: 'Los Chagualos', version: 2, fecha: new Date().toISOString(), tablas: {} };
+    for (const t of TABLAS_RESPALDO) out.tablas[t] = await _bajarTablaCompleta(t);
     return out;
   }
+  /* Restaura un respaldo. IMPORTANTE: es un MERGE (upsert por id): actualiza y
+   * repone lo que está en el archivo, pero NO borra filas creadas después del
+   * respaldo. Valida y limpia el archivo ANTES de escribir nada. */
   async function restaurarTodo(data) {
-    if (!data || !data.tablas) throw new Error('El archivo de respaldo no es válido.');
-    const T = data.tablas;
+    if (!data || typeof data !== 'object' || !data.tablas || typeof data.tablas !== 'object')
+      throw new Error('El archivo de respaldo no es válido (falta "tablas").');
+    /* validación previa: tablas conocidas, arrays, y filtrado de columnas viejas */
+    const T = {};
+    for (const t of TABLAS_RESPALDO) {
+      const filas = data.tablas[t];
+      if (filas == null) { T[t] = []; continue; }
+      if (!Array.isArray(filas)) throw new Error('Respaldo inválido: "' + t + '" no es una lista.');
+      const cols = COLUMNAS_RESPALDO[t];
+      T[t] = filas.map(f => {
+        const limpia = {};
+        for (const k of cols) if (f[k] !== undefined) limpia[k] = f[k];
+        return limpia;
+      });
+      if (T[t].some(f => f.id == null))
+        throw new Error('Respaldo inválido: hay filas de "' + t + '" sin id.');
+    }
     const upsert = async (tabla, filas, opts) => {
       if (!filas || !filas.length) return;
       const { error } = await client().from(tabla).upsert(filas, opts);
-      if (error) throw new Error(tabla + ': ' + error.message);
+      if (error) throw new Error('Restauración interrumpida en "' + tabla + '": ' + error.message +
+        ' — las tablas anteriores ya se cargaron; corrige y vuelve a restaurar el mismo archivo.');
     };
     /* potreros primero (sin dependencias) */
     await upsert('potreros', T.potreros, { onConflict: 'id' });
     /* animales en dos fases: las FK madre/padre se referencian entre sí, así que
      * primero se cargan sin esas referencias y luego se completan. */
-    if (T.animales && T.animales.length) {
+    if (T.animales.length) {
       await upsert('animales', T.animales.map(a => ({ ...a, madre_id: null, padre_id: null })), { onConflict: 'id' });
       const conRefs = T.animales.filter(a => a.madre_id || a.padre_id)
         .map(a => ({ id: a.id, madre_id: a.madre_id || null, padre_id: a.padre_id || null }));
@@ -416,15 +521,18 @@
   }
 
   return {
-    CONFIG, client,
+    CONFIG, client, hoyFinca,
     animalFromDB, animalToDB,
     getAnimales, getAnimal, getPotreros,
-    insertAnimal, updateAnimal,
-    registrarOrdeno, getOrdenosFecha, getOrdenos,
+    insertAnimal,
+    /* OJO: updateAnimal (update completo vía animalToDB) se retiró del API:
+     * rellenaba con null todo campo ausente y podía vaciar la ficha. Para
+     * updates usar SIEMPRE updateAnimalCampos (parcial). */
+    registrarOrdeno, getOrdenosFecha, getOrdenos, deleteOrdeno,
     registrarVacunacion, getVacunaciones, deleteVacunacion,
     getProduccionMensual, getPartos, getPalpaciones, getTratamientos, terminarTratamiento, reactivarTratamiento,
-    updateAnimalCampos, darDeBaja, deleteAnimal, deleteParto, deletePalpacion,
-    registrarTratamiento, registrarParto, registrarPalpacion,
+    updateAnimalCampos, darDeBaja, deleteAnimal, deleteParto, deletePalpacion, deleteTratamiento,
+    registrarTratamiento, registrarParto, registrarPartoCompleto, registrarPalpacion,
     exportarTodo, restaurarTodo,
     ping,
   };

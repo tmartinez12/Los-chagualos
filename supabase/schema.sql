@@ -57,6 +57,11 @@ CREATE TABLE unidades (
   activa      BOOLEAN NOT NULL DEFAULT FALSE
 );
 
+-- Semilla obligatoria: animales.unidad_id referencia 'leche' por defecto;
+-- sin esta fila, una instalación limpia no puede insertar ningún animal.
+INSERT INTO unidades (id, nombre, activa) VALUES ('leche', 'Ganadería de leche', true)
+ON CONFLICT (id) DO NOTHING;
+
 -- ─── ANIMALES ───────────────────────────────────────────────────────────────
 
 CREATE TABLE animales (
@@ -81,9 +86,9 @@ CREATE TABLE animales (
   prenez_meses        NUMERIC(4,1),
   ultima_palpacion    DATE,
 
-  -- Genealogía
-  madre_id            TEXT REFERENCES animales(id),
-  padre_id            TEXT REFERENCES animales(id),
+  -- Genealogía (SET NULL: borrar a la madre/padre no bloquea ni borra crías)
+  madre_id            TEXT REFERENCES animales(id) ON DELETE SET NULL,
+  padre_id            TEXT REFERENCES animales(id) ON DELETE SET NULL,
 
   -- Peso / levante
   peso_kg             NUMERIC(6,1),
@@ -119,14 +124,17 @@ CREATE TABLE ordenos (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   animal_id   TEXT NOT NULL REFERENCES animales(id) ON DELETE CASCADE,
   fecha       DATE NOT NULL DEFAULT hoy_finca(),
-  litros      NUMERIC(6,1) NOT NULL,
-  turno       TEXT,                       -- 'am', 'pm' o null (total día)
+  litros      NUMERIC(6,1) NOT NULL CHECK (litros >= 0 AND litros < 100),
+  turno       TEXT NOT NULL DEFAULT 'dia' CHECK (turno IN ('dia','am','pm')),
+              -- la app usa 'dia' (total del día); las vistas filtran turno='dia'
   registrado_por UUID REFERENCES profiles(id),
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE(animal_id, fecha, turno)
 );
 
 CREATE INDEX idx_ordenos_fecha ON ordenos(fecha);
+-- sirve al upsert (animal,fecha,turno) y al "última leche" de v_animales
+CREATE INDEX idx_ordenos_animal_turno_fecha ON ordenos (animal_id, turno, fecha DESC);
 
 -- ─── PALPACIONES ────────────────────────────────────────────────────────────
 
@@ -147,8 +155,8 @@ CREATE INDEX idx_palpaciones_animal ON palpaciones(animal_id);
 
 CREATE TABLE partos (
   id              TEXT PRIMARY KEY,
-  madre_id        TEXT NOT NULL REFERENCES animales(id),
-  cria_id         TEXT REFERENCES animales(id),
+  madre_id        TEXT NOT NULL REFERENCES animales(id),          -- RESTRICT: el parto es de la madre
+  cria_id         TEXT REFERENCES animales(id) ON DELETE SET NULL,
   fecha           DATE NOT NULL,
   sexo_cria       sexo_animal,           -- null en partos históricos sin detalle
   peso_kg         NUMERIC(5,1),
@@ -160,6 +168,8 @@ CREATE TABLE partos (
 );
 
 CREATE INDEX idx_partos_madre ON partos(madre_id);
+-- una cría no puede figurar en dos partos (inflaría el conteo derivado)
+CREATE UNIQUE INDEX uq_partos_cria ON partos (cria_id) WHERE cria_id IS NOT NULL;
 
 -- ─── TRATAMIENTOS / SANIDAD ─────────────────────────────────────────────────
 
@@ -277,6 +287,54 @@ CREATE TRIGGER set_updated_at_profiles
   BEFORE UPDATE ON profiles
   FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
 
+-- ─── INTEGRIDAD (CHECKs de dominio) ─────────────────────────────────────────
+ALTER TABLE ordenos      ADD CONSTRAINT ck_ordenos_fecha       CHECK (fecha <= hoy_finca() + 1);
+ALTER TABLE animales     ADD CONSTRAINT ck_animales_prenez     CHECK (prenez_meses IS NULL OR (prenez_meses >= 0 AND prenez_meses <= 9.5));
+ALTER TABLE animales     ADD CONSTRAINT ck_animales_peso       CHECK (peso_kg IS NULL OR peso_kg > 0);
+ALTER TABLE animales     ADD CONSTRAINT ck_animales_nacimiento CHECK (nacimiento IS NULL OR nacimiento <= hoy_finca() + 1);
+ALTER TABLE animales     ADD CONSTRAINT ck_animales_id         CHECK (id ~ '^[A-Za-z0-9][A-Za-z0-9-]{0,19}$');
+ALTER TABLE palpaciones  ADD CONSTRAINT ck_palpaciones_prenez  CHECK (prenez_meses IS NULL OR (prenez_meses >= 0 AND prenez_meses <= 9.5));
+ALTER TABLE palpaciones  ADD CONSTRAINT ck_palpaciones_fecha   CHECK (fecha <= hoy_finca() + 1);
+ALTER TABLE partos       ADD CONSTRAINT ck_partos_peso         CHECK (peso_kg IS NULL OR peso_kg > 0);
+ALTER TABLE partos       ADD CONSTRAINT ck_partos_fecha        CHECK (fecha <= hoy_finca() + 1);
+ALTER TABLE tratamientos ADD CONSTRAINT ck_tratamientos_retiro CHECK (dias_retiro IS NULL OR dias_retiro >= 0);
+ALTER TABLE vacunaciones ADD CONSTRAINT ck_vacunaciones_alcance
+  CHECK (alcance IN ('hato','individual') AND (alcance <> 'individual' OR animal_id IS NOT NULL));
+
+-- ─── PARTO COMPLETO EN UNA TRANSACCIÓN ──────────────────────────────────────
+-- Cría (si nació viva) + registro del parto + actualización de la madre:
+-- o se guarda todo, o no se guarda nada. La app la llama por RPC.
+CREATE OR REPLACE FUNCTION registrar_parto_completo(
+  p_madre_id    text,
+  p_fecha       date,
+  p_sexo        sexo_animal,
+  p_peso_kg     numeric,
+  p_tipo        tipo_parto,
+  p_estado      estado_cria,
+  p_parto_id    text,
+  p_cria_id     text DEFAULT NULL,
+  p_cria_nombre text DEFAULT NULL,
+  p_cria_raza   text DEFAULT NULL
+) RETURNS text
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF p_cria_id IS NOT NULL THEN
+    INSERT INTO animales (id, nombre, raza, grupo, sexo, edad_anios,
+                          nacimiento, origen, madre_id, peso_kg)
+    VALUES (p_cria_id, coalesce(p_cria_nombre, '(cría)'), p_cria_raza,
+            CASE WHEN p_sexo = 'H' THEN 'ternera'::grupo_animal ELSE 'macho'::grupo_animal END,
+            p_sexo, 0, p_fecha, 'nacido_finca', p_madre_id, p_peso_kg);
+  END IF;
+  INSERT INTO partos (id, madre_id, cria_id, fecha, sexo_cria, peso_kg, tipo, estado_cria)
+  VALUES (p_parto_id, p_madre_id, p_cria_id, p_fecha, p_sexo, p_peso_kg,
+          coalesce(p_tipo, 'normal'), coalesce(p_estado, 'viva'));
+  UPDATE animales
+     SET grupo = 'ordeño', inicio_lactancia = p_fecha,
+         estado_repro = NULL, prenez_meses = NULL, ultima_palpacion = NULL
+   WHERE id = p_madre_id;
+  RETURN p_parto_id;
+END $$;
+
 -- ─── RLS (Row Level Security) ───────────────────────────────────────────────
 -- MVP SIN LOGIN: el RLS queda DESACTIVADO en todas las tablas de datos. Con la
 -- anon key sin login, activarlo deja las lecturas en CERO filas (sin error) y
@@ -311,10 +369,11 @@ SELECT a.*,
   ( SELECT max(t.inicio + t.dias_retiro) FROM tratamientos t
     WHERE t.animal_id = a.id AND t.activo AND t.dias_retiro > 0
       AND (t.inicio + t.dias_retiro) >= hoy_finca() ) AS retiro_calc,
+  -- calculados EN DÍAS (30,44 días/mes): el round por meses metía ±15 días de error
   CASE WHEN a.estado_repro = 'prenada' AND a.prenez_meses IS NOT NULL AND a.ultima_palpacion IS NOT NULL
-       THEN (a.ultima_palpacion + (round((9 - a.prenez_meses))::int * INTERVAL '1 month'))::date END AS parto_estimado_calc,
+       THEN a.ultima_palpacion + round((9 - a.prenez_meses) * 30.44)::int END AS parto_estimado_calc,
   CASE WHEN a.estado_repro = 'prenada' AND a.prenez_meses IS NOT NULL AND a.ultima_palpacion IS NOT NULL
-       THEN (a.ultima_palpacion + (round((7 - a.prenez_meses))::int * INTERVAL '1 month'))::date END AS secar_calc,
+       THEN a.ultima_palpacion + round((7 - a.prenez_meses) * 30.44)::int END AS secar_calc,
   CASE WHEN a.estado_repro = 'vacia' AND a.ultima_palpacion IS NOT NULL
        THEN (hoy_finca() - a.ultima_palpacion) END AS dias_vacia_calc,
   CASE WHEN a.estado_repro = 'prenada' AND a.prenez_meses IS NOT NULL AND a.ultima_palpacion IS NOT NULL
@@ -337,3 +396,5 @@ GRANT ALL ON ALL TABLES    IN SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated;
+-- …pero las tablas de auth/infra NO deben ser accesibles con la anon key:
+REVOKE ALL ON profiles, login_attempts, outbox FROM anon, authenticated;

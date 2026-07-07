@@ -11,6 +11,31 @@
 > local (`python3 -m http.server`) y revisar que no haya errores de consola.
 > Para SQL: validar contra un Postgres 16 local antes de tocar Supabase.
 
+## 📌 Estado (actualizado jul 2026, tras la primera ronda de correcciones)
+
+**Corregidos:** A2 (respaldo paginado, aborta en error) · A4 (README de
+migraciones + `migraciones-aplicadas/` archivadas) · A5 (semilla `unidades` en
+schema) · A6 (RPC transaccional `registrar_parto_completo` + errores visibles
+en todos los catch) · A9 (`deleteOrdeno` cableado) · A10 (undo con reversa en
+BD: leche, tratamiento y secado en ambas superficies) · A11 (guards con hato
+vacío en los 9 flujos) · M1+M3+B10 (CHECKs y UNIQUEs en `migracion-integridad.sql`)
+· M2 (FKs ON DELETE SET NULL) · M4 (`updateAnimal` retirado del API) · M5
+(caché con token de generación + fallback solo en 42P01) · M17 (workflow
+`respaldo.yml` semanal, también evita la pausa del free tier) · M18 (parto/secado
+calculados en días) · B5 (índice compuesto) · B9 (REVOKE en profiles/outbox).
+
+**Parciales:** A3 (restauración ahora valida y filtra columnas; sigue siendo
+merge sin transacción — el TRUNCATE previo/RPC queda pendiente) · A7 (copy
+honesto, pero el outbox real con localStorage sigue pendiente) · A8 (esc() en
+listas/fichas/tablas principales; falta refactorizar los `onclick` en strings)
+· B2 (matching exacto `numDe()` en trata/seca/baja móvil; quedan otros sitios)
+· M13 (litros validados en store; faltan `max` en date inputs).
+
+**Pendiente del dueño:** correr `supabase/migracion-integridad.sql` en el SQL
+Editor (después de vacunaciones y zona-horaria, si faltan — ver `supabase/README.md`).
+
+**Sin tocar aún:** A1 (auth+RLS), M6-M12, M14-M16, M19-M20, y los B restantes.
+
 ## Mapa rápido del proyecto
 
 | Pieza | Archivos | Rol |
