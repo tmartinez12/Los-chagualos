@@ -696,6 +696,18 @@
     <div class="section-label" style="margin-top:8px">Nombre</div>
     <input id="editNombre" placeholder="Nombre del animal" oninput="editM.nombre=this.value"
       style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
+    <div class="section-label">Grupo</div>
+    <div class="chips" id="editGrupo">
+      <button class="chip" onclick="editPickGrupo(this,'ordeño')">En ordeño</button>
+      <button class="chip" onclick="editPickGrupo(this,'horra')">Horra</button>
+      <button class="chip" onclick="editPickGrupo(this,'novilla')">Novilla</button>
+      <button class="chip" onclick="editPickGrupo(this,'levante')">Levante</button>
+      <button class="chip" onclick="editPickGrupo(this,'ternera')">Ternera</button>
+      <button class="chip" onclick="editPickGrupo(this,'macho')">Macho</button>
+    </div>
+    <div class="section-label">Madre (número, debe estar registrada)</div>
+    <input id="editMadre" placeholder="Ej. 042" oninput="editM.madre=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);padding:10px 12px;outline:none">
     <div class="section-label">Raza</div>
     <input id="editRaza" placeholder="Ej. Holstein × Gyr" oninput="editM.raza=this.value"
       style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">

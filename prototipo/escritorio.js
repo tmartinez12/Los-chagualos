@@ -2119,15 +2119,35 @@ function openEditarVaca(num){
   const a=animalesPorId[num];
   if(!a){snack('No tengo los datos de '+num+' desde la base — sincroniza primero');return;}
   editState.num=num;
-  editState.nombre=a.nombre||'';editState.raza=a.raza||'';editState.color=a.color||'';editState.nota=a.nota||'';
+  editState.nombre=a.nombre||'';editState.color=a.color||'';editState.nota=a.nota||'';
   editState.nacimiento=a.nacimiento||'';editState.peso=(a.pesoKg!=null?a.pesoKg:'');
   editState.inicio=a.inicioLactancia||'';editState.leche=(a.leche&&a.leche.ayer!=null?a.leche.ayer:'');
+  /* paridad con "Registrar animal": raza por chips, grupo, origen, genealogía y compra */
+  const RAZAS=['Holstein × Gyr','F1','Gyrolando','Holstein','Normando'];
+  editState.raza=RAZAS.includes(a.raza)?a.raza:'';
+  editState.razaOtra=RAZAS.includes(a.raza)?'':(a.raza||'');
+  editState.grupo=a.grupo||'ordeño';
+  editState.origen=a.origen||'';
+  editState.madre=a.madreId||'';editState.padre=a.padreId||'';
+  editState.procedencia=a.procedencia||'';editState.valor=(a.valorCompra!=null?a.valorCompra:'');
   openReg('Editar datos de '+num,'La producción se calcula de los ordeños y del inicio de lactancia');
   const body=document.getElementById('regBody');body.innerHTML='';
   body.appendChild(regTexto('Nombre','Nombre del animal',v=>editState.nombre=v,'text',editState.nombre));
-  body.appendChild(regTexto('Raza','Ej. Holstein × Gyr',v=>editState.raza=v,'text',editState.raza));
+  body.appendChild(regLabel('Raza'));
+  body.appendChild(regChips(RAZAS.map(r=>({val:r,label:r})),editState.raza,v=>{editState.raza=v;editState.razaOtra='';}));
+  body.appendChild(regTexto('Otra raza (si no está arriba)','Ej. Jersey, criolla…',v=>editState.razaOtra=v,'text',editState.razaOtra));
   body.appendChild(regTexto('Color','Ej. negra, pinta roja, barcina…',v=>editState.color=v,'text',editState.color));
+  body.appendChild(regLabel('Grupo'));
+  body.appendChild(regChips([['ordeño','En ordeño'],['horra','Horra'],['novilla','Novilla'],['levante','Levante'],['ternera','Ternera'],['macho','Macho']]
+    .map(g=>({val:g[0],label:g[1]})),editState.grupo,v=>editState.grupo=v));
+  body.appendChild(regHint('Cambiar el grupo corrige una clasificación; no toca la reproducción ni el historial.'));
   body.appendChild(regTexto('Fecha de nacimiento','',v=>editState.nacimiento=v,'date',editState.nacimiento));
+  body.appendChild(regLabel('Origen'));
+  body.appendChild(regChips([{val:'nacido_finca',label:'🐄 Nacida en la finca'},{val:'comprado',label:'🛒 Comprada'}],editState.origen,v=>editState.origen=v));
+  body.appendChild(regTexto('Madre (número, debe estar registrada)','Ej. 042',v=>editState.madre=v,'text',editState.madre));
+  body.appendChild(regTexto('Padre (número, debe estar registrado)','Ej. T01',v=>editState.padre=v,'text',editState.padre));
+  body.appendChild(regTexto('Procedencia (si es comprada)','Finca o vendedor',v=>editState.procedencia=v,'text',editState.procedencia));
+  body.appendChild(regTexto('Valor de compra (opcional)','$',v=>editState.valor=v,'number',editState.valor));
   body.appendChild(regTexto('Peso (kg)','',v=>editState.peso=v,'number',editState.peso));
   body.appendChild(regTexto('Inicio de lactancia (último parto)','',v=>editState.inicio=v,'date',editState.inicio));
   body.appendChild(regHint('El DEL se calcula solo desde esta fecha (hoy − inicio de lactancia).'));
@@ -2141,32 +2161,50 @@ function isoAyerReal(){const d=new Date();d.setDate(d.getDate()-1);return isoDe(
 function guardarEditarVaca(){
   const num=editState.num,a=animalesPorId[num];if(!a)return;
   const nombre=(editState.nombre||'').trim()||a.nombre;
-  const raza=(editState.raza||'').trim()||null;
+  const raza=(editState.razaOtra||'').trim()||editState.raza||null;
   const color=(editState.color||'').trim()||null;
   const nota=(editState.nota||'').trim()||null;
   const nacimiento=editState.nacimiento||null;
   const peso=(editState.peso!==''&&editState.peso!=null)?parseFloat(editState.peso):null;
   const inicio=editState.inicio||null;
   const leche=(editState.leche!==''&&editState.leche!=null)?parseFloat(editState.leche):null;
+  /* genealogía: si se da un número, debe existir (FK en la base) */
+  const madre=(editState.madre||'').trim()||null;
+  const padre=(editState.padre||'').trim()||null;
+  if(madre&&!animalesPorId[madre]){snack('⚠ La madre '+madre+' no está registrada — corrige el número');return;}
+  if(padre&&!animalesPorId[padre]){snack('⚠ El padre '+padre+' no está registrado — corrige el número');return;}
+  if(madre===num||padre===num){snack('⚠ Un animal no puede ser su propia madre o padre');return;}
+  const valor=(editState.valor!==''&&editState.valor!=null)?parseInt(String(editState.valor).replace(/\D/g,'')):null;
   closeReg();
-  /* persistir datos básicos + inicio de lactancia (fuente del DEL) */
-  const campos={nombre:nombre,raza:raza,color:color,nota:nota,nacimiento:nacimiento,inicio_lactancia:inicio};
+  /* persistir TODO lo editable (paridad con "Registrar animal") */
+  const campos={nombre:nombre,raza:raza,color:color,nota:nota,nacimiento:nacimiento,inicio_lactancia:inicio,
+    grupo:editState.grupo||a.grupo,origen:editState.origen||null,
+    madre_id:madre,padre_id:padre,
+    procedencia:(editState.procedencia||'').trim()||null,valor_compra:valor};
   if(peso!=null&&!isNaN(peso)){campos.peso_kg=peso;campos.fecha_peso=isoHoy();}
   /* DEL y leche se DERIVAN: actualizo la caché para reflejarlo de inmediato */
   const delCalc=inicio?diasDesdeReal(inicio):a.del;
-  Object.assign(a,{nombre:nombre,raza:raza,color:color,nota:nota,nacimiento:nacimiento,inicioLactancia:inicio,del:delCalc});
+  const grupoCambio=campos.grupo!==a.grupo;
+  Object.assign(a,{nombre:nombre,raza:raza,color:color,nota:nota,nacimiento:nacimiento,inicioLactancia:inicio,del:delCalc,
+    grupo:campos.grupo,origen:campos.origen,madreId:madre,padreId:padre,
+    procedencia:campos.procedencia,valorCompra:valor});
   a.leche=a.leche||{};if(leche!=null&&!isNaN(leche))a.leche.ayer=leche;
   if(peso!=null&&!isNaN(peso)){a.pesoKg=peso;a.fechaPeso=isoHoy();}
   if(fichas[num]){fichas[num].n=nombre;fichas[num].raza=raza;if(peso!=null&&!isNaN(peso))fichas[num].peso=peso+' kg';}
-  const h=hato.find(x=>x.num===num);if(h){h.n=nombre;h.raza=raza;h.del=(delCalc==null?'—':delCalc);if(leche!=null&&!isNaN(leche))h.ayer=leche;}
+  const h=hato.find(x=>x.num===num);if(h){h.n=nombre;h.raza=raza;h.del=(delCalc==null?'—':delCalc);
+    if(leche!=null&&!isNaN(leche))h.ayer=leche;
+    if(grupoCambio)h.grupo=GRUPO_DISPLAY[a.grupo]||a.grupo;}
+  /* si entró o salió del ordeño, la lista de registro de leche cambia */
   const mEdit=milkCows.findIndex(c=>c.num===num);
-  if(mEdit>=0){const prevDone=milkCows[mEdit].done,prevV=milkCows[mEdit].v;
+  if(a.grupo!=='ordeño'&&mEdit>=0)milkCows.splice(mEdit,1);
+  else if(a.grupo==='ordeño'&&mEdit<0)milkCows.push(animalAMilk(a));
+  else if(mEdit>=0){const prevDone=milkCows[mEdit].done,prevV=milkCows[mEdit].v;
     milkCows[mEdit]=Object.assign(animalAMilk(a),{done:prevDone,v:prevV});}
   goVaca(num,vacaFrom);renderHato();renderMilk();
   if(typeof LCStore!=='undefined'){
     LCStore.updateAnimalCampos(num,campos).catch(e=>{
       console.warn('Edición no guardada en la base:',e.message||e);
-      snack('⚠ '+num+': cambios guardados local, falta sincronizar');});
+      snack('⚠ '+num+': los cambios NO se guardaron en la base — reintenta');});
     /* "leche de ayer" = registrar un ordeño real de ayer (fuente de verdad) */
     if(leche!=null&&!isNaN(leche))LCStore.registrarOrdeno(num,leche,isoAyerReal()).catch(()=>{});
   }

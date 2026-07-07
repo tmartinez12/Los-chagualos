@@ -171,6 +171,10 @@ function openEditVaca(){
   editM.num=num;editM.nombre=a.nombre||'';editM.raza=a.raza||'';editM.color=a.color||'';editM.nota=a.nota||'';
   editM.nacimiento=a.nacimiento||'';editM.peso=(a.pesoKg!=null?a.pesoKg:'');
   editM.inicio=a.inicioLactancia||'';editM.leche=(a.leche&&a.leche.ayer!=null?a.leche.ayer:'');
+  editM.grupo=a.grupo||'ordeño';editM.madre=a.madreId||'';
+  document.querySelectorAll('#editGrupo .chip').forEach(c=>
+    c.classList.toggle('sel',c.textContent.trim()===(GRUPO_DISPLAY_M[editM.grupo]||editM.grupo)));
+  const em=document.getElementById('editMadre');if(em)em.value=editM.madre;
   document.getElementById('editCow').textContent=(a.id+' · '+a.nombre).toUpperCase();
   document.getElementById('editNombre').value=editM.nombre;
   document.getElementById('editRaza').value=editM.raza;
@@ -185,8 +189,13 @@ function openEditVaca(){
 }
 function closeEdit(){document.getElementById('editSheet').classList.remove('show');
   document.getElementById('scrim').classList.remove('show');}
+function editPickGrupo(btn,val){editM.grupo=val;
+  [...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));}
 function saveEditVaca(){
   const num=editM.num,a=animalesPorIdM[num];if(!a)return;
+  const madre=(editM.madre||'').trim()||null;
+  if(madre&&!animalesPorIdM[madre]){snack('⚠ La madre '+madre+' no está registrada — corrige el número');return;}
+  if(madre===num){snack('⚠ Un animal no puede ser su propia madre');return;}
   const nombre=(editM.nombre||'').trim()||a.nombre;
   const raza=(editM.raza||'').trim()||null;
   const color=(editM.color||'').trim()||null;
@@ -196,22 +205,35 @@ function saveEditVaca(){
   const inicio=editM.inicio||null;
   const leche=(editM.leche!==''&&editM.leche!=null)?parseFloat(editM.leche):null;
   closeEdit();
-  const campos={nombre:nombre,raza:raza,color:color,nota:nota,nacimiento:nacimiento,inicio_lactancia:inicio};
+  const grupoNuevo=editM.grupo||a.grupo;
+  const grupoCambio=grupoNuevo!==a.grupo;
+  const campos={nombre:nombre,raza:raza,color:color,nota:nota,nacimiento:nacimiento,inicio_lactancia:inicio,
+    grupo:grupoNuevo,madre_id:madre};
   if(peso!=null&&!isNaN(peso)){campos.peso_kg=peso;campos.fecha_peso=isoHoyM();}
   const delCalc=inicio?Math.max(0,Math.round((new Date()-new Date(inicio+'T00:00:00'))/86400000)):a.del;
-  Object.assign(a,{nombre:nombre,raza:raza,color:color,nota:nota,nacimiento:nacimiento,inicioLactancia:inicio,del:delCalc});
+  Object.assign(a,{nombre:nombre,raza:raza,color:color,nota:nota,nacimiento:nacimiento,inicioLactancia:inicio,del:delCalc,
+    grupo:grupoNuevo,madreId:madre});
   a.leche=a.leche||{};if(leche!=null&&!isNaN(leche))a.leche.ayer=leche;
   if(peso!=null&&!isNaN(peso)){a.pesoKg=peso;a.fechaPeso=isoHoyM();}
   /* refrescar la entrada del hato y la tarjeta de ordeño */
-  const k=GRUPO_KEY[a.grupo];
-  if(k&&grupos[k]){const e=grupos[k].animales.find(x=>numDe(x[0])===num);
-    if(e){e[0]=a.id+' · '+a.nombre;e[1]=subAnimalM(a);}}
+  if(grupoCambio){
+    /* moverla de grupo en el drill-down y refrescar contadores del hato */
+    Object.keys(grupos).forEach(kk=>{const i=grupos[kk].animales.findIndex(x=>numDe(x[0])===num);
+      if(i>=0)grupos[kk].animales.splice(i,1);});
+    const kN=GRUPO_KEY[grupoNuevo];
+    if(kN&&grupos[kN])grupos[kN].animales.unshift([a.id+' · '+a.nombre,subAnimalM(a),1]);
+    renderHatoM();
+  }else{
+    const k=GRUPO_KEY[a.grupo];
+    if(k&&grupos[k]){const e=grupos[k].animales.find(x=>numDe(x[0])===num);
+      if(e){e[0]=a.id+' · '+a.nombre;e[1]=subAnimalM(a);}}
+  }
   const mc=cows.findIndex(c=>c.num===num);
   if(mc>=0){const pd=cows[mc].done,pv=cows[mc].v;cows[mc]=Object.assign(animalACow(a),{done:pd,v:pv});renderCows();renderInicioM();}
   renderFicha(num);encolar();
   if(typeof LCStore!=='undefined'){
     LCStore.updateAnimalCampos(num,campos).then(()=>desencolar()).catch(e=>{
-      console.warn('Edición móvil no guardada:',e.message||e);snack('⚠ '+num+': guardado local, falta sincronizar');});
+      console.warn('Edición móvil no guardada:',e.message||e);snack('⚠ '+num+': los cambios NO se guardaron en la base — reintenta');});
     if(leche!=null&&!isNaN(leche)){const ay=new Date();ay.setDate(ay.getDate()-1);
       LCStore.registrarOrdeno(num,leche,isoDeM(ay)).catch(()=>{});}
   }
