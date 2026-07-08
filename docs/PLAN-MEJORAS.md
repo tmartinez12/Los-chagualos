@@ -38,20 +38,21 @@
   `profiles`/`login_attempts`/`outbox` — confirmar que corrió.
 
 ## FASE 2 — No perder registros (integridad de captura)
-- [ ] 🟢 **P1 (BUG) · Vaca nueva "en ordeño" no entra a la lista de leche.**
-  `saveCompra`/`saveAlta` deben añadir a `milkCows`/`cows` al crear en ordeño
-  (copiar el patrón que ya usa `guardarEditarVaca`). Sin recargar página.
-- [ ] 🟢 **P6/P7 · Honestidad y hora de la finca.** Cambiar el copy engañoso
-  restante ("guardado local, falta sincronizar") por "NO se guardó — reintenta"
-  en `saveCompra` y `saveSeca` (escritorio); usar `hoyFinca()` en el cálculo de
-  edad/DEL y el "ordeño de ayer" de `saveCompra` (hoy usa `new Date()`).
-- [ ] 🟡 **A3 · Restauración segura.** `restaurarTodo` → función Postgres
-  transaccional (TRUNCATE opcional + carga en una transacción), con límite de
-  tamaño del `.json` y validación semántica. Hoy es merge no-transaccional
-  (fallo a mitad = base mezclada).
-- [ ] 🟡 **A7 · Outbox real (offline).** Cola en `localStorage` con reintento en
-  evento `online` + al abrir la app. Convierte el contador "pendientes" de
-  cosmético a real y cumple la promesa del README. (O, si se pospone, dejar el
+- [x] 🟢 **P1 (BUG) · Vaca nueva "en ordeño" no entra a la lista de leche.**
+  ✅ `saveCompra`/`saveAlta` la añaden a `milkCows`/`cows` al crear y la quitan
+  en el "Deshacer". Verificado en navegador.
+- [x] 🟢 **P6/P7 · Honestidad y hora de la finca.** ✅ Copys honestos en todos
+  los guardados; `isoAyerReal`/`diasDesdeReal`/edad-DEL de `saveCompra` y el
+  "ordeño de ayer" móvil usan la hora de la finca.
+- [x] 🟡 **A3 · Restauración segura.** ✅ Función Postgres transaccional
+  `restaurar_respaldo()` (reemplazo total en una transacción) + tope de tamaño;
+  fallback a merge si no está instalada. Validado en Postgres 16.
+- [ ] 🟡 **A7 · Outbox real (offline). DIFERIDO a sesión dedicada.** Requiere
+  convertir cada escritura en un comando serializable + despachador con
+  reintento (online / al abrir), y **pruebas contra Supabase real** que este
+  entorno no permite. El daño de UX que buscaba (copy que prometía sync
+  inexistente) YA está corregido en P6; falta la *capacidad* offline. Hacerlo a
+  medias es peor. Cola en `localStorage` con reintento en
   copy honesto — ya está.)
 
 ## FASE 3 — Completar los flujos (huecos de producto)
