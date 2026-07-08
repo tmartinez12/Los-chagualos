@@ -210,8 +210,19 @@
     `ejecutarConDeshacer`. Verificado en Chromium: camino feliz, deshacer
     (incluye el conteo `nBajas`, el drill-down por grupo y la reaparición en
     la lista de leche), y error de BD (ambas superficies).
-  - [ ] Palpación, leche, parto — pendientes, mismo patrón (uno por uno,
-    verificado en las dos superficies antes de seguir).
+  - [x] **Palpación** — migrado en escritorio y móvil; el más ramificado hasta
+    ahora (escritorio: 3 caminos — prenada/vacía/anotación libre; móvil: 2 —
+    prenada/vacía). La rama "anotación libre" (escritorio) y "vacía" (móvil) NO
+    tienen "Deshacer" en el original (son notificación simple, sin forma clara
+    de revertir el estado reproductivo). Esto obligó a generalizar
+    `ejecutarConDeshacer`: **`revertir` ahora es opcional** — sin él, muestra un
+    snack simple sin botón (antes siempre exigía un "Deshacer"). Probado también
+    a nivel Node (3 casos: con undo, sin undo, error de BD) antes de tocar el
+    navegador. Verificado en Chromium las 5 combinaciones (3 en escritorio, 2 en
+    móvil): camino feliz, deshacer donde aplica, y que las ramas sin undo
+    correctamente NO muestran el botón.
+  - [ ] Leche, parto — pendientes, mismo patrón (uno por uno, verificado en las
+    dos superficies antes de seguir).
 - [ ] 🔴 **Estado único.** Reemplazar las ~13 estructuras paralelas
   (`hato`, `animalesPorId`, `milkCows`, `_partosRaw`…) por una fuente de estado
   con re-render (o re-fetch dirigido). Mata la clase entera de bugs de

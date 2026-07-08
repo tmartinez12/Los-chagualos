@@ -6,8 +6,9 @@
  *   1) aplicar el cambio en memoria y pintar YA (optimista)
  *   2) escribir en la BD en paralelo (no bloquea el pintado)
  *   3) si la escritura falla: snack HONESTO (nunca solo console.warn)
- *   4) el snack de éxito ofrece "Deshacer": revierte memoria + pintado y
- *      compensa en la BD (esperando a que la escritura original termine)
+ *   4) el snack de éxito ofrece "Deshacer" cuando la acción tiene forma de
+ *      revertirse: revierte memoria + pintado y compensa en la BD (esperando
+ *      a que la escritura original termine); si no la tiene, snack simple
  * Esta función extrae ESE control de flujo a un solo lugar. NO decide qué
  * pintar ni qué guardar — eso lo sigue dando cada página por closures (según
  * la regla del proyecto: "la UI nunca llama a Supabase directo", y aquí,
@@ -30,12 +31,16 @@
    * o.deshacerLabel   — texto del botón de deshacer (default 'Deshacer')
    * o.revertir()      — deshace exactamente lo que hizo aplicar() (memoria +
    *                      pintado); se llama ANTES de esperar la compensación
-   *                      en la BD, para que la UI reaccione al toque
-   * o.compensarBD     — () => Promise; revierte en la BD (opcional). Se
-   *                      encadena DESPUÉS de que la escritura original
-   *                      termine (si se deshace antes de que la escritura
-   *                      original resuelva, espera y luego compensa — nunca
-   *                      corren en paralelo, para no pisarse).
+   *                      en la BD, para que la UI reaccione al toque.
+   *                      OPCIONAL: si no se da, la acción queda sin "Deshacer"
+   *                      (snack simple) — para los casos que de verdad no
+   *                      tienen forma de revertirse (p.ej. una anotación libre
+   *                      sin cambio de estado reproductivo claro).
+   * o.compensarBD     — () => Promise; revierte en la BD (opcional, solo tiene
+   *                      sentido si hay revertir). Se encadena DESPUÉS de que
+   *                      la escritura original termine (si se deshace antes de
+   *                      que la escritura original resuelva, espera y luego
+   *                      compensa — nunca corren en paralelo, para no pisarse).
    * o.snack           — snack(texto, labelBoton, fn) de la página (inyectada;
    *                      escritorio.js y app.js comparten ese contrato) */
   function ejecutarConDeshacer(o) {
@@ -47,6 +52,7 @@
         o.snack(o.avisoError ? o.avisoError(e) : '⚠ NO se guardó en la base — revisa la conexión y reintenta');
       });
     }
+    if (!o.revertir) { o.snack(o.mensaje); return; }
     o.snack(o.mensaje, o.deshacerLabel || 'Deshacer', () => {
       o.revertir();
       /* esperar a que la escritura original TERMINE antes de compensar: si se

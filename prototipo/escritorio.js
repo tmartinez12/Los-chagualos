@@ -1631,78 +1631,88 @@ function savePalp(){
   const fIn=document.getElementById('palpFecha');
   const fechaPalp=(fIn&&fIn.value)?fIn.value:isoHoy();   // fecha real de la palpación
   closePalp();
-  /* quitar de la lista de candidatas */
+  /* quitar de la lista de candidatas (para las 3 ramas) */
   const ci=palpCandidatas.findIndex(c=>c.cow===cow);
   const removedCand=ci>=0?palpCandidatas.splice(ci,1)[0]:null;
   /* los tratamientos aplicados quedan en la sanidad del animal, sea cual sea el resultado */
   const undoTrat=aplicarTratamientos(num,nombre,p.trat,nota);
-  /* persistir la palpación y el nuevo estado reproductivo en Supabase */
-  let pSavePalp=Promise.resolve(),palpId=null;
   const reproAntes=animalesPorId[num]?snapshotReproDB(animalesPorId[num]):null;
-  if(typeof LCStore!=='undefined'){
-    const campos={ultima_palpacion:fechaPalp};let prenezMeses=null;
-    if(p.tipo==='prenada'){const m=Math.round(p.meses);prenezMeses=m;
-      campos.estado_repro='prenada';campos.prenez_meses=m;}
-    else if(p.tipo==='vacia'){campos.estado_repro='vacia';campos.prenez_meses=null;}
-    pSavePalp=LCStore.registrarPalpacion({animalId:num,resultado:nota,fecha:fechaPalp,
-      motivo:removedCand?removedCand.motivo:null,prenezMeses:prenezMeses})
-      .then(r=>{palpId=r&&r.id;return LCStore.updateAnimalCampos(num,campos);})
-      .catch(e=>{console.warn('Palpación no guardada en la base:',e.message||e);
-        snack('⚠ La palpación NO se guardó en la base — reintenta');});
-    pSavePalp.then(()=>{if(typeof cargarPalpHistorial==='function')cargarPalpHistorial();});
-  }
-  /* compensación en la base al deshacer (usada por ambas ramas) */
-  const revertirPalpEnBase=()=>{ if(typeof LCStore==='undefined')return;
-    pSavePalp.then(()=>Promise.all([
-      palpId?LCStore.deletePalpacion(palpId):null,
-      reproAntes?LCStore.updateAnimalCampos(num,reproAntes):null,
-    ])).catch(e=>console.warn('No se pudo revertir la palpación en la base:',e.message||e)); };
+  let palpId=null;
+  /* estado cruzado aplicar()→revertir() de las ramas prenada/vacía */
+  let pi,prevParto,vi,removedVacia,added;
+  const opciones={
+    escribir:typeof LCStore!=='undefined'?()=>{
+      const campos={ultima_palpacion:fechaPalp};let prenezMeses=null;
+      if(p.tipo==='prenada'){const m=Math.round(p.meses);prenezMeses=m;
+        campos.estado_repro='prenada';campos.prenez_meses=m;}
+      else if(p.tipo==='vacia'){campos.estado_repro='vacia';campos.prenez_meses=null;}
+      return LCStore.registrarPalpacion({animalId:num,resultado:nota,fecha:fechaPalp,
+        motivo:removedCand?removedCand.motivo:null,prenezMeses:prenezMeses})
+        .then(r=>{palpId=r&&r.id;return LCStore.updateAnimalCampos(num,campos);})
+        .then(()=>{if(typeof cargarPalpHistorial==='function')cargarPalpHistorial();});
+    }:null,
+    avisoError:()=>'⚠ La palpación NO se guardó en la base — reintenta',
+    snack,
+  };
   if(p.tipo==='prenada'){
     const meses=Math.round(p.meses);
     const f=fechaParto(meses);
-    const nuevo={cow:cow,prenez:p.dias+' días (~'+meses+' m)',parto:f.corta,badge:meses>=8?'warn':''};
-    const pi=proximosPartos.findIndex(pp=>pp.cow===cow);
-    const prevParto=pi>=0?proximosPartos[pi]:null;
-    if(pi>=0)proximosPartos[pi]=nuevo; else proximosPartos.push(nuevo);
-    const vi=vacasVacias.findIndex(v=>v.cow===cow);
-    const removedVacia=vi>=0?vacasVacias.splice(vi,1)[0]:null;
-    renderPartos();renderPartosKpis();renderVacias();renderPalpLista();renderReproKpis();go('pg-partos',document.querySelector('[data-pg="pg-partos"]'));
     const trats=p.trat.length?' · Trat: '+p.trat.join(', '):'';
-    snack(nombre+': '+nota+' → preñada ~'+p.dias+'d — parto '+f.corta+trats,'Deshacer',()=>{
+    opciones.aplicar=()=>{
+      const nuevo={cow:cow,prenez:p.dias+' días (~'+meses+' m)',parto:f.corta,badge:meses>=8?'warn':''};
+      pi=proximosPartos.findIndex(pp=>pp.cow===cow);
+      prevParto=pi>=0?proximosPartos[pi]:null;
+      if(pi>=0)proximosPartos[pi]=nuevo; else proximosPartos.push(nuevo);
+      vi=vacasVacias.findIndex(v=>v.cow===cow);
+      removedVacia=vi>=0?vacasVacias.splice(vi,1)[0]:null;
+      renderPartos();renderPartosKpis();renderVacias();renderPalpLista();renderReproKpis();
+      go('pg-partos',document.querySelector('[data-pg="pg-partos"]'));
+    };
+    opciones.mensaje=nombre+': '+nota+' → preñada ~'+p.dias+'d — parto '+f.corta+trats;
+    opciones.revertir=()=>{
       const j=proximosPartos.findIndex(pp=>pp.cow===cow);
       if(j>=0)proximosPartos.splice(j,1);
       if(prevParto)proximosPartos.push(prevParto);
       if(removedVacia)vacasVacias.splice(Math.min(vi,vacasVacias.length),0,removedVacia);
       if(removedCand)palpCandidatas.splice(Math.min(ci,palpCandidatas.length),0,removedCand);
       if(undoTrat)undoTrat();
-      revertirPalpEnBase();
-      renderPartos();renderPartosKpis();renderVacias();renderPalpLista();renderReproKpis();});
-    return;
-  }
-  if(p.tipo==='vacia'){
-    const pi=proximosPartos.findIndex(pp=>pp.cow===cow);
-    const prevParto=pi>=0?proximosPartos.splice(pi,1)[0]:null;
-    let added=null;
-    if(!vacasVacias.find(v=>v.cow===cow)){
-      const num=cow.split('·')[0].trim();
-      added={cow:cow,num:num,del:'—',sub:'—',estado:'vacia',
-        dias:1,ultima:fmtFechaCorta(isoHoy())+' '+new Date().getFullYear(),ayer:'—',
-        rec:p.subtipo==='fisiologica'?'Vacía fisiológica — programar servicio':'Vacía — evaluar siguiente paso'};
-      vacasVacias.push(added);
-    }
-    renderPartos();renderPartosKpis();renderVacias();renderPalpLista();renderReproKpis();go('pg-repro',document.querySelector('[data-pg="pg-repro"]'));
-    snack(nombre+': '+nota+' → vacía — lista para servicio','Deshacer',()=>{
+      renderPartos();renderPartosKpis();renderVacias();renderPalpLista();renderReproKpis();
+    };
+  }else if(p.tipo==='vacia'){
+    opciones.aplicar=()=>{
+      pi=proximosPartos.findIndex(pp=>pp.cow===cow);
+      prevParto=pi>=0?proximosPartos.splice(pi,1)[0]:null;
+      added=null;
+      if(!vacasVacias.find(v=>v.cow===cow)){
+        added={cow:cow,num:num,del:'—',sub:'—',estado:'vacia',
+          dias:1,ultima:fmtFechaCorta(isoHoy())+' '+new Date().getFullYear(),ayer:'—',
+          rec:p.subtipo==='fisiologica'?'Vacía fisiológica — programar servicio':'Vacía — evaluar siguiente paso'};
+        vacasVacias.push(added);
+      }
+      renderPartos();renderPartosKpis();renderVacias();renderPalpLista();renderReproKpis();
+      go('pg-repro',document.querySelector('[data-pg="pg-repro"]'));
+    };
+    opciones.mensaje=nombre+': '+nota+' → vacía — lista para servicio';
+    opciones.revertir=()=>{
       if(added){const ai=vacasVacias.findIndex(v=>v.cow===cow);if(ai>=0)vacasVacias.splice(ai,1);}
       if(prevParto)proximosPartos.splice(Math.min(pi,proximosPartos.length),0,prevParto);
       if(removedCand)palpCandidatas.splice(Math.min(ci,palpCandidatas.length),0,removedCand);
       if(undoTrat)undoTrat();
-      revertirPalpEnBase();
-      renderPartos();renderPartosKpis();renderVacias();renderPalpLista();renderReproKpis();});
-    return;
+      renderPartos();renderPartosKpis();renderVacias();renderPalpLista();renderReproKpis();
+    };
+  }else{
+    /* anotación libre sin resultado reproductivo claro: no hay nada que "deshacer" */
+    opciones.aplicar=()=>renderPalpLista();
+    const trats=p.trat.length?' · tratamiento aplicado: '+p.trat.join(', '):'';
+    opciones.mensaje=nombre+': '+nota+' → '+p.label+trats;
   }
-  renderPalpLista();
-  const trats=p.trat.length?' · tratamiento aplicado: '+p.trat.join(', '):'';
-  snack(nombre+': '+nota+' → '+p.label+trats);
+  if(opciones.revertir&&typeof LCStore!=='undefined'){
+    opciones.compensarBD=()=>Promise.all([
+      palpId?LCStore.deletePalpacion(palpId):null,
+      reproAntes?LCStore.updateAnimalCampos(num,reproAntes):null,
+    ]);
+  }
+  LCAcciones.ejecutarConDeshacer(opciones);
 }
 function renderPalpLista(){
   const box=document.getElementById('palpListaBox');if(!box)return;

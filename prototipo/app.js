@@ -1054,48 +1054,60 @@ function savePalp(){
   const nombre=palp.cow.split('·')[1].trim();
   const numPalp=numDe(palp.cow);
   const fechaPalp=palp.fecha||isoHoyM();
-  encolar();
-  let pSavePalp=Promise.resolve(),palpId=null;
+  const esVacia=palp.resultado==='vacia';
   const reproAntes=animalesPorIdM[numPalp]?snapshotReproDBM(animalesPorIdM[numPalp]):null;
-  if(typeof LCStore!=='undefined'){
-    const esPren=palp.resultado!=='vacia';
-    const campos=esPren
-      ?{estado_repro:'prenada',prenez_meses:palp.meses,ultima_palpacion:fechaPalp}
-      :{estado_repro:'vacia',prenez_meses:null,ultima_palpacion:fechaPalp};
-    pSavePalp=LCStore.registrarPalpacion({animalId:numPalp,resultado:palp.resultado,prenezMeses:esPren?palp.meses:null,fecha:fechaPalp})
-      .then(r=>{palpId=r&&r.id;return LCStore.updateAnimalCampos(numPalp,campos);}).then(()=>desencolar())
-      .catch(e=>{console.warn('Palpación móvil no guardada:',e.message||e);
-        snack('⚠ La palpación NO se guardó en la base — revisa la señal y reintenta');});
+  let palpId=null;
+  const opciones={
+    escribir:typeof LCStore!=='undefined'?()=>{
+      const esPren=!esVacia;
+      const campos=esPren
+        ?{estado_repro:'prenada',prenez_meses:palp.meses,ultima_palpacion:fechaPalp}
+        :{estado_repro:'vacia',prenez_meses:null,ultima_palpacion:fechaPalp};
+      return LCStore.registrarPalpacion({animalId:numPalp,resultado:palp.resultado,prenezMeses:esPren?palp.meses:null,fecha:fechaPalp})
+        .then(r=>{palpId=r&&r.id;return LCStore.updateAnimalCampos(numPalp,campos);}).then(()=>desencolar());
+    }:null,
+    avisoError:()=>'⚠ La palpación NO se guardó en la base — revisa la señal y reintenta',
+    snack,
+  };
+  if(esVacia){
+    opciones.aplicar=()=>{
+      encolar();
+      renderVacias();
+      setTimeout(()=>go('scr-repro'),300);
+    };
+    opciones.mensaje=nombre+': vacía — queda en la lista para servicio';
+    /* sin "Deshacer": así era en el original */
+  }else{
+    const f=fechaParto(palp.meses);
+    let i,prev,vi,removedVacia;
+    opciones.aplicar=()=>{
+      encolar();
+      const nuevo={cow:palp.cow,sub:'Preñada '+palp.meses+' meses · parto '+f.corta,
+        short:f.corta,badge:f.mes,bw:''};
+      i=proximosPartos.findIndex(p=>p.cow===palp.cow);
+      prev=i>=0?proximosPartos[i]:null;
+      if(i>=0)proximosPartos[i]=nuevo; else{proximosPartos.push(nuevo);porParir++;}
+      vi=vacasVacias.findIndex(v=>v.cow===palp.cow);
+      removedVacia=vi>=0?vacasVacias.splice(vi,1)[0]:null;
+      renderPartos();renderVacias();
+      setTimeout(()=>go('scr-partos'),300);
+    };
+    opciones.mensaje=nombre+': preñada '+palp.meses+' meses — parto estimado '+f.corta+' · entra a los próximos partos';
+    opciones.revertir=()=>{
+      const j=proximosPartos.findIndex(p=>p.cow===palp.cow);
+      if(j>=0)proximosPartos.splice(j,1);
+      if(prev)proximosPartos.push(prev); else porParir--;
+      if(removedVacia)vacasVacias.splice(Math.min(vi,vacasVacias.length),0,removedVacia);
+      desencolar();renderPartos();renderVacias();snack('Palpación deshecha');
+    };
+    if(typeof LCStore!=='undefined'){
+      opciones.compensarBD=()=>Promise.all([
+        palpId?LCStore.deletePalpacion(palpId):null,
+        reproAntes?LCStore.updateAnimalCampos(numPalp,reproAntes):null,
+      ]);
+    }
   }
-  const revertirPalpEnBaseM=()=>{ if(typeof LCStore==='undefined')return;
-    pSavePalp.then(()=>Promise.all([
-      palpId?LCStore.deletePalpacion(palpId):null,
-      reproAntes?LCStore.updateAnimalCampos(numPalp,reproAntes):null,
-    ])).catch(e=>console.warn('No se pudo revertir la palpación móvil en la base:',e.message||e)); };
-  if(palp.resultado==='vacia'){
-    renderVacias();
-    setTimeout(()=>go('scr-repro'),300);
-    snack(nombre+': vacía — queda en la lista para servicio');
-    return;
-  }
-  const f=fechaParto(palp.meses);
-  const nuevo={cow:palp.cow,sub:'Preñada '+palp.meses+' meses · parto '+f.corta,
-    short:f.corta,badge:f.mes,bw:''};
-  const i=proximosPartos.findIndex(p=>p.cow===palp.cow);
-  const prev=i>=0?proximosPartos[i]:null;
-  if(i>=0)proximosPartos[i]=nuevo; else{proximosPartos.push(nuevo);porParir++;}
-  const vi=vacasVacias.findIndex(v=>v.cow===palp.cow);
-  const removedVacia=vi>=0?vacasVacias.splice(vi,1)[0]:null;
-  renderPartos();renderVacias();
-  setTimeout(()=>go('scr-partos'),300);
-  snack(nombre+': preñada '+palp.meses+' meses — parto estimado '+f.corta+' · entra a los próximos partos','Deshacer',()=>{
-    const j=proximosPartos.findIndex(p=>p.cow===palp.cow);
-    if(j>=0)proximosPartos.splice(j,1);
-    if(prev)proximosPartos.push(prev); else porParir--;
-    if(removedVacia)vacasVacias.splice(Math.min(vi,vacasVacias.length),0,removedVacia);
-    desencolar();renderPartos();renderVacias();snack('Palpación deshecha');
-    revertirPalpEnBaseM();
-  });
+  LCAcciones.ejecutarConDeshacer(opciones);
 }
 /* ===== Enfermedad / tratamiento (activa el retiro de leche) ===== */
 const fechaDias=LCRules.fechaDias;
