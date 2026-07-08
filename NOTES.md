@@ -20,3 +20,11 @@
   - `test/fixtures/model.js:2` — la cabecera aún dice "(core/model.js)".
   - `prototipo/escritorio.js:1926` — comentario menciona "core/model" como
     concepto (forma canónica), no como archivo a importar.
+
+## Fase 3 (docs de supabase + edge function huérfana)
+- supabase/GUIA-IMPORTACION.md y PRUEBA-DE-HUMO.md → supabase/docs/ (git mv,
+  contenido idéntico). La referencia cruzada GUIA→PRUEBA sigue válida (mismo dir).
+- supabase/edge-functions/ → supabase/edge-functions-archivadas/ (login-pin es
+  huérfana, ver GAPS B8). Actualizada la ruta concreta en docs/AUDITORIA.md.
+- Menciones CONCEPTUALES de "login-pin" NO tocadas (describen el diseño/gap, no
+  son rutas de import): GAPS.md:48,123; docs/AUDITORIA.md:92; docs/PLAN-backend.md:28,70.
