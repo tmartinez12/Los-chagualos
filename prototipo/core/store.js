@@ -95,6 +95,7 @@
       desteteProximo: (r.grupo === 'ternera' && edadDeriv != null && edadDeriv >= 0.58),
       baja: r.baja_motivo ? { motivo: r.baja_motivo, fecha: r.baja_fecha, valor: r.baja_valor, nota: r.baja_nota } : null,
       procedencia: r.procedencia, valorCompra: r.valor_compra,
+      updatedAt: r.updated_at,   // para detectar edición concurrente (last-write-wins)
     };
   }
 
@@ -193,11 +194,25 @@
 
   /* Update PARCIAL: solo toca las columnas dadas (snake_case). No usar
    * animalToDB aquí porque rellenaría con null y borraría otras columnas.  */
-  async function updateAnimalCampos(id, campos) {
+  async function updateAnimalCampos(id, campos, expectedUpdatedAt) {
     _invalidarAnimales();
-    const { data, error } = await client().from('animales').update(campos).eq('id', id).select().single();
+    /* sin guard de concurrencia: comportamiento de siempre (.single()). */
+    if (!expectedUpdatedAt) {
+      const { data, error } = await client().from('animales').update(campos).eq('id', id).select().single();
+      if (error) throw error;
+      return data;
+    }
+    /* concurrencia (last-write-wins): la actualización solo entra si la fila NO
+     * cambió mientras tanto. 0 filas → otro dispositivo la editó: CONFLICTO. */
+    const { data, error } = await client().from('animales').update(campos)
+      .eq('id', id).eq('updated_at', expectedUpdatedAt).select();
     if (error) throw error;
-    return data;
+    if (!data || data.length === 0) {
+      const err = new Error('Otro dispositivo cambió esta ficha antes que tú');
+      err.code = 'CONFLICTO';
+      throw err;
+    }
+    return data[0];
   }
 
   async function deleteAnimal(id) {
@@ -328,12 +343,27 @@
      * histórico dependen de que "hoy" sea el día real en Colombia. */
     const L = Number(litros);
     if (isNaN(L) || L < 0) throw new Error('Litros inválidos: ' + litros);
-    const fila = { animal_id: animalId, litros: L, turno: 'dia', fecha: fecha || hoyFinca() };
+    const f = fecha || hoyFinca();
+    /* detectar "pisado": si YA había un valor distinto para ese día (otro
+     * dispositivo o un registro previo), el upsert lo reemplaza en silencio.
+     * Se lee antes para poder AVISARLO en vez de callarlo. */
+    let previo = null;
+    try {
+      const { data: pre } = await client().from('ordenos')
+        .select('litros').eq('animal_id', animalId).eq('fecha', f).eq('turno', 'dia').maybeSingle();
+      if (pre) previo = Number(pre.litros);
+    } catch (e) { /* si la lectura falla, seguimos: no bloquear el registro */ }
+    const fila = { animal_id: animalId, litros: L, turno: 'dia', fecha: f };
     const { data, error } = await client()
       .from('ordenos')
       .upsert(fila, { onConflict: 'animal_id,fecha,turno' })
       .select().single();
     if (error) throw error;
+    /* si se pisó un valor DISTINTO, se marca y se registra (no se calla) */
+    if (previo != null && previo !== L) {
+      data._pisado = { previo, nuevo: L, fecha: f };
+      console.warn('Ordeño pisado: ' + animalId + ' ' + f + ' ' + previo + 'L → ' + L + 'L');
+    }
     return data;
   }
 

@@ -102,9 +102,14 @@
   pasado (fecha, sexo/tipo/resultado opcionales, vincula una cría existente por
   número) que suma al conteo, al intervalo y a las lactancias SIN tocar el grupo
   ni el DEL actuales de la madre. Con "Deshacer" y reversa en la base. Verificado.
-- [ ] 🟡 **Concurrencia (last-write-wins).** Comparar `updated_at` en
-  `updateAnimalCampos` y avisar si otro dispositivo cambió la fila; al menos
-  loguear el pisado del ordeño en vez de silenciarlo.
+- [x] 🟡 **Concurrencia (last-write-wins).** ✅ `updateAnimalCampos(id,campos,
+  expectedUpdatedAt)` hace la actualización condicionada al `updated_at` leído
+  (trigger `set_updated_at`): si otro dispositivo cambió la fila, 0 filas →
+  error `CONFLICTO` y las fichas (móvil + escritorio) avisan "otro dispositivo
+  cambió esta ficha — recarga". `registrarOrdeno` lee el valor previo y, si se
+  pisó un valor DISTINTO al que la pantalla mostraba, lo avisa y lo loguea en
+  vez de callarlo. Semántica OCC validada en Postgres 16 (update condicionado
+  con `updated_at` viejo → 0 filas; actual → 1).
 - [x] 🟢 **B1 · IDs con sufijo aleatorio.** ✅ `LCRules.idUnico(prefijo)` (y su
   espejo `_idUnico` en el store) generan `prefijo + tiempo(base36) + '-' + 6
   chars aleatorios`; reemplaza los `'P-'/'T-'+Date.now()` de parto y tratamiento

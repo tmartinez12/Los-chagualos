@@ -485,13 +485,19 @@ function saveMilk(){
   const c=milkCows[mi];
   const v=LCRules.clampLitros(document.getElementById('mInput').value);
   const prev={done:c.done,v:c.v};
+  const conocidoPrev=prev.done?prev.v:c.ayer;   // lo que ESTA pantalla creía tener
   const drop=!c.done&&LCRules.esBajonLeche(c.ayer,v);
   c.done=true;c.v=v;
   closeMilk();renderMilk();
   /* persistir en Supabase (optimista: ya se guardó local) */
   let pSaveMilk=Promise.resolve();
   if(typeof LCStore!=='undefined'){
-    pSaveMilk=LCStore.registrarOrdeno(c.num,v).catch(e=>{
+    pSaveMilk=LCStore.registrarOrdeno(c.num,v).then(r=>{
+      /* pisado inesperado: otro dispositivo ya tenía un valor DISTINTO al que
+       * esta pantalla mostraba — avisar en vez de callar (last-write-wins). */
+      if(r&&r._pisado&&Number(r._pisado.previo)!==Number(conocidoPrev))
+        snack('⚠ '+c.n+': otro registro tenía '+r._pisado.previo+' L de hoy; se reemplazó por '+v+' L');
+    }).catch(e=>{
       console.warn('No se pudo guardar el ordeño en la base:',e.message||e);
       snack('⚠ '+c.n+': NO se guardó en la base — revisa la conexión y reintenta');
     });
@@ -2234,9 +2240,13 @@ function guardarEditarVaca(){
     milkCows[mEdit]=Object.assign(animalAMilk(a),{done:prevDone,v:prevV});}
   goVaca(num,vacaFrom);renderHato();renderMilk();
   if(typeof LCStore!=='undefined'){
-    LCStore.updateAnimalCampos(num,campos).catch(e=>{
-      console.warn('Edición no guardada en la base:',e.message||e);
-      snack('⚠ '+num+': los cambios NO se guardaron en la base — reintenta');});
+    /* concurrencia: solo guarda si la ficha no cambió en otro dispositivo */
+    LCStore.updateAnimalCampos(num,campos,a.updatedAt).then(r=>{if(r&&r.updated_at)a.updatedAt=r.updated_at;}).catch(e=>{
+      if(e&&e.code==='CONFLICTO'){
+        snack('⚠ '+num+': otro dispositivo cambió esta ficha — recarga la página para no pisar sus cambios');
+      }else{
+        console.warn('Edición no guardada en la base:',e.message||e);
+        snack('⚠ '+num+': los cambios NO se guardaron en la base — reintenta');}});
     /* "leche de ayer" = registrar un ordeño real de ayer (fuente de verdad) */
     if(leche!=null&&!isNaN(leche))LCStore.registrarOrdeno(num,leche,isoAyerReal()).catch(()=>{});
   }
