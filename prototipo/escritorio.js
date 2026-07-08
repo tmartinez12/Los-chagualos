@@ -2258,27 +2258,30 @@ function saveTrata(){
   const trat={num:tratState.num,n:nombre,desc:tratState.problema+' · '+tratState.medicina.toLowerCase(),
     retiro:conRetiro?'retiro de leche hasta '+fechaDias(tratState.retiro):'',
     badge:conRetiro?'retiro '+tratState.retiro+'d':'sin retiro',badgeCls:conRetiro?'bad':'ok'};
-  tratamientos.push(trat);
   let addedTag=false;
-  if(a&&!a.tags.includes('tratamiento')){a.tags.push('tratamiento');addedTag=true;}
-  renderTratamientos();renderHatoFiltros();renderHato();
-  go('pg-sanitario',navFor('pg-sanitario'));
   /* id conocido para poder revertir en la base si se deshace */
   const tid=LCRules.idUnico('T-');
-  let pSaveTrata=Promise.resolve();
-  if(typeof LCStore!=='undefined'){
-    pSaveTrata=LCStore.registrarTratamiento({id:tid,animalId:tratState.num,problema:tratState.problema,
-      medicamento:tratState.medicina,diasRetiro:tratState.retiro}).catch(e=>{
-      console.warn('Tratamiento no guardado en la base:',e.message||e);
-      snack('⚠ El tratamiento NO se guardó en la base — revisa la conexión y reintenta');});
-  }
   const retiroTxt=conRetiro?' · retiro '+tratState.retiro+'d (hasta '+fechaDias(tratState.retiro)+')':' · sin retiro';
-  snack(nombre+': '+tratState.problema.toLowerCase()+' · '+tratState.medicina.toLowerCase()+retiroTxt,'Deshacer',()=>{
-    const i=tratamientos.indexOf(trat);if(i>=0)tratamientos.splice(i,1);
-    if(a&&addedTag){const ti=a.tags.indexOf('tratamiento');if(ti>=0)a.tags.splice(ti,1);}
-    renderTratamientos();renderHatoFiltros();renderHato();
-    if(typeof LCStore!=='undefined')pSaveTrata.then(()=>LCStore.deleteTratamiento(tid))
-      .catch(e=>console.warn('No se pudo revertir el tratamiento:',e.message||e));});
+  LCAcciones.ejecutarConDeshacer({
+    aplicar(){
+      tratamientos.push(trat);
+      if(a&&!a.tags.includes('tratamiento')){a.tags.push('tratamiento');addedTag=true;}
+      renderTratamientos();renderHatoFiltros();renderHato();
+      go('pg-sanitario',navFor('pg-sanitario'));
+    },
+    escribir:typeof LCStore!=='undefined'?
+      ()=>LCStore.registrarTratamiento({id:tid,animalId:tratState.num,problema:tratState.problema,
+        medicamento:tratState.medicina,diasRetiro:tratState.retiro}):null,
+    avisoError:()=>'⚠ El tratamiento NO se guardó en la base — revisa la conexión y reintenta',
+    mensaje:nombre+': '+tratState.problema.toLowerCase()+' · '+tratState.medicina.toLowerCase()+retiroTxt,
+    revertir(){
+      const i=tratamientos.indexOf(trat);if(i>=0)tratamientos.splice(i,1);
+      if(a&&addedTag){const ti=a.tags.indexOf('tratamiento');if(ti>=0)a.tags.splice(ti,1);}
+      renderTratamientos();renderHatoFiltros();renderHato();
+    },
+    compensarBD:typeof LCStore!=='undefined'?()=>LCStore.deleteTratamiento(tid):null,
+    snack,
+  });
 }
 
 /* --- secado (ordeño → horra) --- */

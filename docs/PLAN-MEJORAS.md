@@ -194,8 +194,14 @@
     esperan siempre. Verificado en Chromium: camino feliz, deshacer, y error de
     BD (ambas superficies, sin cambios de comportamiento salvo la corrección
     de la carrera).
-  - [ ] Tratamiento, baja, palpación, leche, parto — pendientes, mismo patrón
-    (uno por uno, verificado en las dos superficies antes de seguir).
+  - [x] **Tratamiento** — migrado en escritorio y móvil. Aquí las dos
+    superficies YA esperaban la escritura original antes de compensar (sin la
+    carrera del secado); el cambio es puramente de duplicación. Preserva el
+    encadenado propio del móvil (escribir → desencolar+recargar lista;
+    deshacer → borrar→recargar lista, en ese orden). Verificado en Chromium:
+    camino feliz, deshacer, y error de BD (ambas superficies).
+  - [ ] Baja, palpación, leche, parto — pendientes, mismo patrón (uno por uno,
+    verificado en las dos superficies antes de seguir).
 - [ ] 🔴 **Estado único.** Reemplazar las ~13 estructuras paralelas
   (`hato`, `animalesPorId`, `milkCows`, `_partosRaw`…) por una fuente de estado
   con re-render (o re-fetch dirigido). Mata la clase entera de bugs de

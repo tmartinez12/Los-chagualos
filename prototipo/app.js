@@ -1134,28 +1134,29 @@ function saveTrata(){
   const cd=cows.find(c=>numDe(trata.cow)===c.num);
   const nombre=trata.cow.split('·')[1].trim();
   const prev=cd?cd.retiro:undefined;
-  if(cd)cd.retiro=trata.retiro||undefined;
-  renderCows();encolar();
   /* id conocido de antemano para poder BORRAR el tratamiento si se deshace */
   const tid=LCRules.idUnico('T-');
-  let pSaveTrata=Promise.resolve();
-  if(typeof LCStore!=='undefined'){
-    pSaveTrata=LCStore.registrarTratamiento({id:tid,animalId:numDe(trata.cow),problema:trata.problema,
-      medicamento:trata.medicina,diasRetiro:trata.retiro})
-      .then(()=>{desencolar();cargarTratamientosMovil();})
-      .catch(e=>{console.warn('Tratamiento móvil no guardado:',e.message||e);
-        snack('⚠ El tratamiento NO se guardó en la base — revisa la señal y reintenta');});
-  }
-  setTimeout(()=>go('scr-ordeno'),300);
   const base='Tratamiento de '+trata.problema.toLowerCase()+' en '+nombre+' ('+trata.medicina.toLowerCase()+')';
   const msg=trata.retiro>0
     ? base+' · retiro de leche '+trata.retiro+'d (hasta '+fechaDias(trata.retiro)+') — no vender su leche'
     : base+' · sin retiro de leche';
-  snack(msg,'Deshacer',()=>{
-    if(cd)cd.retiro=prev;renderCows();desencolar();snack('Tratamiento deshecho');
-    if(typeof LCStore!=='undefined')pSaveTrata.then(()=>LCStore.deleteTratamiento(tid))
-      .then(()=>cargarTratamientosMovil())
-      .catch(e=>console.warn('No se pudo revertir el tratamiento:',e.message||e));
+  LCAcciones.ejecutarConDeshacer({
+    aplicar(){
+      if(cd)cd.retiro=trata.retiro||undefined;
+      renderCows();encolar();
+      setTimeout(()=>go('scr-ordeno'),300);
+    },
+    escribir:typeof LCStore!=='undefined'?
+      ()=>LCStore.registrarTratamiento({id:tid,animalId:numDe(trata.cow),problema:trata.problema,
+        medicamento:trata.medicina,diasRetiro:trata.retiro}).then(()=>{desencolar();cargarTratamientosMovil();}):null,
+    avisoError:()=>'⚠ El tratamiento NO se guardó en la base — revisa la señal y reintenta',
+    mensaje:msg,
+    revertir(){
+      if(cd)cd.retiro=prev;renderCows();desencolar();snack('Tratamiento deshecho');
+    },
+    compensarBD:typeof LCStore!=='undefined'?
+      ()=>LCStore.deleteTratamiento(tid).then(()=>cargarTratamientosMovil()):null,
+    snack,
   });
 }
 /* ===== Secado (sale del ordeño → pasa a horras) ===== */
