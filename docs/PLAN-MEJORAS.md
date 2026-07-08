@@ -200,7 +200,17 @@
     encadenado propio del móvil (escribir → desencolar+recargar lista;
     deshacer → borrar→recargar lista, en ese orden). Verificado en Chromium:
     camino feliz, deshacer, y error de BD (ambas superficies).
-  - [ ] Baja, palpación, leche, parto — pendientes, mismo patrón (uno por uno,
+  - [x] **Baja** — migrado en escritorio y móvil (incluye fecha/valor/nota de
+    Fase 3). Igual que secado: NINGUNA de las dos superficies esperaba la
+    escritura original antes de compensar en el "Deshacer" — la coreografía
+    compartida corrige la carrera en ambas. `revertirBaja`/`revertirBajaM`
+    (la acción "más allá del Deshacer de 5 s") quedan FUERA de este piloto a
+    propósito: no tienen forma de "deshacer" (no es de los 6 flujos con
+    coreografía optimista-con-undo), así que no encajan en
+    `ejecutarConDeshacer`. Verificado en Chromium: camino feliz, deshacer
+    (incluye el conteo `nBajas`, el drill-down por grupo y la reaparición en
+    la lista de leche), y error de BD (ambas superficies).
+  - [ ] Palpación, leche, parto — pendientes, mismo patrón (uno por uno,
     verificado en las dos superficies antes de seguir).
 - [ ] 🔴 **Estado único.** Reemplazar las ~13 estructuras paralelas
   (`hato`, `animalesPorId`, `milkCows`, `_partosRaw`…) por una fuente de estado

@@ -2728,24 +2728,30 @@ function saveBaja(){
   const fecha=bajaState.fecha||isoHoy();
   const valor=(bajaState.valor!==''&&bajaState.valor!=null)?parseInt(String(bajaState.valor).replace(/\D/g,'')):null;
   const nota=(bajaState.nota||'').trim()||null;
-  hato.splice(idx,1);renderHatoFiltros();renderHato();
-  /* caché canónico al día: alertas y KPIs dejan de contarla sin recargar */
   const ac=animalesPorId[bajaState.num];
   const prevGrupoCache=ac?ac.grupo:null;
-  if(ac){ac.grupo='baja';ac.baja={motivo:bajaState.motivo,fecha:fecha,valor:valor,nota:nota};}
-  if(typeof renderInicio==='function')renderInicio();
-  go('pg-hato',navFor('pg-hato'));
-  if(typeof LCStore!=='undefined'){
-    LCStore.darDeBaja(bajaState.num,{motivo:bajaState.motivo,fecha:fecha,valor:valor,nota:nota}).catch(e=>{
-      console.warn('Baja no guardada en la base:',e.message||e);
-      snack('⚠ La baja NO se guardó en la base — revisa la conexión y reintenta');});
-  }
-  snack(nombre+': baja por '+bajaState.motivo.toLowerCase()+' — sale del hato, su historia se conserva','Deshacer',()=>{
-    hato.splice(Math.min(idx,hato.length),0,a);renderHatoFiltros();renderHato();
-    if(prevGrupoCache&&animalesPorId[bajaState.num]){animalesPorId[bajaState.num].grupo=prevGrupoCache;animalesPorId[bajaState.num].baja=null;}
-    if(typeof renderInicio==='function')renderInicio();
-    if(typeof LCStore!=='undefined')LCStore.updateAnimalCampos(bajaState.num,
-      {grupo:GRUPO_MODELO[a.grupo]||'ordeño',baja_motivo:null,baja_fecha:null,baja_valor:null,baja_nota:null}).catch(()=>{});});
+  LCAcciones.ejecutarConDeshacer({
+    aplicar(){
+      hato.splice(idx,1);renderHatoFiltros();renderHato();
+      /* caché canónico al día: alertas y KPIs dejan de contarla sin recargar */
+      if(ac){ac.grupo='baja';ac.baja={motivo:bajaState.motivo,fecha:fecha,valor:valor,nota:nota};}
+      if(typeof renderInicio==='function')renderInicio();
+      go('pg-hato',navFor('pg-hato'));
+    },
+    escribir:typeof LCStore!=='undefined'?
+      ()=>LCStore.darDeBaja(bajaState.num,{motivo:bajaState.motivo,fecha:fecha,valor:valor,nota:nota}):null,
+    avisoError:()=>'⚠ La baja NO se guardó en la base — revisa la conexión y reintenta',
+    mensaje:nombre+': baja por '+bajaState.motivo.toLowerCase()+' — sale del hato, su historia se conserva',
+    revertir(){
+      hato.splice(Math.min(idx,hato.length),0,a);renderHatoFiltros();renderHato();
+      if(prevGrupoCache&&animalesPorId[bajaState.num]){animalesPorId[bajaState.num].grupo=prevGrupoCache;animalesPorId[bajaState.num].baja=null;}
+      if(typeof renderInicio==='function')renderInicio();
+    },
+    compensarBD:typeof LCStore!=='undefined'?
+      ()=>LCStore.updateAnimalCampos(bajaState.num,
+        {grupo:GRUPO_MODELO[a.grupo]||'ordeño',baja_motivo:null,baja_fecha:null,baja_valor:null,baja_nota:null}):null,
+    snack,
+  });
 }
 /* revertir una baja ya confirmada (más allá del "Deshacer" de 5 s): vuelve al hato */
 function revertirBaja(num){

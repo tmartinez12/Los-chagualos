@@ -1351,36 +1351,41 @@ function saveBaja(){
   const nota=(baja.nota||'').trim()||null;
   const idx=cows.findIndex(c=>numDe(baja.cow)===c.num);
   const removed=idx>=0?cows[idx]:null;
-  if(idx>=0){cows.splice(idx,1);renderCows();incGrupo('ordeno',-1);}
-  nBajas++;subBajas();
-  grupos.bajas.animales.unshift([baja.cow,baja.motivo.toUpperCase()+' · '+fmtFechaCortaM(fecha)+' · registrada']);
-  encolar();
   const numBaja=numDe(baja.cow);
-  /* sacar del drill-down de su grupo y del caché (antes seguía apareciendo) */
   let grupoBaja=null,idxGrupo=-1,filaGrupo=null;
-  Object.keys(grupos).forEach(k=>{ if(k==='bajas'||grupoBaja)return;
-    const i=grupos[k].animales.findIndex(x=>numDe(x[0])===numBaja);
-    if(i>=0){grupoBaja=k;idxGrupo=i;filaGrupo=grupos[k].animales[i];grupos[k].animales.splice(i,1);}});
   const prevGrupoCache=animalesPorIdM[numBaja]?animalesPorIdM[numBaja].grupo:null;
-  if(animalesPorIdM[numBaja]){animalesPorIdM[numBaja].grupo='baja';
-    animalesPorIdM[numBaja].baja={motivo:baja.motivo,fecha:fecha,valor:valor,nota:nota};}
-  renderHatoM();
-  if(typeof LCStore!=='undefined'){
-    LCStore.darDeBaja(numBaja,{motivo:baja.motivo,fecha:fecha,valor:valor,nota:nota})
-      .then(()=>desencolar()).catch(e=>{console.warn('Baja móvil no guardada:',e.message||e);
-        snack('⚠ La baja NO se guardó en la base — revisa la señal y reintenta');});
-  }
-  setTimeout(()=>openGroup('bajas'),300);
-  snack(nombre+': baja por '+baja.motivo.toLowerCase()+' — sale del hato, su historia se conserva','Deshacer',()=>{
-    if(removed){cows.splice(Math.min(idx,cows.length),0,removed);renderCows();incGrupo('ordeno',1);}
-    nBajas--;subBajas();grupos.bajas.animales.shift();
-    /* reponer en su grupo y en el caché (con el grupo PREVIO, no 'baja') */
-    if(grupoBaja&&filaGrupo)grupos[grupoBaja].animales.splice(Math.min(idxGrupo,grupos[grupoBaja].animales.length),0,filaGrupo);
-    if(prevGrupoCache&&animalesPorIdM[numBaja]){animalesPorIdM[numBaja].grupo=prevGrupoCache;animalesPorIdM[numBaja].baja=null;}
-    renderHatoM();
-    desencolar();openGroup('bajas');snack('Baja deshecha');
-    if(typeof LCStore!=='undefined')LCStore.updateAnimalCampos(numBaja,
-      {grupo:prevGrupoCache||'ordeño',baja_motivo:null,baja_fecha:null,baja_valor:null,baja_nota:null}).catch(()=>{});
+  LCAcciones.ejecutarConDeshacer({
+    aplicar(){
+      if(idx>=0){cows.splice(idx,1);renderCows();incGrupo('ordeno',-1);}
+      nBajas++;subBajas();
+      grupos.bajas.animales.unshift([baja.cow,baja.motivo.toUpperCase()+' · '+fmtFechaCortaM(fecha)+' · registrada']);
+      encolar();
+      /* sacar del drill-down de su grupo y del caché (antes seguía apareciendo) */
+      Object.keys(grupos).forEach(k=>{ if(k==='bajas'||grupoBaja)return;
+        const i=grupos[k].animales.findIndex(x=>numDe(x[0])===numBaja);
+        if(i>=0){grupoBaja=k;idxGrupo=i;filaGrupo=grupos[k].animales[i];grupos[k].animales.splice(i,1);}});
+      if(animalesPorIdM[numBaja]){animalesPorIdM[numBaja].grupo='baja';
+        animalesPorIdM[numBaja].baja={motivo:baja.motivo,fecha:fecha,valor:valor,nota:nota};}
+      renderHatoM();
+      setTimeout(()=>openGroup('bajas'),300);
+    },
+    escribir:typeof LCStore!=='undefined'?
+      ()=>LCStore.darDeBaja(numBaja,{motivo:baja.motivo,fecha:fecha,valor:valor,nota:nota}).then(()=>desencolar()):null,
+    avisoError:()=>'⚠ La baja NO se guardó en la base — revisa la señal y reintenta',
+    mensaje:nombre+': baja por '+baja.motivo.toLowerCase()+' — sale del hato, su historia se conserva',
+    revertir(){
+      if(removed){cows.splice(Math.min(idx,cows.length),0,removed);renderCows();incGrupo('ordeno',1);}
+      nBajas--;subBajas();grupos.bajas.animales.shift();
+      /* reponer en su grupo y en el caché (con el grupo PREVIO, no 'baja') */
+      if(grupoBaja&&filaGrupo)grupos[grupoBaja].animales.splice(Math.min(idxGrupo,grupos[grupoBaja].animales.length),0,filaGrupo);
+      if(prevGrupoCache&&animalesPorIdM[numBaja]){animalesPorIdM[numBaja].grupo=prevGrupoCache;animalesPorIdM[numBaja].baja=null;}
+      renderHatoM();
+      desencolar();openGroup('bajas');snack('Baja deshecha');
+    },
+    compensarBD:typeof LCStore!=='undefined'?
+      ()=>LCStore.updateAnimalCampos(numBaja,
+        {grupo:prevGrupoCache||'ordeño',baja_motivo:null,baja_fecha:null,baja_valor:null,baja_nota:null}):null,
+    snack,
   });
 }
 /* accesibilidad: hojas anunciadas como diálogo y cierre con Escape */
