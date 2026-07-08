@@ -2280,7 +2280,7 @@ function saveTrata(){
   renderTratamientos();renderHatoFiltros();renderHato();
   go('pg-sanitario',navFor('pg-sanitario'));
   /* id conocido para poder revertir en la base si se deshace */
-  const tid='T-'+Date.now();
+  const tid=LCRules.idUnico('T-');
   let pSaveTrata=Promise.resolve();
   if(typeof LCStore!=='undefined'){
     pSaveTrata=LCStore.registrarTratamiento({id:tid,animalId:tratState.num,problema:tratState.problema,
@@ -2420,7 +2420,7 @@ function saveParto(){
   }
   /* registrar en partos recientes */
   const fechaParto=partoState.fecha||isoHoy();
-  const partoId='P-'+Date.now();
+  const partoId=LCRules.idUnico('P-');
   const reciente={id:partoId,madre:partoState.num+' '+nombre,cria:cria?cria.num:'—',fecha:fmtFechaCorta(fechaParto),fechaISO:fechaParto,
     sexo:partoState.sexo,peso:partoState.peso,tipo:partoState.tipo,
     estado:partoState.estado,grupo:partoState.estado==='viva'?(criaGrupo==='Ternera'?'Terneras':'Machos'):null};
@@ -2619,7 +2619,7 @@ function saveCompra(){
     del:inicioLact?Math.max(0,Math.round((hoyFincaDate()-new Date(inicioLact+'T00:00:00'))/86400000)):null,
     leche:{}};
   /* caches locales: los partos alimentan lactancias, intervalo y días abiertos */
-  const partoRows=fechasParto.map((f,i)=>({id:'P-'+num+'-'+i+'-'+Date.now(),madre_id:num,cria_id:null,
+  const partoRows=fechasParto.map((f,i)=>({id:LCRules.idUnico('P-'+num+'-'+i+'-'),madre_id:num,cria_id:null,
     fecha:f,sexo_cria:null,peso_kg:null,tipo:'normal',estado_cria:'viva'}));
   if(ultParto)_ultimoParto[num]=ultParto;
   if(fechasParto.length)_partosPorMadre[num]=fechasParto.slice();

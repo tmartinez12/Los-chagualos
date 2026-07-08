@@ -874,7 +874,7 @@ function saveParto(){
   }
   encolar();
   let pSaveParto=Promise.resolve();
-  const partoId='P-'+Date.now();
+  const partoId=LCRules.idUnico('P-');
   const madreAntes=animalesPorIdM[numMadre]?snapshotReproDBM(animalesPorIdM[numMadre]):null;
   if(typeof LCStore!=='undefined'){
     const madreRaza=(animalesPorIdM[numMadre]||{}).raza||null;
@@ -1132,7 +1132,7 @@ function saveTrata(){
   if(cd)cd.retiro=trata.retiro||undefined;
   renderCows();encolar();
   /* id conocido de antemano para poder BORRAR el tratamiento si se deshace */
-  const tid='T-'+Date.now();
+  const tid=LCRules.idUnico('T-');
   let pSaveTrata=Promise.resolve();
   if(typeof LCStore!=='undefined'){
     pSaveTrata=LCStore.registrarTratamiento({id:tid,animalId:numDe(trata.cow),problema:trata.problema,

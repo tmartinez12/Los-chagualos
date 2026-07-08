@@ -102,8 +102,11 @@
 - [ ] 🟡 **Concurrencia (last-write-wins).** Comparar `updated_at` en
   `updateAnimalCampos` y avisar si otro dispositivo cambió la fila; al menos
   loguear el pisado del ordeño en vez de silenciarlo.
-- [ ] 🟢 **B1 · IDs con sufijo aleatorio** (`'P-'+Date.now()+rand`) para evitar
-  colisión de PK entre dispositivos en el mismo milisegundo.
+- [x] 🟢 **B1 · IDs con sufijo aleatorio.** ✅ `LCRules.idUnico(prefijo)` (y su
+  espejo `_idUnico` en el store) generan `prefijo + tiempo(base36) + '-' + 6
+  chars aleatorios`; reemplaza los `'P-'/'T-'+Date.now()` de parto y tratamiento
+  (móvil, escritorio y fallbacks del store). Dos dispositivos en el mismo
+  milisegundo ya no chocan la PK (100k ids en un bucle apretado → 99999 únicos).
 - [ ] 🟢 **Secuencias de chapeta seguras:** `criaNum`/`altaSeq` desde un
   "siguiente libre" real, no del máximo cacheado (evita números duplicados con
   dos teléfonos abiertos).

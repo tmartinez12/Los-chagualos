@@ -25,6 +25,15 @@
     return Math.max(0, Math.min(LITROS_MAX, Math.round(n * 10) / 10));
   }
 
+  /* ID único para PKs de texto (partos, tratamientos). Tiempo (base36, ordenable)
+   * + sufijo aleatorio: dos dispositivos en el mismo milisegundo NO chocan la PK.
+   * Antes era solo 'P-'+Date.now(), que colisionaba. */
+  function idUnico(prefijo) {
+    const t = Date.now().toString(36);
+    const r = Math.floor(Math.random() * 2176782336).toString(36).padStart(6, '0'); // 36^6
+    return (prefijo || '') + t + '-' + r;
+  }
+
   /* "Hoy": por defecto la fecha real. Se puede inyectar una fecha (Date) para
    * pruebas o para un "hoy" fijo desde el backend. */
   function baseHoy(hoy) {
@@ -223,7 +232,7 @@
   }
 
   return {
-    MESC, LITROS_MAX, clampLitros, fechaParto, fechaDias, esBajonLeche, parseTrat, parsePalpNota, curvaLactancia,
+    MESC, LITROS_MAX, clampLitros, idUnico, fechaParto, fechaDias, esBajonLeche, parseTrat, parsePalpNota, curvaLactancia,
     diasHasta, ordinalParto, fmtFechaCorta, snapshotReproDB, fechaLarga, isoHoy, esc,
     PROTOCOLO_SAN, fmtNacimiento, deriveReproFicha,
   };

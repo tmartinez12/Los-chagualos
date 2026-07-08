@@ -27,6 +27,15 @@
   };
 
   let _client = null;
+
+  /* ID único para PKs de texto: tiempo (base36) + sufijo aleatorio, para que dos
+   * dispositivos en el mismo milisegundo NO choquen la PK. Local al store (la capa
+   * de datos no depende de LCRules). Espeja LCRules.idUnico. */
+  function _idUnico(prefijo) {
+    const t = Date.now().toString(36);
+    const r = Math.floor(Math.random() * 2176782336).toString(36).padStart(6, '0');
+    return (prefijo || '') + t + '-' + r;
+  }
   function client() {
     if (_client) return _client;
     if (typeof supabase === 'undefined' || !supabase.createClient) {
@@ -241,7 +250,7 @@
 
   async function registrarTratamiento(t) {
     const fila = {
-      id: t.id || ('T-' + Date.now()), animal_id: t.animalId,
+      id: t.id || _idUnico('T-'), animal_id: t.animalId,
       problema: t.problema, medicamento: t.medicamento || null,
       inicio: t.inicio || hoyFinca(),
       dias_retiro: t.diasRetiro || 0,   // el retiro va hasta inicio + dias_retiro (derivado)
@@ -268,7 +277,7 @@
 
   async function registrarParto(p) {
     const fila = {
-      id: p.id || ('P-' + Date.now()), madre_id: p.madreId, cria_id: p.criaId || null,
+      id: p.id || _idUnico('P-'), madre_id: p.madreId, cria_id: p.criaId || null,
       fecha: p.fecha || hoyFinca(),
       sexo_cria: p.sexo, peso_kg: p.pesoKg || null,
       tipo: p.tipo || 'normal', estado_cria: p.estadoCria || 'viva',
@@ -286,7 +295,7 @@
    * está instalada en la base, cae a la secuencia clásica.                    */
   async function registrarPartoCompleto(p) {
     _invalidarAnimales();
-    const partoId = p.id || ('P-' + Date.now());
+    const partoId = p.id || _idUnico('P-');
     const fecha = p.fecha || hoyFinca();
     const { error } = await client().rpc('registrar_parto_completo', {
       p_madre_id: p.madreId, p_fecha: fecha, p_sexo: p.sexo,
