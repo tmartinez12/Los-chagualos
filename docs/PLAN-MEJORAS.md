@@ -221,8 +221,17 @@
     navegador. Verificado en Chromium las 5 combinaciones (3 en escritorio, 2 en
     móvil): camino feliz, deshacer donde aplica, y que las ramas sin undo
     correctamente NO muestran el botón.
-  - [ ] Leche, parto — pendientes, mismo patrón (uno por uno, verificado en las
-    dos superficies antes de seguir).
+  - [x] **Leche** — migrado en escritorio y móvil (móvil: 2 ramas — fecha de
+    hoy / fecha pasada de Fase 3). Aquí las superficies YA diferían a propósito:
+    escritorio ofrece "Deshacer" en `saveMilk`, el móvil NUNCA lo ofreció en
+    ninguna de sus dos ramas (se corrige tocando el tile de nuevo, no con un
+    botón). Se preservó esa asimetría real (no se agregó undo donde no había).
+    También se preservó el aviso de "pisado" (last-write-wins: otro dispositivo
+    tenía un valor de hoy distinto) dentro de `escribir`. Verificado en
+    Chromium: camino feliz + deshacer + pisado simulado + error de BD
+    (escritorio), y las 2 ramas sin undo del móvil (incluye que la fecha pasada
+    NO toca el tile de hoy).
+  - [ ] Parto — pendiente, el más complejo de los 6 (cría + parto + madre).
 - [ ] 🔴 **Estado único.** Reemplazar las ~13 estructuras paralelas
   (`hato`, `animalesPorId`, `milkCows`, `_partosRaw`…) por una fuente de estado
   con re-render (o re-fetch dirigido). Mata la clase entera de bugs de

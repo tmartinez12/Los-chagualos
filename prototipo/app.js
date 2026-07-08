@@ -570,31 +570,35 @@ function saveMilk(){
   const c=cows[ci];
   const fecha=milkFechaSel||isoHoyM();
   const esHoy=fecha===isoHoyM();
-  /* fecha pasada: registrar ese día SIN tocar el tablero de hoy (el tile es de hoy) */
+  /* fecha pasada: registrar ese día SIN tocar el tablero de hoy (el tile es de hoy).
+   * Sin "Deshacer" en el original: no hay tile local que revertir. */
   if(!esHoy){
-    closeMilk();encolar();
-    if(typeof LCStore!=='undefined'){
-      LCStore.registrarOrdeno(c.num,v,fecha).then(()=>desencolar()).catch(e=>{
-        console.warn('Ordeño no guardado en la base:',e.message||e);
-        snack('⚠ '+c.n+': NO se guardó en la base — revisa la señal y reintenta');});
-    }
-    snack(c.n+': '+v+' L registrados el '+fmtFechaCortaM(fecha));
+    LCAcciones.ejecutarConDeshacer({
+      aplicar(){closeMilk();encolar();},
+      escribir:typeof LCStore!=='undefined'?
+        ()=>LCStore.registrarOrdeno(c.num,v,fecha).then(()=>desencolar()):null,
+      avisoError:()=>'⚠ '+c.n+': NO se guardó en la base — revisa la señal y reintenta',
+      mensaje:c.n+': '+v+' L registrados el '+fmtFechaCortaM(fecha),
+      snack,
+    });
     return;
   }
   const drop=!c.done&&LCRules.esBajonLeche(c.ayer,v);
   const conocidoPrev=c.done?c.v:c.ayer;   // lo que ESTA pantalla creía tener
-  c.done=true;c.v=v;renderCows();closeMilk();encolar();
-  if(typeof LCStore!=='undefined'){
-    LCStore.registrarOrdeno(c.num,v).then(r=>{desencolar();
-      /* pisado inesperado: otro dispositivo tenía un valor DISTINTO — avisar */
-      if(r&&r._pisado&&Number(r._pisado.previo)!==Number(conocidoPrev))
-        snack('⚠ '+c.n+': otro registro tenía '+r._pisado.previo+' L de hoy; se reemplazó por '+v+' L');
-    }).catch(e=>{
-      console.warn('Ordeño no guardado en la base:',e.message||e);
-      snack('⚠ '+c.n+': NO se guardó en la base — revisa la señal y reintenta');});
-  }
-  if(drop)snack('Atención: '+c.n+' bajó '+(c.ayer-v)+' L vs ayer — ¿mastitis, celo, comida?');
-  else snack(c.n+': '+v+' L guardados');
+  /* sin "Deshacer" en el original: el tile queda done=true y se corrige
+   * tocándolo de nuevo, no con un botón de deshacer. */
+  LCAcciones.ejecutarConDeshacer({
+    aplicar(){c.done=true;c.v=v;renderCows();closeMilk();encolar();},
+    escribir:typeof LCStore!=='undefined'?
+      ()=>LCStore.registrarOrdeno(c.num,v).then(r=>{desencolar();
+        /* pisado inesperado: otro dispositivo tenía un valor DISTINTO — avisar */
+        if(r&&r._pisado&&Number(r._pisado.previo)!==Number(conocidoPrev))
+          snack('⚠ '+c.n+': otro registro tenía '+r._pisado.previo+' L de hoy; se reemplazó por '+v+' L');
+      }):null,
+    avisoError:()=>'⚠ '+c.n+': NO se guardó en la base — revisa la señal y reintenta',
+    mensaje:drop?'Atención: '+c.n+' bajó '+(c.ayer-v)+' L vs ayer — ¿mastitis, celo, comida?':c.n+': '+v+' L guardados',
+    snack,
+  });
   if(cows.every(x=>x.done)){markRutina('ordeno');
     const tot=cows.reduce((s,x)=>s+x.v,0);
     setTimeout(()=>snack('Ordeño completo: '+tot+' L registrados hoy'),1500);}

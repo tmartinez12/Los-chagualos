@@ -487,30 +487,23 @@ function saveMilk(){
   const prev={done:c.done,v:c.v};
   const conocidoPrev=prev.done?prev.v:c.ayer;   // lo que ESTA pantalla creía tener
   const drop=!c.done&&LCRules.esBajonLeche(c.ayer,v);
-  c.done=true;c.v=v;
-  closeMilk();renderMilk();
-  /* persistir en Supabase (optimista: ya se guardó local) */
-  let pSaveMilk=Promise.resolve();
-  if(typeof LCStore!=='undefined'){
-    pSaveMilk=LCStore.registrarOrdeno(c.num,v).then(r=>{
-      /* pisado inesperado: otro dispositivo ya tenía un valor DISTINTO al que
-       * esta pantalla mostraba — avisar en vez de callar (last-write-wins). */
-      if(r&&r._pisado&&Number(r._pisado.previo)!==Number(conocidoPrev))
-        snack('⚠ '+c.n+': otro registro tenía '+r._pisado.previo+' L de hoy; se reemplazó por '+v+' L');
-    }).catch(e=>{
-      console.warn('No se pudo guardar el ordeño en la base:',e.message||e);
-      snack('⚠ '+c.n+': NO se guardó en la base — revisa la conexión y reintenta');
-    });
-  }
-  /* deshacer también en la base: si había un valor previo se repone; si no, se borra */
-  const deshacerMilk=()=>{
-    c.done=prev.done;c.v=prev.v;renderMilk();snack('Registro deshecho');
-    if(typeof LCStore!=='undefined')pSaveMilk.then(()=>
-      prev.done?LCStore.registrarOrdeno(c.num,prev.v):LCStore.deleteOrdeno(c.num))
-      .catch(e=>console.warn('No se pudo revertir el ordeño:',e.message||e));
-  };
-  if(drop)snack('Atención: '+c.n+' bajó '+(c.ayer-v)+' L vs ayer — ¿mastitis, celo, comida?','Deshacer',deshacerMilk);
-  else snack(c.n+': '+v+' L guardados','Deshacer',deshacerMilk);
+  LCAcciones.ejecutarConDeshacer({
+    aplicar(){c.done=true;c.v=v;closeMilk();renderMilk();},
+    escribir:typeof LCStore!=='undefined'?
+      ()=>LCStore.registrarOrdeno(c.num,v).then(r=>{
+        /* pisado inesperado: otro dispositivo ya tenía un valor DISTINTO al que
+         * esta pantalla mostraba — avisar en vez de callar (last-write-wins). */
+        if(r&&r._pisado&&Number(r._pisado.previo)!==Number(conocidoPrev))
+          snack('⚠ '+c.n+': otro registro tenía '+r._pisado.previo+' L de hoy; se reemplazó por '+v+' L');
+      }):null,
+    avisoError:()=>'⚠ '+c.n+': NO se guardó en la base — revisa la conexión y reintenta',
+    mensaje:drop?'Atención: '+c.n+' bajó '+(c.ayer-v)+' L vs ayer — ¿mastitis, celo, comida?':c.n+': '+v+' L guardados',
+    revertir(){c.done=prev.done;c.v=prev.v;renderMilk();snack('Registro deshecho');},
+    /* deshacer también en la base: si había un valor previo se repone; si no, se borra */
+    compensarBD:typeof LCStore!=='undefined'?
+      ()=>prev.done?LCStore.registrarOrdeno(c.num,prev.v):LCStore.deleteOrdeno(c.num):null,
+    snack,
+  });
   if(milkCows.every(x=>x.done)){
     const tot=milkCows.reduce((s,x)=>s+x.v,0);
     setTimeout(()=>snack('Ordeño completo: '+tot+' L en estas '+milkCows.length+' vacas'),1600);
