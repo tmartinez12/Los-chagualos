@@ -83,8 +83,12 @@
   tablero de hoy si es fecha pasada); tope de litros unificado en
   `LCRules.LITROS_MAX = 99.9` (CHECK de la BD) para móvil, modal de escritorio
   y parrilla semanal, con `clampLitros()` compartido. Verificado.
-- [ ] 🟡 **P8 · Ficha móvil rica.** Días abiertos, fecha de peso, lista de
-  partos, historial sanitario detallado (hoy 3 eventos genéricos).
+- [x] 🟡 **P8 · Ficha móvil rica.** ✅ La ficha del móvil ahora muestra días
+  abiertos (desde el último parto si no está preñada) y ganancia g/día como KPIs,
+  peso con su fecha y días vacía en la genealogía, y una historia detallada real
+  ordenada por fecha (partos con cría/peso, palpaciones, tratamientos con retiro,
+  vacunas) en vez de 3 eventos genéricos. Carga partos/tratamientos/palpaciones
+  una vez y re-pinta la ficha abierta al llegar. Verificado en navegador.
 - [x] 🟢 **`ganancia_dia_g`:** ✅ resuelto por "derivar, no guardar": se elimina
   la columna persistida (era muerta, nunca se calculaba) y pasa a DERIVARSE en
   `v_animales` como ganancia media diaria desde el nacimiento (g/día). Migración

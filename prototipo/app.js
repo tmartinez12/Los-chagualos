@@ -142,13 +142,21 @@ function renderFicha(num){
       '<div class="a-sub">'+partes.join(' · ')+'</div>'+
       '<button class="btn outl small mt8" onclick="revertirBajaM(\''+a.id+'\')">Revertir baja</button></div>';
   })();
+  /* partos de esta vaca (para días abiertos, lista de partos e historia) */
+  const partosVaca=(_partosM||[]).filter(p=>String(p.madre_id)===String(a.id))
+    .sort((x,y)=>String(y.fecha).localeCompare(String(x.fecha)));
+  const ultParto=partosVaca.length?partosVaca[0].fecha:null;
+  /* días abiertos: desde el último parto y aún sin preñez confirmada */
+  const diasAbiertos=(ultParto&&a.estadoRepro!=='prenada')?diasDesdeM(ultParto):null;
   /* stats */
   const ayer=(a.leche&&a.leche.ayer!=null)?a.leche.ayer:0;
   document.getElementById('vmStats').innerHTML=
     '<div class="stat"><div class="s-label">Último ordeño</div><div class="s-value">'+ayer+' L</div></div>'+
     '<div class="stat"><div class="s-label">DEL</div><div class="s-value">'+(a.del==null?'—':a.del+' días')+'</div></div>'+
     '<div class="stat"><div class="s-label">Peso</div><div class="s-value">'+(a.pesoKg?a.pesoKg+' kg':'—')+'</div></div>'+
-    '<div class="stat"><div class="s-label">Partos</div><div class="s-value">'+(a.partos||0)+'</div></div>';
+    '<div class="stat"><div class="s-label">Partos</div><div class="s-value">'+(a.partos||0)+'</div></div>'+
+    (diasAbiertos!=null?'<div class="stat"><div class="s-label">Días abiertos</div><div class="s-value'+(diasAbiertos>120?' down':'')+'">'+diasAbiertos+'</div></div>':'')+
+    ((a.gananciaDiaG&&(a.grupo==='levante'||a.grupo==='ternera'))?'<div class="stat"><div class="s-label">Ganancia</div><div class="s-value">'+a.gananciaDiaG+' g/día</div></div>':'');
   /* genealogía */
   const madre=a.madreId?(animalesPorIdM[a.madreId]?a.madreId+' '+animalesPorIdM[a.madreId].nombre:a.madreId):'—';
   const padre=a.padreId?(animalesPorIdM[a.padreId]?a.padreId+' '+animalesPorIdM[a.padreId].nombre:a.padreId):'—';
@@ -157,6 +165,8 @@ function renderFicha(num){
     '<b style="color:var(--ink)">Madre:</b> '+LCRules.esc(madre)+
     ' &nbsp;·&nbsp; <b style="color:var(--ink)">Padre:</b> '+LCRules.esc(padre)+
     '<br><b style="color:var(--ink)">Crías:</b> '+(crias.length?LCRules.esc(crias.join(', ')):'sin crías registradas')+
+    (a.pesoKg&&a.fechaPeso?'<br><b style="color:var(--ink)">Peso:</b> '+a.pesoKg+' kg <span style="color:var(--ink-3)">('+fmtFechaCortaM(a.fechaPeso)+')</span>':'')+
+    (a.diasVacia!=null&&a.estadoRepro==='vacia'?'<br><b style="color:var(--ink)">Días vacía:</b> '+a.diasVacia:'')+
     ((a.procedencia||a.valorCompra)?'<br><b style="color:var(--ink)">Compra:</b> '+LCRules.esc(a.procedencia||'')+(a.valorCompra?' · $'+Number(a.valorCompra).toLocaleString('es-CO'):''):'')+
     (a.nota?'<br><b style="color:var(--ink)">📝 Nota:</b> '+LCRules.esc(a.nota):'');
   /* curva */
@@ -167,13 +177,26 @@ function renderFicha(num){
   document.getElementById('vmSanidad').innerHTML='<svg class="ic-s ic" style="color:var('+(sanOk?'--green':'--red')+')"><use href="#i-shield"/></svg>'+
     '<div style="font-size:12.5px;color:var(--ink-2)"><b style="color:var(--ink)">'+(sanOk?'Sanidad al día':'Retiro de leche activo')+'</b> — '+
     (sanOk?'sin tratamientos ni retiros activos':'no vender su leche hasta '+fmtFechaCortaM(a.retiroLecheHasta))+'</div>';
-  /* historia básica */
+  /* historia detallada (P8): partos + palpaciones + tratamientos + vacunas, por fecha */
   const ev=[];
-  if(a.prenez&&a.prenez.ultimaPalpacion)ev.push(['Palpación: <b>preñada '+a.prenez.meses+' meses</b>',a.prenez.ultimaPalpacion]);
-  if(!sanOk)ev.push(['Tratamiento con retiro de leche',null]);
-  if(a.partos)ev.push([a.partos+(a.partos===1?'er':'°')+' parto registrado',null]);
+  partosVaca.forEach(p=>{
+    const criaTxt=p.cria_id?('cría <b>'+LCRules.esc(p.cria_id)+'</b>'+(p.sexo_cria?' ('+(p.sexo_cria==='H'?'♀':'♂')+')':'')):'sin cría';
+    ev.push(['🐄 Parto · '+criaTxt+(p.peso_kg?' · '+p.peso_kg+' kg':'')+(p.estado_cria&&p.estado_cria!=='viva'?' · <span style="color:var(--red)">mortinato</span>':''),p.fecha]);
+  });
+  (_palpacionesM||[]).filter(x=>String(x.animal_id)===String(a.id)).forEach(x=>{
+    const r=x.resultado==='vacia'?'vacía':(x.prenez_meses?'preñada '+x.prenez_meses+' meses':(x.resultado||'palpación'));
+    ev.push(['🔬 Palpación: <b>'+LCRules.esc(r)+'</b>',x.fecha]);
+  });
+  (_tratamientosM||[]).filter(x=>String(x.animal_id)===String(a.id)).forEach(x=>{
+    const ret=(x.dias_retiro>0)?' · retiro '+x.dias_retiro+'d':'';
+    ev.push(['💊 '+LCRules.esc(x.problema||'Tratamiento')+(x.medicamento?' · '+LCRules.esc(x.medicamento.toLowerCase()):'')+ret+(x.activo?'':' <span style="color:var(--ink-3)">(terminado)</span>'),x.inicio]);
+  });
+  (_vacunacionesM||[]).filter(v=>String(v.animal_id)===String(a.id)||v.alcance==='hato').forEach(v=>{
+    ev.push(['💉 '+LCRules.esc(v.tipo)+(v.alcance==='hato'?' (todo el hato)':'')+(v.lote?' · lote '+LCRules.esc(v.lote):''),v.fecha]);
+  });
+  ev.sort((x,y)=>String(y[1]||'').localeCompare(String(x[1]||'')));
   const hist=document.getElementById('vmHistoria');
-  hist.innerHTML=ev.length?ev.map((e,i)=>'<div class="tl-item"'+(i===ev.length-1?' style="padding-bottom:0"':'')+'>'+
+  hist.innerHTML=ev.length?ev.slice(0,20).map((e,i,arr)=>'<div class="tl-item"'+(i===arr.length-1?' style="padding-bottom:0"':'')+'>'+
     '<div class="tl-date">'+(e[1]?fmtFechaCortaM(e[1]).toUpperCase()+' '+String(e[1]).slice(0,4):'—')+'</div>'+
     '<div class="tl-text">'+e[0]+'</div></div>').join(''):'<div class="tl-item" style="padding-bottom:0"><div class="tl-text" style="color:var(--ink-2)">Sin eventos registrados todavía</div></div>';
   return true;
@@ -355,6 +378,9 @@ function isoDeM(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'
 /* "hoy" SIEMPRE al momento y en la zona de la finca (America/Bogota) — no la
  * fecha de cuando se abrió la pestaña ni la TZ del dispositivo. */
 function isoHoyM(){return (typeof LCStore!=='undefined'&&LCStore.hoyFinca)?LCStore.hoyFinca():isoDeM(new Date());}
+/* días transcurridos desde una fecha ISO hasta hoy (hora de la finca) */
+function diasDesdeM(iso){if(!iso)return null;const d=new Date(iso+'T00:00:00');
+  return Math.max(0,Math.round((new Date(isoHoyM()+'T00:00:00')-d)/86400000));}
 function isoMasDiasM(n){const d=new Date(HOY_LC.getTime());d.setDate(d.getDate()+(n||0));return isoDeM(d);}
 function isoPartoM(meses){const d=new Date(HOY_LC.getTime());d.setMonth(d.getMonth()+Math.max(0,Math.round(9-meses)));return isoDeM(d);}
 function numDe(cow){return (''+cow).split('·')[0].trim();}
@@ -659,6 +685,20 @@ async function cargarVacunacionesM(){
   try{const v=await LCStore.getVacunaciones();renderVacunacionesM(v);}catch(e){console.warn('Vacunaciones móvil:',e.message||e);}
 }
 cargarVacunacionesM();
+/* Historial detallado de la ficha (P8): partos, tratamientos y palpaciones.
+ * Se cargan una vez; si hay una ficha abierta se re-pinta al llegar. */
+let _partosM=[], _tratamientosM=[], _palpacionesM=[];
+async function cargarHistorialM(){
+  if(typeof LCStore==='undefined')return;
+  try{
+    const [pa,tr,pl]=await Promise.all([LCStore.getPartos(),LCStore.getTratamientos(),LCStore.getPalpaciones()]);
+    _partosM=pa||[];_tratamientosM=tr||[];_palpacionesM=pl||[];
+    /* si el usuario ya está mirando una ficha, refrescar su historia */
+    if(fichaActualM&&document.getElementById('scr-vaca')&&document.getElementById('scr-vaca').classList.contains('active'))
+      renderFicha(fichaActualM);
+  }catch(e){console.warn('Historial móvil:',e.message||e);}
+}
+cargarHistorialM();
 renderCows();renderInicioM();pintaRutina();renderPalpListaM();renderSanidadVacunasM();
 /* Maíz: el bloque del inicio solo se muestra si la finca tiene datos del cultivo. */
 let datosMaiz = null;   // sin demo de maíz (poner {siloDias,loteDias} cuando haya cultivo)
