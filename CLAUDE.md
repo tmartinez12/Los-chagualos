@@ -15,7 +15,7 @@ cd prototipo && python3 -m http.server 8099
 #   → http://localhost:8099/index.html (móvil) y /escritorio.html (admin)
 
 # Tests (correr antes de cada commit):
-node prototipo/test/smoke.js          # 17 verificaciones de contrato UI↔núcleo↔esquema
+node prototipo/test/smoke.js          # 18 verificaciones de contrato UI↔núcleo↔esquema
 node prototipo/test/integracion.js    # paginación + (si hay Postgres) RPCs, restauración,
                                       #   derivaciones e idempotencia de migraciones.
 #   La parte SQL usa psql con variables libpq (PGHOST/PGPORT/PGUSER/PGPASSWORD);
@@ -23,7 +23,8 @@ node prototipo/test/integracion.js    # paginación + (si hay Postgres) RPCs, re
 
 # Lint (no hay linter; el mínimo es):
 node --check prototipo/app.js && node --check prototipo/escritorio.js \
-  && node --check prototipo/core/store.js && node --check prototipo/core/rules.js
+  && node --check prototipo/core/store.js && node --check prototipo/core/rules.js \
+  && node --check prototipo/core/acciones.js
 
 # Validar SQL ANTES de que la dueña lo corra en Supabase (obligatorio):
 #   levantar Postgres 16 local, cargar supabase/schema.sql en base fresca,

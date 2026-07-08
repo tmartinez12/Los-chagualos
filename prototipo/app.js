@@ -1186,31 +1186,33 @@ function saveSeca(){
   const numSeca=numDe(seca.cow);
   const idx=cows.findIndex(c=>numSeca===c.num);
   const removed=idx>=0?cows[idx]:null;
-  if(idx>=0)cows.splice(idx,1);
-  renderCows();
   const prevSub=grupos.horras.sub, prevHeader=grupos.horras.header;
-  nHorras++;subHorras();
-  grupos.horras.animales.unshift([seca.cow,'recién secada — preñada']);
-  encolar();
   /* para poder DESHACER también en la base: sin esto, deshacer el secado
    * dejaba a la vaca horra y con el inicio de lactancia (DEL) borrado. */
   const prevInicio=(animalesPorIdM[numSeca]||{}).inicioLactancia||null;
   const prevGrupo=(animalesPorIdM[numSeca]||{}).grupo||'ordeño';
-  let pSaveSeca=Promise.resolve();
-  if(typeof LCStore!=='undefined'){
-    pSaveSeca=LCStore.updateAnimalCampos(numSeca,{grupo:'horra',inicio_lactancia:null})
-      .then(()=>desencolar()).catch(e=>{console.warn('Secado móvil no guardado:',e.message||e);
-        snack('⚠ El secado NO se guardó en la base — revisa la señal y reintenta');});
-  }
-  setTimeout(()=>openGroup('horras'),300);
-  snack(nombre+' secada · sale del ordeño y pasa a horras · '+'se planea su parto','Deshacer',()=>{
-    if(removed)cows.splice(Math.min(idx,cows.length),0,removed);
-    renderCows();
-    nHorras--; grupos.horras.sub=prevSub; grupos.horras.header=prevHeader; grupos.horras.animales.shift();
-    desencolar(); openGroup('horras'); snack('Secado deshecho');
-    if(typeof LCStore!=='undefined')pSaveSeca.then(()=>
-      LCStore.updateAnimalCampos(numSeca,{grupo:prevGrupo,inicio_lactancia:prevInicio}))
-      .catch(e=>console.warn('No se pudo revertir el secado:',e.message||e));
+  LCAcciones.ejecutarConDeshacer({
+    aplicar(){
+      if(idx>=0)cows.splice(idx,1);
+      renderCows();
+      nHorras++;subHorras();
+      grupos.horras.animales.unshift([seca.cow,'recién secada — preñada']);
+      encolar();
+      setTimeout(()=>openGroup('horras'),300);
+    },
+    escribir:typeof LCStore!=='undefined'?
+      ()=>LCStore.updateAnimalCampos(numSeca,{grupo:'horra',inicio_lactancia:null}).then(()=>desencolar()):null,
+    avisoError:()=>'⚠ El secado NO se guardó en la base — revisa la señal y reintenta',
+    mensaje:nombre+' secada · sale del ordeño y pasa a horras · se planea su parto',
+    revertir(){
+      if(removed)cows.splice(Math.min(idx,cows.length),0,removed);
+      renderCows();
+      nHorras--; grupos.horras.sub=prevSub; grupos.horras.header=prevHeader; grupos.horras.animales.shift();
+      desencolar(); openGroup('horras'); snack('Secado deshecho');
+    },
+    compensarBD:typeof LCStore!=='undefined'?
+      ()=>LCStore.updateAnimalCampos(numSeca,{grupo:prevGrupo,inicio_lactancia:prevInicio}):null,
+    snack,
   });
 }
 /* ===== Alta y Baja (inventario del hato) ===== */

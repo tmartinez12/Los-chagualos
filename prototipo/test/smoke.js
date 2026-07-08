@@ -18,13 +18,18 @@ function seccion(t) { console.log('\n\x1b[1m' + t + '\x1b[0m'); }
 
 /* ---------- 1) El núcleo carga ---------- */
 seccion('1) Núcleo compartido (core/)');
-let LCModel, LCRules, LCStore;
+let LCModel, LCRules, LCStore, LCAcciones;
 try { LCModel = require(path.join(ROOT, 'test/fixtures/model.js')); ok('test/fixtures/model.js carga'); }
 catch (e) { fail('test/fixtures/model.js: ' + e.message); }
 try { LCRules = require(path.join(ROOT, 'core/rules.js')); ok('core/rules.js carga'); }
 catch (e) { fail('core/rules.js: ' + e.message); }
 try { LCStore = require(path.join(ROOT, 'core/store.js')); ok('core/store.js carga'); }
 catch (e) { fail('core/store.js: ' + e.message); }
+try {
+  LCAcciones = require(path.join(ROOT, 'core/acciones.js'));
+  if (typeof LCAcciones.ejecutarConDeshacer === 'function') ok('core/acciones.js carga y expone ejecutarConDeshacer');
+  else fail('core/acciones.js: ejecutarConDeshacer no es una función');
+} catch (e) { fail('core/acciones.js: ' + e.message); }
 
 /* ---------- 2) store.js exporta todo lo que usan las UIs ---------- */
 seccion('2) Cobertura de store.js (UIs ↔ núcleo)');

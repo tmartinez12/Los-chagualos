@@ -45,9 +45,15 @@ real + Postgres local para validar SQL antes de tocar Supabase (obligatorio).
                        ▼
              core/rules.js  ← reglas PURAS compartidas (fechas, curva de
                        │       lactancia, deriveReproFicha, esc(), protocolo
-                       ▼       sanitario, parser de notas veterinarias)
+                       │       sanitario, parser de notas veterinarias)
+             core/acciones.js ← coreografía compartida de save* (M14, en
+                       │       progreso, flujo por flujo): aplicar local →
+                       │       escribir BD → si falla, snack honesto → el
+                       │       snack de éxito ofrece "Deshacer" que revierte
+                       ▼       local y compensa BD. Cada página sigue dando
+                               qué pintar/guardar por closures.
              core/store.js  ← ÚNICA frontera con la base. Mapea snake_case↔
-                       │       camelCase, caché 3s de animales, paginación,
+                       │       camelCase, caché 30s de animales, paginación,
                        │       respaldo/restauración. La UI JAMÁS llama a
                        ▼       Supabase directo.
         Supabase Postgres (PostgREST, anon key pública)
@@ -98,7 +104,8 @@ tabla base solo ante el error 42P01.
   local (base fresca con schema + migración ×2 sobre base "desplegada") antes
   de que la dueña lo corra en Supabase.
 - `exportarTodo`/`restaurarTodo` — la única red de seguridad de los datos.
-- `core/rules.js` — compartida: un cambio afecta las dos superficies a la vez.
+- `core/rules.js` y `core/acciones.js` — compartidas: un cambio afecta las dos
+  superficies a la vez.
 
 **Frágil por diseño (el mayor riesgo de regresión):**
 - Los flujos `save*` y sus "Deshacer" en `app.js`/`escritorio.js`. El estado

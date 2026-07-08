@@ -37,6 +37,7 @@ jobs:
           node --check prototipo/escritorio.js
           node --check prototipo/core/store.js
           node --check prototipo/core/rules.js
+          node --check prototipo/core/acciones.js
           node --check prototipo/test/fixtures/model.js
           node --check prototipo/test/smoke.js
           node --check prototipo/test/integracion.js

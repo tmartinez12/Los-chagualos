@@ -11,6 +11,7 @@
 
 ## Leyenda de esfuerzo
 🟢 pequeño (horas) · 🟡 medio (1–2 días) · 🔴 grande (proyecto aparte)
+`[ ]` pendiente · `[~]` en progreso (parcial, ver sub-lista) · `[x]` hecho
 
 ---
 
@@ -177,10 +178,24 @@
   dejan en su sitio (varios docs los referencian) en vez de mover archivos.
 
 ## FASE 6 — Refactor de raíz (opcional, alto valor a largo plazo)
-- [ ] 🔴 **M14 completo · Unificar los flujos `save*`.** Extraer las 6 acciones
-  (parto/palpación/secado/baja/leche/tratamiento) con su coreografía
-  (local → BD → undo compensado) a `core/acciones.js` compartido; las páginas
-  solo pintan. Elimina la duplicación móvil/escritorio de raíz.
+- [~] 🔴 **M14 · Unificar los flujos `save*` (EN PROGRESO, piloto validado).**
+  Se creó `core/acciones.js` con `ejecutarConDeshacer()`: la coreografía
+  compartida (aplicar local → escribir BD → si falla, snack honesto → el snack
+  de éxito ofrece "Deshacer" que revierte local y compensa BD, esperando SIEMPRE
+  a que la escritura original termine antes de compensar). Las páginas siguen
+  dando el `aplicar`/`revertir` (pintado y cachés — eso sigue siendo específico
+  de cada superficie hasta que exista Estado único) por closures; lo compartido
+  es el control de flujo async + el manejo de errores/undo.
+  - [x] **Secado** (piloto) — migrado en escritorio y móvil. De paso corrige una
+    inconsistencia real: escritorio NO esperaba a que la escritura original
+    terminara antes de compensar en el "Deshacer" (riesgo de carrera: la reversa
+    podía llegar a la BD antes que el cambio original y quedar pisada); móvil sí
+    lo hacía bien. Con la coreografía compartida, las dos superficies ahora
+    esperan siempre. Verificado en Chromium: camino feliz, deshacer, y error de
+    BD (ambas superficies, sin cambios de comportamiento salvo la corrección
+    de la carrera).
+  - [ ] Tratamiento, baja, palpación, leche, parto — pendientes, mismo patrón
+    (uno por uno, verificado en las dos superficies antes de seguir).
 - [ ] 🔴 **Estado único.** Reemplazar las ~13 estructuras paralelas
   (`hato`, `animalesPorId`, `milkCows`, `_partosRaw`…) por una fuente de estado
   con re-render (o re-fetch dirigido). Mata la clase entera de bugs de

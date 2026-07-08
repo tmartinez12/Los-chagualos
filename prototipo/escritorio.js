@@ -2310,19 +2310,22 @@ function saveSeca(){
   const prev={grupo:a.grupo,del:a.del,ayer:a.ayer,var:a.var,vc:a.vc,repro:a.repro};
   /* secar = dejar la lactancia: se borra inicio_lactancia (de ahí sale el DEL) */
   const prevInicio=animalesPorId[secaState.num]?animalesPorId[secaState.num].inicioLactancia:null;
-  a.grupo='Horra';a.del='—';a.ayer='—';a.var='—';a.vc='';
-  a.repro=a.repro.replace(/<span class="sub">[^<]*<\/span>/,'').trim()+' <span class="sub">recién secada</span>';
-  hatoFiltro='Horra';renderHatoFiltros();renderHato();
-  go('pg-hato',navFor('pg-hato'));
-  if(typeof LCStore!=='undefined'){
-    LCStore.updateAnimalCampos(secaState.num,{grupo:'horra',inicio_lactancia:null}).catch(e=>{
-      console.warn('Secado no guardado en la base:',e.message||e);
-      snack('⚠ El secado NO se guardó en la base — reintenta');});
-  }
-  snack(nombre+' secada · sale del ordeño y pasa a horras','Deshacer',()=>{
-    Object.assign(a,prev);renderHatoFiltros();renderHato();
-    if(typeof LCStore!=='undefined')LCStore.updateAnimalCampos(secaState.num,
-      {grupo:'ordeño',inicio_lactancia:prevInicio}).catch(()=>{});});
+  LCAcciones.ejecutarConDeshacer({
+    aplicar(){
+      a.grupo='Horra';a.del='—';a.ayer='—';a.var='—';a.vc='';
+      a.repro=a.repro.replace(/<span class="sub">[^<]*<\/span>/,'').trim()+' <span class="sub">recién secada</span>';
+      hatoFiltro='Horra';renderHatoFiltros();renderHato();
+      go('pg-hato',navFor('pg-hato'));
+    },
+    escribir:typeof LCStore!=='undefined'?
+      ()=>LCStore.updateAnimalCampos(secaState.num,{grupo:'horra',inicio_lactancia:null}):null,
+    avisoError:()=>'⚠ El secado NO se guardó en la base — reintenta',
+    mensaje:nombre+' secada · sale del ordeño y pasa a horras',
+    revertir(){Object.assign(a,prev);renderHatoFiltros();renderHato();},
+    compensarBD:typeof LCStore!=='undefined'?
+      ()=>LCStore.updateAnimalCampos(secaState.num,{grupo:'ordeño',inicio_lactancia:prevInicio}):null,
+    snack,
+  });
 }
 
 /* --- parto --- */
