@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Los Chagualos · Prototipo</title>
-<link rel="stylesheet" href="styles.css?v=20260710">
+<link rel="stylesheet" href="styles.css?v=20260711">
 </head>
 <body>
 <!-- ÍCONOS DE LÍNEA (inline, funcionan offline) -->
@@ -398,6 +398,13 @@
       style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-top:8px">
     <input id="vacLoteM" placeholder="Lote (opcional)" oninput="vacM.lote=this.value"
       style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-top:8px">
+    <div class="section-label">Fecha · próxima dosis (opcional)</div>
+    <input id="vacFechaM" type="date" oninput="vacM.fecha=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);padding:10px 12px;outline:none;margin-bottom:8px">
+    <input id="vacProximaM" type="date" oninput="vacM.proxima=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);padding:10px 12px;outline:none">
+    <input id="vacNotaM" placeholder="Nota (opcional)" oninput="vacM.nota=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-top:8px">
     <button class="btn filled" style="width:100%;justify-content:center;margin-top:16px" onclick="saveVacunaM()">
       <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar vacunación</button>
   </div>
@@ -488,6 +495,8 @@
       <div class="m-del" id="cowDel"></div>
       <div class="milk-value"><span id="milkNum">0</span> <span class="u">L</span></div>
       <div class="milk-ref" id="cowRef"></div>
+      <input id="milkFecha" type="date" oninput="milkFechaSel=this.value"
+        style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);padding:9px 12px;outline:none;margin:8px 0;text-align:center">
       <div class="keypad">
         <button onclick="key(1)">1</button><button onclick="key(2)">2</button><button onclick="key(3)">3</button>
         <button onclick="key(4)">4</button><button onclick="key(5)">5</button><button onclick="key(6)">6</button>
@@ -578,6 +587,10 @@
         <button class="chip" onclick="palpMes(1)">＋</button>
       </div>
     </div>
+
+    <div class="section-label">Fecha de la palpación</div>
+    <input id="palpFecha" type="date" oninput="palp.fecha=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);padding:10px 12px;outline:none">
 
     <button class="btn filled" style="width:100%;justify-content:center;margin-top:16px" onclick="savePalp()">
       <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar palpación</button>
@@ -801,8 +814,8 @@
 <!-- supabase-js vendorizado (versión FIJA local): sin CDN no hay sorpresas de
      versión flotante ni dependencia de internet para cargar la librería -->
 <script src="core/vendor/supabase-js-2.110.0.js"></script>
-<script src="core/rules.js?v=20260710"></script>
-<script src="core/store.js?v=20260710"></script>
-<script src="app.js?v=20260710"></script>
+<script src="core/rules.js?v=20260711"></script>
+<script src="core/store.js?v=20260711"></script>
+<script src="app.js?v=20260711"></script>
 </body>
 </html>

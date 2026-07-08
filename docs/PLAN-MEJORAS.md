@@ -74,12 +74,15 @@
   horra) en móvil y escritorio; número (chapeta) y nombre de la cría opcionales
   (valida chapeta duplicada antes de mutar). La madre no-horra se mueve bien a
   ordeño (grupo + lista de leche) con su reversa. Verificado en navegador.
-- [ ] 🟢 **Paridad de captura móvil:** fecha editable en palpación y vacunación
-  del móvil (hoy siempre "hoy"); `proxima`/`nota` en vacunación (el store ya las
-  soporta); tratamiento sobre **todo el hato**, no solo vacas en ordeño.
-- [ ] 🟢 **Ordeño:** selector de fecha (máx. hoy) en el modal de leche para
-  corregir un día olvidado sin el truco de "leche de ayer"; unificar el tope de
-  litros (hoy 60 escritorio / 99 móvil / 99,9 semanal).
+- [x] 🟢 **Paridad de captura móvil:** ✅ fecha editable (máx. hoy) en palpación
+  y vacunación del móvil; `proxima` y `nota` en la vacunación móvil; el
+  tratamiento del escritorio cubre **todo el hato** (el móvil ya lo hacía).
+  Verificado en navegador.
+- [x] 🟢 **Ordeño:** ✅ selector de fecha (máx. hoy) en el modal de leche del
+  móvil (corrige un día olvidado sin el truco de "leche de ayer"; no toca el
+  tablero de hoy si es fecha pasada); tope de litros unificado en
+  `LCRules.LITROS_MAX = 99.9` (CHECK de la BD) para móvil, modal de escritorio
+  y parrilla semanal, con `clampLitros()` compartido. Verificado.
 - [ ] 🟡 **P8 · Ficha móvil rica.** Días abiertos, fecha de peso, lista de
   partos, historial sanitario detallado (hoy 3 eventos genéricos).
 - [ ] 🟢 **`ganancia_dia_g`:** decidir — implementar su cálculo desde pesajes

@@ -514,7 +514,10 @@ function renderCows(){
     done.length+' de '+cows.length+' · Σ '+totalHoy+' L';
   const th=document.getElementById('ordHoyTotal');if(th)th.textContent=totalHoy;   // cabecera real
 }
+let milkFechaSel='';
 function pickCow(i){ci=i;const c=cows[i];typing=false;
+  milkFechaSel=isoHoyM();
+  const mf=document.getElementById('milkFecha');if(mf){mf.max=isoHoyM();mf.value=milkFechaSel;}
   document.getElementById('cowName').textContent=c.num+' · '+c.n.toUpperCase();
   document.getElementById('cowDel').textContent=c.del;
   document.getElementById('milkNum').textContent=c.done?c.v:c.ayer;
@@ -534,8 +537,22 @@ function keyClear(){const el=document.getElementById('milkNum');
   el.textContent=el.textContent.slice(0,-1)||'0';typing=true;}
 function saveMilk(){
   if(ci<0)return;
-  const v=parseInt(document.getElementById('milkNum').textContent)||0;
-  const c=cows[ci];const drop=!c.done&&LCRules.esBajonLeche(c.ayer,v);
+  const v=LCRules.clampLitros(document.getElementById('milkNum').textContent);
+  const c=cows[ci];
+  const fecha=milkFechaSel||isoHoyM();
+  const esHoy=fecha===isoHoyM();
+  /* fecha pasada: registrar ese día SIN tocar el tablero de hoy (el tile es de hoy) */
+  if(!esHoy){
+    closeMilk();encolar();
+    if(typeof LCStore!=='undefined'){
+      LCStore.registrarOrdeno(c.num,v,fecha).then(()=>desencolar()).catch(e=>{
+        console.warn('Ordeño no guardado en la base:',e.message||e);
+        snack('⚠ '+c.n+': NO se guardó en la base — revisa la señal y reintenta');});
+    }
+    snack(c.n+': '+v+' L registrados el '+fmtFechaCortaM(fecha));
+    return;
+  }
+  const drop=!c.done&&LCRules.esBajonLeche(c.ayer,v);
   c.done=true;c.v=v;renderCows();closeMilk();encolar();
   if(typeof LCStore!=='undefined'){
     LCStore.registrarOrdeno(c.num,v).then(()=>desencolar()).catch(e=>{
@@ -595,12 +612,14 @@ function renderSanProximaM(){
   sub.textContent=p.b+' · despar. cada 3 meses · aftosa may/nov';
 }
 /* ===== Vacunaciones (móvil) ===== */
-const vacM={tipo:'aftosa',alcance:'hato',animal:'',producto:'',lote:''};
+const vacM={tipo:'aftosa',alcance:'hato',animal:'',producto:'',lote:'',fecha:'',proxima:'',nota:''};
 function vacPick(btn,campo,val){vacM[campo]=val;[...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));}
 function openVacunaM(){
   vacM.tipo='aftosa';vacM.alcance='hato';vacM.animal='';vacM.producto='';vacM.lote='';
+  vacM.fecha=isoHoyM();vacM.proxima='';vacM.nota='';
   document.querySelectorAll('#vacunaSheet .chips').forEach((g,gi)=>g.querySelectorAll('.chip').forEach((c,i)=>c.classList.toggle('sel',i===0)));
-  ['vacAnimalM','vacProductoM','vacLoteM'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['vacAnimalM','vacProductoM','vacLoteM','vacProximaM','vacNotaM'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  const vf=document.getElementById('vacFechaM');if(vf){vf.max=isoHoyM();vf.value=vacM.fecha;}
   document.getElementById('vacAnimalM').style.display='none';
   document.getElementById('scrim').classList.add('show');
   document.getElementById('vacunaSheet').classList.add('show');
@@ -615,7 +634,8 @@ function saveVacunaM(){
   encolar();
   if(typeof LCStore!=='undefined'){
     LCStore.registrarVacunacion({tipo:vacM.tipo,alcance:vacM.alcance,animalId:animalId,nAnimales:nAnimales,
-      producto:vacM.producto||null,lote:vacM.lote||null,fecha:isoHoyM()})
+      producto:vacM.producto||null,lote:vacM.lote||null,fecha:vacM.fecha||isoHoyM(),
+      proxima:vacM.proxima||null,nota:vacM.nota||null})
       .then(()=>{desencolar();cargarVacunacionesM();})
       .catch(e=>{console.warn('Vacunación móvil no guardada:',e.message||e);snack('⚠ La vacunación NO se guardó en la base — reintenta');});
   }
@@ -881,7 +901,7 @@ function renderVacias(){
 }
 renderVacias();   // init: tras declarar vacasVacias y renderVacias (evita TDZ)
 /* ===== Palpación (la fuente de verdad de la reproducción) ===== */
-const palp={cow:'',resultado:'prenada',meses:2};
+const palp={cow:'',resultado:'prenada',meses:2,fecha:''};
 /* reglas puras compartidas (core/rules.js) */
 const MESC=LCRules.MESC;
 const fechaParto=LCRules.fechaParto;
@@ -959,11 +979,12 @@ function palpMarcarVaca(){document.querySelectorAll('#palpCows .chip').forEach(c
 function openPalp(cow){
   const lista=Object.keys(palpCandidatas).length?Object.keys(palpCandidatas):listaCows();
   palp.cow=cow||lista[0]||'';
-  palp.resultado='prenada';palp.meses=2;
+  palp.resultado='prenada';palp.meses=2;palp.fecha=isoHoyM();
   pintarCowChips('palpCows',lista,palp.cow,palpCow);
   document.getElementById('palpCow').textContent=(palp.cow||'—').toUpperCase();
   document.getElementById('palpInfo').textContent=palpCandidatas[palp.cow]||'Confirma el resultado de la palpación';
   document.getElementById('palpMesesVal').textContent=palp.meses;
+  const pf=document.getElementById('palpFecha');if(pf){pf.max=isoHoyM();pf.value=palp.fecha;}
   const res=document.querySelectorAll('#palpSheet .chips')[1].querySelectorAll('.chip');
   res.forEach((c,i)=>c.classList.toggle('sel',i===0));
   palpMostrarMeses();
@@ -987,15 +1008,16 @@ function savePalp(){
   closePalp();
   const nombre=palp.cow.split('·')[1].trim();
   const numPalp=numDe(palp.cow);
+  const fechaPalp=palp.fecha||isoHoyM();
   encolar();
   let pSavePalp=Promise.resolve(),palpId=null;
   const reproAntes=animalesPorIdM[numPalp]?snapshotReproDBM(animalesPorIdM[numPalp]):null;
   if(typeof LCStore!=='undefined'){
     const esPren=palp.resultado!=='vacia';
     const campos=esPren
-      ?{estado_repro:'prenada',prenez_meses:palp.meses,ultima_palpacion:isoHoyM()}
-      :{estado_repro:'vacia',prenez_meses:null,ultima_palpacion:isoHoyM()};
-    pSavePalp=LCStore.registrarPalpacion({animalId:numPalp,resultado:palp.resultado,prenezMeses:esPren?palp.meses:null})
+      ?{estado_repro:'prenada',prenez_meses:palp.meses,ultima_palpacion:fechaPalp}
+      :{estado_repro:'vacia',prenez_meses:null,ultima_palpacion:fechaPalp};
+    pSavePalp=LCStore.registrarPalpacion({animalId:numPalp,resultado:palp.resultado,prenezMeses:esPren?palp.meses:null,fecha:fechaPalp})
       .then(r=>{palpId=r&&r.id;return LCStore.updateAnimalCampos(numPalp,campos);}).then(()=>desencolar())
       .catch(e=>{console.warn('Palpación móvil no guardada:',e.message||e);
         snack('⚠ La palpación NO se guardó en la base — revisa la señal y reintenta');});

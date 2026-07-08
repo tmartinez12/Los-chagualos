@@ -388,7 +388,7 @@ function guardarCeldaSemana(animalId,iso,input){
     if(typeof LCStore!=='undefined')LCStore.deleteOrdeno(animalId,iso)
       .catch(e=>snack('⚠ No se borró en la base: '+(e.message||e)));
     return;}
-  const litros=Math.min(99.9,Math.max(0,parseFloat(raw)));   // mismo rango que el CHECK de la BD
+  const litros=Math.min(LCRules.LITROS_MAX,Math.max(0,parseFloat(raw)));   // mismo rango que el CHECK de la BD
   if(isNaN(litros)){input.value=ordenosDiaMap[animalId+'|'+iso]!=null?ordenosDiaMap[animalId+'|'+iso]:'';return;}
   ordenosDiaMap[animalId+'|'+iso]=litros;
   if(_ordsRaw){const ex=_ordsRaw.find(o=>o.animal_id===animalId&&o.fecha===iso);if(ex)ex.litros=litros;else _ordsRaw.push({animal_id:animalId,fecha:iso,litros:litros});}
@@ -483,7 +483,7 @@ function closeMilk(){document.getElementById('milkModal').classList.remove('show
 function saveMilk(){
   if(mi<0)return;
   const c=milkCows[mi];
-  const v=Math.max(0,Math.min(60,parseInt(document.getElementById('mInput').value)||0));
+  const v=LCRules.clampLitros(document.getElementById('mInput').value);
   const prev={done:c.done,v:c.v};
   const drop=!c.done&&LCRules.esBajonLeche(c.ayer,v);
   c.done=true;c.v=v;
@@ -2246,8 +2246,9 @@ function guardarEditarVaca(){
 /* --- tratamiento (standalone) --- */
 const tratState={};
 function openTrata(cow){
-  const cands=hato.filter(a=>a.grupo==='En ordeño');
-  if(!cow&&!cands.length){snack('No hay vacas en ordeño para tratar');return;}
+  /* cualquier animal del hato puede enfermarse, no solo las de ordeño */
+  const cands=hato.slice();
+  if(!cow&&!cands.length){snack('No hay animales registrados para tratar');return;}
   tratState.num=cow?(''+cow).split('·')[0].trim():cands[0].num;
   tratState.problema='Mastitis';tratState.medicina='Antibiótico';tratState.retiro=4;
   tratState.added=false;

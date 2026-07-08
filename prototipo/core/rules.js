@@ -16,6 +16,15 @@
 
   const MESC = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 
+  /* Tope de litros por ordeño (día): el CHECK de la BD es litros >= 0 AND < 100
+   * (NUMERIC(6,1)). Único valor para móvil, escritorio y la parrilla semanal. */
+  const LITROS_MAX = 99.9;
+  function clampLitros(raw) {
+    const n = parseFloat(raw);
+    if (isNaN(n)) return 0;
+    return Math.max(0, Math.min(LITROS_MAX, Math.round(n * 10) / 10));
+  }
+
   /* "Hoy": por defecto la fecha real. Se puede inyectar una fecha (Date) para
    * pruebas o para un "hoy" fijo desde el backend. */
   function baseHoy(hoy) {
@@ -214,7 +223,7 @@
   }
 
   return {
-    MESC, fechaParto, fechaDias, esBajonLeche, parseTrat, parsePalpNota, curvaLactancia,
+    MESC, LITROS_MAX, clampLitros, fechaParto, fechaDias, esBajonLeche, parseTrat, parsePalpNota, curvaLactancia,
     diasHasta, ordinalParto, fmtFechaCorta, snapshotReproDB, fechaLarga, isoHoy, esc,
     PROTOCOLO_SAN, fmtNacimiento, deriveReproFicha,
   };
