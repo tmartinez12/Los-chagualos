@@ -16,6 +16,6 @@ jobs:
           node --check prototipo/escritorio.js
           node --check prototipo/core/store.js
           node --check prototipo/core/rules.js
-          node --check prototipo/core/model.js
+          node --check prototipo/test/fixtures/model.js
       - name: Prueba de humo (contratos UI ↔ núcleo ↔ esquema)
         run: node prototipo/test/smoke.js

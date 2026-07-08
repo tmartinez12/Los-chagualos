@@ -117,7 +117,7 @@ superficies con un servidor local y mirar la consola. El CI corre lo mismo.
 
 ## 6. Lo que te va a sorprender (léelo antes de tocar nada)
 
-- **`core/model.js` NO se carga en la app.** Es un dataset de ejemplo que solo
+- **`test/fixtures/model.js` NO se carga en la app.** Es un dataset de ejemplo que solo
   usa `test/smoke.js` como fixture. No lo "conectes" ni borres sin tocar el test.
 - **El enum `grupo` tiene tres caras:** la BD usa `'ordeño'` (con ñ); el
   escritorio guarda en sus filas locales el DISPLAY (`'En ordeño'`, se mapea

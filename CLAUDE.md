@@ -55,7 +55,7 @@ node --check prototipo/app.js && node --check prototipo/escritorio.js \
 
 ## Gotchas (parece que funciona así, pero no)
 
-- **`core/model.js` NO es la app**: es fixture de `test/smoke.js`. Los datos
+- **`test/fixtures/model.js` NO es la app**: es fixture de `test/smoke.js`. Los datos
   reales vienen de Supabase.
 - **Fechas:** JAMÁS `new Date().toISOString()` para fechar registros (UTC ≠
   Colombia). Usa `LCStore.hoyFinca()` / `isoHoy()` / `isoHoyM()`. En SQL,

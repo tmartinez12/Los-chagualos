@@ -19,8 +19,8 @@ function seccion(t) { console.log('\n\x1b[1m' + t + '\x1b[0m'); }
 /* ---------- 1) El núcleo carga ---------- */
 seccion('1) Núcleo compartido (core/)');
 let LCModel, LCRules, LCStore;
-try { LCModel = require(path.join(ROOT, 'core/model.js')); ok('core/model.js carga'); }
-catch (e) { fail('core/model.js: ' + e.message); }
+try { LCModel = require(path.join(ROOT, 'test/fixtures/model.js')); ok('test/fixtures/model.js carga'); }
+catch (e) { fail('test/fixtures/model.js: ' + e.message); }
 try { LCRules = require(path.join(ROOT, 'core/rules.js')); ok('core/rules.js carga'); }
 catch (e) { fail('core/rules.js: ' + e.message); }
 try { LCStore = require(path.join(ROOT, 'core/store.js')); ok('core/store.js carga'); }
