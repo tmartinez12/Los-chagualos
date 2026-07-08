@@ -14,8 +14,12 @@ Base de datos (instalar/migrar): `supabase/README.md`.
 cd prototipo && python3 -m http.server 8099
 #   → http://localhost:8099/index.html (móvil) y /escritorio.html (admin)
 
-# Test (ÚNICO que hay; correr antes de cada commit):
-node prototipo/test/smoke.js          # 17 verificaciones de contrato
+# Tests (correr antes de cada commit):
+node prototipo/test/smoke.js          # 17 verificaciones de contrato UI↔núcleo↔esquema
+node prototipo/test/integracion.js    # paginación + (si hay Postgres) RPCs, restauración,
+                                      #   derivaciones e idempotencia de migraciones.
+#   La parte SQL usa psql con variables libpq (PGHOST/PGPORT/PGUSER/PGPASSWORD);
+#   sin Postgres alcanzable se SALTA (no falla). Crea/borra la base efímera lc_test.
 
 # Lint (no hay linter; el mínimo es):
 node --check prototipo/app.js && node --check prototipo/escritorio.js \

@@ -131,13 +131,18 @@
   en cada navegación.
 
 ## FASE 5 — Calidad y deuda estructural (para poder cambiar sin miedo)
-- [ ] 🟡 **Tests de integración** (lo que hoy NO existe, GAPS §2): un arnés
-  Node + Postgres local que ejercite `registrarPartoCompleto` (y su fallback),
-  las compensaciones de "Deshacer", `exportarTodo/restaurarTodo`, la paginación
-  en el borde 1000/1001, e idempotencia de migraciones. **Prerequisito de la
-  Fase 6.**
-- [ ] 🟢 **CI más estricto:** correr esos tests en `ci.yml`; validar migraciones
-  en un Postgres de servicio.
+- [x] 🟡 **Tests de integración** (GAPS §2). ✅ `prototipo/test/integracion.js`:
+  (A) núcleo en JS puro — paginación de `_paginado` en el borde 1000/1001 (0/999/
+  1000/1001/2000/2001) con un cliente Supabase falso, `idUnico` y `clampLitros`;
+  (B) SQL contra Postgres real (si hay uno, si no se SALTA) — `schema.sql` instala
+  limpio, `registrar_parto_completo` (cría+parto+madre, mortinato, transaccional),
+  `restaurar_respaldo` (reemplazo total, rollback ante FK inválida y payload
+  inválido), derivaciones de `v_animales` (edad/DEL/leche/retiro/ganancia/parto),
+  e idempotencia ×2 de las migraciones re-ejecutables. Aserciones en SQL con
+  `RAISE EXCEPTION`. **Prerequisito de la Fase 6.**
+- [x] 🟢 **CI más estricto:** ✅ `ci.yml` levanta un servicio `postgres:16`,
+  instala `psql`, corre `node --check` de todo (incluido el nuevo test), la
+  prueba de humo y las pruebas de integración con el Postgres de servicio.
 - [ ] 🟢 **Una sola fuente del esquema:** derivar `COLUMNAS_RESPALDO` (store.js)
   y `TABLAS` (respaldo.js) de un único módulo, o documentar el trío a
   sincronizar (schema ↔ store ↔ respaldo) — hoy se olvida en silencio.

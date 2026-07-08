@@ -1,4 +1,4 @@
-name: CI (prueba de humo)
+name: CI (humo + integración)
 
 on:
   push:
@@ -8,8 +8,29 @@ on:
 jobs:
   smoke:
     runs-on: ubuntu-latest
+    # Postgres real para las pruebas de integración (RPCs, restauración,
+    # derivaciones e idempotencia de migraciones). psql lo alcanza por libpq.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
     steps:
       - uses: actions/checkout@v4
+      - name: Cliente de Postgres (psql)
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - name: Sintaxis de todo el JS
         run: |
           node --check prototipo/app.js
@@ -17,5 +38,9 @@ jobs:
           node --check prototipo/core/store.js
           node --check prototipo/core/rules.js
           node --check prototipo/test/fixtures/model.js
+          node --check prototipo/test/smoke.js
+          node --check prototipo/test/integracion.js
       - name: Prueba de humo (contratos UI ↔ núcleo ↔ esquema)
         run: node prototipo/test/smoke.js
+      - name: Pruebas de integración (núcleo + Postgres)
+        run: node prototipo/test/integracion.js
