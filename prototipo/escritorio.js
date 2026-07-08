@@ -662,34 +662,9 @@ function claveFecha(mesIdx,dia){return MESES_INFO[mesIdx].key+'-'+String(dia).pa
 let mensualData=[];
 let mensualVista='promedio';   // 'promedio' | 'total' (solo aplica al resumen)
 let mensualMes=-1;             // -1 = resumen 2026; 0..5 = detalle diario del mes
-const diaOverrides={};         // clave "num-mes-dia" → valor editado
-function diaKey(num,m,d){return num+'-'+m+'-'+d;}
 function diaVal(numStr,monthIdx,day){
-  const k=diaKey(numStr,monthIdx,day);
-  if(k in diaOverrides)return diaOverrides[k];
   const v=ordenosDiaMap[numStr+'|'+claveFecha(monthIdx,day)];
   return v!=null?v:null;   // litros reales del ordeño de ese día, o null si no hay
-}
-function editDiaCell(td,cow,day,oldVal){
-  if(td.querySelector('input'))return;
-  const inp=document.createElement('input');
-  inp.type='number';inp.step='0.1';inp.min='0';inp.value=oldVal.toFixed(1);
-  inp.style.cssText='width:52px;border:none;border-bottom:2px solid var(--green);background:transparent;font-family:inherit;font-size:13px;font-weight:700;text-align:center;color:var(--ink);outline:none;padding:2px';
-  td.innerHTML='';td.appendChild(inp);inp.focus();inp.select();
-  function save(){
-    const raw=parseFloat(inp.value);
-    if(isNaN(raw)||raw<0){renderMensual();return;}
-    const nv=Math.round(raw*10)/10;
-    const k=diaKey(cow.num,mensualMes,day);
-    const prev=k in diaOverrides?diaOverrides[k]:null;
-    diaOverrides[k]=nv;
-    renderMensual();
-    snack(cow.n+' · día '+day+' '+MESES_L[mensualMes]+': '+oldVal.toFixed(1)+' → '+nv.toFixed(1)+' L','Deshacer',()=>{
-      if(prev!==null)diaOverrides[k]=prev;else delete diaOverrides[k];renderMensual();});
-  }
-  inp.onblur=save;
-  inp.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();inp.blur();}
-    if(e.key==='Escape'){e.preventDefault();renderMensual();}};
 }
 function toggleMensual(v){mensualVista=v;
   document.getElementById('btnTotal').style.cssText=v==='total'?'font-weight:700;border-color:var(--ink)':'';
@@ -893,7 +868,6 @@ function setAnio(v){
 renderAnioSelector();
 
 /* ===== Ficha de vaca ===== */
-const fichas={};
 let vacaFrom='pg-hato';
 const cowFotos={};   // num → dataURL de la foto subida
 let vacaActual=null;
@@ -987,8 +961,7 @@ function buildFichaBasica(a){
     sanidad:sanOk?'sin retiros activos':'retiro de leche activo — no vender su leche',sanOk:sanOk};
 }
 function goVaca(num,from){
-  let cow=fichas[num];
-  if(!cow&&animalesPorId[num])cow=buildFichaBasica(animalesPorId[num]);
+  let cow=animalesPorId[num]?buildFichaBasica(animalesPorId[num]):null;
   if(!cow)return snack('Ficha de '+num+' — próximamente');
   vacaFrom=from||'pg-hato';vacaActual=cow.num;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -1578,16 +1551,10 @@ function aplicarTratamientos(num,nombre,trats,contexto){
       medicamento:trats.join(', '),diasRetiro:0})
       .then(r=>{if(r&&r.id)reg.id=r.id;}).catch(()=>{});
   }
-  /* queda en la historia clínica de la ficha del animal */
-  const fi=fichas[num];let histAdded=false;
-  if(fi){fi.historia.unshift({fecha:fmtFechaCorta(isoHoy()).toUpperCase()+' '+new Date().getFullYear(),
-    texto:'Tratamiento: <b>'+trats.join(', ')+'</b>',
-    sub:contexto?'En palpación · '+contexto:'Aplicado en palpación'});histAdded=true;}
   renderTratamientos();
-  /* función para deshacer lo aplicado (revierte sanidad + historia) */
+  /* función para deshacer lo aplicado (revierte sanidad) */
   return function(){
     const i=tratamientos.indexOf(reg);if(i>=0)tratamientos.splice(i,1);
-    if(fi&&histAdded)fi.historia.shift();
     renderTratamientos();
   };
 }
@@ -1717,9 +1684,9 @@ function savePalp(){
     const prevParto=pi>=0?proximosPartos.splice(pi,1)[0]:null;
     let added=null;
     if(!vacasVacias.find(v=>v.cow===cow)){
-      const num=cow.split('·')[0].trim();const fi=fichas[num];
-      added={cow:cow,num:num,del:fi?fi.del:'—',sub:fi?(fi.parto+'° parto · '+fi.raza):'—',estado:'vacia',
-        dias:1,ultima:fmtFechaCorta(isoHoy())+' '+new Date().getFullYear(),ayer:fi?fi.ayer+' L':'—',
+      const num=cow.split('·')[0].trim();
+      added={cow:cow,num:num,del:'—',sub:'—',estado:'vacia',
+        dias:1,ultima:fmtFechaCorta(isoHoy())+' '+new Date().getFullYear(),ayer:'—',
         rec:p.subtipo==='fisiologica'?'Vacía fisiológica — programar servicio':'Vacía — evaluar siguiente paso'};
       vacasVacias.push(added);
     }
@@ -2125,7 +2092,7 @@ function openMenuRegistro(){
 /* --- menú de registro enfocado en la vaca de la ficha --- */
 function openMenuVaca(){
   const num=vacaActual;if(!num)return;
-  const cow=fichas[num]||(animalesPorId[num]?buildFichaBasica(animalesPorId[num]):null);if(!cow)return;
+  const cow=animalesPorId[num]?buildFichaBasica(animalesPorId[num]):null;if(!cow)return;
   const ref=num+' · '+cow.n;
   openReg('Registrar en '+ref,'Evento clínico o reproductivo de este animal');
   const body=document.getElementById('regBody');body.innerHTML='';
@@ -2239,7 +2206,6 @@ function guardarEditarVaca(){
     procedencia:campos.procedencia,valorCompra:valor});
   a.leche=a.leche||{};if(leche!=null&&!isNaN(leche))a.leche.ayer=leche;
   if(peso!=null&&!isNaN(peso)){a.pesoKg=peso;a.fechaPeso=isoHoy();}
-  if(fichas[num]){fichas[num].n=nombre;fichas[num].raza=raza;if(peso!=null&&!isNaN(peso))fichas[num].peso=peso+' kg';}
   const h=hato.find(x=>x.num===num);if(h){h.n=nombre;h.raza=raza;h.del=(delCalc==null?'—':delCalc);
     if(leche!=null&&!isNaN(leche))h.ayer=leche;
     if(grupoCambio)h.grupo=GRUPO_DISPLAY[a.grupo]||a.grupo;}
@@ -2295,9 +2261,6 @@ function saveTrata(){
   tratamientos.push(trat);
   let addedTag=false;
   if(a&&!a.tags.includes('tratamiento')){a.tags.push('tratamiento');addedTag=true;}
-  const fi=fichas[tratState.num];let histAdded=false;
-  if(fi){fi.historia.unshift({fecha:fmtFechaCorta(isoHoy()).toUpperCase()+' '+new Date().getFullYear(),texto:'Tratamiento: <b>'+tratState.problema+'</b> · '+tratState.medicina.toLowerCase(),
-    sub:conRetiro?'Retiro de leche '+tratState.retiro+' días':'Sin retiro de leche'});histAdded=true;}
   renderTratamientos();renderHatoFiltros();renderHato();
   go('pg-sanitario',navFor('pg-sanitario'));
   /* id conocido para poder revertir en la base si se deshace */
@@ -2313,7 +2276,6 @@ function saveTrata(){
   snack(nombre+': '+tratState.problema.toLowerCase()+' · '+tratState.medicina.toLowerCase()+retiroTxt,'Deshacer',()=>{
     const i=tratamientos.indexOf(trat);if(i>=0)tratamientos.splice(i,1);
     if(a&&addedTag){const ti=a.tags.indexOf('tratamiento');if(ti>=0)a.tags.splice(ti,1);}
-    if(fi&&histAdded)fi.historia.shift();
     renderTratamientos();renderHatoFiltros();renderHato();
     if(typeof LCStore!=='undefined')pSaveTrata.then(()=>LCStore.deleteTratamiento(tid))
       .catch(e=>console.warn('No se pudo revertir el tratamiento:',e.message||e));});

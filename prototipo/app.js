@@ -738,9 +738,6 @@ function sincronizar(){
 }
 updateSync();
 /* ===== Partos ===== */
-/* info por vaca: se llena con datos reales; el subtítulo de la hoja cae a un
- * texto genérico si no hay nada específico. */
-const partoInfo={};
 /* próximos partos (salen de las palpaciones) e historial reciente.
  * Arrancan en CERO: los valores reales los pone cargarReproMovil desde la BD.
  * (No hardcodear conteos de demo: si no hay conexión, mejor mostrar 0 que un
@@ -801,7 +798,7 @@ function openParto(cow){
 /* aviso si la madre elegida no es horra (lo normal es parir desde horra) */
 function partoAvisoMadre(cow){
   const a=animalesPorIdM[numDe(cow)];if(!a)return'Confirma la fecha y los datos de la cría';
-  if(a.grupo==='horra')return partoInfo[cow]||'Horra (preñada próxima) — lo normal para parir';
+  if(a.grupo==='horra')return 'Horra (preñada próxima) — lo normal para parir';
   return '⚠ '+a.nombre+' está en "'+(GRUPO_DISPLAY_M[a.grupo]||a.grupo)+'", no en horras — confirma que sí parió';
 }
 function partoCow(cow){parto.cow=cow;

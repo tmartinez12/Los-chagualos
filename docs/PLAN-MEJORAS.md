@@ -150,8 +150,15 @@
   (b) `TABLAS_RESPALDO` ↔ claves de `COLUMNAS_RESPALDO`; (c) `TABLAS`
   (respaldo.js) ↔ store. Se exponen `TABLAS_RESPALDO`/`COLUMNAS_RESPALDO` desde
   el store (solo lectura) y rule 8 de CLAUDE.md ahora apunta al test.
-- [ ] 🟢 **Limpiar código muerto** (GAPS §1): `fichas={}`, `diaOverrides/
-  editDiaCell`, `partoInfo={}`; unificar `estadoBase()` (duplicada) en rules.js.
+- [x] 🟢 **Limpiar código muerto** (GAPS §1): ✅ eliminados `fichas={}` (siempre
+  vacío; todos sus accesos caían al fallback o a guardas `if(fi)` estáticamente
+  falsas), `diaOverrides`/`editDiaCell`/`diaKey` (descableados; `diaVal` ahora lee
+  directo `ordenosDiaMap`) y `partoInfo={}` (nunca se escribía). Verificado en
+  navegador (goVaca, saveTrata, openParto, diaVal) sin cambios de comportamiento.
+  **`estadoBase()` NO se movió a rules.js a propósito:** manipula el DOM y
+  `rules.js` debe seguir siendo puro/cargable en Node (lo requieren smoke.js e
+  integracion.js); moverlo rompería los tests. La duplicación (≈8 líneas por
+  página) no justifica crear un módulo UI-solo-navegador nuevo.
 - [ ] 🟢 **Cache-busting automático** (hash o `?v=` derivado del commit) en vez
   de bump manual.
 - [ ] 🟢 **Deploy con revisión:** Pages desde `main` + PRs, no desde la rama de
