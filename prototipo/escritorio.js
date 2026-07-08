@@ -2710,7 +2710,8 @@ function saveCompra(){
       valorCompra:(!esNacida&&compraState.valor)?parseInt(String(compraState.valor).replace(/\D/g,'')):null
     }).then(()=>Promise.all(partoRows.map(r=>LCStore.registrarParto({id:r.id,madreId:num,criaId:null,fecha:r.fecha,sexo:null,tipo:'normal',estadoCria:'viva'}))))
       .catch(e=>{console.warn('Alta no guardada en la base:',e.message||e);
-      snack('⚠ '+num+': NO se guardó en la base — revisa la conexión y reintenta');});
+      if(e&&e.code==='ID_DUPLICADO')snack('⚠ El número '+num+' ya existe (¿lo tomó otro dispositivo?) — deshaz y usa otro número');
+      else snack('⚠ '+num+': NO se guardó en la base — revisa la conexión y reintenta');});
   }
   goVaca(num,'pg-hato');   /* aterrizar en la ficha del animal recién creado */
   const partosTxt=partos?(' · '+partos+' parto'+(partos===1?'':'s')+' registrados'):'';

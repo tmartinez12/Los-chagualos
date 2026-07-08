@@ -1299,7 +1299,8 @@ function saveAlta(){
         /* si entró "en ordeño", aparece YA en la lista de leche (P1) */
         if(a&&g==='ordeno'&&!cows.find(c=>c.num===num)){cows.push(animalACow(a));renderCows();}})
       .catch(e=>{console.warn('Alta móvil no guardada:',e.message||e);
-        snack('⚠ El animal NO se guardó en la base — revisa la señal y reintenta');});
+        if(e&&e.code==='ID_DUPLICADO')snack('⚠ El número '+num+' ya existe (¿lo tomó otro dispositivo?) — deshaz y usa otro número');
+        else snack('⚠ El animal NO se guardó en la base — revisa la señal y reintenta');});
   }
   setTimeout(()=>openGroup(g),300);
   const extra=(comprada&&alta.procedencia?' · '+alta.procedencia:'')+(comprada&&alta.valor?' · $'+alta.valor:'');

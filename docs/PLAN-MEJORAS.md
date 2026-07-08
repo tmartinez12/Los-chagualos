@@ -115,9 +115,12 @@
   chars aleatorios`; reemplaza los `'P-'/'T-'+Date.now()` de parto y tratamiento
   (móvil, escritorio y fallbacks del store). Dos dispositivos en el mismo
   milisegundo ya no chocan la PK (100k ids en un bucle apretado → 99999 únicos).
-- [ ] 🟢 **Secuencias de chapeta seguras:** `criaNum`/`altaSeq` desde un
-  "siguiente libre" real, no del máximo cacheado (evita números duplicados con
-  dos teléfonos abiertos).
+- [x] 🟢 **Secuencias de chapeta seguras:** ✅ además de validar contra el caché
+  local antes de insertar (P2/P5), `insertAnimal` detecta la violación de
+  unicidad de la PK (`23505` → `ID_DUPLICADO`) y las altas (móvil + escritorio)
+  avisan claro "el número X ya existe (¿otro dispositivo?) — usa otro número" en
+  vez de un genérico "no se guardó". Dos teléfonos que elijan el mismo número ya
+  no producen un duplicado silencioso: gana el primero y el segundo lo sabe.
 - [ ] 🟡 **Escala de lecturas:** filtrar por año en `getOrdenos`/histcategory
   según pantalla; subir la caché de animales de 3 s o invalidar por evento en
   vez de por tiempo (con 200+ animales hoy re-descarga todo constantemente).

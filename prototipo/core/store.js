@@ -181,7 +181,13 @@
       o.nacimiento = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     }
     const { data, error } = await client().from('animales').insert(o).select().single();
-    if (error) throw error;
+    if (error) {
+      /* violación de unicidad de la PK (id) → el número ya existe (p.ej. otro
+       * dispositivo lo tomó en paralelo). Se marca para que la UI lo diga claro
+       * y ofrezca otro número, en vez de un genérico "no se guardó". */
+      if (error.code === '23505') { error.code = 'ID_DUPLICADO'; error.idDuplicado = o.id; }
+      throw error;
+    }
     return animalFromDB(data);
   }
 
