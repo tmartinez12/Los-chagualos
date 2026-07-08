@@ -2388,83 +2388,85 @@ function saveParto(){
   }
   closeReg();
   const sexoTxt=partoState.sexo==='H'?'♀ hembra':'♂ macho';
-  const tipoTxt=partoState.tipo==='asistido'?'parto asistido':'parto normal';
-  /* snapshot de la madre + parto próximo */
-  const prevMadre={grupo:a.grupo,del:a.del,ayer:a.ayer,var:a.var,vc:a.vc,repro:a.repro,tags:a.tags.slice()};
-  const pi=proximosPartos.findIndex(p=>p.cow.split('·')[0].trim()===partoState.num);
-  const prevParto=pi>=0?proximosPartos[pi]:null;
-  if(pi>=0)proximosPartos.splice(pi,1);
-  /* la madre vuelve al ordeño en DEL 0 */
-  a.grupo='En ordeño';a.del=0;a.ayer=0;a.var='—';a.vc='';
-  a.tags=a.tags.filter(t=>t!=='prenada');
-  a.repro='<span class="badge ok">recién parida · DEL 0</span>';
-  /* la cría viva entra al hato */
-  let cria=null;
   const criaGrupo=partoState.sexo==='H'?'Ternera':'Macho';
   const criaNombre=(partoState.criaNombre||'').trim();
   const criaAuto=!((partoState.criaNum||'').trim());   // se usó la secuencia (para revertirla en el Deshacer)
-  if(partoState.estado==='viva'){
-    const num=criaNumFinal;
-    cria={num,n:criaNombre||('(cría de '+nombre+')'),raza:a.raza,grupo:criaGrupo,edad:'0 m',
-      repro:'<span class="badge ok">recién nacid'+(partoState.sexo==='H'?'a':'o')+' · '+partoState.peso+' kg</span>',
-      del:'—',ayer:'—',var:'—',vc:'',tags:[]};
-    hato.unshift(cria);
-  }
-  /* registrar en partos recientes */
   const fechaParto=partoState.fecha||isoHoy();
   const partoId=LCRules.idUnico('P-');
-  const reciente={id:partoId,madre:partoState.num+' '+nombre,cria:cria?cria.num:'—',fecha:fmtFechaCorta(fechaParto),fechaISO:fechaParto,
-    sexo:partoState.sexo,peso:partoState.peso,tipo:partoState.tipo,
-    estado:partoState.estado,grupo:partoState.estado==='viva'?(criaGrupo==='Ternera'?'Terneras':'Machos'):null};
-  partosRecientes.push(reciente);
-  /* persistencia + datos para revertir en la base si se deshace */
-  let pSaveParto=Promise.resolve();
-  const criaId=cria?cria.num:null;
   const numMadre=partoState.num;
-  /* mantener los cachés canónicos al día (KPIs, ficha y alertas sin recargar) */
-  const madrePrevCache=animalesPorId[numMadre]?{...animalesPorId[numMadre]}:null;
-  if(animalesPorId[numMadre])Object.assign(animalesPorId[numMadre],
-    {grupo:'ordeño',del:0,inicioLactancia:fechaParto,estadoRepro:null,prenez:null,
-     partos:(animalesPorId[numMadre].partos||0)+1});
-  _partosRaw.push({id:partoId,madre_id:numMadre,cria_id:criaId,fecha:fechaParto,
-    sexo_cria:partoState.sexo,peso_kg:partoState.peso,tipo:partoState.tipo,estado_cria:partoState.estado});
-  (_partosPorMadre[numMadre]=_partosPorMadre[numMadre]||[]).push(fechaParto);
-  if(!_ultimoParto[numMadre]||fechaParto>_ultimoParto[numMadre])_ultimoParto[numMadre]=fechaParto;
-  renderHatoFiltros();renderHato();renderPartos();renderPartosRecientes();renderPartosKpis();
-  if(typeof renderInicio==='function')renderInicio();
-  go('pg-partos',navFor('pg-partos'));
-  const madreAntes=animalesPorId[numMadre]?snapshotReproDB(animalesPorId[numMadre]):null;
-  if(typeof LCStore!=='undefined'){
-    /* UNA transacción en la base (cría + parto + madre): o entra todo o nada */
-    pSaveParto=LCStore.registrarPartoCompleto({id:partoId,madreId:partoState.num,fecha:fechaParto,
-        sexo:partoState.sexo,pesoKg:partoState.peso,tipo:partoState.tipo,estadoCria:partoState.estado,
-        criaId:criaId,criaNombre:criaId?(criaNombre||('Cría de '+nombre)):null,criaRaza:a.raza})
-      .catch(e=>{console.warn('Parto no guardado en la base:',e.message||e);
-        snack('⚠ El parto NO se guardó en la base — revisa la conexión y regístralo de nuevo');});
-  }
-  const msg=partoState.estado==='viva'
-    ? 'Parto de '+nombre+' · cría '+cria.num+' ('+sexoTxt+', '+partoState.peso+' kg) creada en '+cria.grupo+' · '+nombre+' al ordeño en DEL 0'
+  const criaId=partoState.estado==='viva'?criaNumFinal:null;
+  const mensaje=partoState.estado==='viva'
+    ? 'Parto de '+nombre+' · cría '+criaId+' ('+sexoTxt+', '+partoState.peso+' kg) creada en '+criaGrupo+' · '+nombre+' al ordeño en DEL 0'
     : 'Parto de '+nombre+' · la cría nació muerta — queda en el historial · '+nombre+' al ordeño en DEL 0';
-  snack(msg,'Deshacer',()=>{
-    Object.assign(a,prevMadre);
-    if(cria){const ci=hato.indexOf(cria);if(ci>=0)hato.splice(ci,1);if(criaAuto)criaSeq--;}
-    if(prevParto)proximosPartos.splice(Math.min(pi,proximosPartos.length),0,prevParto);
-    const ri=partosRecientes.indexOf(reciente);if(ri>=0)partosRecientes.splice(ri,1);
-    /* revertir también los cachés canónicos */
-    if(madrePrevCache&&animalesPorId[numMadre])animalesPorId[numMadre]=madrePrevCache;
-    const pri=_partosRaw.findIndex(p=>p.id===partoId);if(pri>=0)_partosRaw.splice(pri,1);
-    if(_partosPorMadre[numMadre]){const fi2=_partosPorMadre[numMadre].lastIndexOf(fechaParto);
-      if(fi2>=0)_partosPorMadre[numMadre].splice(fi2,1);}
-    if(_ultimoParto[numMadre]===fechaParto){const fs=(_partosPorMadre[numMadre]||[]).slice().sort();
-      if(fs.length)_ultimoParto[numMadre]=fs[fs.length-1];else delete _ultimoParto[numMadre];}
-    renderHatoFiltros();renderHato();renderPartos();renderPartosRecientes();renderPartosKpis();
-    if(typeof renderInicio==='function')renderInicio();
-    /* revertir en la base: esperar a que termine de guardar y compensar */
-    if(typeof LCStore!=='undefined')pSaveParto.then(()=>Promise.all([
-      LCStore.deleteParto(partoId),
-      criaId?LCStore.deleteAnimal(criaId):null,
-      madreAntes?LCStore.updateAnimalCampos(numMadre,madreAntes):null,
-    ])).catch(e=>console.warn('No se pudo revertir el parto en la base:',e.message||e));
+  /* snapshots ANTES de mutar nada — el de la BD (madreAntes) es el que corrige
+   * un bug real: antes se tomaba DESPUÉS de mutar la madre, así que "Deshacer"
+   * revertía bien la pantalla pero NO la base (volvía a escribir el mismo
+   * estado post-parto en vez del previo). */
+  const prevMadre={grupo:a.grupo,del:a.del,ayer:a.ayer,var:a.var,vc:a.vc,repro:a.repro,tags:a.tags.slice()};
+  const madrePrevCache=animalesPorId[numMadre]?{...animalesPorId[numMadre]}:null;
+  const madreAntes=animalesPorId[numMadre]?snapshotReproDB(animalesPorId[numMadre]):null;
+  let pi,prevParto,cria,reciente;
+  LCAcciones.ejecutarConDeshacer({
+    aplicar(){
+      pi=proximosPartos.findIndex(p=>p.cow.split('·')[0].trim()===numMadre);
+      prevParto=pi>=0?proximosPartos[pi]:null;
+      if(pi>=0)proximosPartos.splice(pi,1);
+      /* la madre vuelve al ordeño en DEL 0 */
+      a.grupo='En ordeño';a.del=0;a.ayer=0;a.var='—';a.vc='';
+      a.tags=a.tags.filter(t=>t!=='prenada');
+      a.repro='<span class="badge ok">recién parida · DEL 0</span>';
+      /* la cría viva entra al hato */
+      cria=null;
+      if(partoState.estado==='viva'){
+        cria={num:criaId,n:criaNombre||('(cría de '+nombre+')'),raza:a.raza,grupo:criaGrupo,edad:'0 m',
+          repro:'<span class="badge ok">recién nacid'+(partoState.sexo==='H'?'a':'o')+' · '+partoState.peso+' kg</span>',
+          del:'—',ayer:'—',var:'—',vc:'',tags:[]};
+        hato.unshift(cria);
+      }
+      reciente={id:partoId,madre:numMadre+' '+nombre,cria:criaId||'—',fecha:fmtFechaCorta(fechaParto),fechaISO:fechaParto,
+        sexo:partoState.sexo,peso:partoState.peso,tipo:partoState.tipo,
+        estado:partoState.estado,grupo:partoState.estado==='viva'?(criaGrupo==='Ternera'?'Terneras':'Machos'):null};
+      partosRecientes.push(reciente);
+      /* mantener los cachés canónicos al día (KPIs, ficha y alertas sin recargar) */
+      if(animalesPorId[numMadre])Object.assign(animalesPorId[numMadre],
+        {grupo:'ordeño',del:0,inicioLactancia:fechaParto,estadoRepro:null,prenez:null,
+         partos:(animalesPorId[numMadre].partos||0)+1});
+      _partosRaw.push({id:partoId,madre_id:numMadre,cria_id:criaId,fecha:fechaParto,
+        sexo_cria:partoState.sexo,peso_kg:partoState.peso,tipo:partoState.tipo,estado_cria:partoState.estado});
+      (_partosPorMadre[numMadre]=_partosPorMadre[numMadre]||[]).push(fechaParto);
+      if(!_ultimoParto[numMadre]||fechaParto>_ultimoParto[numMadre])_ultimoParto[numMadre]=fechaParto;
+      renderHatoFiltros();renderHato();renderPartos();renderPartosRecientes();renderPartosKpis();
+      if(typeof renderInicio==='function')renderInicio();
+      go('pg-partos',navFor('pg-partos'));
+    },
+    /* UNA transacción en la base (cría + parto + madre): o entra todo o nada */
+    escribir:typeof LCStore!=='undefined'?
+      ()=>LCStore.registrarPartoCompleto({id:partoId,madreId:numMadre,fecha:fechaParto,
+        sexo:partoState.sexo,pesoKg:partoState.peso,tipo:partoState.tipo,estadoCria:partoState.estado,
+        criaId:criaId,criaNombre:criaId?(criaNombre||('Cría de '+nombre)):null,criaRaza:a.raza}):null,
+    avisoError:()=>'⚠ El parto NO se guardó en la base — revisa la conexión y regístralo de nuevo',
+    mensaje,
+    revertir(){
+      Object.assign(a,prevMadre);
+      if(cria){const ci=hato.indexOf(cria);if(ci>=0)hato.splice(ci,1);if(criaAuto)criaSeq--;}
+      if(prevParto)proximosPartos.splice(Math.min(pi,proximosPartos.length),0,prevParto);
+      const ri=partosRecientes.indexOf(reciente);if(ri>=0)partosRecientes.splice(ri,1);
+      if(madrePrevCache&&animalesPorId[numMadre])animalesPorId[numMadre]=madrePrevCache;
+      const pri=_partosRaw.findIndex(p=>p.id===partoId);if(pri>=0)_partosRaw.splice(pri,1);
+      if(_partosPorMadre[numMadre]){const fi2=_partosPorMadre[numMadre].lastIndexOf(fechaParto);
+        if(fi2>=0)_partosPorMadre[numMadre].splice(fi2,1);}
+      if(_ultimoParto[numMadre]===fechaParto){const fs=(_partosPorMadre[numMadre]||[]).slice().sort();
+        if(fs.length)_ultimoParto[numMadre]=fs[fs.length-1];else delete _ultimoParto[numMadre];}
+      renderHatoFiltros();renderHato();renderPartos();renderPartosRecientes();renderPartosKpis();
+      if(typeof renderInicio==='function')renderInicio();
+    },
+    compensarBD:typeof LCStore!=='undefined'?
+      ()=>Promise.all([
+        LCStore.deleteParto(partoId),
+        criaId?LCStore.deleteAnimal(criaId):null,
+        madreAntes?LCStore.updateAnimalCampos(numMadre,madreAntes):null,
+      ]):null,
+    snack,
   });
 }
 

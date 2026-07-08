@@ -178,7 +178,7 @@
   dejan en su sitio (varios docs los referencian) en vez de mover archivos.
 
 ## FASE 6 — Refactor de raíz (opcional, alto valor a largo plazo)
-- [~] 🔴 **M14 · Unificar los flujos `save*` (EN PROGRESO, piloto validado).**
+- [x] 🔴 **M14 · Unificar los flujos `save*`.** ✅ Los 6 flujos migrados.
   Se creó `core/acciones.js` con `ejecutarConDeshacer()`: la coreografía
   compartida (aplicar local → escribir BD → si falla, snack honesto → el snack
   de éxito ofrece "Deshacer" que revierte local y compensa BD, esperando SIEMPRE
@@ -231,7 +231,26 @@
     Chromium: camino feliz + deshacer + pisado simulado + error de BD
     (escritorio), y las 2 ramas sin undo del móvil (incluye que la fecha pasada
     NO toca el tile de hoy).
-  - [ ] Parto — pendiente, el más complejo de los 6 (cría + parto + madre).
+  - [x] **Parto** — migrado en escritorio y móvil, el más complejo de los 6
+    (cría + parto + madre, transacción RPC `registrar_parto_completo`,
+    validación de chapeta duplicada). **De paso corrige un BUG REAL en ambas
+    superficies**, presente desde antes de este piloto: la compensación en BD
+    del "Deshacer" (`madreAntes`) se calculaba DESPUÉS de mutar la madre local
+    (grupo→ordeño, DEL→0…), así que al deshacer un parto la pantalla volvía
+    bien a "horra/preñada" pero la BASE DE DATOS quedaba con la madre en
+    "ordeño" con un `inicio_lactancia` falso — la compensación re-escribía el
+    mismo estado post-parto en vez del previo. Confirmado antes de tocar código
+    con `LCRules.snapshotReproDB` en un objeto mutado en el orden real, y
+    verificado después en Chromium que la compensación real ahora manda
+    `{grupo:'horra', estado_repro:'prenada', prenez_meses:9, ...}` (antes:
+    `{grupo:'ordeño', estado_repro:null, ...}`) en las dos superficies. También
+    verificado: camino feliz (cría creada, madre a ordeño DEL 0), deshacer,
+    chapeta duplicada rechazada sin escrituras, y mortinato (sin cría).
+  - **M14 completo.** Los 6 flujos (secado, tratamiento, baja, palpación, leche,
+    parto) comparten ahora `core/acciones.js`. La duplicación de la coreografía
+    async (aplicar/escribir/error-honesto/deshacer-compensado) quedó eliminada;
+    el estado local (`hato`, `animalesPorId`, `cows`, `grupos`, …) sigue siendo
+    específico de cada página — eso es "Estado único", el siguiente ítem.
 - [ ] 🔴 **Estado único.** Reemplazar las ~13 estructuras paralelas
   (`hato`, `animalesPorId`, `milkCows`, `_partosRaw`…) por una fuente de estado
   con re-render (o re-fetch dirigido). Mata la clase entera de bugs de
