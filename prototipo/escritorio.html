@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Los Chagualos · Escritorio</title>
-<link rel="stylesheet" href="escritorio.css?v=20260714">
+<link rel="stylesheet" href="escritorio.css?v=20260715">
 
 </head>
 <body>
@@ -209,7 +209,10 @@
           <tbody id="vacaMensualTb"></tbody></table>
         </div>
 
-        <div class="section-label" style="margin-top:18px" id="vacaPartosLabel">Partos de esta vaca</div>
+        <div class="section-label" style="margin-top:18px;display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+          <span id="vacaPartosLabel">Partos de esta vaca</span>
+          <button class="btn outl small" style="text-transform:none;letter-spacing:0" onclick="openPartoHist(vacaActual)">＋ Agregar parto</button>
+        </div>
         <div class="card" style="padding:8px;overflow-x:auto">
           <table><thead><tr><th>Fecha</th><th>Cría</th><th class="r">Sexo</th><th class="r">Peso</th><th>Tipo</th><th class="r">Resultado</th></tr></thead>
           <tbody id="vacaPartosTb"></tbody></table>
@@ -406,8 +409,8 @@
 <div class="snackbar" id="snackbar"><svg class="ic-s ic"><use href="#i-check"/></svg><span id="snackText"></span><button class="snack-action" id="snackAction" style="display:none"></button></div>
 <!-- supabase-js vendorizado (versión FIJA local) -->
 <script src="core/vendor/supabase-js-2.110.0.js"></script>
-<script src="core/rules.js?v=20260714"></script>
-<script src="core/store.js?v=20260714"></script>
-<script src="escritorio.js?v=20260714"></script>
+<script src="core/rules.js?v=20260715"></script>
+<script src="core/store.js?v=20260715"></script>
+<script src="escritorio.js?v=20260715"></script>
 </body>
 </html>

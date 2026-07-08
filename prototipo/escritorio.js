@@ -2476,6 +2476,61 @@ function saveParto(){
   });
 }
 
+/* --- parto HISTÓRICO desde la ficha ---------------------------------------- *
+ * Registra un parto pasado (para el conteo, el intervalo y las lactancias) SIN
+ * crear cría ni tocar el grupo/DEL actuales de la madre. */
+const partoHistState={};
+function openPartoHist(num){
+  num=num||vacaActual;const a=animalesPorId[num];
+  if(!a){snack('No tengo los datos de '+num+' — sincroniza primero');return;}
+  partoHistState.num=num;partoHistState.fecha=isoHoy();partoHistState.sexo='';
+  partoHistState.tipo='normal';partoHistState.estado='viva';partoHistState.criaId='';
+  openReg('Agregar parto histórico de '+num,'Suma un parto pasado al conteo y al intervalo; no cambia el grupo actual');
+  const body=document.getElementById('regBody');body.innerHTML='';
+  body.appendChild(regTexto('Fecha del parto','',v=>partoHistState.fecha=v,'date',partoHistState.fecha));
+  body.appendChild(regLabel('Sexo de la cría (opcional)'));
+  body.appendChild(regChips([{val:'',label:'Sin dato'},{val:'H',label:'♀ Hembra'},{val:'M',label:'♂ Macho'}],partoHistState.sexo,v=>partoHistState.sexo=v));
+  body.appendChild(regLabel('Tipo de parto'));
+  body.appendChild(regChips([{val:'normal',label:'Normal'},{val:'asistido',label:'Asistido'}],partoHistState.tipo,v=>partoHistState.tipo=v));
+  body.appendChild(regLabel('Resultado de la cría'));
+  body.appendChild(regChips([{val:'viva',label:'Viva'},{val:'muerta',label:'Mortinato'}],partoHistState.estado,v=>partoHistState.estado=v));
+  body.appendChild(regTexto('Número de la cría (si ya está registrada, opcional)','Ej. 064',v=>partoHistState.criaId=v,'text',''));
+  body.appendChild(regHint('Vincula una cría ya existente por su número; no crea un animal nuevo.'));
+  document.getElementById('regSaveBtn').onclick=savePartoHist;
+}
+function savePartoHist(){
+  const num=partoHistState.num,a=animalesPorId[num];if(!a)return;
+  const fecha=partoHistState.fecha||isoHoy();
+  const criaId=(partoHistState.criaId||'').trim()||null;
+  if(criaId&&!animalesPorId[criaId]){snack('⚠ La cría '+criaId+' no está registrada — deja el número vacío o corrígelo');return;}
+  closeReg();
+  const partoId=LCRules.idUnico('P-');
+  const fila={id:partoId,madre_id:num,cria_id:criaId,fecha:fecha,
+    sexo_cria:partoHistState.sexo||null,peso_kg:null,tipo:partoHistState.tipo,estado_cria:partoHistState.estado};
+  /* cachés canónicos: conteo de partos, último parto e intervalo */
+  _partosRaw.push(fila);
+  (_partosPorMadre[num]=_partosPorMadre[num]||[]).push(fecha);
+  if(!_ultimoParto[num]||fecha>_ultimoParto[num])_ultimoParto[num]=fecha;
+  if(animalesPorId[num])animalesPorId[num].partos=(animalesPorId[num].partos||0)+1;
+  goVaca(num,vacaFrom);renderPartos&&renderPartos();renderPartosKpis&&renderPartosKpis();
+  let pSave=Promise.resolve();
+  if(typeof LCStore!=='undefined'){
+    pSave=LCStore.registrarParto({id:partoId,madreId:num,criaId:criaId,fecha:fecha,
+      sexo:partoHistState.sexo||null,tipo:partoHistState.tipo,estadoCria:partoHistState.estado}).catch(e=>{
+      console.warn('Parto histórico no guardado:',e.message||e);
+      snack('⚠ El parto NO se guardó en la base — revisa la conexión y reintenta');});
+  }
+  snack('Parto de '+fmtFechaAno(fecha)+' agregado a '+num,'Deshacer',()=>{
+    const ri=_partosRaw.findIndex(p=>p.id===partoId);if(ri>=0)_partosRaw.splice(ri,1);
+    if(_partosPorMadre[num]){const fi=_partosPorMadre[num].lastIndexOf(fecha);if(fi>=0)_partosPorMadre[num].splice(fi,1);}
+    if(_ultimoParto[num]===fecha){const fs=(_partosPorMadre[num]||[]).slice().sort();
+      if(fs.length)_ultimoParto[num]=fs[fs.length-1];else delete _ultimoParto[num];}
+    if(animalesPorId[num])animalesPorId[num].partos=Math.max(0,(animalesPorId[num].partos||1)-1);
+    goVaca(num,vacaFrom);renderPartos&&renderPartos();renderPartosKpis&&renderPartosKpis();
+    if(typeof LCStore!=='undefined')pSave.then(()=>LCStore.deleteParto(partoId))
+      .catch(e=>console.warn('No se pudo revertir el parto histórico:',e.message||e));});
+}
+
 /* --- alta (compra / ingreso) --- */
 /* --- vaca nueva (comprada o nacida) --- */
 const altaGrupoMap={'Vaca en ordeño':'En ordeño','Vaca horra':'Horra','Novilla':'Novilla','Levante':'Levante','Ternera':'Ternera','Toro':'Macho'};

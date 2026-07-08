@@ -97,8 +97,11 @@
   16 local (fresh install, migración ×2, compatibilidad con `restaurar_respaldo`).
 
 ## FASE 4 — Integridad y escala (backend)
-- [ ] 🟢 **Agregar un parto histórico desde la ficha** (hoy solo al crear el
-  animal) — tabla de partos de la ficha del escritorio con botón "+".
+- [x] 🟢 **Agregar un parto histórico desde la ficha.** ✅ Botón "＋ Agregar
+  parto" junto a la tabla de partos de la ficha del escritorio: registra un parto
+  pasado (fecha, sexo/tipo/resultado opcionales, vincula una cría existente por
+  número) que suma al conteo, al intervalo y a las lactancias SIN tocar el grupo
+  ni el DEL actuales de la madre. Con "Deshacer" y reversa en la base. Verificado.
 - [ ] 🟡 **Concurrencia (last-write-wins).** Comparar `updated_at` en
   `updateAnimalCampos` y avisar si otro dispositivo cambió la fila; al menos
   loguear el pisado del ordeño en vez de silenciarlo.
