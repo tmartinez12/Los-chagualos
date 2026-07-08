@@ -90,10 +90,9 @@ CREATE TABLE animales (
   madre_id            TEXT REFERENCES animales(id) ON DELETE SET NULL,
   padre_id            TEXT REFERENCES animales(id) ON DELETE SET NULL,
 
-  -- Peso / levante
+  -- Peso / levante (ganancia_dia_g se DERIVA en v_animales, no se persiste)
   peso_kg             NUMERIC(6,1),
   fecha_peso          DATE,
-  ganancia_dia_g      NUMERIC(6,1),
 
   -- Macho (el toro designado; hijas/destete/lista-servicio se derivan)
   rol_toro            BOOLEAN,
@@ -404,7 +403,12 @@ SELECT a.*,
   CASE WHEN a.estado_repro = 'vacia' AND a.ultima_palpacion IS NOT NULL
        THEN (hoy_finca() - a.ultima_palpacion) END AS dias_vacia_calc,
   CASE WHEN a.estado_repro = 'prenada' AND a.prenez_meses IS NOT NULL AND a.ultima_palpacion IS NOT NULL
-       THEN least(9, round((a.prenez_meses + (hoy_finca() - a.ultima_palpacion) / 30.44)::numeric, 1)) END AS prenez_meses_actual
+       THEN least(9, round((a.prenez_meses + (hoy_finca() - a.ultima_palpacion) / 30.44)::numeric, 1)) END AS prenez_meses_actual,
+  -- ganancia media diaria desde el nacimiento (g/día); útil en terneras/levante.
+  -- Requiere peso y nacimiento; sin historial de pesajes es la mejor derivación.
+  CASE WHEN a.peso_kg IS NOT NULL AND a.nacimiento IS NOT NULL
+            AND (hoy_finca() - a.nacimiento) > 0
+       THEN round(a.peso_kg * 1000.0 / (hoy_finca() - a.nacimiento)) END AS ganancia_dia_g
 FROM animales a;
 
 -- v_produccion_mensual: histórico mensual DERIVADO de los ordeños diarios.

@@ -19,6 +19,7 @@ más de una vez sin daño):
 | 3 | `migracion-integridad.sql` | Constraints, FKs coherentes, índice, parto transaccional (RPC), revokes | **pendiente** |
 | 4 | `migracion-nacimiento.sql` | Backfill: estima `nacimiento` desde `edad_anios` (sin él la edad no avanza) | **pendiente** |
 | 5 | `migracion-restaurar.sql` | Función `restaurar_respaldo()` (restauración transaccional; sin ella, restaurar hace un merge no-transaccional) | **pendiente** |
+| 6 | `migracion-ganancia.sql` | `ganancia_dia_g` pasa de columna muerta a DERIVADA en `v_animales` (g/día desde el nacimiento) y se elimina la columna persistida | **pendiente** |
 
 Utilidades (no son migraciones):
 

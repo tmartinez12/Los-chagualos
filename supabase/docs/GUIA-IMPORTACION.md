@@ -66,6 +66,12 @@ ficha (botón ✏️ Editar) o con un segundo cargue.
 - **Booleano `true`/`false`**: `lista_servicio`, `destete_proximo`, `rol_toro`,
   `monta_natural`, `sanidad_al_dia`.
 
+> ⚠️ **Columnas DERIVADAS — NO ponerlas en los `INSERT INTO animales`** (las
+> calcula la vista `v_animales`; no son columnas de la tabla base): `del`,
+> `partos`, `leche_ayer`, `parto_estimado`, `dias_vacia`, `secar_estimado`,
+> `prenez_meses_actual`, **`ganancia_dia_g`** (ganancia g/día desde el
+> nacimiento). Están en la plantilla solo como referencia de la ficha completa.
+
 ### Valores de enum válidos
 - `grupo`: ordeño · horra · novilla · levante · ternera · macho · baja
 - `sexo`: H · M

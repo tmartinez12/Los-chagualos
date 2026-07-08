@@ -102,7 +102,8 @@
       ultima_palpacion: a.ultimaPalpacion || (a.prenez ? a.prenez.ultimaPalpacion : null) || null,
       madre_id: a.madreId || null, padre_id: a.padreId || null,
       peso_kg: a.pesoKg ?? null, fecha_peso: a.fechaPeso || null,
-      ganancia_dia_g: a.gananciaDiaG ?? null,
+      /* ganancia_dia_g NO se escribe: se DERIVA en v_animales (g/día desde el
+       * nacimiento). Ver migracion-ganancia.sql. */
       procedencia: a.procedencia || null, valor_compra: a.valorCompra ?? null,
       inicio_lactancia: a.inicioLactancia || null,
     };
@@ -452,7 +453,7 @@
     potreros: ['id', 'numero', 'dias_descanso', 'hato_actual', 'sugerido_siguiente', 'nota', 'created_at', 'updated_at'],
     animales: ['id', 'nombre', 'unidad_id', 'especie', 'raza', 'color', 'nota', 'grupo', 'sexo',
       'edad_anios', 'nacimiento', 'origen', 'inicio_lactancia', 'estado_repro', 'prenez_meses',
-      'ultima_palpacion', 'madre_id', 'padre_id', 'peso_kg', 'fecha_peso', 'ganancia_dia_g',
+      'ultima_palpacion', 'madre_id', 'padre_id', 'peso_kg', 'fecha_peso',
       'rol_toro', 'baja_motivo', 'baja_fecha', 'baja_valor', 'baja_nota', 'procedencia',
       'valor_compra', 'created_at', 'updated_at'],
     ordenos: ['id', 'animal_id', 'fecha', 'litros', 'turno', 'registrado_por', 'created_at'],

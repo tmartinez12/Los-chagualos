@@ -85,8 +85,12 @@
   y parrilla semanal, con `clampLitros()` compartido. Verificado.
 - [ ] 🟡 **P8 · Ficha móvil rica.** Días abiertos, fecha de peso, lista de
   partos, historial sanitario detallado (hoy 3 eventos genéricos).
-- [ ] 🟢 **`ganancia_dia_g`:** decidir — implementar su cálculo desde pesajes
-  o eliminar la columna por migración (hoy es columna muerta).
+- [x] 🟢 **`ganancia_dia_g`:** ✅ resuelto por "derivar, no guardar": se elimina
+  la columna persistida (era muerta, nunca se calculaba) y pasa a DERIVARSE en
+  `v_animales` como ganancia media diaria desde el nacimiento (g/día). Migración
+  `migracion-ganancia.sql` (idempotente) + `schema.sql` + store (no la escribe,
+  fuera de `COLUMNAS_RESPALDO`) + seed/guía de importación. Validado en Postgres
+  16 local (fresh install, migración ×2, compatibilidad con `restaurar_respaldo`).
 
 ## FASE 4 — Integridad y escala (backend)
 - [ ] 🟢 **Agregar un parto histórico desde la ficha** (hoy solo al crear el
