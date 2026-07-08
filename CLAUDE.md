@@ -69,8 +69,10 @@ node --check prototipo/app.js && node --check prototipo/escritorio.js \
 - **`updateAnimal` no existe a propósito** (vaciaba campos ausentes).
 - **PostgREST corta en 1000 filas:** toda lectura nueva de tablas debe paginar
   (helper `_paginado` en store.js) con orden determinista + `id` de desempate.
-- **Caché de animales = 3 s** con token de generación; tras escribir, llama
-  `_invalidarAnimales()` (las funciones del store ya lo hacen).
+- **Caché de animales = 30 s** (`ANIM_CACHE_TTL`) con token de generación; la
+  invalidación real es por evento: tras escribir, llama `_invalidarAnimales()`
+  (las funciones del store ya lo hacen). El TTL solo acota ver cambios de OTRO
+  dispositivo.
 - **El contador "sin subir" del móvil no es un outbox** — no hay cola offline.
 - **Chips de vaca del móvil** muestran `'042 Nombre'` (sin `·`): compara con
   `numDe()` sobre el valor, y primer token sobre el chip.

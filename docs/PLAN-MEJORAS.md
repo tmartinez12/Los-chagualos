@@ -121,9 +121,14 @@
   avisan claro "el número X ya existe (¿otro dispositivo?) — usa otro número" en
   vez de un genérico "no se guardó". Dos teléfonos que elijan el mismo número ya
   no producen un duplicado silencioso: gana el primero y el segundo lo sabe.
-- [ ] 🟡 **Escala de lecturas:** filtrar por año en `getOrdenos`/histcategory
-  según pantalla; subir la caché de animales de 3 s o invalidar por evento en
-  vez de por tiempo (con 200+ animales hoy re-descarga todo constantemente).
+- [x] 🟡 **Escala de lecturas:** ✅ `getOrdenos(anio)` filtra los ordeños al año
+  seleccionado (antes bajaba TODA la historia diaria en cada carga); el
+  escritorio carga solo `ANIO_SEL` y re-descarga al cambiar de año, y la lista de
+  años sale del resumen mensual (`v_produccion_mensual`, liviano) + partos, no de
+  los ordeños. La caché de animales sube de 3 s a 30 s (`ANIM_CACHE_TTL`): la
+  invalidación real ya es por evento (cada escritura), el TTL solo acota ver
+  cambios de otro dispositivo; con 200+ animales ya no re-descarga toda la tabla
+  en cada navegación.
 
 ## FASE 5 — Calidad y deuda estructural (para poder cambiar sin miedo)
 - [ ] 🟡 **Tests de integración** (lo que hoy NO existe, GAPS §2): un arnés

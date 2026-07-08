@@ -838,8 +838,10 @@ function recomputeMensual(){
     const filas=await LCStore.getProduccionMensual();
     if(!filas)return;
     _mensualRaw=filas;
-    /* detalle diario real: ordeños por animal y día */
-    try{_ordsRaw=await LCStore.getOrdenos()||[];}catch(_){_ordsRaw=[];}
+    /* detalle diario real: ordeños SOLO del año seleccionado (escala: no bajar
+     * años enteros de historia en cada carga). El listado de años sale del
+     * resumen mensual (v_produccion_mensual), que es liviano. */
+    try{_ordsRaw=await LCStore.getOrdenos(ANIO_SEL)||[];}catch(_){_ordsRaw=[];}
     actualizarAniosDisponibles();
     recomputeMensual();
     renderSemana();renderLecheKpis();   // ya hay ordeños cargados
@@ -852,9 +854,10 @@ function recomputeMensual(){
 let _partosRaw=[];
 let ANIOS_DISP=[new Date().getFullYear()];
 function actualizarAniosDisponibles(){
+  /* la lista de años sale del resumen mensual (cubre TODA la historia y es
+   * liviano) + partos; ya NO de _ordsRaw, que ahora es solo del año en curso. */
   const set=new Set([new Date().getFullYear(), ANIO_SEL]);
   (_mensualRaw||[]).forEach(f=>{const y=parseInt(String(f.mes||'').slice(0,4),10);if(y)set.add(y);});
-  (_ordsRaw||[]).forEach(o=>{const y=parseInt(String(o.fecha||'').slice(0,4),10);if(y)set.add(y);});
   (_partosRaw||[]).forEach(p=>{const y=parseInt(String(p.fecha||'').slice(0,4),10);if(y)set.add(y);});
   ANIOS_DISP=Array.from(set).filter(Boolean).sort((a,b)=>b-a);
   renderAnioSelector();
@@ -869,6 +872,14 @@ function setAnio(v){
   rebuildMeses();
   mensualMes=-1;
   if(typeof renderMesPicker==='function')renderMesPicker();
+  /* re-descargar los ordeños del año elegido (solo ese año) y recomputar */
+  if(typeof LCStore!=='undefined'){
+    LCStore.getOrdenos(y).then(rows=>{ if(y!==ANIO_SEL)return;   // el usuario ya cambió de año otra vez
+      _ordsRaw=rows||[];
+      if(typeof recomputeMensual==='function')recomputeMensual();
+      else if(typeof renderMensual==='function')renderMensual();
+    }).catch(e=>console.warn('Ordeños del año '+y+' no cargados:',e.message||e));
+  }
   if(typeof recomputeMensual==='function')recomputeMensual();
   else if(typeof renderMensual==='function')renderMensual();
   if(typeof renderPartosRecientes==='function')renderPartosRecientes();

@@ -127,13 +127,17 @@
     return (s == null ? '' : String(s)).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
   }
 
-  /* Caché corto de la tabla de animales: en una carga, varias pantallas piden
-   * getAnimales() casi a la vez; con esto se baja la tabla UNA sola vez.
-   * Se invalida en cada escritura de animales. */
+  /* Caché de la tabla de animales. La invalidación REAL es por evento: cada
+   * escritura llama _invalidarAnimales(), así que el TTL solo acota cuánto tarda
+   * en verse un cambio de OTRO dispositivo. Con 200+ animales, 3 s hacía
+   * re-descargar toda la tabla en cada navegación; 30 s la baja una vez por
+   * ráfaga de pantallas sin quedarse peligrosamente vieja (y la edición
+   * concurrente ya avisa por su cuenta). */
+  const ANIM_CACHE_TTL = 30000;
   let _animCache = null, _animCacheAt = 0, _animGen = 0;
   function _invalidarAnimales() { _animCache = null; _animGen++; }
   async function _fetchAnimalesRaw() {
-    if (_animCache && (Date.now() - _animCacheAt) < 3000) return _animCache;
+    if (_animCache && (Date.now() - _animCacheAt) < ANIM_CACHE_TTL) return _animCache;
     const gen = _animGen;
     let resp = await client().from('v_animales').select('*').order('id');
     /* caer a la tabla base SOLO si la vista no existe (migración sin aplicar);
@@ -399,10 +403,15 @@
 
   /* Ordeños históricos (datos reales para el histórico de producción).
    * Devuelve filas planas; la UI las agrupa por día/mes. */
-  async function getOrdenos() {
-    return _paginado(() => client().from('ordenos')
-      .select('animal_id, fecha, litros').eq('turno', 'dia')
-      .order('fecha', { ascending: true }).order('id', { ascending: true }));
+  /* ordeños diarios; con `anio` filtra a ese año (una finca con 200+ animales y
+   * años de historia no puede bajar TODO en cada carga). Sin anio, baja todo. */
+  async function getOrdenos(anio) {
+    return _paginado(() => {
+      let q = client().from('ordenos')
+        .select('animal_id, fecha, litros').eq('turno', 'dia');
+      if (anio) q = q.gte('fecha', anio + '-01-01').lte('fecha', anio + '-12-31');
+      return q.order('fecha', { ascending: true }).order('id', { ascending: true });
+    });
   }
 
   /* --- Vacunaciones --------------------------------------------------------- */
