@@ -69,8 +69,11 @@
   fichas muestran un banner "↧ Baja" (motivo · fecha · valor · nota) cuando el
   animal está de baja, con botón **"Revertir baja"** que lo devuelve al hato
   (más allá del Deshacer de 5 s). El store ya persistía los 4 campos. Verificado.
-- [ ] 🟢 **P5 · Parto sin fricción.** Permitir madre de cualquier grupo adulto
-  (con aviso), y campos opcionales de nombre/chapeta de la cría.
+- [x] 🟢 **P5 · Parto sin fricción.** ✅ La madre puede ser de cualquier grupo
+  adulto (horra, en ordeño o novilla; se prefieren horras y avisa si no es
+  horra) en móvil y escritorio; número (chapeta) y nombre de la cría opcionales
+  (valida chapeta duplicada antes de mutar). La madre no-horra se mueve bien a
+  ordeño (grupo + lista de leche) con su reversa. Verificado en navegador.
 - [ ] 🟢 **Paridad de captura móvil:** fecha editable en palpación y vacunación
   del móvil (hoy siempre "hoy"); `proxima`/`nota` en vacunación (el store ya las
   soporta); tratamiento sobre **todo el hato**, no solo vacas en ordeño.

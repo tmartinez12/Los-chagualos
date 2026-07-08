@@ -2344,20 +2344,26 @@ function saveSeca(){
 /* --- parto --- */
 const partoState={};
 let criaSeq=73;
+/* grupos que pueden parir; se prefieren las horras (preñadas próximas) */
+const GRUPOS_MADRE=['Horra','En ordeño','Novilla'];
 function openParto(cow){
-  const cands=hato.filter(a=>a.grupo==='Horra');
-  if(!cands.length){snack('No hay vacas horras (preñadas próximas) para registrar parto');return;}
+  const cands=hato.filter(a=>GRUPOS_MADRE.includes(a.grupo))
+    .sort((x,y)=>GRUPOS_MADRE.indexOf(x.grupo)-GRUPOS_MADRE.indexOf(y.grupo));
+  if(!cands.length){snack('No hay vacas adultas (horras, en ordeño o novillas) para registrar parto');return;}
   partoState.num=cow?(''+cow).split('·')[0].trim():cands[0].num;
   partoState.sexo='H';partoState.tipo='normal';partoState.estado='viva';partoState.peso=38;partoState.fecha=isoHoy();
+  partoState.criaNum='';partoState.criaNombre='';
   openReg('Registrar parto','La cría entra al hato y la madre vuelve al ordeño en DEL 0');
   const body=document.getElementById('regBody');body.innerHTML='';
   body.appendChild(regLabel('Fecha del parto'));
-  const fp=document.createElement('input');fp.type='date';fp.value=partoState.fecha;
+  const fp=document.createElement('input');fp.type='date';fp.value=partoState.fecha;fp.max=isoHoy();
   fp.style.cssText='width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);padding:10px 12px;outline:none;margin-bottom:8px';
   fp.onchange=()=>{partoState.fecha=fp.value||isoHoy();};
   body.appendChild(fp);
-  body.appendChild(regLabel('Madre (horra)'));
-  body.appendChild(regChips(cands.map(a=>({val:a.num,label:a.num+' '+a.n})),partoState.num,v=>partoState.num=v));
+  body.appendChild(regLabel('Madre'));
+  body.appendChild(regChips(cands.map(a=>({val:a.num,label:a.num+' '+a.n})),partoState.num,v=>{partoState.num=v;pintaPartoMadre();}));
+  const mi=regHint('','var(--ink-2)');mi.id='partoMadreInfo';body.appendChild(mi);
+  pintaPartoMadre();
   body.appendChild(regLabel('Sexo de la cría'));
   body.appendChild(regChips([{val:'H',label:'♀ Hembra'},{val:'M',label:'♂ Macho'}],partoState.sexo,v=>partoState.sexo=v));
   body.appendChild(regLabel('Tipo de parto'));
@@ -2366,10 +2372,27 @@ function openParto(cow){
   body.appendChild(regChips([{val:'viva',label:'Viva'},{val:'muerta',label:'Mortinato'}],partoState.estado,v=>partoState.estado=v));
   body.appendChild(regLabel('Peso al nacer'));
   body.appendChild(regStepper(()=>partoState.peso,v=>partoState.peso=v,20,60,'kg'));
+  body.appendChild(regTexto('Número de la cría (chapeta, opcional)','Se asigna el siguiente libre',v=>partoState.criaNum=v,'text',''));
+  body.appendChild(regTexto('Nombre de la cría (opcional)','Ej. Lucero',v=>partoState.criaNombre=v,'text',''));
   document.getElementById('regSaveBtn').onclick=saveParto;
+}
+/* aviso si la madre elegida no es horra (lo normal es parir desde horra) */
+function pintaPartoMadre(){
+  const a=hato.find(x=>x.num===partoState.num);const box=document.getElementById('partoMadreInfo');if(!box||!a)return;
+  if(a.grupo==='Horra'){box.textContent='Horra (preñada próxima) — lo normal para parir.';box.style.color='var(--green)';}
+  else{box.textContent='⚠ '+a.n+' está en "'+a.grupo+'", no en horras. Confirma que de verdad parió.';box.style.color='var(--red)';}
 }
 function saveParto(){
   const a=hato.find(x=>x.num===partoState.num);if(!a)return;const nombre=a.n;
+  /* número de la cría viva: validar ANTES de mutar la madre (evita estado a medias) */
+  let criaNumFinal=null;
+  if(partoState.estado==='viva'){
+    const dado=(partoState.criaNum||'').trim();
+    if(dado){
+      if(animalesPorId[dado]||hato.find(x=>x.num===dado)){snack('⚠ El número '+dado+' ya existe — usa otro');return;}
+      criaNumFinal=dado;
+    }else{criaNumFinal=String(++criaSeq).padStart(3,'0');}
+  }
   closeReg();
   const sexoTxt=partoState.sexo==='H'?'♀ hembra':'♂ macho';
   const tipoTxt=partoState.tipo==='asistido'?'parto asistido':'parto normal';
@@ -2385,9 +2408,11 @@ function saveParto(){
   /* la cría viva entra al hato */
   let cria=null;
   const criaGrupo=partoState.sexo==='H'?'Ternera':'Macho';
+  const criaNombre=(partoState.criaNombre||'').trim();
+  const criaAuto=!((partoState.criaNum||'').trim());   // se usó la secuencia (para revertirla en el Deshacer)
   if(partoState.estado==='viva'){
-    const num=String(++criaSeq).padStart(3,'0');
-    cria={num,n:'(cría de '+nombre+')',raza:a.raza,grupo:criaGrupo,edad:'0 m',
+    const num=criaNumFinal;
+    cria={num,n:criaNombre||('(cría de '+nombre+')'),raza:a.raza,grupo:criaGrupo,edad:'0 m',
       repro:'<span class="badge ok">recién nacid'+(partoState.sexo==='H'?'a':'o')+' · '+partoState.peso+' kg</span>',
       del:'—',ayer:'—',var:'—',vc:'',tags:[]};
     hato.unshift(cria);
@@ -2420,7 +2445,7 @@ function saveParto(){
     /* UNA transacción en la base (cría + parto + madre): o entra todo o nada */
     pSaveParto=LCStore.registrarPartoCompleto({id:partoId,madreId:partoState.num,fecha:fechaParto,
         sexo:partoState.sexo,pesoKg:partoState.peso,tipo:partoState.tipo,estadoCria:partoState.estado,
-        criaId:criaId,criaNombre:criaId?('Cría de '+nombre):null,criaRaza:a.raza})
+        criaId:criaId,criaNombre:criaId?(criaNombre||('Cría de '+nombre)):null,criaRaza:a.raza})
       .catch(e=>{console.warn('Parto no guardado en la base:',e.message||e);
         snack('⚠ El parto NO se guardó en la base — revisa la conexión y regístralo de nuevo');});
   }
@@ -2429,7 +2454,7 @@ function saveParto(){
     : 'Parto de '+nombre+' · la cría nació muerta — queda en el historial · '+nombre+' al ordeño en DEL 0';
   snack(msg,'Deshacer',()=>{
     Object.assign(a,prevMadre);
-    if(cria){const ci=hato.indexOf(cria);if(ci>=0)hato.splice(ci,1);criaSeq--;}
+    if(cria){const ci=hato.indexOf(cria);if(ci>=0)hato.splice(ci,1);if(criaAuto)criaSeq--;}
     if(prevParto)proximosPartos.splice(Math.min(pi,proximosPartos.length),0,prevParto);
     const ri=partosRecientes.indexOf(reciente);if(ri>=0)partosRecientes.splice(ri,1);
     /* revertir también los cachés canónicos */

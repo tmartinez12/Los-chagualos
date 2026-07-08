@@ -508,7 +508,10 @@
     <div class="m-label" id="partoCow">—</div>
     <div class="m-del" id="partoDel" style="margin-bottom:14px">Confirma la fecha y los datos de la cría</div>
 
-    <div class="section-label" style="margin-top:0">Fecha del parto</div>
+    <div class="section-label" style="margin-top:0">Madre</div>
+    <div class="chips" id="partoCows"></div>
+
+    <div class="section-label">Fecha del parto</div>
     <input type="date" id="partoFecha" oninput="parto.fecha=this.value"
       style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);padding:10px 12px;outline:none">
 
@@ -537,6 +540,12 @@
       <span style="font-weight:700;min-width:70px;text-align:center;font-size:15px"><span id="partoPesoVal">38</span> kg</span>
       <button class="chip" onclick="partoPeso(1)">＋</button>
     </div>
+
+    <div class="section-label">Cría (opcional)</div>
+    <input id="partoCriaNum" placeholder="Número (chapeta) — si no, el siguiente libre" oninput="parto.criaNum=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-bottom:8px">
+    <input id="partoCriaNombre" placeholder="Nombre de la cría" oninput="parto.criaNombre=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
 
     <button class="btn filled" style="width:100%;justify-content:center;margin-top:16px" onclick="saveParto()">
       <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar parto</button>

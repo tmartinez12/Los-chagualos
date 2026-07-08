@@ -680,7 +680,9 @@ const partoInfo={};
 let proximosPartos=[];
 let partosRecientes=[];
 let partos2026=0, porParir=0, criaNum=0, nTerneras=0, nMachos=0;
-const parto={cow:'',sexo:'H',tipo:'normal',estado:'viva',peso:38};
+const parto={cow:'',sexo:'H',tipo:'normal',estado:'viva',peso:38,fecha:'',criaNum:'',criaNombre:''};
+/* grupos que pueden parir; se prefieren las horras (preñadas próximas) */
+const GRUPOS_MADRE_M=['horra','ordeño','novilla'];
 function renderPartos(){
   document.getElementById('kpiPartos2026').textContent=partos2026;
   document.getElementById('kpiPorParir').textContent=porParir;
@@ -709,18 +711,36 @@ function renderPartos(){
   lr.appendChild(hist);
 }
 function openParto(cow){
-  const horras=Object.values(animalesPorIdM).filter(a=>a.grupo==='horra').map(a=>a.id+' · '+a.nombre);
-  parto.cow=cow||horras[0]||'';
+  /* candidatas: cualquier grupo adulto (horras primero), no solo horras */
+  const adultas=Object.values(animalesPorIdM).filter(a=>GRUPOS_MADRE_M.includes(a.grupo))
+    .sort((x,y)=>GRUPOS_MADRE_M.indexOf(x.grupo)-GRUPOS_MADRE_M.indexOf(y.grupo))
+    .map(a=>a.id+' · '+a.nombre);
+  parto.cow=cow||adultas[0]||'';
   parto.sexo='H';parto.tipo='normal';parto.estado='viva';parto.peso=38;parto.fecha=isoHoyM();
+  parto.criaNum='';parto.criaNombre='';
+  pintarCowChips('partoCows',adultas,parto.cow,partoCow);
   const fp=document.getElementById('partoFecha');if(fp){fp.value=parto.fecha;fp.max=isoHoyM();}
   document.getElementById('partoCow').textContent=(parto.cow||'—').toUpperCase();
-  document.getElementById('partoDel').textContent=partoInfo[parto.cow]||'Confirma la fecha y los datos de la cría';
+  document.getElementById('partoDel').textContent=partoAvisoMadre(parto.cow);
   document.getElementById('partoPesoVal').textContent=parto.peso;
-  document.querySelectorAll('#partoSheet .chips').forEach(g=>
-    g.querySelectorAll('.chip').forEach((c,i)=>c.classList.toggle('sel',i===0)));
+  ['partoCriaNum','partoCriaNombre'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  /* seleccionar la primera opción SOLO en los grupos de chips de datos (no en la lista de madres) */
+  document.querySelectorAll('#partoSheet .chips').forEach(g=>{if(g.id==='partoCows')return;
+    g.querySelectorAll('.chip').forEach((c,i)=>c.classList.toggle('sel',i===0));});
   document.getElementById('scrim').classList.add('show');
   document.getElementById('partoSheet').classList.add('show');
 }
+/* aviso si la madre elegida no es horra (lo normal es parir desde horra) */
+function partoAvisoMadre(cow){
+  const a=animalesPorIdM[numDe(cow)];if(!a)return'Confirma la fecha y los datos de la cría';
+  if(a.grupo==='horra')return partoInfo[cow]||'Horra (preñada próxima) — lo normal para parir';
+  return '⚠ '+a.nombre+' está en "'+(GRUPO_DISPLAY_M[a.grupo]||a.grupo)+'", no en horras — confirma que sí parió';
+}
+function partoCow(cow){parto.cow=cow;
+  document.getElementById('partoCow').textContent=cow.toUpperCase();
+  document.getElementById('partoDel').textContent=partoAvisoMadre(cow);
+  document.querySelectorAll('#partoCows .chip').forEach(c=>
+    c.classList.toggle('sel',c.textContent.trim().split(' ')[0]===numDe(cow)));}
 function closeParto(){document.getElementById('partoSheet').classList.remove('show');
   document.getElementById('scrim').classList.remove('show');}
 function partoPick(btn,campo,val){parto[campo]=val;
@@ -730,9 +750,20 @@ function partoPeso(d){parto.peso=Math.max(20,Math.min(60,parto.peso+d));
 function saveParto(){
   if(!parto.cow||parto.cow.indexOf('·')<0){closeParto();
     snack('No hay vaca seleccionada — registra primero el hato');return;}
+  const numMadre=parto.cow.split('·')[0].trim();
+  /* número de la cría viva: validar ANTES de mutar nada (evita estado a medias) */
+  let criaNumFinal=null;const criaAuto=!((parto.criaNum||'').trim());
+  if(parto.estado==='viva'){
+    const dado=(parto.criaNum||'').trim();
+    if(dado){
+      if(animalesPorIdM[dado]){snack('⚠ El número '+dado+' ya existe — usa otro');return;}
+      criaNumFinal=dado;
+    }else{criaNumFinal=String(++criaNum).padStart(3,'0');}
+  }
   closeParto();
   const fechaP=parto.fecha||isoHoyM();
   const nombre=parto.cow.split('·')[1].trim();
+  const criaNombreDado=(parto.criaNombre||'').trim();
   const sexoTxt=parto.sexo==='H'?'♀ hembra':'♂ macho';
   const tipoTxt=parto.tipo==='asistido'?'parto asistido':'parto normal';
   // snapshot para poder deshacer
@@ -742,29 +773,38 @@ function saveParto(){
   if(idx>=0)proximosPartos.splice(idx,1);
   if(porParir>0)porParir--;
   partos2026++;
-  // la madre sale de horras y vuelve al ordeño (DEL 0)
-  const numMadre=parto.cow.split('·')[0].trim();
-  const hIdx=grupos.horras.animales.findIndex(a=>a[0].split('·')[0].trim()===numMadre);
-  const removedHorra=hIdx>=0?grupos.horras.animales[hIdx]:null;
-  if(hIdx>=0){grupos.horras.animales.splice(hIdx,1);nHorras--;subHorras();}
+  // la madre sale de su grupo actual (horra, ordeño o novilla) y vuelve al ordeño (DEL 0)
+  const madreCache=animalesPorIdM[numMadre];
+  const kMadre=(madreCache&&GRUPO_KEY[madreCache.grupo])||'horras';
+  const madreCambiaGrupo=kMadre!=='ordeno';   // si ya estaba en ordeño, se queda ahí
+  const hIdx=(madreCambiaGrupo&&grupos[kMadre])?grupos[kMadre].animales.findIndex(a=>numDe(a[0])===numMadre):-1;
+  const removedHorra=hIdx>=0?grupos[kMadre].animales[hIdx]:null;
+  if(hIdx>=0){grupos[kMadre].animales.splice(hIdx,1);incGrupo(kMadre,-1);}
+  /* la madre vuelve al ordeño (DEL 0): caché, grupo del hato y lista de leche */
+  const madrePrev=madreCache?{grupo:madreCache.grupo,del:madreCache.del,inicioLactancia:madreCache.inicioLactancia}:null;
+  if(madreCache){madreCache.grupo='ordeño';madreCache.del=0;madreCache.inicioLactancia=fechaP;}
+  if(madreCambiaGrupo){grupos.ordeno.animales.unshift([numMadre+' · '+nombre,subAnimalM(madreCache||{grupo:'ordeño'}),1]);incGrupo('ordeno',1);}
+  const madreYaEnCows=cows.find(c=>c.num===numMadre);
+  if(!madreYaEnCows&&madreCache){cows.push(animalACow(madreCache));renderCows();}
   let deshacerCria=()=>{}, msg, criaIdNueva=null;
   if(parto.estado==='viva'){
-    const num=String(++criaNum).padStart(3,'0');criaIdNueva=num;
+    const num=criaNumFinal;criaIdNueva=num;
     // la cría viva entra sola al Hato: hembra → Terneras, macho → Machos
     const grupo=parto.sexo==='H'?'terneras':'machos';
     const destino=parto.sexo==='H'?'Terneras':'Machos';
     const prevSub=grupos[grupo].sub, prevHeader=grupos[grupo].header;
     if(parto.sexo==='H'){nTerneras++;subTerneras();}
     else{nMachos++;subMachos();}
-    const filaCria=[num+' · (cría de '+nombre+')','recién nacid'+(parto.sexo==='H'?'a':'o')+' · '+parto.peso+' kg · 0 meses',0];
+    const nombreCria=criaNombreDado||('cría de '+nombre);
+    const filaCria=[num+' · '+nombreCria,'recién nacid'+(parto.sexo==='H'?'a':'o')+' · '+parto.peso+' kg · 0 meses',0];
     grupos[grupo].animales.unshift(filaCria);
     /* clicable y en caché apenas se confirme el guardado (ver pSaveParto) */
-    parto._filaCria=filaCria;parto._criaDatos={id:num,nombre:'Cría de '+nombre,grupo:parto.sexo==='H'?'ternera':'macho',
+    parto._filaCria=filaCria;parto._criaDatos={id:num,nombre:criaNombreDado||('Cría de '+nombre),grupo:parto.sexo==='H'?'ternera':'macho',
       sexo:parto.sexo,pesoKg:parto.peso,nacimiento:fechaP,madreId:numMadre,leche:{},prenez:null};
     partosRecientes.unshift({t:parto.cow+' → cría '+num,
       s:fmtFechaCortaM(fechaP)+' · '+sexoTxt+' · viva · '+parto.peso+' kg · '+tipoTxt,badge:'en '+destino,bw:'ok'});
     deshacerCria=()=>{grupos[grupo].animales.shift();grupos[grupo].sub=prevSub;grupos[grupo].header=prevHeader;
-      if(parto.sexo==='H')nTerneras--;else nMachos--;criaNum--;};
+      if(parto.sexo==='H')nTerneras--;else nMachos--;if(criaAuto)criaNum--;};
     msg='Parto de '+nombre+' · cría '+num+' ('+sexoTxt+', '+parto.peso+' kg) creada en '+destino+' y vinculada · '+nombre+' al ordeño en DEL 0';
   }else{
     // mortinato: no entra al hato, pero queda registrado
@@ -781,7 +821,7 @@ function saveParto(){
     /* UNA transacción en la base (cría + parto + madre): o entra todo o nada */
     pSaveParto=LCStore.registrarPartoCompleto({id:partoId,madreId:numMadre,fecha:fechaP,
         sexo:parto.sexo,pesoKg:parto.peso,tipo:parto.tipo,estadoCria:parto.estado,
-        criaId:criaIdNueva,criaNombre:criaIdNueva?('Cría de '+nombre):null,criaRaza:madreRaza})
+        criaId:criaIdNueva,criaNombre:criaIdNueva?(criaNombreDado||('Cría de '+nombre)):null,criaRaza:madreRaza})
       .then(()=>{desencolar();
         if(criaIdNueva&&parto._criaDatos){animalesPorIdM[criaIdNueva]=parto._criaDatos;
           if(parto._filaCria)parto._filaCria[2]=1;}})
@@ -794,7 +834,12 @@ function saveParto(){
     partosRecientes.shift();
     partos2026--; porParir=prevPorParir;
     if(removed)proximosPartos.splice(Math.min(idx,proximosPartos.length),0,removed);
-    if(removedHorra){grupos.horras.animales.splice(Math.min(hIdx,grupos.horras.animales.length),0,removedHorra);nHorras++;subHorras();}
+    /* revertir la madre: quitarla de ordeño (grupo+cows) y devolverla a su grupo */
+    if(madreCambiaGrupo){const oi=grupos.ordeno.animales.findIndex(a=>numDe(a[0])===numMadre);
+      if(oi>=0){grupos.ordeno.animales.splice(oi,1);incGrupo('ordeno',-1);}}
+    if(!madreYaEnCows){const ci=cows.findIndex(c=>c.num===numMadre);if(ci>=0){cows.splice(ci,1);renderCows();}}
+    if(madreCache&&madrePrev)Object.assign(madreCache,madrePrev);
+    if(removedHorra&&grupos[kMadre]){grupos[kMadre].animales.splice(Math.min(hIdx,grupos[kMadre].animales.length),0,removedHorra);incGrupo(kMadre,1);}
     deshacerCria(); desencolar();
     renderPartos();
     snack('Parto deshecho');
