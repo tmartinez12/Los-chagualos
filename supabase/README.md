@@ -14,12 +14,12 @@ más de una vez sin daño):
 
 | # | Archivo | Qué hace | ¿Ya corrió? |
 |---|---|---|---|
-| 1 | `migracion-vacunaciones.sql` | Crea la tabla `vacunaciones` | correr si el registro de vacunas falla |
-| 2 | `migracion-zona-horaria.sql` | Fechas en hora de Colombia (`hoy_finca`) | jul 2026 |
-| 3 | `migracion-integridad.sql` | Constraints, FKs coherentes, índice, parto transaccional (RPC), revokes | **pendiente** |
-| 4 | `migracion-nacimiento.sql` | Backfill: estima `nacimiento` desde `edad_anios` (sin él la edad no avanza) | **pendiente** |
-| 5 | `migracion-restaurar.sql` | Función `restaurar_respaldo()` (restauración transaccional; sin ella, restaurar hace un merge no-transaccional) | **pendiente** |
-| 6 | `migracion-ganancia.sql` | `ganancia_dia_g` pasa de columna muerta a DERIVADA en `v_animales` (g/día desde el nacimiento) y se elimina la columna persistida | **pendiente** |
+| 1 | `migracion-vacunaciones.sql` | Crea la tabla `vacunaciones` | **pendiente** — confirmado faltante: el respaldo falló con "Could not find the table 'public.vacunaciones'" (jul 2026) |
+| 2 | `migracion-zona-horaria.sql` | Fechas en hora de Colombia (`hoy_finca`) | corrió jul 2026 |
+| 3 | `migracion-integridad.sql` | Constraints, FKs coherentes, índice, parto transaccional (RPC), revokes | corrió jul 2026 |
+| 4 | `migracion-nacimiento.sql` | Backfill: estima `nacimiento` desde `edad_anios` (sin él la edad no avanza) | corrió jul 2026 |
+| 5 | `migracion-restaurar.sql` | Función `restaurar_respaldo()` (restauración transaccional; sin ella, restaurar hace un merge no-transaccional) | corrió jul 2026 |
+| 6 | `migracion-ganancia.sql` | `ganancia_dia_g` pasa de columna muerta a DERIVADA en `v_animales` (g/día desde el nacimiento) y se elimina la columna persistida | corrió jul 2026 |
 
 Utilidades (no son migraciones):
 
