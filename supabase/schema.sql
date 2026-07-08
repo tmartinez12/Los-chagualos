@@ -335,6 +335,33 @@ BEGIN
   RETURN p_parto_id;
 END $$;
 
+-- ─── RESTAURACIÓN TRANSACCIONAL DE UN RESPALDO ──────────────────────────────
+-- Reemplaza TODOS los datos por los del respaldo en UNA transacción (o entra
+-- todo, o no cambia nada). No toca `unidades`. La app la llama por RPC; si no
+-- está instalada, store.js cae a un merge por upsert.
+CREATE OR REPLACE FUNCTION restaurar_respaldo(p jsonb)
+RETURNS jsonb
+LANGUAGE plpgsql AS $$
+DECLARE t jsonb := p -> 'tablas'; n_animales int;
+BEGIN
+  IF t IS NULL OR jsonb_typeof(t) <> 'object' THEN
+    RAISE EXCEPTION 'Respaldo inválido: falta el objeto "tablas".';
+  END IF;
+  TRUNCATE ordenos, palpaciones, tratamientos, vacunaciones,
+           partos, movimientos_potrero, animales, potreros RESTART IDENTITY CASCADE;
+  INSERT INTO potreros SELECT * FROM jsonb_populate_recordset(NULL::potreros, COALESCE(t->'potreros','[]'::jsonb));
+  -- un solo INSERT: las FK madre/padre autorreferenciadas se verifican al final del statement
+  INSERT INTO animales SELECT * FROM jsonb_populate_recordset(NULL::animales, COALESCE(t->'animales','[]'::jsonb));
+  GET DIAGNOSTICS n_animales = ROW_COUNT;
+  INSERT INTO ordenos             SELECT * FROM jsonb_populate_recordset(NULL::ordenos,             COALESCE(t->'ordenos','[]'::jsonb));
+  INSERT INTO palpaciones         SELECT * FROM jsonb_populate_recordset(NULL::palpaciones,         COALESCE(t->'palpaciones','[]'::jsonb));
+  INSERT INTO tratamientos        SELECT * FROM jsonb_populate_recordset(NULL::tratamientos,        COALESCE(t->'tratamientos','[]'::jsonb));
+  INSERT INTO vacunaciones        SELECT * FROM jsonb_populate_recordset(NULL::vacunaciones,        COALESCE(t->'vacunaciones','[]'::jsonb));
+  INSERT INTO partos              SELECT * FROM jsonb_populate_recordset(NULL::partos,              COALESCE(t->'partos','[]'::jsonb));
+  INSERT INTO movimientos_potrero SELECT * FROM jsonb_populate_recordset(NULL::movimientos_potrero, COALESCE(t->'movimientos_potrero','[]'::jsonb));
+  RETURN jsonb_build_object('ok', true, 'animales', n_animales);
+END $$;
+
 -- ─── RLS (Row Level Security) ───────────────────────────────────────────────
 -- MVP SIN LOGIN: el RLS queda DESACTIVADO en todas las tablas de datos. Con la
 -- anon key sin login, activarlo deja las lecturas en CERO filas (sin error) y

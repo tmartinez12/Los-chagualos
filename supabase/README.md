@@ -18,6 +18,7 @@ más de una vez sin daño):
 | 2 | `migracion-zona-horaria.sql` | Fechas en hora de Colombia (`hoy_finca`) | jul 2026 |
 | 3 | `migracion-integridad.sql` | Constraints, FKs coherentes, índice, parto transaccional (RPC), revokes | **pendiente** |
 | 4 | `migracion-nacimiento.sql` | Backfill: estima `nacimiento` desde `edad_anios` (sin él la edad no avanza) | **pendiente** |
+| 5 | `migracion-restaurar.sql` | Función `restaurar_respaldo()` (restauración transaccional; sin ella, restaurar hace un merge no-transaccional) | **pendiente** |
 
 Utilidades (no son migraciones):
 

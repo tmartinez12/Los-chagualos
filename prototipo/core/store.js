@@ -482,14 +482,18 @@
     for (const t of TABLAS_RESPALDO) out.tablas[t] = await _bajarTablaCompleta(t);
     return out;
   }
-  /* Restaura un respaldo. IMPORTANTE: es un MERGE (upsert por id): actualiza y
-   * repone lo que está en el archivo, pero NO borra filas creadas después del
-   * respaldo. Valida y limpia el archivo ANTES de escribir nada. */
+  /* tope de seguridad: un .json manipulado gigante congela la pestaña */
+  const MAX_FILAS_RESTAURA = 200000;
+  /* Restaura un respaldo REEMPLAZANDO todos los datos por los del archivo.
+   * Ruta principal: RPC transaccional restaurar_respaldo() — o entra todo o no
+   * cambia nada. Si esa función no está instalada, cae a un MERGE por upsert
+   * (no transaccional, no borra filas nuevas). Valida y limpia ANTES de tocar
+   * la base. NO toca `unidades` (config). */
   async function restaurarTodo(data) {
     if (!data || typeof data !== 'object' || !data.tablas || typeof data.tablas !== 'object')
       throw new Error('El archivo de respaldo no es válido (falta "tablas").');
-    /* validación previa: tablas conocidas, arrays, y filtrado de columnas viejas */
-    const T = {};
+    /* validación previa: tablas conocidas, arrays, filtrado de columnas viejas y tope de tamaño */
+    const T = {}; let total = 0;
     for (const t of TABLAS_RESPALDO) {
       const filas = data.tablas[t];
       if (filas == null) { T[t] = []; continue; }
@@ -502,7 +506,17 @@
       });
       if (T[t].some(f => f.id == null))
         throw new Error('Respaldo inválido: hay filas de "' + t + '" sin id.');
+      total += T[t].length;
     }
+    if (total > MAX_FILAS_RESTAURA)
+      throw new Error('El respaldo tiene ' + total + ' filas (tope ' + MAX_FILAS_RESTAURA + '); parece corrupto.');
+
+    /* ruta principal: restauración transaccional en la base */
+    const rpc = await client().rpc('restaurar_respaldo', { p: { tablas: T } });
+    if (!rpc.error) { _invalidarAnimales(); return true; }
+    /* función no instalada (migración pendiente) → merge clásico como respaldo */
+    if (rpc.error.code !== 'PGRST202' && rpc.error.code !== '42883') throw rpc.error;
+
     const upsert = async (tabla, filas, opts) => {
       if (!filas || !filas.length) return;
       const { error } = await client().from(tabla).upsert(filas, opts);
