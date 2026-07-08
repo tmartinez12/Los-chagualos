@@ -92,8 +92,10 @@ node --check prototipo/app.js && node --check prototipo/escritorio.js \
    Validar en Postgres local antes de entregar.
 4. **NUNCA re-ejecutar** nada de `supabase/migraciones-aplicadas/`
    (migracion-color.sql destruye la vista si se corre de nuevo).
-5. **Al tocar JS/CSS, sube el `?v=`** en `index.html`, `escritorio.html` y
-   `conexion.html` (cache-busting manual).
+5. **Cache-busting automático:** el repo deja `?v=dev` en `index.html`,
+   `escritorio.html` y `conexion.html`; `pages.yml` inyecta el SHA del commit al
+   publicar, así cada despliegue invalida la caché sin bump manual. En local
+   (http.server) usa recarga forzada si no ves un cambio.
 6. **El parto usa `registrarPartoCompleto`** (RPC transaccional con fallback)
    — no lo separes en escrituras sueltas.
 7. Si tocas un flujo `save*`: actualiza TODOS sus cachés locales y la reversa

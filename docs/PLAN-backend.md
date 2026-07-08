@@ -1,5 +1,11 @@
 # Plan de backend — Los Chagualos
 
+> ⚠️ **DOCUMENTO ARCHIVADO / DESACTUALIZADO (jul 2026).** El backend real se
+> construyó sobre **Supabase** (Postgres + PostgREST + `core/store.js`), sin el
+> login por PIN ni el outbox que este plan proponía. La realidad vigente está en
+> **`PROJECT.md`**, **`supabase/README.md`** y **`PLAN-MEJORAS.md`** (la Fase 1
+> retoma auth/RLS). Se conserva solo como registro histórico.
+
 > Decisiones tomadas para construir el backend. **Aún no se ejecuta**: primero
 > se revisa y ajusta el prototipo. Este documento es el punto de partida para
 > retomar (el contenedor es efímero, por eso queda en el repo).

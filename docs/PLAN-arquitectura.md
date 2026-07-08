@@ -1,5 +1,12 @@
 # Plan de arquitectura — Los Chagualos
 
+> ⚠️ **DOCUMENTO ARCHIVADO / DESACTUALIZADO (jul 2026).** Describe un diseño
+> propuesto (una capa `actions.js`, login por PIN, outbox offline) que **NO se
+> construyó así** o que ya divergió de lo que existe. La realidad actual está en
+> **`PROJECT.md`** (arquitectura), **`GAPS.md`** (deuda) y **`PLAN-MEJORAS.md`**
+> (plan vigente). Se conserva solo como registro histórico de intención; no
+> seguir sus pasos al pie de la letra.
+
 > Extracción de una capa compartida de datos/lógica entre la versión móvil y
 > la de escritorio, pensada como costura para un futuro backend.
 

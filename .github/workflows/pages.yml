@@ -24,6 +24,15 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - name: Cache-busting automático por commit
+        # Reemplaza cualquier ?v=… de los 3 HTML por el SHA corto del commit, así
+        # cada despliegue invalida la caché sin bump manual (rule 5). Solo toca la
+        # copia que se publica; el repo mantiene el placeholder ?v=dev.
+        run: |
+          SHA="${GITHUB_SHA::8}"
+          sed -i "s/?v=[0-9A-Za-z._-]*/?v=$SHA/g" \
+            prototipo/index.html prototipo/escritorio.html prototipo/conexion.html
+          echo "Versión de assets fijada a ?v=$SHA"
       - name: Configurar Pages
         uses: actions/configure-pages@v5
       - name: Subir la carpeta del prototipo

@@ -159,12 +159,22 @@
   `rules.js` debe seguir siendo puro/cargable en Node (lo requieren smoke.js e
   integracion.js); moverlo rompería los tests. La duplicación (≈8 líneas por
   página) no justifica crear un módulo UI-solo-navegador nuevo.
-- [ ] 🟢 **Cache-busting automático** (hash o `?v=` derivado del commit) en vez
-  de bump manual.
-- [ ] 🟢 **Deploy con revisión:** Pages desde `main` + PRs, no desde la rama de
-  trabajo (hoy cualquier push publica a producción).
-- [ ] 🟢 **Actualizar/archivar `PLAN-arquitectura.md` y `PLAN-backend.md`**
-  (describen actions.js/login/outbox que no existen).
+- [x] 🟢 **Cache-busting automático.** ✅ El repo deja el placeholder `?v=dev` en
+  los 3 HTML; `pages.yml` inyecta el SHA corto del commit al publicar (paso sed
+  antes de subir el artefacto), así cada despliegue invalida la caché sin bump
+  manual. CLAUDE.md rule 5 actualizado.
+- [ ] 🟢 **Deploy con revisión (DECISIÓN DE LA DUEÑA).** Hoy Pages publica en
+  cada push a la rama de trabajo (`pages.yml` dispara en `claude/youthful-cannon-
+  l903re`, path `prototipo/**`) — push = producción, sin staging. Pasar a "Pages
+  desde `main` + PRs" implica: (1) designar/crear la rama `main` como default
+  (hoy el default es una rama `claude/*`, no hay `main`); (2) cambiar el trigger
+  de `pages.yml` a esa rama; (3) trabajar por PRs hacia ella. Cambia el flujo de
+  trabajo de la dueña, así que **no se ejecuta unilateralmente**: queda como
+  recomendación con los pasos listos.
+- [x] 🟢 **Actualizar/archivar `PLAN-arquitectura.md` y `PLAN-backend.md`.** ✅
+  Banner "ARCHIVADO / DESACTUALIZADO" al inicio de ambos, apuntando a la realidad
+  vigente (`PROJECT.md`, `GAPS.md`, `supabase/README.md`, `PLAN-MEJORAS.md`). Se
+  dejan en su sitio (varios docs los referencian) en vez de mover archivos.
 
 ## FASE 6 — Refactor de raíz (opcional, alto valor a largo plazo)
 - [ ] 🔴 **M14 completo · Unificar los flujos `save*`.** Extraer las 6 acciones
