@@ -2127,6 +2127,7 @@ function openEditarVaca(num){
   editState.raza=RAZAS.includes(a.raza)?a.raza:'';
   editState.razaOtra=RAZAS.includes(a.raza)?'':(a.raza||'');
   editState.grupo=a.grupo||'ordeño';
+  editState.sexo=a.sexo||'H';editState.rolToro=(a.rolToro===true||a.rolToro==='toro');
   editState.origen=a.origen||'';
   editState.madre=a.madreId||'';editState.padre=a.padreId||'';
   editState.procedencia=a.procedencia||'';editState.valor=(a.valorCompra!=null?a.valorCompra:'');
@@ -2141,6 +2142,10 @@ function openEditarVaca(num){
   body.appendChild(regChips([['ordeño','En ordeño'],['horra','Horra'],['novilla','Novilla'],['levante','Levante'],['ternera','Ternera'],['macho','Macho']]
     .map(g=>({val:g[0],label:g[1]})),editState.grupo,v=>editState.grupo=v));
   body.appendChild(regHint('Cambiar el grupo corrige una clasificación; no toca la reproducción ni el historial.'));
+  body.appendChild(regLabel('Sexo'));
+  body.appendChild(regChips([{val:'H',label:'♀ Hembra'},{val:'M',label:'♂ Macho'}],editState.sexo,v=>{editState.sexo=v;pintaRolToro();}));
+  const rtWrap=document.createElement('div');rtWrap.id='rolToroWrap';body.appendChild(rtWrap);
+  pintaRolToro();
   body.appendChild(regTexto('Fecha de nacimiento','',v=>editState.nacimiento=v,'date',editState.nacimiento));
   body.appendChild(regLabel('Origen'));
   body.appendChild(regChips([{val:'nacido_finca',label:'🐄 Nacida en la finca'},{val:'comprado',label:'🛒 Comprada'}],editState.origen,v=>editState.origen=v));
@@ -2155,6 +2160,15 @@ function openEditarVaca(num){
   body.appendChild(regHint('“Leche de ayer” crea un registro de ordeño; lo demás (promedios, histórico) se calcula solo.'));
   body.appendChild(regTexto('Nota 📝','Ej. patea al ordeño, propensa a mastitis…',v=>editState.nota=v,'text',editState.nota));
   document.getElementById('regSaveBtn').onclick=guardarEditarVaca;
+}
+/* "Toro reproductor" solo aplica a machos; sin este rol la lógica de "hijas del toro" no se activa */
+function pintaRolToro(){
+  const w=document.getElementById('rolToroWrap');if(!w)return;w.innerHTML='';
+  if(editState.sexo!=='M'){editState.rolToro=false;return;}
+  w.appendChild(regLabel('Rol'));
+  w.appendChild(regChips([{val:'toro',label:'🐂 Toro reproductor'},{val:'no',label:'No reproductor'}],
+    editState.rolToro?'toro':'no',v=>editState.rolToro=(v==='toro')));
+  w.appendChild(regHint('Marca “Toro reproductor” para que sus crías se cuenten como hijas de este toro.'));
 }
 /* "hoy" de la finca como Date local a medianoche (para restas de días) */
 function hoyFincaDate(){return new Date(isoHoy()+'T00:00:00');}
@@ -2179,8 +2193,10 @@ function guardarEditarVaca(){
   const valor=(editState.valor!==''&&editState.valor!=null)?parseInt(String(editState.valor).replace(/\D/g,'')):null;
   closeReg();
   /* persistir TODO lo editable (paridad con "Registrar animal") */
+  const sexo=editState.sexo||a.sexo||'H';
+  const rolToro=sexo==='M'?!!editState.rolToro:false;
   const campos={nombre:nombre,raza:raza,color:color,nota:nota,nacimiento:nacimiento,inicio_lactancia:inicio,
-    grupo:editState.grupo||a.grupo,origen:editState.origen||null,
+    grupo:editState.grupo||a.grupo,origen:editState.origen||null,sexo:sexo,rol_toro:rolToro,
     madre_id:madre,padre_id:padre,
     procedencia:(editState.procedencia||'').trim()||null,valor_compra:valor};
   if(peso!=null&&!isNaN(peso)){campos.peso_kg=peso;campos.fecha_peso=isoHoy();}
@@ -2188,7 +2204,7 @@ function guardarEditarVaca(){
   const delCalc=inicio?diasDesdeReal(inicio):a.del;
   const grupoCambio=campos.grupo!==a.grupo;
   Object.assign(a,{nombre:nombre,raza:raza,color:color,nota:nota,nacimiento:nacimiento,inicioLactancia:inicio,del:delCalc,
-    grupo:campos.grupo,origen:campos.origen,madreId:madre,padreId:padre,
+    grupo:campos.grupo,origen:campos.origen,sexo:sexo,rolToro:rolToro,madreId:madre,padreId:padre,
     procedencia:campos.procedencia,valorCompra:valor});
   a.leche=a.leche||{};if(leche!=null&&!isNaN(leche))a.leche.ayer=leche;
   if(peso!=null&&!isNaN(peso)){a.pesoKg=peso;a.fechaPeso=isoHoy();}

@@ -420,6 +420,10 @@ let animalesPorIdM={};
     const maxNum=Math.max(0,...all.map(a=>parseInt(a.id,10)).filter(n=>!isNaN(n)));
     if(typeof criaNum!=='undefined'&&maxNum>criaNum)criaNum=maxNum;
     if(typeof altaSeq!=='undefined'&&maxNum>altaSeq)altaSeq=maxNum;
+    /* toros ('T01', 'T02'…): re-sembrar toroSeq del mayor real para que el
+     * próximo toro comprado no choque la PK de uno ya existente. */
+    const maxToro=Math.max(0,...all.map(a=>{const m=/^T0*(\d+)$/.exec(String(a.id));return m?parseInt(m[1],10):NaN;}).filter(n=>!isNaN(n)));
+    if(typeof toroSeq!=='undefined'&&maxToro>toroSeq)toroSeq=maxToro;
     /* reconstruir los grupos del hato desde la base */
     Object.keys(grupos).forEach(k=>{grupos[k].animales=[];});
     all.forEach(a=>{const k=GRUPO_KEY[a.grupo];if(!k||!grupos[k])return;
@@ -1092,15 +1096,22 @@ function closeNueva(){document.getElementById('nuevaSheet').classList.remove('sh
   document.getElementById('scrim').classList.remove('show');}
 /* --- Alta (compra) --- */
 const altaGrupo={'Vaca en ordeño':'ordeno','Novilla':'novillas','Ternera':'terneras','Toro':'machos'};
-const alta={tipo:'Novilla',raza:'Holstein × Gyr',edad:2,procedencia:'',valor:''};
+const alta={tipo:'Novilla',raza:'Holstein × Gyr',edad:2,origen:'nacido_finca',num:'',nombre:'',nacimiento:'',procedencia:'',valor:''};
 let altaSeq=0, toroSeq=0;   // se re-siembran desde el mayor id real
-function openAlta(){alta.tipo='Novilla';alta.raza='Holstein × Gyr';alta.edad=2;alta.procedencia='';alta.valor='';
+/* siguiente número libre para hembras (el mayor numérico + 1) */
+function _siguienteNumM(){
+  const nums=Object.keys(animalesPorIdM).map(x=>parseInt(x,10)).filter(n=>!isNaN(n));
+  return String(Math.max(altaSeq,...(nums.length?nums:[0]))+1).padStart(3,'0');}
+function openAlta(){alta.tipo='Novilla';alta.raza='Holstein × Gyr';alta.edad=2;
+  alta.origen='nacido_finca';alta.num='';alta.nombre='';alta.nacimiento='';alta.procedencia='';alta.valor='';
   const grupos2=document.querySelectorAll('#altaSheet .chips');
-  grupos2[0].querySelectorAll('.chip').forEach(c=>c.classList.toggle('sel',c.textContent.trim()==='Novilla'));
-  grupos2[1].querySelectorAll('.chip').forEach(c=>c.classList.toggle('sel',c.textContent.trim()==='Holstein × Gyr'));
+  grupos2[0].querySelectorAll('.chip').forEach((c,i)=>c.classList.toggle('sel',i===0));
+  grupos2[1].querySelectorAll('.chip').forEach(c=>c.classList.toggle('sel',c.textContent.trim()==='Novilla'));
+  grupos2[2].querySelectorAll('.chip').forEach(c=>c.classList.toggle('sel',c.textContent.trim()==='Holstein × Gyr'));
   document.getElementById('altaEdadVal').textContent=alta.edad;
-  const p=document.getElementById('altaProc');if(p)p.value='';
-  const v=document.getElementById('altaValor');if(v)v.value='';
+  ['altaNum','altaNombre','altaNac','altaProc','altaValor'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  const na=document.getElementById('altaNac');if(na)na.max=isoHoyM();   // sin fechas futuras
+  const n=document.getElementById('altaNum');if(n)n.placeholder=_siguienteNumM()+' (siguiente libre)';
   document.getElementById('scrim').classList.add('show');
   document.getElementById('altaSheet').classList.add('show');}
 function closeAlta(){document.getElementById('altaSheet').classList.remove('show');
@@ -1110,29 +1121,39 @@ function altaPick(btn,campo,val){alta[campo]=val;
 function altaEdad(d){alta.edad=Math.max(0,Math.min(15,alta.edad+d));
   document.getElementById('altaEdadVal').textContent=alta.edad;}
 function saveAlta(){
-  closeAlta();
   const g=altaGrupo[alta.tipo];
-  const num=g==='machos'?'T0'+(++toroSeq):String(++altaSeq).padStart(3,'0');
-  const fila=[num+' · (compra)',alta.raza+' · '+alta.edad+' años · '+alta.tipo.toLowerCase()+' comprada',0];
+  /* número: el que teclee la dueña (validado) o el siguiente libre */
+  let num=(alta.num||'').trim();
+  if(num){
+    if(animalesPorIdM[num]){snack('⚠ El número '+num+' ya existe — usa otro');return;}
+  }else{
+    num=g==='machos'?'T0'+(++toroSeq):_siguienteNumM();
+    if(animalesPorIdM[num]){snack('⚠ El número '+num+' ya existe — revisa e ingrésalo a mano');return;}
+  }
+  closeAlta();
+  const comprada=alta.origen==='comprado';
+  const nombre=(alta.nombre||'').trim()||(comprada?'(compra)':'(sin nombre)');
+  const fila=[num+' · '+nombre,alta.raza+' · '+alta.edad+' años · '+alta.tipo.toLowerCase()+(comprada?' comprada':''),0];
   grupos[g].animales.unshift(fila);
   incGrupo(g,1);encolar();
   if(typeof LCStore!=='undefined'){
     const GM={ordeno:'ordeño',novillas:'novilla',terneras:'ternera',machos:'macho'};
-    LCStore.insertAnimal({id:num,nombre:'(compra)',raza:alta.raza,grupo:GM[g]||'novilla',
-      sexo:g==='machos'?'M':'H',edadAnios:alta.edad,origen:'comprado',
-      procedencia:alta.procedencia||null,
-      valorCompra:alta.valor?parseInt(String(alta.valor).replace(/\D/g,'')):null})
+    LCStore.insertAnimal({id:num,nombre:nombre,raza:alta.raza,grupo:GM[g]||'novilla',
+      sexo:g==='machos'?'M':'H',edadAnios:alta.edad,nacimiento:alta.nacimiento||null,
+      origen:alta.origen||'nacido_finca',
+      procedencia:comprada?(alta.procedencia||null):null,
+      valorCompra:(comprada&&alta.valor)?parseInt(String(alta.valor).replace(/\D/g,'')):null})
       .then(a=>{desencolar();
         /* al caché y clicable: su ficha abre sin recargar la página */
         if(a)animalesPorIdM[a.id]=a;fila[2]=1;
         /* si entró "en ordeño", aparece YA en la lista de leche (P1) */
         if(a&&g==='ordeno'&&!cows.find(c=>c.num===num)){cows.push(animalACow(a));renderCows();}})
-      .catch(e=>{console.warn('Compra móvil no guardada:',e.message||e);
-        snack('⚠ La compra NO se guardó en la base — revisa la señal y reintenta');});
+      .catch(e=>{console.warn('Alta móvil no guardada:',e.message||e);
+        snack('⚠ El animal NO se guardó en la base — revisa la señal y reintenta');});
   }
   setTimeout(()=>openGroup(g),300);
-  const extra=(alta.procedencia?' · '+alta.procedencia:'')+(alta.valor?' · $'+alta.valor:'');
-  snack('Compra: '+num+' ('+alta.tipo.toLowerCase()+', '+alta.raza+')'+extra+' — entró al hato','Deshacer',()=>{
+  const extra=(comprada&&alta.procedencia?' · '+alta.procedencia:'')+(comprada&&alta.valor?' · $'+alta.valor:'');
+  snack((comprada?'Compra: ':'Alta: ')+num+' ('+alta.tipo.toLowerCase()+', '+alta.raza+')'+extra+' — entró al hato','Deshacer',()=>{
     grupos[g].animales.shift();incGrupo(g,-1);
     /* NO decrementar las secuencias: reusar el id puede chocar con la PK si
      * hubo otra alta en el medio; mejor saltar el número. */

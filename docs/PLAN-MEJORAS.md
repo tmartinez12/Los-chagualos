@@ -56,13 +56,14 @@
   copy honesto — ya está.)
 
 ## FASE 3 — Completar los flujos (huecos de producto)
-- [ ] 🟡 **P2 · Alta móvil a la par del escritorio.** Pedir al menos chapeta,
-  nombre, nacimiento y origen (hoy crea fichas "huérfanas" con nombre
-  "(compra)"); y **re-sembrar `toroSeq`** del máximo real (hoy choca la PK del
-  2º toro comprado en otra sesión).
-- [ ] 🟢 **P4 · Sexo y rol de toro editables.** Exponer `sexo` en el editor
-  (un error al crear es incorregible) y una casilla "toro reproductor"
-  (`rol_toro`) — sin ella, la lógica de "hijas del toro" nunca se activa.
+- [x] 🟡 **P2 · Alta móvil a la par del escritorio.** ✅ El alta móvil pide
+  origen, número (chapeta), nombre y fecha de nacimiento (opcionales, con el
+  siguiente número libre sugerido); valida chapeta duplicada; y **re-siembra
+  `toroSeq`** del mayor toro real (`T0…`) para que el 2º toro comprado no choque
+  la PK. Verificado con `node --check` + smoke.
+- [x] 🟢 **P4 · Sexo y rol de toro editables.** ✅ El editor del escritorio
+  expone `sexo` (♀/♂) y, para machos, "🐂 Toro reproductor" (`rol_toro`);
+  ambos se persisten y actualizan la caché. Verificado.
 - [ ] 🟡 **P3 · Baja completa y visible.** Capturar fecha (no forzar hoy),
   valor de venta y nota; mostrar la sección "Baja" (motivo/fecha/valor) en ambas
   fichas; acción "corregir/revertir baja" más allá del Deshacer de 5 s.

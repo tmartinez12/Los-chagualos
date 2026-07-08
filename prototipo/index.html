@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Los Chagualos · Prototipo</title>
-<link rel="stylesheet" href="styles.css?v=20260709">
+<link rel="stylesheet" href="styles.css?v=20260710">
 </head>
 <body>
 <!-- ÍCONOS DE LÍNEA (inline, funcionan offline) -->
@@ -649,16 +649,32 @@
   <!-- SHEET: vaca comprada -->
   <div class="sheet" id="altaSheet">
     <div class="handle"></div>
-    <h3>Vaca comprada</h3>
-    <div class="m-del" style="margin-bottom:14px">Entra al hato; completas la ficha después.</div>
+    <h3>Nuevo animal</h3>
+    <div class="m-del" style="margin-bottom:14px">Entra al hato con su ficha lista; puedes completarla después.</div>
 
-    <div class="section-label" style="margin-top:0">Tipo de animal</div>
+    <div class="section-label" style="margin-top:0">Origen</div>
+    <div class="chips">
+      <button class="chip sel" onclick="altaPick(this,'origen','nacido_finca')">🐄 Nacida en la finca</button>
+      <button class="chip" onclick="altaPick(this,'origen','comprado')">🛒 Comprada</button>
+    </div>
+
+    <div class="section-label">Número (chapeta)</div>
+    <input id="altaNum" placeholder="Se asigna el siguiente libre" oninput="alta.num=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-bottom:8px">
+    <input id="altaNombre" placeholder="Nombre (opcional)" oninput="alta.nombre=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
+
+    <div class="section-label">Tipo de animal</div>
     <div class="chips">
       <button class="chip sel" onclick="altaPick(this,'tipo','Novilla')">Novilla</button>
       <button class="chip" onclick="altaPick(this,'tipo','Ternera')">Ternera</button>
       <button class="chip" onclick="altaPick(this,'tipo','Vaca en ordeño')">Vaca en ordeño</button>
       <button class="chip" onclick="altaPick(this,'tipo','Toro')">Toro</button>
     </div>
+
+    <div class="section-label">Fecha de nacimiento (opcional)</div>
+    <input id="altaNac" type="date" oninput="alta.nacimiento=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
 
     <div class="section-label">Raza</div>
     <div class="chips">
@@ -669,7 +685,7 @@
       <button class="chip" onclick="altaPick(this,'raza','Normando')">Normando</button>
     </div>
 
-    <div class="section-label">Edad aproximada</div>
+    <div class="section-label">Edad aproximada (si no sabes la fecha)</div>
     <div class="chips" style="align-items:center">
       <button class="chip" onclick="altaEdad(-1)">−</button>
       <span style="font-weight:700;min-width:84px;text-align:center;font-size:15px"><span id="altaEdadVal">2</span> años</span>
@@ -683,9 +699,9 @@
       style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
 
     <button class="btn filled" style="width:100%;justify-content:center;margin-top:16px" onclick="saveAlta()">
-      <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar compra</button>
+      <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar animal</button>
     <div style="font-size:11px;color:var(--ink-3);margin-top:10px;text-align:center">
-      Se le asigna el número siguiente disponible.</div>
+      Si dejas el número vacío, se asigna el siguiente libre.</div>
   </div>
 
   <!-- SHEET: editar datos de la vaca -->
@@ -765,8 +781,8 @@
 <!-- supabase-js vendorizado (versión FIJA local): sin CDN no hay sorpresas de
      versión flotante ni dependencia de internet para cargar la librería -->
 <script src="core/vendor/supabase-js-2.110.0.js"></script>
-<script src="core/rules.js?v=20260709"></script>
-<script src="core/store.js?v=20260709"></script>
-<script src="app.js?v=20260709"></script>
+<script src="core/rules.js?v=20260710"></script>
+<script src="core/store.js?v=20260710"></script>
+<script src="app.js?v=20260710"></script>
 </body>
 </html>
