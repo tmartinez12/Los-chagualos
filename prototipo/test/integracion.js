@@ -66,6 +66,23 @@ function pruebaPaginacion() {
     let clampOk = true;
     for (const [inp, exp] of casos) if (R.clampLitros(inp) !== exp) { clampOk = false; fail('clampLitros(' + JSON.stringify(inp) + ') = ' + R.clampLitros(inp) + ', esperaba ' + exp); }
     if (clampOk) pass('clampLitros respeta [0, 99.9] con 1 decimal');
+
+    // contrato del respaldo: store (TABLAS_RESPALDO ↔ COLUMNAS_RESPALDO) y el
+    // script de respaldo (TABLAS) deben listar las MISMAS tablas.
+    const claves = Object.keys(LCStore.COLUMNAS_RESPALDO).sort();
+    const tablasStore = LCStore.TABLAS_RESPALDO.slice().sort();
+    if (JSON.stringify(claves) === JSON.stringify(tablasStore)) pass('store: TABLAS_RESPALDO ↔ COLUMNAS_RESPALDO alineados');
+    else fail('store: TABLAS_RESPALDO ≠ claves de COLUMNAS_RESPALDO', new Error(tablasStore + ' vs ' + claves));
+
+    try {
+      const txt = fs.readFileSync(path.join(RAIZ, '.github', 'scripts', 'respaldo.js'), 'utf8');
+      const m = txt.match(/const\s+TABLAS\s*=\s*\[([\s\S]*?)\]/);
+      const tablasRespaldo = m[1].split(',').map(s => s.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean).sort();
+      // respaldo.js incluye 'unidades' (semilla) que el store no respalda por columnas
+      const esperadas = tablasStore.concat(['unidades']).sort();
+      if (JSON.stringify(tablasRespaldo) === JSON.stringify(esperadas)) pass('respaldo.js TABLAS ↔ store (schema ↔ store ↔ respaldo sincronizados)');
+      else fail('respaldo.js TABLAS desalineado', new Error(tablasRespaldo + ' vs ' + esperadas));
+    } catch (e) { fail('no se pudo leer .github/scripts/respaldo.js', e); }
   })();
 }
 
@@ -76,6 +93,9 @@ function tienePsql() {
 function psql(db, args, opts) {
   return execFileSync('psql', ['-d', db, '-v', 'ON_ERROR_STOP=1', '-X', '-q'].concat(args),
     Object.assign({ encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }, opts || {}));
+}
+function psqlRows(db, sql) {   // -tA: tuplas sin adornos, una por línea
+  return psql(db, ['-tA', '-c', sql]).split('\n').map(s => s.trim()).filter(Boolean);
 }
 function maintDb() { return process.env.PGDATABASE || 'postgres'; }
 function pgAlcanzable() {
@@ -121,6 +141,27 @@ function pruebasSql() {
     } catch (e) { fail('idempotencia ' + m, new Error((e.stderr || e.message || '').toString().split('\n').filter(Boolean).slice(-2).join(' | '))); }
   }
   skip('idempotencia migracion-integridad (orden-dependiente: va antes de ganancia)');
+
+  // 4) contrato de columnas: COLUMNAS_RESPALDO (store) == columnas reales de cada
+  //    tabla base. Atrapa la deriva silenciosa schema ↔ store (una columna nueva
+  //    en el esquema que no se agrega al respaldo se perdería al restaurar).
+  try {
+    const LCStore = require(path.join(RAIZ, 'prototipo', 'core', 'store.js'));
+    let sincronizado = true;
+    for (const t of Object.keys(LCStore.COLUMNAS_RESPALDO)) {
+      const reales = psqlRows('lc_test',
+        "SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name='" + t + "' ORDER BY column_name").sort();
+      const declaradas = LCStore.COLUMNAS_RESPALDO[t].slice().sort();
+      if (JSON.stringify(reales) !== JSON.stringify(declaradas)) {
+        sincronizado = false;
+        const faltan = reales.filter(c => !declaradas.includes(c));
+        const sobran = declaradas.filter(c => !reales.includes(c));
+        fail('COLUMNAS_RESPALDO.' + t + ' desalineado con el esquema',
+          new Error((faltan.length ? 'faltan: ' + faltan.join(',') + '  ' : '') + (sobran.length ? 'sobran: ' + sobran.join(',') : '')));
+      }
+    }
+    if (sincronizado) pass('COLUMNAS_RESPALDO == columnas reales de cada tabla (schema ↔ store)');
+  } catch (e) { fail('contrato de columnas del respaldo', e); }
 
   try { psql(M, ['-c', 'DROP DATABASE IF EXISTS lc_test']); } catch (_) {}
 }

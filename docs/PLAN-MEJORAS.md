@@ -143,9 +143,13 @@
 - [x] 🟢 **CI más estricto:** ✅ `ci.yml` levanta un servicio `postgres:16`,
   instala `psql`, corre `node --check` de todo (incluido el nuevo test), la
   prueba de humo y las pruebas de integración con el Postgres de servicio.
-- [ ] 🟢 **Una sola fuente del esquema:** derivar `COLUMNAS_RESPALDO` (store.js)
-  y `TABLAS` (respaldo.js) de un único módulo, o documentar el trío a
-  sincronizar (schema ↔ store ↔ respaldo) — hoy se olvida en silencio.
+- [x] 🟢 **Una sola fuente del esquema:** ✅ en vez de derivar de un módulo, el
+  trío schema ↔ store ↔ respaldo quedó **auto-verificado** en `integracion.js`:
+  (a) `COLUMNAS_RESPALDO` (store) se compara contra las columnas REALES de cada
+  tabla (`information_schema`) — una columna nueva sin agregar falla el test;
+  (b) `TABLAS_RESPALDO` ↔ claves de `COLUMNAS_RESPALDO`; (c) `TABLAS`
+  (respaldo.js) ↔ store. Se exponen `TABLAS_RESPALDO`/`COLUMNAS_RESPALDO` desde
+  el store (solo lectura) y rule 8 de CLAUDE.md ahora apunta al test.
 - [ ] 🟢 **Limpiar código muerto** (GAPS §1): `fichas={}`, `diaOverrides/
   editDiaCell`, `partoInfo={}`; unificar `estadoBase()` (duplicada) en rules.js.
 - [ ] 🟢 **Cache-busting automático** (hash o `?v=` derivado del commit) en vez

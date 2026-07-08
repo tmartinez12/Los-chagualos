@@ -101,6 +101,8 @@ node --check prototipo/app.js && node --check prototipo/escritorio.js \
    no hay tests que atrapen esto.
 8. Nuevas listas/columnas de respaldo: sincronizar `TABLAS_RESPALDO` +
    `COLUMNAS_RESPALDO` (store.js) y `TABLAS` (.github/scripts/respaldo.js).
+   `test/integracion.js` ya lo verifica (schema ↔ store ↔ respaldo): si una
+   columna nueva del esquema no entra a `COLUMNAS_RESPALDO`, el test falla.
 9. `core/vendor/` es librería vendorizada (supabase-js con versión fija):
    no editarla; para subir de versión, reemplazar el archivo completo y
    actualizar los 3 HTML.

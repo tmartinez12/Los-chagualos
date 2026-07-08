@@ -618,6 +618,9 @@
     updateAnimalCampos, darDeBaja, deleteAnimal, deleteParto, deletePalpacion, deleteTratamiento,
     registrarTratamiento, registrarParto, registrarPartoCompleto, registrarPalpacion,
     exportarTodo, restaurarTodo,
+    /* expuestos para las pruebas de contrato (schema ↔ store ↔ respaldo): NO
+     * mutar en runtime; son la referencia de columnas/tablas del respaldo. */
+    TABLAS_RESPALDO, COLUMNAS_RESPALDO,
     ping,
   };
 });
