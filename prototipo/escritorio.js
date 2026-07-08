@@ -1006,6 +1006,20 @@ function goVaca(num,from){
   al.innerHTML='<div class="alert '+(cow.repro.badge==='bad'?'urgent':cow.repro.badge==='warn'?'warn':cow.repro.badge==='ok'?'ok':'info')+'">'+
     '<div style="flex:1"><div class="a-title">'+cow.repro.text+'</div>'+
     '<div class="a-sub">'+cow.repro.sub+'</div></div></div>';
+  /* banner de baja: si el animal está dado de baja, mostrar motivo/fecha/valor/nota + revertir */
+  (function(){
+    const box=document.getElementById('vacaBajaBox');if(!box)return;
+    const ac=animalesPorId[cow.num];const b=ac?ac.baja:null;
+    if(!b||(ac&&ac.grupo!=='baja')){box.style.display='none';box.innerHTML='';return;}
+    const partes=[fmtFechaAno(b.fecha)];
+    if(b.valor)partes.push('$'+Number(b.valor).toLocaleString('es-CO'));
+    if(b.nota)partes.push(LCRules.esc(b.nota));
+    box.style.display='';
+    box.innerHTML='<div class="alert urgent"><div style="flex:1">'+
+      '<div class="a-title">↧ Baja: '+LCRules.esc(b.motivo||'—')+'</div>'+
+      '<div class="a-sub">'+partes.join(' · ')+'</div></div>'+
+      '<button class="btn outl small" onclick="revertirBaja(vacaActual)">Revertir baja</button></div>';
+  })();
   const kpis=document.getElementById('vacaKpis');
   kpis.innerHTML=
     '<div class="card kpi"><div class="k-label">Último ordeño</div><div class="k-value">'+cow.ayer+' <span class="k-unit">L</span></div>'+
@@ -2624,36 +2638,67 @@ const bajaState={};
 function openBaja(cow){
   if(!cow&&!hato.length){snack('No hay animales registrados');return;}
   bajaState.num=cow?(''+cow).split('·')[0].trim():hato[0].num;
-  bajaState.motivo='Venta';
+  bajaState.motivo='Venta';bajaState.fecha=isoHoy();bajaState.valor='';bajaState.nota='';
   openReg('Dar de baja','Sale del hato; su historia se conserva en el histórico');
   const body=document.getElementById('regBody');body.innerHTML='';
   body.appendChild(regLabel('Animal'));
   body.appendChild(regChips(hato.map(a=>({val:a.num,label:a.num+' '+a.n})),bajaState.num,v=>bajaState.num=v));
   body.appendChild(regLabel('Motivo'));
   body.appendChild(regChips(['Venta','Muerte','Descarte','Pérdida'].map(m=>({val:m,label:m})),bajaState.motivo,v=>bajaState.motivo=v));
+  body.appendChild(regTexto('Fecha de la baja','',v=>bajaState.fecha=v,'date',bajaState.fecha));
+  body.appendChild(regTexto('Valor de venta (si aplica)','$',v=>bajaState.valor=v,'number',bajaState.valor));
+  body.appendChild(regTexto('Nota 📝','Ej. comprador, causa de muerte…',v=>bajaState.nota=v,'text',bajaState.nota));
   document.getElementById('regSaveBtn').onclick=saveBaja;
 }
 function saveBaja(){
   const idx=hato.findIndex(x=>x.num===bajaState.num);if(idx<0)return;
   const a=hato[idx];const nombre=a.n;
   closeReg();
+  const fecha=bajaState.fecha||isoHoy();
+  const valor=(bajaState.valor!==''&&bajaState.valor!=null)?parseInt(String(bajaState.valor).replace(/\D/g,'')):null;
+  const nota=(bajaState.nota||'').trim()||null;
   hato.splice(idx,1);renderHatoFiltros();renderHato();
   /* caché canónico al día: alertas y KPIs dejan de contarla sin recargar */
-  const prevGrupoCache=animalesPorId[bajaState.num]?animalesPorId[bajaState.num].grupo:null;
-  if(animalesPorId[bajaState.num])animalesPorId[bajaState.num].grupo='baja';
+  const ac=animalesPorId[bajaState.num];
+  const prevGrupoCache=ac?ac.grupo:null;
+  if(ac){ac.grupo='baja';ac.baja={motivo:bajaState.motivo,fecha:fecha,valor:valor,nota:nota};}
   if(typeof renderInicio==='function')renderInicio();
   go('pg-hato',navFor('pg-hato'));
   if(typeof LCStore!=='undefined'){
-    LCStore.darDeBaja(bajaState.num,{motivo:bajaState.motivo,fecha:isoHoy()}).catch(e=>{
+    LCStore.darDeBaja(bajaState.num,{motivo:bajaState.motivo,fecha:fecha,valor:valor,nota:nota}).catch(e=>{
       console.warn('Baja no guardada en la base:',e.message||e);
       snack('⚠ La baja NO se guardó en la base — revisa la conexión y reintenta');});
   }
   snack(nombre+': baja por '+bajaState.motivo.toLowerCase()+' — sale del hato, su historia se conserva','Deshacer',()=>{
     hato.splice(Math.min(idx,hato.length),0,a);renderHatoFiltros();renderHato();
-    if(prevGrupoCache&&animalesPorId[bajaState.num])animalesPorId[bajaState.num].grupo=prevGrupoCache;
+    if(prevGrupoCache&&animalesPorId[bajaState.num]){animalesPorId[bajaState.num].grupo=prevGrupoCache;animalesPorId[bajaState.num].baja=null;}
     if(typeof renderInicio==='function')renderInicio();
     if(typeof LCStore!=='undefined')LCStore.updateAnimalCampos(bajaState.num,
       {grupo:GRUPO_MODELO[a.grupo]||'ordeño',baja_motivo:null,baja_fecha:null,baja_valor:null,baja_nota:null}).catch(()=>{});});
+}
+/* revertir una baja ya confirmada (más allá del "Deshacer" de 5 s): vuelve al hato */
+function revertirBaja(num){
+  const ac=animalesPorId[num];if(!ac){snack('No tengo los datos de '+num+' — sincroniza primero');return;}
+  if(ac.grupo!=='baja'){snack(num+' no está dado de baja');return;}
+  /* grupo destino: el mejor conocido; por defecto según sexo (revisa en Editar) */
+  const destino=ac.sexo==='M'?'macho':'ordeño';
+  ac.grupo=destino;ac.baja=null;
+  /* reponer en el hato (si no está ya) con una fila básica */
+  if(!hato.find(x=>x.num===num)){
+    hato.unshift({num:num,n:ac.nombre||'',raza:ac.raza||'—',grupo:GRUPO_DISPLAY[destino]||destino,
+      edad:fmtEdadLarga(ac),repro:'<span class="badge">baja revertida</span>',
+      del:(ac.del!=null?ac.del:'—'),ayer:'—',var:'—',vc:'',tags:[]});
+  }
+  /* si vuelve "en ordeño", reaparece en la lista de registro de leche */
+  if(destino==='ordeño'&&!milkCows.find(c=>c.num===num)){
+    milkCows.push(animalAMilk(ac));if(typeof renderMilk==='function')renderMilk();}
+  if(typeof LCStore!=='undefined')LCStore.updateAnimalCampos(num,
+    {grupo:destino,baja_motivo:null,baja_fecha:null,baja_valor:null,baja_nota:null}).catch(e=>{
+      console.warn('Reversión de baja no guardada:',e.message||e);
+      snack('⚠ La reversión NO se guardó en la base — reintenta');});
+  hatoFiltro='todas';renderHatoFiltros();renderHato();if(typeof renderInicio==='function')renderInicio();
+  goVaca(num,vacaFrom);
+  snack(num+' vuelve al hato como "'+(GRUPO_DISPLAY[destino]||destino)+'" — revisa el grupo en Editar');
 }
 
 /* Potreros: arranca vacío y se llena desde Supabase (cargarPotrerosDesdeSupabase).

@@ -64,9 +64,11 @@
 - [x] 🟢 **P4 · Sexo y rol de toro editables.** ✅ El editor del escritorio
   expone `sexo` (♀/♂) y, para machos, "🐂 Toro reproductor" (`rol_toro`);
   ambos se persisten y actualizan la caché. Verificado.
-- [ ] 🟡 **P3 · Baja completa y visible.** Capturar fecha (no forzar hoy),
-  valor de venta y nota; mostrar la sección "Baja" (motivo/fecha/valor) en ambas
-  fichas; acción "corregir/revertir baja" más allá del Deshacer de 5 s.
+- [x] 🟡 **P3 · Baja completa y visible.** ✅ Los formularios de baja (móvil y
+  escritorio) capturan fecha (editable, máx. hoy), valor de venta y nota; ambas
+  fichas muestran un banner "↧ Baja" (motivo · fecha · valor · nota) cuando el
+  animal está de baja, con botón **"Revertir baja"** que lo devuelve al hato
+  (más allá del Deshacer de 5 s). El store ya persistía los 4 campos. Verificado.
 - [ ] 🟢 **P5 · Parto sin fricción.** Permitir madre de cualquier grupo adulto
   (con aviso), y campos opcionales de nombre/chapeta de la cría.
 - [ ] 🟢 **Paridad de captura móvil:** fecha editable en palpación y vacunación

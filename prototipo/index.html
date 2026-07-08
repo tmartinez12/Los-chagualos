@@ -303,6 +303,8 @@
       </div>
     </div>
 
+    <div id="vmBajaBox" style="margin-top:10px;display:none"></div>
+
     <div class="statgrid" id="vmStats"></div>
 
     <div class="card flat" id="vmGenea" style="font-size:13px;color:var(--ink-2);line-height:1.6;margin-top:8px"></div>
@@ -768,6 +770,15 @@
       <button class="chip" onclick="bajaPick(this,'motivo','Descarte')">Descarte</button>
       <button class="chip" onclick="bajaPick(this,'motivo','Pérdida')">Pérdida</button>
     </div>
+
+    <div class="section-label">Fecha de la baja</div>
+    <input id="bajaFecha" type="date" oninput="baja.fecha=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
+    <div class="section-label">Valor de venta · nota (opcional)</div>
+    <input id="bajaValor" type="number" inputmode="numeric" placeholder="Valor de venta $" oninput="baja.valor=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-bottom:8px">
+    <input id="bajaNota" placeholder="Nota (comprador, causa…)" oninput="baja.nota=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
 
     <button class="btn filled" style="width:100%;justify-content:center;margin-top:16px" onclick="saveBaja()">
       <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar baja</button>

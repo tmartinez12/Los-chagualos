@@ -129,6 +129,19 @@ function renderFicha(num){
   al.innerHTML='<div class="a-icon"><svg class="ic"><use href="#i-cal"/></svg></div>'+
     '<div class="a-body"><div class="a-title">'+r.title+'</div>'+(r.sub?'<div class="a-sub">'+r.sub+'</div>':'')+
     (r.secar?'<button class="btn outl small mt8" onclick="openSeca(\''+a.id+' · '+a.nombre+'\')">Programar secado</button>':'')+'</div>';
+  /* banner de baja: si el animal está dado de baja, mostrar motivo/fecha/valor/nota + revertir */
+  (function(){
+    const box=document.getElementById('vmBajaBox');if(!box)return;
+    const b=a.baja;
+    if(!b||a.grupo!=='baja'){box.style.display='none';box.innerHTML='';return;}
+    const partes=[fmtFechaCortaM(b.fecha)];
+    if(b.valor)partes.push('$'+Number(b.valor).toLocaleString('es-CO'));
+    if(b.nota)partes.push(LCRules.esc(b.nota));
+    box.style.display='';box.className='alert urgent';
+    box.innerHTML='<div class="a-body"><div class="a-title">↧ Baja: '+LCRules.esc(b.motivo||'—')+'</div>'+
+      '<div class="a-sub">'+partes.join(' · ')+'</div>'+
+      '<button class="btn outl small mt8" onclick="revertirBajaM(\''+a.id+'\')">Revertir baja</button></div>';
+  })();
   /* stats */
   const ayer=(a.leche&&a.leche.ayer!=null)?a.leche.ayer:0;
   document.getElementById('vmStats').innerHTML=
@@ -164,6 +177,28 @@ function renderFicha(num){
     '<div class="tl-date">'+(e[1]?fmtFechaCortaM(e[1]).toUpperCase()+' '+String(e[1]).slice(0,4):'—')+'</div>'+
     '<div class="tl-text">'+e[0]+'</div></div>').join(''):'<div class="tl-item" style="padding-bottom:0"><div class="tl-text" style="color:var(--ink-2)">Sin eventos registrados todavía</div></div>';
   return true;
+}
+/* revertir una baja ya confirmada (más allá del "Deshacer"): vuelve al hato */
+function revertirBajaM(num){
+  const a=animalesPorIdM[num];if(!a){snack('No tengo los datos de '+num+' — sincroniza primero');return;}
+  if(a.grupo!=='baja'){snack(num+' no está dado de baja');return;}
+  const destino=a.sexo==='M'?'macho':'ordeño';
+  a.grupo=destino;a.baja=null;
+  /* sacar del drill-down de bajas y reponer en su grupo destino */
+  const ib=grupos.bajas.animales.findIndex(x=>numDe(x[0])===num);
+  if(ib>=0)grupos.bajas.animales.splice(ib,1);
+  nBajas=Math.max(0,nBajas-1);subBajas();
+  const k=GRUPO_KEY[destino];
+  if(k&&grupos[k]&&!grupos[k].animales.find(x=>numDe(x[0])===num)){
+    grupos[k].animales.unshift([a.id+' · '+a.nombre,subAnimalM(a),1]);incGrupo(k,1);}
+  if(destino==='ordeño'&&!cows.find(c=>c.num===num)){cows.push(animalACow(a));renderCows();}
+  renderHatoM();
+  if(typeof LCStore!=='undefined')LCStore.updateAnimalCampos(num,
+    {grupo:destino,baja_motivo:null,baja_fecha:null,baja_valor:null,baja_nota:null}).catch(e=>{
+      console.warn('Reversión de baja no guardada:',e.message||e);
+      snack('⚠ La reversión NO se guardó en la base — reintenta');});
+  renderFicha(num);
+  snack(num+' vuelve al hato como "'+(GRUPO_DISPLAY_M[destino]||destino)+'" — revisa el grupo en Editar');
 }
 /* ===== Editar datos de la vaca (ficha móvil) ===== */
 const editM={};
@@ -1164,18 +1199,21 @@ function saveAlta(){
   });
 }
 /* --- Baja (venta / muerte / descarte / pérdida) --- */
-const baja={cow:'',motivo:'Venta'};
+const baja={cow:'',motivo:'Venta',fecha:'',valor:'',nota:''};
 function bajaMarcar(){document.querySelectorAll('#bajaCows .chip').forEach(c=>
   c.classList.toggle('sel',c.textContent.trim().split(' ')[0]===numDe(baja.cow)));}
 function openBaja(cow){
   const lista=listaTodos();
-  baja.cow=cow||lista[0]||'';baja.motivo='Venta';
+  baja.cow=cow||lista[0]||'';baja.motivo='Venta';baja.fecha=isoHoyM();baja.valor='';baja.nota='';
   pintarCowChips('bajaCows',lista,baja.cow,bajaCow);
   document.getElementById('bajaCow').textContent=(baja.cow||'—').toUpperCase();
   const cd=cows.find(c=>numDe(baja.cow)===c.num);
   document.getElementById('bajaInfo').textContent=cd?cd.del:'Elige el animal y el motivo';
   document.querySelectorAll('#bajaSheet .chips')[1].querySelectorAll('.chip')
     .forEach((c,i)=>c.classList.toggle('sel',i===0));
+  const bf=document.getElementById('bajaFecha');if(bf){bf.max=isoHoyM();bf.value=baja.fecha;}
+  const bv=document.getElementById('bajaValor');if(bv)bv.value='';
+  const bn=document.getElementById('bajaNota');if(bn)bn.value='';
   document.getElementById('scrim').classList.add('show');
   document.getElementById('bajaSheet').classList.add('show');}
 function closeBaja(){document.getElementById('bajaSheet').classList.remove('show');
@@ -1192,11 +1230,14 @@ function saveBaja(){
     snack('No hay animal seleccionado para dar de baja');return;}
   closeBaja();
   const nombre=baja.cow.split('·')[1].trim();
+  const fecha=baja.fecha||isoHoyM();
+  const valor=(baja.valor!==''&&baja.valor!=null)?parseInt(String(baja.valor).replace(/\D/g,'')):null;
+  const nota=(baja.nota||'').trim()||null;
   const idx=cows.findIndex(c=>numDe(baja.cow)===c.num);
   const removed=idx>=0?cows[idx]:null;
   if(idx>=0){cows.splice(idx,1);renderCows();incGrupo('ordeno',-1);}
   nBajas++;subBajas();
-  grupos.bajas.animales.unshift([baja.cow,baja.motivo.toUpperCase()+' · '+fmtFechaCortaM(isoHoyM())+' · registrada']);
+  grupos.bajas.animales.unshift([baja.cow,baja.motivo.toUpperCase()+' · '+fmtFechaCortaM(fecha)+' · registrada']);
   encolar();
   const numBaja=numDe(baja.cow);
   /* sacar del drill-down de su grupo y del caché (antes seguía apareciendo) */
@@ -1205,10 +1246,11 @@ function saveBaja(){
     const i=grupos[k].animales.findIndex(x=>numDe(x[0])===numBaja);
     if(i>=0){grupoBaja=k;idxGrupo=i;filaGrupo=grupos[k].animales[i];grupos[k].animales.splice(i,1);}});
   const prevGrupoCache=animalesPorIdM[numBaja]?animalesPorIdM[numBaja].grupo:null;
-  if(animalesPorIdM[numBaja])animalesPorIdM[numBaja].grupo='baja';
+  if(animalesPorIdM[numBaja]){animalesPorIdM[numBaja].grupo='baja';
+    animalesPorIdM[numBaja].baja={motivo:baja.motivo,fecha:fecha,valor:valor,nota:nota};}
   renderHatoM();
   if(typeof LCStore!=='undefined'){
-    LCStore.darDeBaja(numBaja,{motivo:baja.motivo,fecha:isoHoyM()})
+    LCStore.darDeBaja(numBaja,{motivo:baja.motivo,fecha:fecha,valor:valor,nota:nota})
       .then(()=>desencolar()).catch(e=>{console.warn('Baja móvil no guardada:',e.message||e);
         snack('⚠ La baja NO se guardó en la base — revisa la señal y reintenta');});
   }
@@ -1218,7 +1260,7 @@ function saveBaja(){
     nBajas--;subBajas();grupos.bajas.animales.shift();
     /* reponer en su grupo y en el caché (con el grupo PREVIO, no 'baja') */
     if(grupoBaja&&filaGrupo)grupos[grupoBaja].animales.splice(Math.min(idxGrupo,grupos[grupoBaja].animales.length),0,filaGrupo);
-    if(prevGrupoCache&&animalesPorIdM[numBaja])animalesPorIdM[numBaja].grupo=prevGrupoCache;
+    if(prevGrupoCache&&animalesPorIdM[numBaja]){animalesPorIdM[numBaja].grupo=prevGrupoCache;animalesPorIdM[numBaja].baja=null;}
     renderHatoM();
     desencolar();openGroup('bajas');snack('Baja deshecha');
     if(typeof LCStore!=='undefined')LCStore.updateAnimalCampos(numBaja,
