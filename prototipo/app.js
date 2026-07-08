@@ -236,7 +236,7 @@ function saveEditVaca(){
   if(typeof LCStore!=='undefined'){
     LCStore.updateAnimalCampos(num,campos).then(()=>desencolar()).catch(e=>{
       console.warn('Edición móvil no guardada:',e.message||e);snack('⚠ '+num+': los cambios NO se guardaron en la base — reintenta');});
-    if(leche!=null&&!isNaN(leche)){const ay=new Date();ay.setDate(ay.getDate()-1);
+    if(leche!=null&&!isNaN(leche)){const ay=new Date(isoHoyM()+'T00:00:00');ay.setDate(ay.getDate()-1);
       LCStore.registrarOrdeno(num,leche,isoDeM(ay)).catch(()=>{});}
   }
   snack(num+' actualizado');
@@ -578,7 +578,7 @@ function saveVacunaM(){
     LCStore.registrarVacunacion({tipo:vacM.tipo,alcance:vacM.alcance,animalId:animalId,nAnimales:nAnimales,
       producto:vacM.producto||null,lote:vacM.lote||null,fecha:isoHoyM()})
       .then(()=>{desencolar();cargarVacunacionesM();})
-      .catch(e=>{console.warn('Vacunación móvil no guardada:',e.message||e);snack('⚠ Vacunación guardada local, falta sincronizar');});
+      .catch(e=>{console.warn('Vacunación móvil no guardada:',e.message||e);snack('⚠ La vacunación NO se guardó en la base — reintenta');});
   }
   snack('Vacunación registrada: '+vacM.tipo+(individual?(animalId?' · '+animalId:''):' · todo el hato'));
 }
@@ -1124,7 +1124,9 @@ function saveAlta(){
       valorCompra:alta.valor?parseInt(String(alta.valor).replace(/\D/g,'')):null})
       .then(a=>{desencolar();
         /* al caché y clicable: su ficha abre sin recargar la página */
-        if(a)animalesPorIdM[a.id]=a;fila[2]=1;})
+        if(a)animalesPorIdM[a.id]=a;fila[2]=1;
+        /* si entró "en ordeño", aparece YA en la lista de leche (P1) */
+        if(a&&g==='ordeno'&&!cows.find(c=>c.num===num)){cows.push(animalACow(a));renderCows();}})
       .catch(e=>{console.warn('Compra móvil no guardada:',e.message||e);
         snack('⚠ La compra NO se guardó en la base — revisa la señal y reintenta');});
   }
@@ -1135,6 +1137,7 @@ function saveAlta(){
     /* NO decrementar las secuencias: reusar el id puede chocar con la PK si
      * hubo otra alta en el medio; mejor saltar el número. */
     delete animalesPorIdM[num];
+    const ci=cows.findIndex(c=>c.num===num);if(ci>=0){cows.splice(ci,1);renderCows();}
     desencolar();openGroup(g);snack('Alta deshecha');
     if(typeof LCStore!=='undefined')LCStore.deleteAnimal(num).catch(()=>{});
   });
