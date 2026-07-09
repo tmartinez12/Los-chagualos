@@ -602,13 +602,12 @@ function renderScatter(svgId){
   out+='<text x="'+(w/2)+'" y="'+(h-2)+'" text-anchor="middle" font-weight="600" fill="#70756A">DEL (días en leche)</text>';
   out+='<text x="12" y="'+(h/2)+'" text-anchor="middle" font-weight="600" fill="#70756A" transform="rotate(-90,12,'+(h/2)+')">Litros/día</text>';
   out+='</g>';
-  // expected curve (typical: peak ~18L at DEL 60, then decline)
-  const curvaPts=[];
-  for(let d=0;d<=maxDel;d+=5){
-    const expected=d<30?10+d*0.27:18*Math.exp(-0.002*(d-60));
-    curvaPts.push(x(d)+','+y(Math.min(expected,maxL)));
-  }
-  out+='<polyline points="'+curvaPts.join(' ')+'" fill="none" stroke="#A8ACA0" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/>';
+  // curva típica: mismo modelo de Wood y mismo anclaje (pico 18L) que la
+  // ficha individual (renderVacaCurva) — antes era una fórmula lineal+exp
+  // ad-hoc distinta, con un salto visible en DEL 30.
+  const tipica=LCRules.curvaLactancia({picoL:18,maxDia:maxDel});
+  const curvaPts=tipica.puntos.map(p=>x(p[0])+','+y(Math.min(p[1],maxL))).join(' ');
+  out+='<polyline points="'+curvaPts+'" fill="none" stroke="#A8ACA0" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/>';
   // dots
   cows.forEach(c=>{
     const cx=x(c.del),cy=y(c.l);
