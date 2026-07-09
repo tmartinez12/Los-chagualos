@@ -343,8 +343,27 @@
       secado (`animalesPorIdM.grupo`→horra) + deshacer; baja (saca a una vaca
       vacía de `vacasVacias` Y `palpCandidatas` a la vez) + deshacer;
       `revertirBajaM` la repone. Sin errores de página.
-  - [ ] Paso 4+: extender a otras estructuras paralelas (`milkCows`/`cows`,
-    `partosRecientes`, historial sanitario) según valga la pena caso a caso.
+  - [x] **Paso 4a: `partosRecientes` (escritorio) derivado de `_partosRaw`.**
+    Nueva `derivarPartosRecientes()`/`recomputarPartosRecientes()`. A
+    diferencia de los pasos 1-3, esto NO tenía el mismo patrón de bug en los 2
+    puntos que ya la tocaban (`saveParto` la mantenía sincronizada a mano
+    correctamente) — pero investigar reveló **dos huecos reales más**, mismo
+    patrón que los anteriores:
+    - `savePartoHist` (parto histórico desde la ficha, Fase 4) pusheaba a
+      `_partosRaw` pero **nunca tocaba `partosRecientes`** — un parto histórico
+      agregado no aparecía en "Partos recientes" hasta recargar.
+    - `saveCompra` (alta con partos históricos) tenía el mismo hueco.
+    - `eliminarPartoHist` unificado de paso.
+    Verificado en Chromium: `saveParto` (ya andaba bien, confirmado sigue
+    andando) + deshacer; `savePartoHist` ahora SÍ aparece al toque (antes no);
+    `eliminarPartoHist` saca de ambas listas. Sin errores de página.
+    **Móvil NO tiene este hueco**: no existen `savePartoHist`/
+    `eliminarPartoHist`/alta-con-partos-históricos ahí, así que no hay nada que
+    corregir — replicar el patrón sería limpieza sin beneficio, no se hizo.
+  - [ ] Paso 4b+: otras estructuras paralelas (`milkCows`/`cows`, historial
+    sanitario) — evaluar caso a caso si hay un hueco real antes de tocarlas
+    (`tratamientos`/`_tratamientosTodos` se revisaron y HOY están sincronizadas
+    correctamente; no hay bug pendiente ahí).
 - [ ] 🟡 **Módulos ES** por página (leche/hato/repro/sanidad) para salir del
   scope global y los sufijos `M`/TDZ.
 
