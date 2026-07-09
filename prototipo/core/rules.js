@@ -144,6 +144,41 @@
     return Math.round((d - baseHoy(hoy)) / 86400000);
   }
 
+  /* ----- Espejo LOCAL de las derivaciones de reproducción de v_animales -----
+   * (Estado único, Fase 6): para que animalesPorId quede optimista al toque
+   * tras palpación/secado sin esperar una vuelta a Supabase, replican EXACTO
+   * las fórmulas de parto_estimado_calc/secar_calc/dias_vacia_calc/
+   * prenez_meses_actual del esquema (ver supabase/schema.sql). Se re-derivan
+   * en cada carga real desde la BD, así que un desvío aquí se autocorrige solo
+   * en el próximo refresco — mismo trato que hoyFincaDate()/diasDesdeReal()
+   * para DEL/edad optimistas (Fase 2). Si cambia la fórmula SQL, cambiar
+   * también acá (validado en Postgres 16 local; ver prototipo/test/integracion.js). */
+  function _fechaMasDias(iso, dias) {
+    const d = new Date(iso + 'T00:00:00');
+    d.setDate(d.getDate() + Math.round(dias));
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function diasEntreIso(a, b) {   // b - a, en días (ambas fechas ISO)
+    return Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000);
+  }
+  function partoEstimadoCalc(ultimaPalpacion, prenezMeses) {
+    if (ultimaPalpacion == null || prenezMeses == null) return null;
+    return _fechaMasDias(ultimaPalpacion, (9 - prenezMeses) * 30.44);
+  }
+  function secarCalc(ultimaPalpacion, prenezMeses) {
+    if (ultimaPalpacion == null || prenezMeses == null) return null;
+    return _fechaMasDias(ultimaPalpacion, (7 - prenezMeses) * 30.44);
+  }
+  function diasVaciaCalc(ultimaPalpacion, hoy) {
+    if (ultimaPalpacion == null) return null;
+    return diasEntreIso(ultimaPalpacion, hoy || isoHoy());
+  }
+  function prenezMesesActual(prenezMeses, ultimaPalpacion, hoy) {
+    if (prenezMeses == null || ultimaPalpacion == null) return prenezMeses;
+    const dias = diasEntreIso(ultimaPalpacion, hoy || isoHoy());
+    return Math.min(9, Math.round((prenezMeses + dias / 30.44) * 10) / 10);
+  }
+
   /* "3er parto", "4to parto"… */
   function ordinalParto(n) {
     const m = { 1: '1er', 2: '2do', 3: '3er', 4: '4to', 5: '5to', 6: '6to', 7: '7mo', 8: '8vo', 9: '9no' };
@@ -235,5 +270,6 @@
     MESC, LITROS_MAX, clampLitros, idUnico, fechaParto, fechaDias, esBajonLeche, parseTrat, parsePalpNota, curvaLactancia,
     diasHasta, ordinalParto, fmtFechaCorta, snapshotReproDB, fechaLarga, isoHoy, esc,
     PROTOCOLO_SAN, fmtNacimiento, deriveReproFicha,
+    diasEntreIso, partoEstimadoCalc, secarCalc, diasVaciaCalc, prenezMesesActual,
   };
 });

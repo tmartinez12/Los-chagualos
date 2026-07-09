@@ -163,6 +163,48 @@ function pruebasSql() {
     if (sincronizado) pass('COLUMNAS_RESPALDO == columnas reales de cada tabla (schema ↔ store)');
   } catch (e) { fail('contrato de columnas del respaldo', e); }
 
+  // 5) paridad de fórmulas: core/rules.js replica LOCALMENTE (Estado único,
+  //    Fase 6) las derivaciones de fecha de v_animales (parto_estimado_calc,
+  //    secar_calc, dias_vacia_calc, prenez_meses_actual) para poder pintar
+  //    optimista sin esperar una vuelta a Supabase. Si alguien cambia la
+  //    fórmula SQL sin actualizar el espejo en JS, este test lo atrapa.
+  try {
+    const R = require(path.join(RAIZ, 'prototipo', 'core', 'rules.js'));
+    /* prenez_meses_actual y dias_vacia_calc dependen de hoy_finca() (fecha REAL
+     * del sistema en Postgres) — se leen fechas RELATIVAS a ese "hoy" real (no
+     * hardcodeadas) para que el test no falle en otro día ni caiga siempre en
+     * el tope de 9 meses de prenez_meses_actual. */
+    const [hoyReal, hace60, hace100, hace20] = psqlRows('lc_test',
+      "SELECT hoy_finca()::text, (hoy_finca()-60)::text, (hoy_finca()-100)::text, (hoy_finca()-20)::text")[0].split('|');
+    const casos = [
+      { ultimaPalpacion: hace60, prenezMeses: 6 },
+      { ultimaPalpacion: hace60, prenezMeses: 6.5 },
+      { ultimaPalpacion: hace100, prenezMeses: 8 },   // este SÍ debe topar en 9
+    ];
+    let todoOk = true;
+    for (const c of casos) {
+      psql('lc_test', ['-c',
+        "INSERT INTO animales (id,nombre,especie,grupo,sexo,estado_repro,prenez_meses,ultima_palpacion) " +
+        "VALUES ('FX','x','bovino','horra','H','prenada'," + c.prenezMeses + ",'" + c.ultimaPalpacion + "')"]);
+      const [pe, se, pa] = psqlRows('lc_test',
+        "SELECT coalesce(parto_estimado_calc::text,''), coalesce(secar_calc::text,''), coalesce(prenez_meses_actual::text,'') FROM v_animales WHERE id='FX'")[0].split('|');
+      psql('lc_test', ['-c', "DELETE FROM animales WHERE id='FX'"]);
+      const jsPE = R.partoEstimadoCalc(c.ultimaPalpacion, c.prenezMeses);
+      const jsSE = R.secarCalc(c.ultimaPalpacion, c.prenezMeses);
+      const jsPA = R.prenezMesesActual(c.prenezMeses, c.ultimaPalpacion, hoyReal);
+      if (pe !== jsPE) { todoOk = false; fail('parto_estimado_calc diverge', new Error('SQL=' + pe + ' JS=' + jsPE)); }
+      if (se !== jsSE) { todoOk = false; fail('secar_calc diverge', new Error('SQL=' + se + ' JS=' + jsSE)); }
+      if (Number(pa) !== Number(jsPA)) { todoOk = false; fail('prenez_meses_actual diverge', new Error('SQL=' + pa + ' JS=' + jsPA)); }   // valor, no formato de texto
+    }
+    // dias_vacia_calc: caso vacía por separado
+    psql('lc_test', ['-c', "INSERT INTO animales (id,nombre,especie,grupo,sexo,estado_repro,ultima_palpacion) VALUES ('FX','x','bovino','horra','H','vacia','" + hace20 + "')"]);
+    const dv = psqlRows('lc_test', "SELECT dias_vacia_calc FROM v_animales WHERE id='FX'")[0];
+    psql('lc_test', ['-c', "DELETE FROM animales WHERE id='FX'"]);
+    const jsDV = R.diasVaciaCalc(hace20, hoyReal);
+    if (Number(dv) !== Number(jsDV)) { todoOk = false; fail('dias_vacia_calc diverge', new Error('SQL=' + dv + ' JS=' + jsDV)); }
+    if (todoOk) pass('fórmulas de fecha de v_animales ↔ core/rules.js (parto/secado/vacía) coinciden exacto');
+  } catch (e) { fail('paridad de fórmulas de fecha', e); }
+
   try { psql(M, ['-c', 'DROP DATABASE IF EXISTS lc_test']); } catch (_) {}
 }
 

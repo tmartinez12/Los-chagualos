@@ -251,10 +251,53 @@
     async (aplicar/escribir/error-honesto/deshacer-compensado) quedó eliminada;
     el estado local (`hato`, `animalesPorId`, `cows`, `grupos`, …) sigue siendo
     específico de cada página — eso es "Estado único", el siguiente ítem.
-- [ ] 🔴 **Estado único.** Reemplazar las ~13 estructuras paralelas
-  (`hato`, `animalesPorId`, `milkCows`, `_partosRaw`…) por una fuente de estado
-  con re-render (o re-fetch dirigido). Mata la clase entera de bugs de
-  "caché desactualizado tras acción". **Hacer solo con la Fase 5 lista.**
+- [~] 🔴 **Estado único (EN PROGRESO).** Reemplazar las ~13 estructuras
+  paralelas (`hato`, `animalesPorId`, `milkCows`, `_partosRaw`…) por una fuente
+  de estado con re-render (o re-fetch dirigido). Mata la clase entera de bugs
+  de "caché desactualizado tras acción". Elegido: **fórmula local** (espejo de
+  las derivaciones de `v_animales`, verificado exacto contra Postgres) en vez
+  de re-fetch tras cada escritura — mantiene la UI instantánea, mismo patrón
+  que ya usaba `hoyFincaDate()`/`diasDesdeReal()` (Fase 2) para DEL/edad.
+  - [x] **Paso 1 (escritorio): `proximosPartos`/`vacasVacias`/`palpCandidatas`
+    derivados de `animalesPorId`.** Antes eran arrays parcheados a mano por
+    cada acción (parto/palpación/secado/baja) — exactamente el patrón de bug
+    que este ítem quiere eliminar. Ahora son `derivarProximosPartos()`/
+    `derivarVacasVacias()`/`derivarPalpCandidatas()`, funciones puras sobre
+    `animalesPorId`, invocadas vía `recomputarRepro()`.
+    - **`core/rules.js`**: nuevas `partoEstimadoCalc`/`secarCalc`/
+      `diasVaciaCalc`/`prenezMesesActual` — espejo EXACTO de
+      `parto_estimado_calc`/`secar_calc`/`dias_vacia_calc`/
+      `prenez_meses_actual` de `v_animales` (ver `supabase/schema.sql`).
+      Verificadas contra Postgres 16 antes de escribir código de UI, y ahora
+      **guardadas como test permanente** en `integracion.js` ("fórmulas de
+      fecha de v_animales ↔ core/rules.js") — si alguien cambia la fórmula SQL
+      sin actualizar el espejo JS, el test lo atrapa.
+    - **Huecos reales corregidos de paso**: `saveSeca` y `savePalp` (escritorio)
+      NO actualizaban `animalesPorId` localmente (solo mutaban `hato`/arrays
+      de UI) — quedaba desincronizada hasta el próximo recargo. Ahora ambas
+      guardan un snapshot COMPLETO antes de mutar (para el "Deshacer") y
+      actualizan `animalesPorId` de verdad.
+    - **Cambio de comportamiento intencional y verificado**: la rama
+      "anotación libre" de palpación (nota sin resultado prenada/vacía claro)
+      ya NO saca al animal de "candidatas a palpar" si su estado real sigue sin
+      resolver (antes desaparecía de la lista aunque nada se hubiera decidido,
+      por ser un parche manual incondicional). Documentado, no oculto.
+    - **Deliberadamente NO tocado en este paso**: `saveParto`/`saveBaja`
+      (escritorio) siguen con su parche manual de `proximosPartos`/
+      `vacasVacias` — sigue siendo CORRECTO (no genera bugs: `recomputarRepro()`
+      simplemente sobrescribe con la verdad la próxima vez que corre), pero es
+      candidato a una limpieza de seguimiento para unificar el patrón del todo.
+    - **Móvil NO tocado**: tiene su propia estructura (`grupos[k].animales`,
+      `cows`, contadores) completamente distinta — un paso separado.
+    - Verificado en Chromium: servida→preñada (sale de candidatas, entra a
+      próximos partos con fecha estimada correcta) + deshacer; servida→vacía
+      (entra a vacías con motivo derivado) + deshacer; anotación libre (NO
+      saca de candidatas si seguía sin resolver); secado (`animalesPorId.grupo`
+      pasa a horra, `inicioLactancia` a null) + deshacer. Sin errores de página.
+  - [ ] Paso 2: aplicar el mismo patrón a móvil, y limpiar el parche manual de
+    parto/baja para que también usen `recomputarRepro()`.
+  - [ ] Paso 3+: extender a otras estructuras paralelas (`milkCows`/`cows`,
+    `partosRecientes`, historial sanitario) según valga la pena caso a caso.
 - [ ] 🟡 **Módulos ES** por página (leche/hato/repro/sanidad) para salir del
   scope global y los sufijos `M`/TDZ.
 
