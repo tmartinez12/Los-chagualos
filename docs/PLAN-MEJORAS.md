@@ -317,9 +317,32 @@
     (antes solo lo hacía en apariencia, por casualidad de que baja nunca las
     tocaba) + deshacer; `revertirBaja` la repone en las listas si su estado
     reproductivo real seguía vigente. Sin errores de página.
-  - [ ] Paso 3: aplicar el mismo patrón a **móvil** (estructura totalmente
-    distinta: `grupos[k].animales`, `cows`, contadores — no comparte código con
-    escritorio en esto).
+  - [x] **Paso 3: mismo patrón en móvil.** `proximosPartos`/`vacasVacias`/
+    `palpCandidatas` (app.js) se derivan de `animalesPorIdM` igual que en
+    escritorio, respetando las formas propias del móvil (`vacasVacias` solo
+    trae vacías con ≥120 días, sin servidas — pantalla de "requieren decisión",
+    no de "todo lo pendiente"; `palpCandidatas` es un objeto `cow→motivo`, no
+    un array). Nuevas `derivarProximosPartosM`/`derivarVaciasM`/
+    `derivarPalpCandidatasM`/`recomputarReproM`.
+    - **Misma carrera de escritorio, corregida igual**: `cargarReproMovil`
+      bajaba su propia copia de `animales` en vez de llenar la caché global
+      `animalesPorIdM` (el comentario en el código lo reconocía: "si este gana
+      la carrera los KPIs saldrían en 0"). Ahora llena la caché global —
+      cualquiera de los dos cargadores que gane, ya no importa.
+    - **Huecos reales corregidos** (iguales a los de escritorio, ahora
+      confirmados también en móvil): `savePalp` no actualizaba
+      `animalesPorIdM` NI tocaba `palpCandidatas` en absoluto (una vaca recién
+      palpada seguía apareciendo como "candidata" hasta recargar); `saveSeca`
+      no actualizaba `animalesPorIdM`; `saveParto` actualizaba `grupo`/`del`/
+      `inicioLactancia` de la madre pero NO `estadoRepro`/`prenez` (quedaba
+      "prenada" localmente después de parir). El mismo bug de `baja` (no
+      excluía de las listas) se confirmó presente también en móvil — mismo
+      arreglo (`grupo!=='baja'` en las tres funciones `derivar*M`).
+    - Verificado en Chromium: palpación (2 ramas, con y sin undo) + deshacer;
+      parto (excluye/repone a la madre, corrige `estadoRepro`) + deshacer;
+      secado (`animalesPorIdM.grupo`→horra) + deshacer; baja (saca a una vaca
+      vacía de `vacasVacias` Y `palpCandidatas` a la vez) + deshacer;
+      `revertirBajaM` la repone. Sin errores de página.
   - [ ] Paso 4+: extender a otras estructuras paralelas (`milkCows`/`cows`,
     `partosRecientes`, historial sanitario) según valga la pena caso a caso.
 - [ ] 🟡 **Módulos ES** por página (leche/hato/repro/sanidad) para salir del

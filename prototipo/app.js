@@ -215,7 +215,10 @@ function revertirBajaM(num){
   if(k&&grupos[k]&&!grupos[k].animales.find(x=>numDe(x[0])===num)){
     grupos[k].animales.unshift([a.id+' · '+a.nombre,subAnimalM(a),1]);incGrupo(k,1);}
   if(destino==='ordeño'&&!cows.find(c=>c.num===num)){cows.push(animalACow(a));renderCows();}
-  renderHatoM();
+  /* si su estado reproductivo (vacía/servida/preñada) seguía vigente, reaparece
+   * en las listas derivadas — ya no está en 'baja' (Estado único). */
+  recomputarReproM();
+  renderHatoM();renderPartos();renderVacias();renderPalpListaM();
   if(typeof LCStore!=='undefined')LCStore.updateAnimalCampos(num,
     {grupo:destino,baja_motivo:null,baja_fecha:null,baja_valor:null,baja_nota:null}).catch(e=>{
       console.warn('Reversión de baja no guardada:',e.message||e);
@@ -847,22 +850,19 @@ function saveParto(){
    * un bug real: antes se tomaba DESPUÉS de mutar la madre, así que "Deshacer"
    * revertía bien la pantalla pero NO la base (volvía a escribir el mismo
    * estado post-parto en vez del previo). */
-  const madrePrev=madreCache?{grupo:madreCache.grupo,del:madreCache.del,inicioLactancia:madreCache.inicioLactancia}:null;
+  const madrePrev=madreCache?{...madreCache}:null;
   const madreAntes=madreCache?snapshotReproDBM(madreCache):null;
-  let hIdx,removedHorra,idx,removed,prevPorParir,deshacerCria;
+  let hIdx,removedHorra,deshacerCria;
   const opciones={
     aplicar(){
-      idx=proximosPartos.findIndex(p=>p.cow===parto.cow);
-      removed=idx>=0?proximosPartos[idx]:null;
-      prevPorParir=porParir;
-      if(idx>=0)proximosPartos.splice(idx,1);
-      if(porParir>0)porParir--;
       partos2026++;
       hIdx=(madreCambiaGrupo&&grupos[kMadre])?grupos[kMadre].animales.findIndex(a=>numDe(a[0])===numMadre):-1;
       removedHorra=hIdx>=0?grupos[kMadre].animales[hIdx]:null;
       if(hIdx>=0){grupos[kMadre].animales.splice(hIdx,1);incGrupo(kMadre,-1);}
-      /* la madre vuelve al ordeño (DEL 0): caché, grupo del hato y lista de leche */
-      if(madreCache){madreCache.grupo='ordeño';madreCache.del=0;madreCache.inicioLactancia=fechaP;}
+      /* la madre vuelve al ordeño (DEL 0), sin preñez: caché, grupo del hato y
+       * lista de leche. proximosPartos/vacasVacias/palpCandidatas se recomputan
+       * abajo (Estado único) — ya no se parcha proximosPartos a mano. */
+      if(madreCache)Object.assign(madreCache,{grupo:'ordeño',del:0,inicioLactancia:fechaP,estadoRepro:null,prenez:null});
       if(madreCambiaGrupo){grupos.ordeno.animales.unshift([numMadre+' · '+nombre,subAnimalM(madreCache||{grupo:'ordeño'}),1]);incGrupo('ordeno',1);}
       if(!madreYaEnCows&&madreCache){cows.push(animalACow(madreCache));renderCows();}
       deshacerCria=()=>{};
@@ -891,8 +891,9 @@ function saveParto(){
           s:fmtFechaCortaM(fechaP)+' · '+sexoTxt+' · nació muerta · '+parto.peso+' kg · '+tipoTxt,badge:'mortinato',bw:'bad'});
         opciones.mensaje='Parto de '+nombre+' · la cría nació muerta — queda en el historial · '+nombre+' al ordeño en DEL 0';
       }
+      recomputarReproM();
       encolar();
-      renderPartos();
+      renderPartos();renderVacias();renderPalpListaM();
       setTimeout(()=>go('scr-partos'),300);
     },
     /* UNA transacción en la base (cría + parto + madre): o entra todo o nada */
@@ -907,16 +908,16 @@ function saveParto(){
     mensaje:null,   // se fija dentro de aplicar() (depende de si vive o no)
     revertir(){
       partosRecientes.shift();
-      partos2026--; porParir=prevPorParir;
-      if(removed)proximosPartos.splice(Math.min(idx,proximosPartos.length),0,removed);
+      partos2026--;
       /* revertir la madre: quitarla de ordeño (grupo+cows) y devolverla a su grupo */
       if(madreCambiaGrupo){const oi=grupos.ordeno.animales.findIndex(a=>numDe(a[0])===numMadre);
         if(oi>=0){grupos.ordeno.animales.splice(oi,1);incGrupo('ordeno',-1);}}
       if(!madreYaEnCows){const ci=cows.findIndex(c=>c.num===numMadre);if(ci>=0){cows.splice(ci,1);renderCows();}}
       if(madreCache&&madrePrev)Object.assign(madreCache,madrePrev);
       if(removedHorra&&grupos[kMadre]){grupos[kMadre].animales.splice(Math.min(hIdx,grupos[kMadre].animales.length),0,removedHorra);incGrupo(kMadre,1);}
+      recomputarReproM();
       deshacerCria(); desencolar();
-      renderPartos();
+      renderPartos();renderVacias();renderPalpListaM();
       snack('Parto deshecho');
     },
     compensarBD:typeof LCStore!=='undefined'?
@@ -964,21 +965,64 @@ const palp={cow:'',resultado:'prenada',meses:2,fecha:''};
 /* reglas puras compartidas (core/rules.js) */
 const MESC=LCRules.MESC;
 const fechaParto=LCRules.fechaParto;
+/* ===== Estado único (Fase 6, paso 3): mismo patrón que escritorio — próximos
+ * partos / vacías / candidatas a palpar YA NO se parchan a mano por cada
+ * acción, se DERIVAN de animalesPorIdM. Formas propias del móvil (distintas de
+ * escritorio): vacasVacias solo trae vacías con ≥120 días (no servidas —
+ * pantalla de "requieren decisión", no de "todo lo pendiente"); palpCandidatas
+ * es un objeto cow→motivo, no un array. */
+function derivarProximosPartosM(){
+  return Object.values(animalesPorIdM)
+    .filter(a=>a.grupo!=='baja'&&a.estadoRepro==='prenada'&&a.prenez&&a.prenez.partoEstimado)
+    .sort((x,y)=>x.prenez.partoEstimado<y.prenez.partoEstimado?-1:1)
+    .map(a=>{const m=a.prenez.meses;const f=fmtFechaCortaM(a.prenez.partoEstimado);
+      return {cow:a.id+' · '+a.nombre,sub:'Preñada '+String(m).replace('.',',')+' meses · parto ~'+f,
+        short:'~'+f,badge:MESC[new Date(a.prenez.partoEstimado+'T00:00:00').getMonth()],bw:m>=8?'warn':''};});
+}
+function derivarVaciasM(){
+  return Object.values(animalesPorIdM)
+    .filter(a=>a.grupo!=='baja'&&a.estadoRepro==='vacia'&&a.diasVacia&&a.diasVacia>=120)
+    .map(a=>({cow:a.id+' · '+a.nombre,del:a.del,diasVacia:a.diasVacia,
+      ultimaPalp:fmtFechaCortaM(a.ultimaPalpacion),resultado:'vacía',
+      sub:'DEL '+(a.del==null?'—':a.del)+' · '+ordinalPartoM(a.partos)+' · últ. '+((a.leche&&a.leche.ayer!=null)?a.leche.ayer:0)+' L',
+      accion:a.del>300?'Lactancia extendida sin preñez — evaluar descarte':'Producción muy baja para su etapa — evaluar descarte'}));
+}
+function derivarPalpCandidatasM(){
+  const out={};
+  Object.values(animalesPorIdM).filter(a=>a.grupo!=='baja'&&(a.estadoRepro==='servida'||a.estadoRepro==='vacia')).forEach(a=>{
+    out[a.id+' · '+a.nombre]=a.estadoRepro==='servida'?'servida, por confirmar'
+      :'vacía'+(a.diasVacia?' hace '+a.diasVacia+' días':', confirmar estado');
+  });
+  return out;
+}
+/* llamar SIEMPRE que animalesPorIdM cambie algo reproductivo, antes de
+ * renderPartos/renderVacias/renderPalpListaM. proximosPartos es `let`
+ * (reasignable); vacasVacias/palpCandidatas son `const` (se limpian y
+ * rellenan en el lugar, mismo patrón que ya usaba cargarReproMovil). */
+function recomputarReproM(){
+  proximosPartos=derivarProximosPartosM();
+  porParir=proximosPartos.length;
+  vacasVacias.length=0;
+  derivarVaciasM().forEach(v=>vacasVacias.push(v));
+  Object.keys(palpCandidatas).forEach(k=>delete palpCandidatas[k]);
+  Object.assign(palpCandidatas,derivarPalpCandidatasM());
+}
 /* ===== Cableado a Supabase: reproducción (móvil) ===== */
 (async function cargarReproMovil(){
   if(typeof LCStore==='undefined')return;
   try{
     const [animales,partosDB]=await Promise.all([LCStore.getAnimales(),LCStore.getPartos()]);
     if(!animales)return;
-    const porId={};animales.forEach(a=>porId[a.id]=a);
-    const refP=id=>porId[id]?(id+' · '+porId[id].nombre):id;
-    /* próximos partos */
-    proximosPartos=animales.filter(a=>a.estadoRepro==='prenada'&&a.prenez&&a.prenez.partoEstimado)
-      .sort((x,y)=>x.prenez.partoEstimado<y.prenez.partoEstimado?-1:1)
-      .map(a=>{const m=a.prenez.meses;const f=fmtFechaCortaM(a.prenez.partoEstimado);
-        return {cow:refP(a.id),sub:'Preñada '+String(m).replace('.',',')+' meses · parto ~'+f,
-          short:'~'+f,badge:MESC[new Date(a.prenez.partoEstimado+'T00:00:00').getMonth()],bw:m>=8?'warn':''};});
-    porParir=proximosPartos.length;
+    /* llenar la caché canónica GLOBAL (no una copia local): derivarProximosPartosM
+     * /derivarVaciasM/derivarPalpCandidatasM leen de animalesPorIdM. Antes este
+     * cargador usaba su propia lista local para evitar una carrera con el otro
+     * cargador (cacheAnimalesMovil) — ahora cada uno llena la MISMA caché con lo
+     * que trae, así que no importa cuál gane. */
+    animales.forEach(a=>{animalesPorIdM[a.id]=a;});
+    const refP=id=>animalesPorIdM[id]?(id+' · '+animalesPorIdM[id].nombre):id;
+    /* próximos partos / vacías / candidatas: derivados de la caché ya llena
+     * (Estado único, Fase 6 — ver recomputarReproM). */
+    recomputarReproM();
     /* partos recientes (vacío si no hay) */
     partosRecientes=(partosDB||[]).map(p=>{
       const viva=p.estado_cria==='viva';const sx=p.sexo_cria==='H'?'♀ hembra':'♂ macho';
@@ -986,20 +1030,6 @@ const fechaParto=LCRules.fechaParto;
         s:fmtFechaCortaM(p.fecha)+' · '+sx+' · '+(viva?'viva':'nació muerto')+' · '+(p.peso_kg||0)+' kg · parto '+p.tipo,
         badge:viva?('en '+(p.sexo_cria==='H'?'Terneras':'Machos')):'mortinato',bw:viva?'ok':'bad'};});
     partos2026=partosRecientes.length;
-    /* vacías que requieren decisión */
-    vacasVacias.length=0;
-    animales.filter(a=>a.estadoRepro==='vacia'&&a.diasVacia&&a.diasVacia>=120).forEach(a=>{
-      vacasVacias.push({cow:refP(a.id),del:a.del,diasVacia:a.diasVacia,
-        ultimaPalp:fmtFechaCortaM(a.ultimaPalpacion),resultado:'vacía',
-        sub:'DEL '+(a.del==null?'—':a.del)+' · '+ordinalPartoM(a.partos)+' · últ. '+((a.leche&&a.leche.ayer!=null)?a.leche.ayer:0)+' L',
-        accion:a.del>300?'Lactancia extendida sin preñez — evaluar descarte':'Producción muy baja para su etapa — evaluar descarte'});});
-    /* candidatas a palpar (objeto cow→motivo) */
-    Object.keys(palpCandidatas).forEach(k=>delete palpCandidatas[k]);
-    animales.filter(a=>a.estadoRepro==='servida'||a.estadoRepro==='vacia').forEach(a=>{
-      palpCandidatas[refP(a.id)]=a.estadoRepro==='servida'?'servida, por confirmar'
-        :'vacía'+(a.diasVacia?' hace '+a.diasVacia+' días':', confirmar estado');});
-    /* usar la lista LOCAL (recién bajada): animalesPorIdM lo llena OTRO
-     * cargador y si este gana la carrera los KPIs saldrían en 0. */
     const A=animales;
     /* KPIs reproductivos reales: preñez % e intervalo entre partos */
     const eleg=A.filter(a=>a.sexo==='H'&&['ordeño','horra','novilla'].includes(a.grupo));
@@ -1069,7 +1099,10 @@ function savePalp(){
   const numPalp=numDe(palp.cow);
   const fechaPalp=palp.fecha||isoHoyM();
   const esVacia=palp.resultado==='vacia';
-  const reproAntes=animalesPorIdM[numPalp]?snapshotReproDBM(animalesPorIdM[numPalp]):null;
+  /* Estado único: snapshot COMPLETO para poder restaurar animalesPorIdM entero
+   * al deshacer; proximosPartos/vacasVacias/palpCandidatas se DERIVAN de ella. */
+  const animalPrev=animalesPorIdM[numPalp]?{...animalesPorIdM[numPalp]}:null;
+  const reproAntes=animalPrev?snapshotReproDBM(animalPrev):null;
   let palpId=null;
   const opciones={
     escribir:typeof LCStore!=='undefined'?()=>{
@@ -1086,33 +1119,31 @@ function savePalp(){
   if(esVacia){
     opciones.aplicar=()=>{
       encolar();
-      renderVacias();
+      if(animalesPorIdM[numPalp])Object.assign(animalesPorIdM[numPalp],{estadoRepro:'vacia',
+        prenez:null,ultimaPalpacion:fechaPalp,secarEstimado:null,
+        diasVacia:LCRules.diasVaciaCalc(fechaPalp,isoHoyM())});
+      recomputarReproM();
+      renderVacias();renderPalpListaM();
       setTimeout(()=>go('scr-repro'),300);
     };
     opciones.mensaje=nombre+': vacía — queda en la lista para servicio';
     /* sin "Deshacer": así era en el original */
   }else{
     const f=fechaParto(palp.meses);
-    let i,prev,vi,removedVacia;
     opciones.aplicar=()=>{
       encolar();
-      const nuevo={cow:palp.cow,sub:'Preñada '+palp.meses+' meses · parto '+f.corta,
-        short:f.corta,badge:f.mes,bw:''};
-      i=proximosPartos.findIndex(p=>p.cow===palp.cow);
-      prev=i>=0?proximosPartos[i]:null;
-      if(i>=0)proximosPartos[i]=nuevo; else{proximosPartos.push(nuevo);porParir++;}
-      vi=vacasVacias.findIndex(v=>v.cow===palp.cow);
-      removedVacia=vi>=0?vacasVacias.splice(vi,1)[0]:null;
-      renderPartos();renderVacias();
+      if(animalesPorIdM[numPalp])Object.assign(animalesPorIdM[numPalp],{estadoRepro:'prenada',
+        prenez:{meses:palp.meses,partoEstimado:LCRules.partoEstimadoCalc(fechaPalp,palp.meses),ultimaPalpacion:fechaPalp},
+        ultimaPalpacion:fechaPalp,secarEstimado:LCRules.secarCalc(fechaPalp,palp.meses),diasVacia:null});
+      recomputarReproM();
+      renderPartos();renderVacias();renderPalpListaM();
       setTimeout(()=>go('scr-partos'),300);
     };
     opciones.mensaje=nombre+': preñada '+palp.meses+' meses — parto estimado '+f.corta+' · entra a los próximos partos';
     opciones.revertir=()=>{
-      const j=proximosPartos.findIndex(p=>p.cow===palp.cow);
-      if(j>=0)proximosPartos.splice(j,1);
-      if(prev)proximosPartos.push(prev); else porParir--;
-      if(removedVacia)vacasVacias.splice(Math.min(vi,vacasVacias.length),0,removedVacia);
-      desencolar();renderPartos();renderVacias();snack('Palpación deshecha');
+      if(animalPrev&&animalesPorIdM[numPalp])animalesPorIdM[numPalp]=animalPrev;
+      recomputarReproM();
+      desencolar();renderPartos();renderVacias();renderPalpListaM();snack('Palpación deshecha');
     };
     if(typeof LCStore!=='undefined'){
       opciones.compensarBD=()=>Promise.all([
@@ -1214,16 +1245,20 @@ function saveSeca(){
   const idx=cows.findIndex(c=>numSeca===c.num);
   const removed=idx>=0?cows[idx]:null;
   const prevSub=grupos.horras.sub, prevHeader=grupos.horras.header;
-  /* para poder DESHACER también en la base: sin esto, deshacer el secado
-   * dejaba a la vaca horra y con el inicio de lactancia (DEL) borrado. */
-  const prevInicio=(animalesPorIdM[numSeca]||{}).inicioLactancia||null;
-  const prevGrupo=(animalesPorIdM[numSeca]||{}).grupo||'ordeño';
+  /* Estado único: snapshot COMPLETO (no solo inicio_lactancia) para restaurar
+   * animalesPorIdM entero al deshacer. */
+  const animalPrev=animalesPorIdM[numSeca]?{...animalesPorIdM[numSeca]}:null;
+  const prevInicio=animalPrev?animalPrev.inicioLactancia:null;
+  const prevGrupo=animalPrev?animalPrev.grupo:'ordeño';
   LCAcciones.ejecutarConDeshacer({
     aplicar(){
       if(idx>=0)cows.splice(idx,1);
       renderCows();
       nHorras++;subHorras();
       grupos.horras.animales.unshift([seca.cow,'recién secada — preñada']);
+      /* mantener animalesPorIdM al día: sin esto quedaba desincronizada del
+       * hato hasta el próximo recargo (Estado único, Fase 6). */
+      if(animalesPorIdM[numSeca])Object.assign(animalesPorIdM[numSeca],{grupo:'horra',inicioLactancia:null,del:null});
       encolar();
       setTimeout(()=>openGroup('horras'),300);
     },
@@ -1235,6 +1270,7 @@ function saveSeca(){
       if(removed)cows.splice(Math.min(idx,cows.length),0,removed);
       renderCows();
       nHorras--; grupos.horras.sub=prevSub; grupos.horras.header=prevHeader; grupos.horras.animales.shift();
+      if(animalPrev&&animalesPorIdM[numSeca])animalesPorIdM[numSeca]=animalPrev;
       desencolar(); openGroup('horras'); snack('Secado deshecho');
     },
     compensarBD:typeof LCStore!=='undefined'?
@@ -1392,7 +1428,10 @@ function saveBaja(){
         if(i>=0){grupoBaja=k;idxGrupo=i;filaGrupo=grupos[k].animales[i];grupos[k].animales.splice(i,1);}});
       if(animalesPorIdM[numBaja]){animalesPorIdM[numBaja].grupo='baja';
         animalesPorIdM[numBaja].baja={motivo:baja.motivo,fecha:fecha,valor:valor,nota:nota};}
-      renderHatoM();
+      /* grupo:'baja' también la saca YA de próximos partos/vacías/candidatas
+       * (Estado único: esas listas filtran grupo!=='baja'). */
+      recomputarReproM();
+      renderHatoM();renderPartos();renderVacias();renderPalpListaM();
       setTimeout(()=>openGroup('bajas'),300);
     },
     escribir:typeof LCStore!=='undefined'?
@@ -1405,7 +1444,8 @@ function saveBaja(){
       /* reponer en su grupo y en el caché (con el grupo PREVIO, no 'baja') */
       if(grupoBaja&&filaGrupo)grupos[grupoBaja].animales.splice(Math.min(idxGrupo,grupos[grupoBaja].animales.length),0,filaGrupo);
       if(prevGrupoCache&&animalesPorIdM[numBaja]){animalesPorIdM[numBaja].grupo=prevGrupoCache;animalesPorIdM[numBaja].baja=null;}
-      renderHatoM();
+      recomputarReproM();
+      renderHatoM();renderPartos();renderVacias();renderPalpListaM();
       desencolar();openGroup('bajas');snack('Baja deshecha');
     },
     compensarBD:typeof LCStore!=='undefined'?
