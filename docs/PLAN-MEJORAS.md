@@ -17,11 +17,18 @@
 
 ## FASE 0 — Ya (0 código, protege datos hoy)
 - [ ] 🟢 **Disparar `respaldo.yml` a mano** (Actions → Run workflow) y verificar
-  que el artefacto `.json` se genera. Nunca ha corrido en producción (GAPS §2).
-- [ ] 🟢 **Confirmar que el repo de GitHub es privado** (los artefactos de
-  respaldo contienen todos los datos de la finca).
-- [ ] 🟢 **Correr las migraciones pendientes** en el SQL Editor, en orden:
-  `migracion-integridad.sql` y `migracion-nacimiento.sql` (ver `supabase/README.md`).
+  que el artefacto `.json` se genera. El botón "Respaldo" del escritorio SÍ se
+  probó y funciona (jul 2026) — falta confirmar el workflow automático de
+  GitHub Actions específicamente.
+- [~] 🟢 **Repo de GitHub público (DECISIÓN TOMADA, no pendiente).** Se decidió
+  mantenerlo público por ahora (pasarlo a privado arriesgaba tumbar el sitio de
+  GitHub Pages en el plan gratuito). Mitigación: no difundir la URL del repo;
+  revisar si Pages en plan pago o un dominio propio resuelve esto sin exponer
+  el código.
+- [x] 🟢 **Correr las migraciones pendientes.** ✅ Confirmado en esta sesión:
+  las 6 migraciones corrieron en la base real (incluida `migracion-vacunaciones.sql`,
+  que faltaba y hacía fallar el respaldo — ver `supabase/README.md`). Probado
+  en producción: el respaldo funciona.
 
 ## FASE 1 — Seguridad (lo CRÍTICO primero)
 - [ ] 🔴 **A1 · Login + RLS.** Supabase Auth (email/clave o el login por PIN ya
