@@ -294,9 +294,26 @@
       (entra a vacías con motivo derivado) + deshacer; anotación libre (NO
       saca de candidatas si seguía sin resolver); secado (`animalesPorId.grupo`
       pasa a horra, `inicioLactancia` a null) + deshacer. Sin errores de página.
-  - [ ] Paso 2: aplicar el mismo patrón a móvil, y limpiar el parche manual de
-    parto/baja para que también usen `recomputarRepro()`.
-  - [ ] Paso 3+: extender a otras estructuras paralelas (`milkCows`/`cows`,
+  - [x] **Paso 2 (escritorio): `parto`/`baja` unificados a `recomputarRepro()`.**
+    `saveParto` ya no parcha `proximosPartos` a mano (quitaba/reponía por
+    índice); ahora, como `animalesPorId[madre]` ya se actualizaba
+    correctamente, basta con `recomputarRepro()` tras el `Object.assign` — una
+    simplificación real, no solo un cambio de estilo.
+    **Bug latente corregido de paso**: `darDeBaja` no toca `estado_repro`, así
+    que una vaca vacía/servida/preñada dada de baja **seguía apareciendo**
+    en "vacías por decidir"/"candidatas a palpar"/"próximos partos" — ya desde
+    antes de cualquier trabajo de esta sesión, con o sin las listas derivadas.
+    Las tres funciones `derivar*` ahora excluyen `grupo==='baja'` explícitamente
+    (además de que `saveBaja` y `revertirBaja` llaman `recomputarRepro()`).
+    Verificado en Chromium: parto saca/repone a la madre de `proximosPartos`;
+    baja saca a una vaca vacía de `vacasVacias` Y `palpCandidatas` a la vez
+    (antes solo lo hacía en apariencia, por casualidad de que baja nunca las
+    tocaba) + deshacer; `revertirBaja` la repone en las listas si su estado
+    reproductivo real seguía vigente. Sin errores de página.
+  - [ ] Paso 3: aplicar el mismo patrón a **móvil** (estructura totalmente
+    distinta: `grupos[k].animales`, `cows`, contadores — no comparte código con
+    escritorio en esto).
+  - [ ] Paso 4+: extender a otras estructuras paralelas (`milkCows`/`cows`,
     `partosRecientes`, historial sanitario) según valga la pena caso a caso.
 - [ ] 🟡 **Módulos ES** por página (leche/hato/repro/sanidad) para salir del
   scope global y los sufijos `M`/TDZ.

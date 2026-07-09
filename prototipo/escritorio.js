@@ -1771,7 +1771,7 @@ cargarPalpHistorial();
  * lógica que antes vivía inline en cargarReproDesdeSupabase(). ===== */
 function derivarProximosPartos(){
   return Object.values(animalesPorId)
-    .filter(a=>a.estadoRepro==='prenada'&&a.prenez&&a.prenez.partoEstimado)
+    .filter(a=>a.grupo!=='baja'&&a.estadoRepro==='prenada'&&a.prenez&&a.prenez.partoEstimado)
     .sort((x,y)=>x.prenez.partoEstimado<y.prenez.partoEstimado?-1:1)
     .map(a=>{const m=a.prenez.meses;return {cow:a.id+' · '+a.nombre,
       prenez:(String(m).replace('.',','))+' meses',parto:'~'+fmtFechaCorta(a.prenez.partoEstimado),
@@ -1788,11 +1788,11 @@ function _motivoCandidata(a){
   return null;
 }
 function derivarPalpCandidatas(){
-  return Object.values(animalesPorId).filter(a=>a.estadoRepro==='servida'||a.estadoRepro==='vacia')
+  return Object.values(animalesPorId).filter(a=>a.grupo!=='baja'&&(a.estadoRepro==='servida'||a.estadoRepro==='vacia'))
     .map(a=>({cow:a.id+' · '+a.nombre,motivo:_motivoCandidata(a)}));
 }
 function derivarVacasVacias(){
-  return Object.values(animalesPorId).filter(a=>a.sexo==='H'&&(a.estadoRepro==='vacia'||a.estadoRepro==='servida'))
+  return Object.values(animalesPorId).filter(a=>a.grupo!=='baja'&&a.sexo==='H'&&(a.estadoRepro==='vacia'||a.estadoRepro==='servida'))
     .map(a=>{const daAb=_diasAbiertos(a.id);
       const servida=a.estadoRepro==='servida';
       const decision=(!servida)&&(daAb!=null?daAb>=120:(a.diasVacia!=null&&a.diasVacia>=120));
@@ -2439,12 +2439,9 @@ function saveParto(){
   const prevMadre={grupo:a.grupo,del:a.del,ayer:a.ayer,var:a.var,vc:a.vc,repro:a.repro,tags:a.tags.slice()};
   const madrePrevCache=animalesPorId[numMadre]?{...animalesPorId[numMadre]}:null;
   const madreAntes=animalesPorId[numMadre]?snapshotReproDB(animalesPorId[numMadre]):null;
-  let pi,prevParto,cria,reciente;
+  let cria,reciente;
   LCAcciones.ejecutarConDeshacer({
     aplicar(){
-      pi=proximosPartos.findIndex(p=>p.cow.split('·')[0].trim()===numMadre);
-      prevParto=pi>=0?proximosPartos[pi]:null;
-      if(pi>=0)proximosPartos.splice(pi,1);
       /* la madre vuelve al ordeño en DEL 0 */
       a.grupo='En ordeño';a.del=0;a.ayer=0;a.var='—';a.vc='';
       a.tags=a.tags.filter(t=>t!=='prenada');
@@ -2461,10 +2458,12 @@ function saveParto(){
         sexo:partoState.sexo,peso:partoState.peso,tipo:partoState.tipo,
         estado:partoState.estado,grupo:partoState.estado==='viva'?(criaGrupo==='Ternera'?'Terneras':'Machos'):null};
       partosRecientes.push(reciente);
-      /* mantener los cachés canónicos al día (KPIs, ficha y alertas sin recargar) */
+      /* mantener los cachés canónicos al día (KPIs, ficha y alertas sin recargar);
+       * proximosPartos/vacasVacias/palpCandidatas se DERIVAN (Estado único) */
       if(animalesPorId[numMadre])Object.assign(animalesPorId[numMadre],
         {grupo:'ordeño',del:0,inicioLactancia:fechaParto,estadoRepro:null,prenez:null,
          partos:(animalesPorId[numMadre].partos||0)+1});
+      recomputarRepro();
       _partosRaw.push({id:partoId,madre_id:numMadre,cria_id:criaId,fecha:fechaParto,
         sexo_cria:partoState.sexo,peso_kg:partoState.peso,tipo:partoState.tipo,estado_cria:partoState.estado});
       (_partosPorMadre[numMadre]=_partosPorMadre[numMadre]||[]).push(fechaParto);
@@ -2483,9 +2482,9 @@ function saveParto(){
     revertir(){
       Object.assign(a,prevMadre);
       if(cria){const ci=hato.indexOf(cria);if(ci>=0)hato.splice(ci,1);if(criaAuto)criaSeq--;}
-      if(prevParto)proximosPartos.splice(Math.min(pi,proximosPartos.length),0,prevParto);
       const ri=partosRecientes.indexOf(reciente);if(ri>=0)partosRecientes.splice(ri,1);
       if(madrePrevCache&&animalesPorId[numMadre])animalesPorId[numMadre]=madrePrevCache;
+      recomputarRepro();
       const pri=_partosRaw.findIndex(p=>p.id===partoId);if(pri>=0)_partosRaw.splice(pri,1);
       if(_partosPorMadre[numMadre]){const fi2=_partosPorMadre[numMadre].lastIndexOf(fechaParto);
         if(fi2>=0)_partosPorMadre[numMadre].splice(fi2,1);}
@@ -2772,8 +2771,11 @@ function saveBaja(){
   LCAcciones.ejecutarConDeshacer({
     aplicar(){
       hato.splice(idx,1);renderHatoFiltros();renderHato();
-      /* caché canónico al día: alertas y KPIs dejan de contarla sin recargar */
+      /* caché canónico al día: alertas y KPIs dejan de contarla sin recargar.
+       * grupo:'baja' también la saca YA de próximos partos/vacías/candidatas
+       * (Estado único: esas listas filtran grupo!=='baja'). */
       if(ac){ac.grupo='baja';ac.baja={motivo:bajaState.motivo,fecha:fecha,valor:valor,nota:nota};}
+      recomputarRepro();
       if(typeof renderInicio==='function')renderInicio();
       go('pg-hato',navFor('pg-hato'));
     },
@@ -2784,6 +2786,7 @@ function saveBaja(){
     revertir(){
       hato.splice(Math.min(idx,hato.length),0,a);renderHatoFiltros();renderHato();
       if(prevGrupoCache&&animalesPorId[bajaState.num]){animalesPorId[bajaState.num].grupo=prevGrupoCache;animalesPorId[bajaState.num].baja=null;}
+      recomputarRepro();
       if(typeof renderInicio==='function')renderInicio();
     },
     compensarBD:typeof LCStore!=='undefined'?
@@ -2808,11 +2811,15 @@ function revertirBaja(num){
   /* si vuelve "en ordeño", reaparece en la lista de registro de leche */
   if(destino==='ordeño'&&!milkCows.find(c=>c.num===num)){
     milkCows.push(animalAMilk(ac));if(typeof renderMilk==='function')renderMilk();}
+  /* si su estado reproductivo (vacía/servida/preñada) seguía vigente, reaparece
+   * en las listas derivadas — ya no está en 'baja' (Estado único). */
+  recomputarRepro();
   if(typeof LCStore!=='undefined')LCStore.updateAnimalCampos(num,
     {grupo:destino,baja_motivo:null,baja_fecha:null,baja_valor:null,baja_nota:null}).catch(e=>{
       console.warn('Reversión de baja no guardada:',e.message||e);
       snack('⚠ La reversión NO se guardó en la base — reintenta');});
   hatoFiltro='todas';renderHatoFiltros();renderHato();if(typeof renderInicio==='function')renderInicio();
+  renderPartos();renderPartosKpis();renderVacias();renderPalpLista();renderReproKpis();
   goVaca(num,vacaFrom);
   snack(num+' vuelve al hato como "'+(GRUPO_DISPLAY[destino]||destino)+'" — revisa el grupo en Editar');
 }
