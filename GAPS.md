@@ -1,169 +1,180 @@
 # GAPS.md — Auditoría sin anestesia
 
-> Estado real del proyecto a julio 2026, DESPUÉS de tres rondas de correcciones
-> (ver `docs/AUDITORIA.md` para el historial). Esto es lo que sigue mal, frágil o
-> feo, dicho sin diplomacia. Complementa a `docs/AUDITORIA.md`: aquello es el
-> inventario de arreglos; esto es la foto cruda de las debilidades que quedan.
+> Estado real del proyecto a julio 2026, DESPUÉS de las Fases 0-6 de
+> `docs/PLAN-MEJORAS.md` (ver ese documento para el detalle commit por commit).
+> Esto es lo que sigue mal, frágil o feo, dicho sin diplomacia. La versión
+> anterior de este archivo quedó desactualizada por el volumen de trabajo de
+> esta sesión — reescrito de cero contra el código real, no contra memoria.
 
 ---
 
 ## 1. Deuda técnica
 
-**La arquitectura de estado del frontend es contabilidad manual.** No hay una
-fuente de estado: el escritorio mantiene en paralelo `hato`, `animalesPorId`,
-`milkCows`, `ordenosDiaMap`, `_partosRaw`, `_ultimoParto`, `_partosPorMadre`,
-`partosRecientes`, `proximosPartos`, `vacasVacias`, `tratamientos`,
-`_palpaciones`, `_vacunaciones` — y cada acción (parto, baja, secado) debe
-acordarse de actualizar **cada uno a mano**, y su "Deshacer" de revertirlos a
-mano. Los parches de M7 taparon los huecos conocidos, pero el patrón garantiza
-que la próxima feature olvide alguno. La solución real es un estado único con
-re-render (o re-fetch dirigido), no más parches.
+**Estado del frontend: ya no es contabilidad manual pura, pero tampoco es
+Estado único.** `core/acciones.js` (M14) unificó la coreografía async de los 6
+flujos de guardado (parto/palpación/secado/baja/leche/tratamiento) en las dos
+superficies — ya no hay 12 copias de "aplicar → BD → deshacer". Además, el
+dominio de reproducción (`proximosPartos`/`vacasVacias`/`palpCandidatas`) y
+`partosRecientes` (escritorio) se DERIVAN de la caché canónica en vez de
+parcharse a mano — esto encontró y corrigió **7 bugs reales** de
+desincronización (ver Fase 6 en el plan). Lo que SIGUE siendo contabilidad
+manual: `milkCows`/`cows` (registro de leche), el historial sanitario
+(`tratamientos`/`_tratamientosTodos` — revisado, hoy está sincronizado
+correctamente, sin bug conocido) y el hato mismo (`hato`/`animalesPorId`
+siguen siendo dos estructuras separadas, sincronizadas a mano campo por
+campo en cada acción).
 
-**Los flujos de guardado siguen duplicados móvil/escritorio.** `saveParto`,
-`savePalp`, `saveSeca`, `saveBaja`, `saveMilk`, `saveTrata` existen dos veces
-con la misma coreografía (estado local → BD → snack con undo → compensación) y
-detalles distintos. Ya se unificaron las derivaciones (`deriveReproFicha`,
-`fmtNacimiento`, `PROTOCOLO_SAN`), pero el corazón — las acciones — no.
-Cada bug de consistencia se arregla dos veces o queda a medias (M14 sigue
-"parcial" por esto).
+**Los flujos de guardado ya NO están duplicados de raíz.** ✅ Resuelto por
+M14: los 6 `save*` comparten `LCAcciones.ejecutarConDeshacer()`. Lo que sigue
+duplicado es el ESTADO que cada superficie pinta (`hato` vs `grupos[k]`,
+`milkCows` vs `cows`), que es un problema distinto (Estado único, no cubierto
+para leche/hato todavía).
 
-**Archivos monolíticos en scope global.** `escritorio.js` ~2.650 líneas,
-`app.js` ~1.250, cero módulos, todo en `window`. Las colisiones ya obligaron a
-la convención del sufijo `M` y a comentarios anti-TDZ. Un typo en un nombre
-global no falla: pisa.
+**Archivos monolíticos en scope global.** Sin cambios: `escritorio.js` ~2.900
+líneas, `app.js` ~1.500, cero módulos, todo en `window`. Sigue siendo el
+ítem "Módulos ES" del plan, no atacado.
 
-**`onclick` en strings por todas partes.** Los handlers se arman concatenando
-HTML (`onclick="openCow('...')"`) en vez de listeners. Es la razón por la que
-el XSS solo está mitigado a medias (ver §4) y hace imposible una CSP estricta.
+**`onclick` en strings por todas partes.** Sin cambios. Sigue siendo la raíz
+de que el XSS esté mitigado solo a medias (ver §4) y de que una CSP estricta
+sea imposible.
 
-**Duplicación de conocimiento del esquema en 3 lugares.** La lista de tablas y
-columnas vive en `schema.sql`, en `store.js` (`TABLAS_RESPALDO` +
-`COLUMNAS_RESPALDO`) y en `.github/scripts/respaldo.js` (`TABLAS`). Agregar
-una columna exige tocar tres archivos; olvidarlo no da error, da un respaldo
-incompleto en silencio.
+**Duplicación de conocimiento del esquema: RESUELTO.** ✅ `COLUMNAS_RESPALDO`
+(store.js) se verifica automáticamente contra las columnas reales de Postgres
+en `prototipo/test/integracion.js` — si una columna nueva del esquema no entra
+al respaldo, el test falla. `TABLAS_RESPALDO` ↔ `TABLAS` (respaldo.js) también
+se verifican. ADEMÁS: las fórmulas de fecha de `v_animales`
+(`parto_estimado_calc`/`secar_calc`/`dias_vacia_calc`/`prenez_meses_actual`)
+tienen un espejo local en `core/rules.js` (para pintar optimista sin esperar
+red) — ESE espejo también se verifica automáticamente contra Postgres.
 
-**Código muerto y fantasmas restantes:** `fichas={}` en escritorio (siempre
-vacío pero `saveTrata`/`aplicarTratamientos` le escriben historia que nadie
-lee); `diaOverrides`/`editDiaCell` descableados; `partoInfo={}` móvil (siempre
-vacío); la edge function `login-pin` huérfana con debilidades conocidas (B8);
-`docs/PLAN-arquitectura.md` y `docs/PLAN-backend.md` describen un diseño que ya divergió
-de la realidad. `estadoBase()` está copiada idéntica en los dos JS (ironía:
-se creó para un fix y nació duplicada).
+**Código muerto: mayormente limpio.** ✅ `fichas={}`, `diaOverrides`/
+`editDiaCell`, `partoInfo={}` — eliminados (Fase 5). `login-pin` — archivada
+con advertencia clara. `PLAN-arquitectura.md`/`PLAN-backend.md` — archivados
+con banner de "desactualizado". Sigue pendiente: `estadoBase()` duplicada
+en los dos JS (decisión consciente de NO unificar — toca el DOM, y
+`core/rules.js` debe seguir siendo puro/cargable en Node para los tests).
 
-**Cache-busting manual.** `?v=20260707` hay que acordarse de subirlo en cada
-deploy. El día que se olvide, los usuarios ejecutan JS viejo contra la BD
-nueva y nadie se entera.
+**Cache-busting: RESUELTO.** ✅ `pages.yml` inyecta el SHA del commit al
+publicar; el repo deja el placeholder `?v=dev`. Ya no hay que acordarse de
+subir un número a mano.
 
-## 2. Cobertura de tests — casi cero
+## 2. Cobertura de tests — de casi cero a un arnés real
 
-**Hay UN test (`prototipo/test/smoke.js`) y es estático.** Verifica que los
-exports existen, que las columnas del seed calzan con el esquema y que las
-funciones puras de rules.js responden. **No ejecuta ni un solo flujo real.**
-El CI (nuevo) corre sintaxis + ese smoke. Nada más.
+**`prototipo/test/integracion.js` (nuevo) SÍ ejecuta flujos reales**, no solo
+estática. Dos partes: (A) JS puro — paginación en el borde 1000/1001,
+`idUnico`, `clampLitros`; (B) SQL contra Postgres real (si hay uno
+alcanzable) — `registrar_parto_completo` (transaccional, con cría duplicada
+forzando rollback), `restaurar_respaldo` (reemplazo total + rollback ante FK
+inválida), derivaciones de `v_animales`, idempotencia de migraciones,
+contrato de columnas del respaldo, paridad de fórmulas de fecha.
 
-**Rutas críticas SIN NINGÚN test:**
-- `registrarPartoCompleto` (RPC + fallback) — el flujo más complejo de la app.
-  Se probó a mano contra Postgres local una vez; ninguna regresión lo atrapará.
-- Todas las compensaciones de "Deshacer" (leche/trata/seca/baja/parto ×2
-  superficies). Es exactamente el tipo de lógica que se rompe al refactorizar.
-- `exportarTodo`/`restaurarTodo` — la red de seguridad de la finca no tiene
-  test. Un bug aquí = pérdida de datos real.
-- La paginación (`_paginado`, `_bajarTablaCompleta`) — nadie probó qué pasa con
-  exactamente 1000/1001 filas.
-- Los cálculos de la vista SQL (edad, DEL, retiro, secar en días) — validados a
-  mano en la sesión, sin arnés repetible.
-- Idempotencia de migraciones — se probó manualmente; el CI no lo hace.
-- `esc()`/XSS — sin test de regresión; el próximo `innerHTML` nuevo entra sin
-  escape y nadie lo nota.
-- El workflow `respaldo.yml` nunca ha corrido de verdad (se escribió y pusheó;
-  la primera ejecución real será en producción — eso no es un plan de respaldo,
-  es una esperanza). **Dispararlo a mano una vez (workflow_dispatch) es urgente.**
-- Cero tests de DOM/UI en ambas superficies (hay Playwright vendorizado en el
-  entorno de desarrollo; no se dejó ningún test escrito).
+**Rutas críticas — estado real hoy:**
+- `registrar_parto_completo` — ✅ con test de integración (rollback ante cría
+  duplicada, verificado).
+- Compensaciones de "Deshacer" (leche/trata/seca/baja/parto ×2 superficies) —
+  ⚠️ verificadas A MANO en Chromium durante esta sesión (docenas de veces,
+  documentado en cada commit de Fase 6), pero **sin un test automatizado que
+  las proteja de una futura regresión**. Sigue siendo el hueco más grande de
+  cobertura.
+- `exportarTodo`/`restaurarTodo` — ✅ con test de integración (reemplazo total,
+  rollback, tope de tamaño `MAX_FILAS_RESTAURA`).
+- Paginación — ✅ con test (0/999/1000/1001/2000/2001 filas exactas).
+- Cálculos de la vista SQL — ✅ con test de paridad SQL↔JS.
+- Idempotencia de migraciones — ✅ con test (excepto `migracion-integridad`,
+  que es orden-dependiente por diseño, documentado).
+- `esc()`/XSS — SIGUE sin test de regresión.
+- `respaldo.yml` (el workflow automático) — el botón manual de la app SÍ se
+  probó en producción (jul 2026); el *workflow de GitHub Actions* en sí
+  todavía no se disparó a mano para confirmar que corre solo.
+- Tests de DOM/UI — sigue sin haber ninguno ESCRITO Y GUARDADO (se usó
+  Playwright ad-hoc en cada sesión de trabajo para verificar, pero esas
+  pruebas no quedan en el repo como regresión).
 
 ## 3. Bordes frágiles
 
-- **Concurrencia entre dispositivos: last-write-wins sin detección.** Dos
-  teléfonos editando la misma vaca se pisan sin aviso (`updateAnimalCampos` no
-  compara `updated_at`). El upsert del ordeño sobrescribe el litro del otro
-  ordeñador en silencio (es "corrección", pero nadie se entera de que pasó).
-- **IDs por `Date.now()`.** `'P-'+Date.now()`, `'T-'+Date.now()`: dos
-  dispositivos en el mismo milisegundo = colisión de PK. Improbable, no
-  imposible; sin sufijo aleatorio (B1 sigue abierto).
-- **Secuencias locales de chapeta.** `criaNum`/`altaSeq` se siembran del máximo
-  al cargar: dos teléfonos abiertos a la vez asignan el MISMO número a dos
-  crías distintas; el segundo insert falla y el flujo local ya avanzó.
-- **La ventana de "Deshacer" (5s) vs red lenta.** Las compensaciones esperan
-  `pSave.then(...)`, pero si el guardado FALLÓ, el undo igual dispara deletes
-  sobre filas que no existen (inofensivo hoy, ruido en consola, frágil mañana).
-- **`restaurarTodo` sigue siendo merge no-transaccional** (A3 parcial): fallo a
-  mitad = base mezclada; filas creadas después del respaldo sobreviven a la
-  "restauración". Y no hay límite de tamaño: un .json gigante congela la pestaña.
-- **Offline sigue sin existir.** El contador "pendientes" es un entero en RAM
-  que muere al recargar. El copy ya es honesto, la capacidad sigue faltando
-  (README lo promete como visión).
-- **Escala:** `v_animales` corre 4 subconsultas correlacionadas por animal en
-  cada carga (mitigado con índice, no medido con volumen real); `getAnimales()`
-  baja el hato completo con caché de solo 3s — con 200+ animales y varias
-  pantallas, eso es re-descargar todo constantemente.
-- **Reloj del dispositivo.** El CHECK bloquea fechas futuras (>hoy+1), pero un
-  celular con fecha atrasada registra ordeños de "ayer" sin ninguna alerta.
-- **`getOrdenosFecha`/semana** asumen `turno='dia'` en todo; si algún día se
-  usan am/pm (el CHECK los permite), producción mensual y "última leche" los
-  ignoran silenciosamente (B10 documentado, no resuelto de fondo).
+- **Concurrencia entre dispositivos — PARCIALMENTE RESUELTO.** ✅
+  `updateAnimalCampos(id, campos, expectedUpdatedAt)` soporta control de
+  concurrencia optimista (compara `updated_at`; si otro dispositivo la
+  cambió, lanza `CONFLICTO` y la UI avisa "otro dispositivo cambió esta
+  ficha"). **Wireado HOY solo en el flujo de "Editar datos" de la ficha**
+  (ambas superficies). Los 6 flujos de `core/acciones.js` (parto/palpación/
+  secado/baja/leche/tratamiento) NO pasan `expectedUpdatedAt` — siguen siendo
+  last-write-wins sin aviso.
+- **IDs por `Date.now()` — RESUELTO.** ✅ `LCRules.idUnico()` (tiempo +
+  sufijo aleatorio de 6 chars base36) reemplazó los `'P-'+Date.now()` en
+  parto y tratamiento.
+- **Secuencias locales de chapeta — RESUELTO.** ✅ Las altas (móvil y
+  escritorio) validan contra la PK antes de escribir y avisan "el número X ya
+  existe" en vez de fallar en silencio.
+- **Ventana de "Deshacer" vs red lenta — RESUELTO.** ✅ `core/acciones.js`
+  siempre espera a que la escritura original TERMINE antes de compensar
+  (encontrado y corregido como bug real en secado/baja, que no lo hacían).
+- **`restaurarTodo` — RESUELTO.** ✅ `restaurar_respaldo()` es transaccional
+  (todo o nada) desde `migracion-restaurar.sql`, con `MAX_FILAS_RESTAURA =
+  200000` como tope de tamaño.
+- **Offline sigue sin existir.** Sin cambios (A7, diferido a propósito — ver
+  el plan). El contador "pendientes" sigue siendo un entero en RAM.
+- **Escala — RESUELTO.** ✅ `getOrdenos(anio)` filtra por año en vez de bajar
+  toda la historia; la caché de animales subió de 3s a 30s (invalidación real
+  es por evento, no por tiempo).
+- **Reloj del dispositivo.** Sin cambios: un celular con fecha atrasada
+  registra sin alerta. Bajo impacto (rango acotado por el CHECK de fecha
+  futura), no atacado.
+- **`turno='dia'` hardcodeado.** Sin cambios (B10, documentado, no resuelto
+  de fondo — hoy no hay UI que use otro turno, así que no es un bug activo).
+- **Tres nociones de "hoy" — PARCIAL.** `isoHoy()`/`isoHoyM()` ya delegan en
+  `hoyFinca()` (Fase 2). Queda `HOY_LC` en `app.js` (capturado una sola vez al
+  cargar la página, usado en `isoMasDiasM`/`isoPartoM` para estimar fechas de
+  parto) — si la pestaña queda abierta mucho tiempo, esos cálculos usan una
+  fecha vieja. Mitigado por el auto-reload a medianoche, pero sigue siendo una
+  tercera fuente de "hoy".
 
 ## 4. Seguridad
 
-| Severidad | Problema |
-|---|---|
-| **CRÍTICA** | **Sin autenticación + RLS desactivado + `GRANT ALL` a `anon` + anon key pública en el repo.** Cualquiera con la URL lee, modifica o borra TODO (incluye `restaurarTodo` y `deleteAnimal`). Todo lo demás de esta tabla es secundario frente a esto. Mitigación actual: oscuridad de la URL + respaldos 2×/semana. (A1) |
-| **ALTA** | **XSS mitigado solo a medias.** `esc()` cubre listas/fichas/tablas principales, pero quedan `innerHTML` sin escapar (p.ej. mensajes de `snack()` que interpolan nombres, headers de grupos) y todos los `onclick` en strings interpolan ids sin sanear. Con la BD abierta a escritura anónima (fila de arriba), esto es explotable en cadena: quien escribe un nombre malicioso en la BD ejecuta JS en el navegador de la administradora. (A8 parcial) |
-| **MEDIA** | La anon key no se puede rotar sin redesplegar (está en `store.js` y `respaldo.js`, hardcodeada dos veces). |
-| **MEDIA** | `restaurarTodo` acepta cualquier JSON del disco del usuario: valida estructura, no contenido semántico ni tamaño. Un archivo manipulado puede reescribir el hato entero (aunque con la BD abierta, el atacante no necesita este vector). |
-| **MEDIA** | `login-pin` (edge function huérfana): si alguien la despliega tal cual, JWT firmado con la service_role key por defecto, rate-limit burlable por `device_id` del cliente, enumeración de usuarios. Archivar o arreglar antes de usar. (B8) |
-| **BAJA** | Sin CSP (imposible con los `onclick` inline actuales). Sin límites de tasa en nada. Los artefactos de respaldo en GitHub Actions son visibles para cualquiera con acceso al repo — verificar que el repo sea privado. |
+| Severidad | Problema | Estado |
+|---|---|---|
+| **CRÍTICA** | Sin autenticación + RLS desactivado + `GRANT ALL` a `anon` + anon key pública en el repo. Cualquiera con la URL lee, modifica o borra TODO. | **SIN CAMBIOS — sigue siendo el problema #1.** (A1) |
+| **ALTA** | XSS mitigado solo a medias: `esc()` cubre listas/fichas/tablas principales; quedan `innerHTML` de `snack()`/headers de grupo sin escapar, y todos los `onclick` en strings interpolan ids sin sanear. | **SIN CAMBIOS.** (A8) |
+| **MEDIA** | La anon key no se puede rotar sin redesplegar (hardcodeada en `store.js` y `respaldo.js`). | Sin cambios. |
+| **MEDIA** | `restaurarTodo` acepta cualquier JSON: valida estructura y ahora tamaño (`MAX_FILAS_RESTAURA`), no contenido semántico. | **PARCIAL** — mejoró (antes no tenía ni tope de tamaño). |
+| **MEDIA** | `login-pin` huérfana con debilidades conocidas si se despliega tal cual. | **MITIGADO** — archivada en `supabase/edge-functions-archivadas/` con advertencia; no está desplegada. |
+| **BAJA** | Sin CSP (los `onclick` inline lo impiden). Repo público — decisión consciente tomada (ver plan), no un descuido. | Repo: decisión documentada. CSP: sin cambios. |
 
 ## 5. Inconsistencias internas
 
-- **Tres representaciones del mismo enum `grupo`.** La BD usa `'ordeño'` (con
-  ñ); el escritorio guarda en sus filas locales el DISPLAY (`'En ordeño'`) y
-  lo mapea de vuelta con `GRUPO_MODELO`; el móvil usa claves propias
-  (`'ordeno'` sin ñ) vía `GRUPO_KEY`. `_normGrupo()` en store.js existe solo
-  para sobrevivir a esta torre de Babel.
-- **Cinco formatos de ID conviviendo:** chapetas numéricas `'042'`, toros
-  `'T01'`, UUIDs (ordeños/palpaciones/vacunaciones), `'P-'+timestamp` (partos
-  de la app), `'P-hist-*'` (partos de migración). Ninguna validación los
-  distingue; el CHECK de formato solo aplica a `animales.id`.
-- **Español e inglés mezclados sin criterio:** `saveParto` pero
-  `registrarParto`, `cow` pero `vaca`, `hato` pero `milkCows`,
-  `guardarCeldaSemana` pero `renderMilk`. Duplica la carga mental de buscar
-  algo por nombre.
-- **Tres nociones de "hoy":** `HOY_LC` (congelado al cargar, aún usado en
-  cálculos de meses), `isoHoy()` (ahora delega en la finca), `hoyFinca()`
-  (canónica). La recarga a medianoche lo mitiga, pero tres verdades siguen ahí.
-- **Manejo de errores no uniforme:** la mayoría de catches ya muestran snack
-  honesto, pero quedan `console.warn` mudos (compensaciones de undo, potreros,
-  vacunaciones al cargar) y estilos distintos de mensaje.
-- **Dos sistemas de diseño CSS.** `styles.css` y `escritorio.css` repiten
-  tokens y componentes (chips, badges, snackbar) con valores que ya divergieron
-  una vez (el contraste se corrigió en ambos a mano — otra vez contabilidad
-  manual).
-- **Convención `M` a medio camino:** tras extraer las derivaciones a rules.js,
-  quedan pares `renderSanCalendario/renderSanCalendarioM`, `isoHoy/isoHoyM`,
-  `snapshotReproDB/M`, etc. Mitad compartido, mitad clonado — el peor punto
-  intermedio para navegar el código.
-- **Documentación que se contradice:** README ya tiene la sección "estado
-  actual vs visión" (bien), pero `docs/PLAN-arquitectura.md` y `docs/PLAN-backend.md`
-  siguen describiendo `core/actions.js` (no existe), auth por PIN (no existe)
-  y outbox (no existe) como si fueran el plan vigente.
+- **Tres representaciones del enum `grupo`.** Sin cambios. `_normGrupo()`
+  sigue siendo el parche que las hace convivir.
+- **Cinco formatos de ID.** Sin cambios.
+- **Español e inglés mezclados.** Sin cambios (cosmético, bajo impacto).
+- **Tres nociones de "hoy".** Ver §3 — de tres a dos y media (queda `HOY_LC`
+  en móvil para estimaciones de parto).
+- **Manejo de errores no uniforme.** MEJORADO en las rutas tocadas esta
+  sesión (todo lo que pasa por `core/acciones.js` usa `avisoError` con snack
+  honesto de forma uniforme). Quedan `console.warn` mudos en rutas no
+  tocadas (potreros, vacunaciones al cargar).
+- **Dos sistemas de diseño CSS.** Sin cambios.
+- **Convención `M` a medio camino.** Sin cambios estructurales; de hecho
+  creció un poco (`derivarProximosPartosM`, `recomputarReproM`, etc. — nuevas
+  funciones "M" para el paso 3 de Estado único), aunque siguen el patrón ya
+  establecido, no uno nuevo.
+- **Documentación que se contradice: RESUELTO.** ✅ `docs/PLAN-arquitectura.md`
+  y `docs/PLAN-backend.md` tienen banner de "archivado/desactualizado" al
+  inicio, apuntando a la realidad vigente.
 
 ---
 
 ## Si solo se pueden hacer tres cosas
 
-1. **Auth + RLS** (la fila CRÍTICA). Todo lo demás es decorar una casa sin puerta.
-2. **Disparar `respaldo.yml` a mano hoy** y verificar el artefacto — la red de
-   seguridad nunca ha corrido.
-3. **Un test de integración real** (Postgres local + los 6 flujos de guardado
-   con sus undos) antes del próximo refactor, porque el patrón de estado manual
-   (§1) garantiza regresiones y hoy nada las detendría.
+1. **Auth + RLS** (la fila CRÍTICA). Sigue siendo lo único verdaderamente
+   urgente — todo lo demás de esta sesión mejoró la casa, pero la puerta
+   sigue sin cerradura.
+2. **Test de regresión para "Deshacer"** — es la ruta más verificada a mano
+   (docenas de veces en Chromium esta sesión) y la menos protegida contra una
+   futura regresión silenciosa. Un arnés headless (Playwright, ya vendorizado
+   en el entorno de desarrollo) que ejercite los 6 flujos × 2 superficies
+   sería el mayor ROI de testing que queda.
+3. **Cerrar el XSS del todo (A8).** Con la BD abierta a escritura anónima
+   (fila #1), un `innerHTML` sin escapar es una cadena de ataque completa:
+   quien escribe un nombre malicioso en la BD ejecuta JS en el navegador de
+   la administradora. Mientras no haya login, esto es más urgente de lo que
+   parece a simple vista.
