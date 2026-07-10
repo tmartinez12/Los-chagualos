@@ -1866,9 +1866,17 @@ const hatoFiltrosEstado=[
   {id:'prenada',label:'Preñadas',test:a=>a.tags.includes('prenada')},
   {id:'vacia',label:'Vacías',test:a=>a.tags.includes('vacia')},
   {id:'tratamiento',label:'En tratamiento',test:a=>a.tags.includes('tratamiento')},
+  /* 'bajas' se resuelve aparte: las bajas NO están en `hato` (que solo tiene
+   * animales activos) — se leen de animalesPorId al filtrar. */
+  {id:'bajas',label:'↧ Bajas'},
 ];
 let hatoFiltro='todas';
+function _animalesBaja(){
+  return Object.values(animalesPorId).filter(a=>a.grupo==='baja')
+    .sort((x,y)=>String(y.baja&&y.baja.fecha||'').localeCompare(String(x.baja&&x.baja.fecha||'')));
+}
 function contarFiltro(id){
+  if(id==='bajas')return _animalesBaja().length;
   const f=hatoFiltrosEstado.find(x=>x.id===id);
   return f&&f.test?hato.filter(f.test).length:hato.length;
 }
@@ -1920,11 +1928,22 @@ function sortHato(key){
   hatoSort.key=key;
   renderHato();
 }
+/* fila de la tabla del hato para un animal dado de baja: la columna de repro
+ * muestra motivo y fecha de la baja; clic → ficha (con "Revertir baja"). */
+function bajaAFila(a){
+  const b=a.baja||{};
+  const motivo=LCRules.esc(b.motivo||'baja');
+  const fecha=b.fecha?' · '+fmtFechaCorta(b.fecha):'';
+  return {num:a.id,n:a.nombre,raza:a.raza,grupo:'Baja',edad:fmtEdad(a),
+    repro:'<span class="badge bad">'+motivo+fecha+'</span>'+(b.valor?' <span class="sub">$'+Number(b.valor).toLocaleString('es-CO')+'</span>':''),
+    del:'—',ayer:'—',var:'—',vc:'',tags:[]};
+}
 function renderHato(){
   const tb=document.getElementById('hatoTbody');if(!tb)return;tb.innerHTML='';
   let filtered;
   const grupoMatch=hatoGrupos.find(g=>g===hatoFiltro);
   if(grupoMatch){filtered=hato.filter(a=>a.grupo===grupoMatch);}
+  else if(hatoFiltro==='bajas'){filtered=_animalesBaja().map(bajaAFila);}
   else{const f=hatoFiltrosEstado.find(x=>x.id===hatoFiltro);
     filtered=f&&f.test?hato.filter(f.test):hato;}
   /* búsqueda por número o nombre */
@@ -1938,6 +1957,7 @@ function renderHato(){
   const res=document.getElementById('hatoResumen');
   if(res){
     if(q)res.textContent=filtered.length+(filtered.length===1?' resultado':' resultados')+' para "'+q+'"';
+    else if(hatoFiltro==='bajas')res.textContent=filtered.length+(filtered.length===1?' animal dado de baja':' animales dados de baja')+' — su historia se conserva; abre la ficha para verla o revertir';
     else res.textContent=filtered.length+' de '+hato.length+' animales'+(hatoFiltro!=='todas'?' · filtro: '+(grupoMatch||hatoFiltrosEstado.find(x=>x.id===hatoFiltro).label):'');
   }
   if(!filtered.length){

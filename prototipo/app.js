@@ -46,7 +46,7 @@ function renderHatoM(){
   set('hmOrdeno',A.filter(a=>a.grupo==='ordeño').length);
   set('hmPrenadas',A.filter(a=>a.estadoRepro==='prenada').length);
   const cnt={};A.forEach(a=>{const k=GRUPO_KEY[a.grupo];if(k)cnt[k]=(cnt[k]||0)+1;});
-  ['ordeno','horras','novillas','levante','terneras','machos'].forEach(k=>set('cnt-'+k,cnt[k]||0));
+  ['ordeno','horras','novillas','levante','terneras','machos','bajas'].forEach(k=>set('cnt-'+k,cnt[k]||0));
   const ordeno=A.filter(a=>a.grupo==='ordeño'),dels=ordeno.map(a=>a.del).filter(d=>typeof d==='number');
   set('hsub-ordeno',dels.length?('DEL promedio '+Math.round(dels.reduce((s,d)=>s+d,0)/dels.length)):(ordeno.length+' vacas'));
   set('hsub-horras',A.filter(a=>a.grupo==='horra'&&a.estadoRepro==='prenada').length+' preñadas');
