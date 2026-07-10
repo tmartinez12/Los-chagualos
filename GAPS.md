@@ -34,9 +34,10 @@ para leche/hato todavía).
 líneas, `app.js` ~1.500, cero módulos, todo en `window`. Sigue siendo el
 ítem "Módulos ES" del plan, no atacado.
 
-**`onclick` en strings por todas partes.** Sin cambios. Sigue siendo la raíz
-de que el XSS esté mitigado solo a medias (ver §4) y de que una CSP estricta
-sea imposible.
+**`onclick` en strings por todas partes.** Sin cambios estructurales (sigue
+siendo el patrón dominante), pero los casos que interpolaban texto libre de
+la BD se corrigieron esta sesión (ver §4, A8 resuelto). Sigue siendo la
+razón de que una CSP estricta sea imposible sin una reescritura mayor.
 
 **Duplicación de conocimiento del esquema: RESUELTO.** ✅ `COLUMNAS_RESPALDO`
 (store.js) se verifica automáticamente contra las columnas reales de Postgres
@@ -134,11 +135,37 @@ contrato de columnas del respaldo, paridad de fórmulas de fecha.
 | Severidad | Problema | Estado |
 |---|---|---|
 | **CRÍTICA** | Sin autenticación + RLS desactivado + `GRANT ALL` a `anon` + anon key pública en el repo. Cualquiera con la URL lee, modifica o borra TODO. | **SIN CAMBIOS — sigue siendo el problema #1.** (A1) |
-| **ALTA** | XSS mitigado solo a medias: `esc()` cubre listas/fichas/tablas principales; quedan `innerHTML` de `snack()`/headers de grupo sin escapar, y todos los `onclick` en strings interpolan ids sin sanear. | **SIN CAMBIOS.** (A8) |
+| **ALTA** | XSS: texto libre de la BD (nombre, raza, chapeta, motivo) sin escapar en varios `innerHTML`, y `onclick="fn('...')"` interpolando esos mismos campos (el escape de `'` con `esc()` no protege ahí — la entidad se decodifica antes de ejecutarse como JS, así que rompe igual el string). | **RESUELTO** (A8) — ver detalle abajo. |
 | **MEDIA** | La anon key no se puede rotar sin redesplegar (hardcodeada en `store.js` y `respaldo.js`). | Sin cambios. |
 | **MEDIA** | `restaurarTodo` acepta cualquier JSON: valida estructura y ahora tamaño (`MAX_FILAS_RESTAURA`), no contenido semántico. | **PARCIAL** — mejoró (antes no tenía ni tope de tamaño). |
 | **MEDIA** | `login-pin` huérfana con debilidades conocidas si se despliega tal cual. | **MITIGADO** — archivada en `supabase/edge-functions-archivadas/` con advertencia; no está desplegada. |
 | **BAJA** | Sin CSP (los `onclick` inline lo impiden). Repo público — decisión consciente tomada (ver plan), no un descuido. | Repo: decisión documentada. CSP: sin cambios. |
+
+**Detalle A8 (RESUELTO):** auditoría sistemática de los ~140 sitios `innerHTML=`
+en `escritorio.js` y `app.js`. Confirmado que `snack()` (ambas superficies)
+usa `.textContent`, nunca fue un vector — corrige una afirmación incorrecta
+que traía este documento desde antes. Vectores reales encontrados y
+corregidos (todos con datos libres de la BD: nombre, raza, chapeta, motivo,
+nota de baja):
+- Texto en `innerHTML` sin `LCRules.esc()`: tabla semanal ("sin datos"),
+  KPI de próximo parto, tabla de partos, tabla de vacías (chapeta/nombre/
+  raza), lista de candidatas a palpar, tratamientos (chapeta), alertas de
+  inicio (potrero/secado/retiro), scatter de producción (SVG `<title>`/
+  etiquetas) — en ambas superficies donde aplica.
+- **Clase más seria: `onclick="fn('...'+valor+'...')"` con `valor` libre.**
+  `LCRules.esc()` no alcanza a proteger esto — al decodificar la entidad
+  HTML de la comilla, el navegador reconstruye la ruptura del string de JS
+  *antes* de ejecutar el handler, así que un nombre con `');algo();//`
+  ejecuta igual. Se corrigieron todos los casos con datos libres
+  (`goVaca`/`openPalp`/`openBaja`/`openSeca`/`openCow`/`revertirBajaM` con
+  id o nombre interpolado) reemplazando el string inline por
+  `data-*`/clase + listener asignado en JS (`el.onclick=()=>fn(valor)`),
+  igual que ya se hacía en otros puntos del código. Los `onclick` que
+  interpolan solo UUIDs generados por la BD (partos/vacunaciones/
+  palpaciones/tratamientos) se dejaron igual — no son texto libre, riesgo
+  despreciable. Verificado con un caso inyectado
+  (`<img src=x onerror=...>` y `x'); window.x=1; //`) en Chromium: ambos
+  quedan inertes tras el render.
 
 ## 5. Inconsistencias internas
 
@@ -173,8 +200,7 @@ contrato de columnas del respaldo, paridad de fórmulas de fecha.
    futura regresión silenciosa. Un arnés headless (Playwright, ya vendorizado
    en el entorno de desarrollo) que ejercite los 6 flujos × 2 superficies
    sería el mayor ROI de testing que queda.
-3. **Cerrar el XSS del todo (A8).** Con la BD abierta a escritura anónima
-   (fila #1), un `innerHTML` sin escapar es una cadena de ataque completa:
-   quien escribe un nombre malicioso en la BD ejecuta JS en el navegador de
-   la administradora. Mientras no haya login, esto es más urgente de lo que
-   parece a simple vista.
+3. ~~Cerrar el XSS del todo (A8).~~ **RESUELTO esta sesión** — ver §4. Con la
+   BD abierta a escritura anónima (fila #1 sigue pendiente), esto cerraba
+   una cadena de ataque completa; ya no queda `innerHTML` de texto libre sin
+   escapar ni `onclick` inline con datos libres interpolados.

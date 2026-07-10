@@ -128,7 +128,8 @@ function renderFicha(num){
   al.className='alert '+(r.cls==='bad'?'urgent':r.cls==='warn'?'warn':'info');
   al.innerHTML='<div class="a-icon"><svg class="ic"><use href="#i-cal"/></svg></div>'+
     '<div class="a-body"><div class="a-title">'+r.title+'</div>'+(r.sub?'<div class="a-sub">'+r.sub+'</div>':'')+
-    (r.secar?'<button class="btn outl small mt8" onclick="openSeca(\''+a.id+' · '+a.nombre+'\')">Programar secado</button>':'')+'</div>';
+    (r.secar?'<button class="btn outl small mt8 vmSecarBtn">Programar secado</button>':'')+'</div>';
+  if(r.secar){const sb=al.querySelector('.vmSecarBtn');if(sb)sb.onclick=()=>openSeca(a.id+' · '+a.nombre);}
   /* banner de baja: si el animal está dado de baja, mostrar motivo/fecha/valor/nota + revertir */
   (function(){
     const box=document.getElementById('vmBajaBox');if(!box)return;
@@ -140,7 +141,8 @@ function renderFicha(num){
     box.style.display='';box.className='alert urgent';
     box.innerHTML='<div class="a-body"><div class="a-title">↧ Baja: '+LCRules.esc(b.motivo||'—')+'</div>'+
       '<div class="a-sub">'+partes.join(' · ')+'</div>'+
-      '<button class="btn outl small mt8" onclick="revertirBajaM(\''+a.id+'\')">Revertir baja</button></div>';
+      '<button class="btn outl small mt8 vmRevertirBaja">Revertir baja</button></div>';
+    const rb=box.querySelector('.vmRevertirBaja');if(rb)rb.onclick=()=>revertirBajaM(a.id);
   })();
   /* partos de esta vaca (para días abiertos, lista de partos e historia) */
   const partosVaca=(_partosM||[]).filter(p=>String(p.madre_id)===String(a.id))
@@ -450,7 +452,7 @@ const palpCandidatas={};
 function renderPalpListaM(){
   const box=document.getElementById('palpListaM');if(!box)return;
   const keys=Object.keys(palpCandidatas);
-  box.innerHTML=keys.length?keys.map(k=>'<b style="color:var(--ink)">'+k.replace(' · ',' ')+'</b> — '+palpCandidatas[k]).join('<br>')
+  box.innerHTML=keys.length?keys.map(k=>'<b style="color:var(--ink)">'+LCRules.esc(k.replace(' · ',' '))+'</b> — '+palpCandidatas[k]).join('<br>')
     :'<span style="color:var(--ink-3)">No hay vacas pendientes de palpar.</span>';
 }
 /* Dashboard de inicio (móvil) con datos reales — sin demo. */
@@ -473,9 +475,13 @@ function renderInicioM(){
     A.push({c:'warn',t:'Vaca '+a.id+' "'+a.nombre+'": programar secado',
       s:'Preñada '+a.prenez.meses+' meses'+(a.secarEstimado?' — secar ~'+fmtFechaCortaM(a.secarEstimado):''),cow:a.id});});
   al.innerHTML=A.map(x=>'<div class="alert '+x.c+'"><div class="a-icon"><svg class="ic"><use href="#i-cal"/></svg></div>'+
-    '<div class="a-body"><div class="a-title">'+x.t+'</div><div class="a-sub">'+x.s+'</div>'+
-    (x.cow?'<button class="btn outl small mt8" onclick="openCow(\''+x.cow+'\')">Ver ficha</button>':'')+
+    '<div class="a-body"><div class="a-title">'+LCRules.esc(x.t)+'</div><div class="a-sub">'+x.s+'</div>'+
+    (x.cow?'<button class="btn outl small mt8 miAlertaVerFicha">Ver ficha</button>':'')+
     '</div></div>').join('');
+  const conCow=A.filter(x=>x.cow);
+  al.querySelectorAll('.miAlertaVerFicha').forEach((btn,i)=>{
+    if(conCow[i])btn.onclick=()=>openCow(conCow[i].cow);
+  });
 }
 /* cache de todos los animales (genealogía/raza + sincronizar contador de IDs) */
 let animalesPorIdM={};
@@ -763,7 +769,7 @@ function renderPartos(){
   proximosPartos.forEach(p=>{const d=document.createElement('div');d.className='list-item';
     d.onclick=()=>openParto(p.cow);
     d.innerHTML='<div class="li-leading"><svg class="ic"><use href="#i-sprout"/></svg></div>'+
-      '<div class="li-body"><div class="li-title">'+p.cow+'</div><div class="li-sub">'+p.sub+'</div></div>'+
+      '<div class="li-body"><div class="li-title">'+LCRules.esc(p.cow)+'</div><div class="li-sub">'+p.sub+'</div></div>'+
       '<span class="badge '+p.bw+'">'+p.badge+'</span>';
     lp.appendChild(d);});
   const ver=document.createElement('div');ver.className='list-item';
@@ -774,7 +780,7 @@ function renderPartos(){
   partosRecientes.forEach((p,i)=>{const row=document.createElement('div');
     row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:8px 0'+
       (i<partosRecientes.length-1?';border-bottom:1px solid var(--border)':'');
-    row.innerHTML='<div><div class="li-title">'+p.t+'</div><div class="li-sub">'+p.s+'</div></div>'+
+    row.innerHTML='<div><div class="li-title">'+LCRules.esc(p.t)+'</div><div class="li-sub">'+p.s+'</div></div>'+
       '<span class="badge '+p.bw+'">'+p.badge+'</span>';
     lr.appendChild(row);});
   const hist=document.createElement('button');hist.className='btn text small mt8';
@@ -946,16 +952,19 @@ function renderVacias(){
   vacasVacias.forEach(v=>{
     const d=document.createElement('div');d.className='card';d.style.marginBottom='8px';
     d.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">'+
-      '<div><div class="li-title">'+v.cow+'</div>'+
-      '<div class="li-sub">'+v.sub+'</div></div>'+
+      '<div><div class="li-title">'+LCRules.esc(v.cow)+'</div>'+
+      '<div class="li-sub">'+LCRules.esc(v.sub)+'</div></div>'+
       '<span class="badge bad">vacía '+v.diasVacia+'d</span></div>'+
       '<div style="font-size:12px;color:var(--ink-2);margin-top:8px;line-height:1.5">'+
       'Última palpación: <b>'+v.ultimaPalp+'</b> → '+v.resultado+
       '<br>'+v.accion+'</div>'+
       '<div style="display:flex;gap:8px;margin-top:10px">'+
-      '<button class="btn filled small" onclick="openPalp(\''+v.cow+'\')">Palpar de nuevo</button>'+
-      '<button class="btn outl small" onclick="openBaja(\''+v.cow+'\')">Dar de baja</button>'+
-      '<button class="btn text small" onclick="openSeca(\''+v.cow+'\')">Secar</button></div>';
+      '<button class="btn filled small vPalpM">Palpar de nuevo</button>'+
+      '<button class="btn outl small vBajaM">Dar de baja</button>'+
+      '<button class="btn text small vSecaM">Secar</button></div>';
+    d.querySelector('.vPalpM').onclick=()=>openPalp(v.cow);
+    d.querySelector('.vBajaM').onclick=()=>openBaja(v.cow);
+    d.querySelector('.vSecaM').onclick=()=>openSeca(v.cow);
     list.appendChild(d);
   });
 }

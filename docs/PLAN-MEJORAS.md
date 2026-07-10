@@ -37,11 +37,21 @@
   burlable, enumeración de usuarios) o reemplazarla por Supabase Auth nativo.
   Mientras tanto: no difundir la URL. **Es el problema #1; todo lo demás es
   secundario frente a esto.**
-- [ ] 🟡 **A8 · Cerrar el XSS del todo.** `esc()` ya cubre listas/fichas/tablas;
-  faltan los `innerHTML` de `snack()` que interpolan nombres, los headers de
-  grupos, y sobre todo los `onclick` en strings que meten ids sin sanear.
-  Meta: 0 `innerHTML` con dato de BD sin `esc()`; a mediano plazo, migrar
-  `onclick="..."` a listeners con closures (habilita una CSP estricta).
+- [x] 🟡 **A8 · Cerrar el XSS del todo.** RESUELTO. Auditoría sistemática de
+  ambas superficies: `snack()` resultó SIEMPRE haber sido seguro (usa
+  `.textContent`, no `.innerHTML` — corrige una idea equivocada que traía
+  este documento). Vectores reales encontrados y corregidos: texto libre de
+  la BD (nombre/raza/chapeta/motivo/nota) sin `esc()` en varios `innerHTML`
+  (tabla semanal, KPIs/tabla de partos, tabla de vacías, candidatas a
+  palpar, tratamientos, alertas de inicio, scatter SVG); y, más serio,
+  `onclick="fn('...'+valor+'...')"` con `valor` libre — ahí `esc()` de la
+  comilla NO protege (la entidad se decodifica antes de ejecutarse como JS,
+  rompe el string igual), se corrigió reemplazando por `data-*` + listener
+  asignado en JS. Verificado en Chromium con payloads inyectados
+  (`<img onerror>`, ruptura de string `');...;//`) — quedan inertes.
+  Pendiente a mediano plazo (no bloqueante): migrar el resto de
+  `onclick="..."` en string (los que solo interpolan UUIDs de BD, bajo
+  riesgo) a listeners con closures, para habilitar una CSP estricta.
 - [ ] 🟢 **B9 (hecho en schema, verificar en la BD viva)** `REVOKE` sobre
   `profiles`/`login_attempts`/`outbox` — confirmar que corrió.
 

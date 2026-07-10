@@ -147,7 +147,7 @@ function renderInicio(){
         sub:'No vender su leche hasta '+fmtFechaCorta(a.retiroLecheHasta)});});
     }catch(e){}
     al.innerHTML=alertas.length?alertas.map(a=>'<div class="alert '+a.cls+'"><div style="flex:1">'+
-      '<div class="a-title">'+a.title+'</div><div class="a-sub">'+a.sub+'</div>'+
+      '<div class="a-title">'+LCRules.esc(a.title)+'</div><div class="a-sub">'+LCRules.esc(a.sub)+'</div>'+
       (a.btn?'<button class="btn outl small" style="margin-top:8px" onclick="go(\''+a.pg+'\')">'+a.btn+'</button>':'')+
       '</div></div>').join('')
       :'<div class="card flat" style="text-align:center;color:var(--ink-3);padding:14px;font-size:13px">Sin alertas por ahora</div>';
@@ -257,7 +257,8 @@ function renderLecheKpis(){
   const bajonBox=document.getElementById('bajonLista');
   if(bajonBox){ if(bajon.length){bajonBox.style.display='';
       bajonBox.innerHTML='<b style="color:var(--red)">⚠ Bajaron esta semana</b> (revisa mastitis, celo o alimentación): '+
-        bajon.map(b=>'<a onclick="goVaca(\''+b.a.id+'\',\'pg-leche\')" style="cursor:pointer;text-decoration:underline">'+b.a.id+' '+b.a.nombre+'</a> −'+b.pct+'% ('+b.ap+'→'+b.at+' L)').join(' · ');
+        bajon.map(b=>'<a class="goVacaLink" data-gocow="'+LCRules.esc(b.a.id)+'" style="cursor:pointer;text-decoration:underline">'+LCRules.esc(b.a.id)+' '+LCRules.esc(b.a.nombre)+'</a> −'+b.pct+'% ('+b.ap+'→'+b.at+' L)').join(' · ');
+      bajonBox.querySelectorAll('.goVacaLink').forEach(el=>{el.onclick=()=>goVaca(el.dataset.gocow,'pg-leche');});
     }else bajonBox.style.display='none';}
   /* TARJETA-RESUMEN única: hato · por secar · producción del año · sin registrar */
   const resBox=document.getElementById('hatoResumenLeche');
@@ -276,11 +277,12 @@ function renderLecheKpis(){
     if(totalAnio)parts.push('producción '+ANIO_SEL+': <b style="color:var(--ink)">'+totalAnio.toLocaleString('es-CO')+' L</b>');
     const lineas=[parts.join(' · ')];
     if(porSecar.length)lineas.push('<b style="color:var(--ink)">Por secar este mes:</b> '+
-      porSecar.map(a=>'<a onclick="goVaca(\''+a.id+'\',\'pg-leche\')" style="cursor:pointer;text-decoration:underline">'+a.id+' '+a.nombre+'</a>'+
+      porSecar.map(a=>'<a class="goVacaLink" data-gocow="'+LCRules.esc(a.id)+'" style="cursor:pointer;text-decoration:underline">'+LCRules.esc(a.id)+' '+LCRules.esc(a.nombre)+'</a>'+
         (a.prenez&&a.prenez.meses!=null?' ('+a.prenez.meses+'m)':'')).join(' · '));
     if(faltan.length&&faltan.length<nOrdeno)lineas.push('<span style="color:var(--red)">Sin registrar esta semana:</span> '+
-      faltan.map(a=>'<a onclick="goVaca(\''+a.id+'\',\'pg-leche\')" style="cursor:pointer;text-decoration:underline">'+a.id+' '+a.nombre+'</a>').join(' · '));
+      faltan.map(a=>'<a class="goVacaLink" data-gocow="'+LCRules.esc(a.id)+'" style="cursor:pointer;text-decoration:underline">'+LCRules.esc(a.id)+' '+LCRules.esc(a.nombre)+'</a>').join(' · '));
     resBox.style.display='';resBox.innerHTML=lineas.join('<br>');
+    resBox.querySelectorAll('.goVacaLink').forEach(el=>{el.onclick=()=>goVaca(el.dataset.gocow,'pg-leche');});
   }
   if(typeof refreshHeader==='function')refreshHeader();
   if(typeof renderNavBadges==='function')renderNavBadges();
@@ -347,7 +349,7 @@ function renderRegistro(){
     /* la vaca sin ningún registro en el período actual se nota AQUÍ mismo */
     if(!tieneDatos&&esPeriodoActual){
       tr.style.background='rgba(196,74,58,.05)';
-      const nc=tr.querySelector('.cn');if(nc)nc.innerHTML=a.nombre+' <span style="color:var(--red);font-size:10.5px;font-weight:600">· sin datos</span>';
+      const nc=tr.querySelector('.cn');if(nc)nc.innerHTML=LCRules.esc(a.nombre)+' <span style="color:var(--red);font-size:10.5px;font-weight:600">· sin datos</span>';
     }
     tb.appendChild(tr);
   });
@@ -613,11 +615,12 @@ function renderScatter(svgId){
     const cx=x(c.del),cy=y(c.l);
     const col=c.vacia?'var(--red)':c.retiro?'var(--red)':c.prenada?'var(--green)':'var(--ink-2)';
     const r=4.5;   // todos los círculos del mismo tamaño; el color distingue el estado
-    out+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="'+col+'" opacity="0.85" style="cursor:pointer"'+
-      ' onclick="goVaca(\''+c.num+'\',\'pg-leche\')"><title>'+c.num+' '+c.n+' · DEL '+c.del+' · '+c.l+' L/día (prom. 5 días)</title></circle>';
-    out+='<text x="'+cx+'" y="'+(cy-r-3)+'" font-family="Work Sans,sans-serif" font-size="8" font-weight="500" fill="#70756A" text-anchor="middle">'+c.num+'</text>';
+    out+='<circle class="scatterDot" data-gocow="'+LCRules.esc(c.num)+'" cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="'+col+'" opacity="0.85" style="cursor:pointer"'+
+      '><title>'+LCRules.esc(c.num)+' '+LCRules.esc(c.n)+' · DEL '+c.del+' · '+c.l+' L/día (prom. 5 días)</title></circle>';
+    out+='<text x="'+cx+'" y="'+(cy-r-3)+'" font-family="Work Sans,sans-serif" font-size="8" font-weight="500" fill="#70756A" text-anchor="middle">'+LCRules.esc(c.num)+'</text>';
   });
   svg.innerHTML=out;
+  svg.querySelectorAll('.scatterDot').forEach(el=>{el.onclick=()=>goVaca(el.dataset.gocow,'pg-leche');});
   // título con el conteo real de vacas en ordeño
   const titleId=svgId==='scatterInicio'?'scatterInicioTitle':'scatterLecheTitle';
   const t=document.getElementById(titleId);
@@ -1226,7 +1229,7 @@ function renderPartosKpis(){
   box.innerHTML=
     '<div class="card kpi"><div class="k-label">Partos</div><div class="k-value">'+total+'</div><div class="k-trend up">'+vivas+' crías vivas</div></div>'+
     '<div class="card kpi"><div class="k-label">Por parir</div><div class="k-value">'+porParir+'</div><div class="k-trend mut">de las palpaciones</div></div>'+
-    '<div class="card kpi"><div class="k-label">Próximo</div><div class="k-value" style="font-size:20px">'+(prox?prox.parto:'—')+'</div><div class="k-trend mut">'+(prox?prox.cow:'sin próximos')+'</div></div>'+
+    '<div class="card kpi"><div class="k-label">Próximo</div><div class="k-value" style="font-size:20px">'+(prox?prox.parto:'—')+'</div><div class="k-trend mut">'+(prox?LCRules.esc(prox.cow):'sin próximos')+'</div></div>'+
     '<div class="card kpi"><div class="k-label">Mortinatos</div><div class="k-value'+(mortinatos?' down':'')+'">'+mortinatos+'</div><div class="k-trend mut">de '+total+' partos</div></div>';
   /* línea de resumen: fertilidad (intervalo entre partos) y % mortinatos */
   const res=document.getElementById('partosResumen');
@@ -1288,7 +1291,7 @@ function renderPartos(){
       if(d<0){cell=p.parto+' <span class="badge bad">atrasada '+(-d)+'d</span>';tr.style.background='var(--red-soft,#fdecec)';}
       else if(d<=7)cell=p.parto+' <span class="badge warn">pare en '+d+'d</span>';
     }
-    tr.innerHTML='<td>'+p.cow+'</td><td>'+p.prenez+'</td><td class="r">'+cell+'</td>';
+    tr.innerHTML='<td>'+LCRules.esc(p.cow)+'</td><td>'+p.prenez+'</td><td class="r">'+cell+'</td>';
     tb.appendChild(tr);
   });
 }
@@ -1301,8 +1304,8 @@ function renderVacias(){
     const diasBadge=v.dias!=null?('<span class="badge'+(v.decision?' bad':'')+'">'+v.dias+' d</span>'):'—';
     const ultimaTxt=v.ultima&&v.ultima!=='—'?(v.ultima+' → '+(servida?'servida':'vacía')):(servida?'servida (por confirmar)':'sin palpación');
     const recColor=v.decision?'color:var(--red)':(servida?'color:var(--ink-2)':'color:var(--ink-3)');
-    tr.innerHTML='<td><div class="cell-animal"><div class="cini">'+v.num+'</div><div><div class="cn">'+
-      v.cow.split('·')[1].trim()+'</div><div class="cs">'+v.sub+'</div></div></div></td>'+
+    tr.innerHTML='<td><div class="cell-animal"><div class="cini">'+LCRules.esc(v.num)+'</div><div><div class="cn">'+
+      LCRules.esc(v.cow.split('·')[1].trim())+'</div><div class="cs">'+LCRules.esc(v.sub)+'</div></div></div></td>'+
       '<td class="r">'+(v.del==null||v.del==='—'?'—':v.del)+'</td><td class="r">'+diasBadge+'</td>'+
       '<td>'+ultimaTxt+'</td><td class="r"><b>'+v.ayer+'</b></td>'+
       '<td style="'+recColor+';font-size:12px">'+v.rec+'</td>'+
@@ -1509,7 +1512,7 @@ function renderTratamientos(){
     const card=document.createElement('div');card.className='card';card.style.cssText='margin-bottom:10px';
     card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px">'+
       '<div class="cell-animal" style="display:flex;gap:10px;align-items:center">'+
-        '<div class="cini">'+t.num+'</div>'+
+        '<div class="cini">'+LCRules.esc(t.num)+'</div>'+
         '<div><div class="cn">'+LCRules.esc(t.n)+'</div><div class="cs">'+LCRules.esc(t.desc)+
         (t.retiro?' · <b style="color:var(--red)">'+t.retiro+'</b>':'')+'</div></div>'+
       '</div>'+
@@ -1708,7 +1711,7 @@ function savePalp(){
 function renderPalpLista(){
   const box=document.getElementById('palpListaBox');if(!box)return;
   if(!palpCandidatas.length){box.innerHTML='<span class="mut">No hay candidatas para palpar</span>';return;}
-  box.innerHTML=palpCandidatas.map(c=>'<b style="color:var(--ink)">'+c.cow.replace(' · ',' ')+'</b> — '+c.motivo).join('<br>');
+  box.innerHTML=palpCandidatas.map(c=>'<b style="color:var(--ink)">'+LCRules.esc(c.cow.replace(' · ',' '))+'</b> — '+c.motivo).join('<br>');
 }
 /* ===== Historial de palpaciones ===== */
 function renderPalpHistorial(lista){
