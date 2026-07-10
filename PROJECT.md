@@ -146,6 +146,7 @@ superficies con un servidor local y mirar la consola. El CI corre lo mismo.
   lectura en vuelo no pise una escritura. Tras escribir, `_invalidarAnimales()`.
 - **Push a la rama = deploy a producción** (Pages publica `prototipo/` tal
   cual). No hay staging.
-- **`docs/PLAN-arquitectura.md` y `docs/PLAN-backend.md` están desactualizados** —
-  describen piezas que no existen (actions.js, login por PIN, outbox). Para el
-  estado real: este archivo + `docs/AUDITORIA.md` + `GAPS.md`.
+- **Los planes viejos están archivados en `docs/archivo/`** (`PLAN-arquitectura.md`,
+  `PLAN-backend.md`, notas de reorganización) — describen piezas que no existen
+  (actions.js, login por PIN, outbox). Para el estado real: este archivo +
+  `docs/AUDITORIA.md` + `GAPS.md`.

@@ -9,17 +9,13 @@ canónico completo: tablas, vistas, funciones (`hoy_finca`,
 
 ## Base EXISTENTE (la desplegada de la finca)
 
-Migraciones activas, en este orden (todas idempotentes — se pueden correr
-más de una vez sin daño):
-
-| # | Archivo | Qué hace | ¿Ya corrió? |
-|---|---|---|---|
-| 1 | `migracion-vacunaciones.sql` | Crea la tabla `vacunaciones` | **pendiente** — confirmado faltante: el respaldo falló con "Could not find the table 'public.vacunaciones'" (jul 2026) |
-| 2 | `migracion-zona-horaria.sql` | Fechas en hora de Colombia (`hoy_finca`) | corrió jul 2026 |
-| 3 | `migracion-integridad.sql` | Constraints, FKs coherentes, índice, parto transaccional (RPC), revokes | corrió jul 2026 |
-| 4 | `migracion-nacimiento.sql` | Backfill: estima `nacimiento` desde `edad_anios` (sin él la edad no avanza) | corrió jul 2026 |
-| 5 | `migracion-restaurar.sql` | Función `restaurar_respaldo()` (restauración transaccional; sin ella, restaurar hace un merge no-transaccional) | corrió jul 2026 |
-| 6 | `migracion-ganancia.sql` | `ganancia_dia_g` pasa de columna muerta a DERIVADA en `v_animales` (g/día desde el nacimiento) y se elimina la columna persistida | corrió jul 2026 |
+**No hay migraciones pendientes** (jul 2026): las 6 migraciones de la última
+tanda (vacunaciones, zona-horaria, integridad, nacimiento, restaurar,
+ganancia) corrieron todas en la base real, están fusionadas en `schema.sql`
+y se movieron a `migraciones-aplicadas/` (regla 3 de abajo). Cuando haya una
+migración nueva, vivirá aquí en la raíz (`migracion-<nombre>.sql`) mientras
+esté pendiente de correr, con una tabla como esta indicando el orden y si ya
+corrió.
 
 Utilidades (no son migraciones):
 
@@ -27,12 +23,18 @@ Utilidades (no son migraciones):
   ⚠️ Irreversible; hacer respaldo antes.
 - `seed-demo.sql` — datos de demostración. No cargar en la base real.
 
-## ⛔ `migraciones-aplicadas/` — NO volver a correr
+## ⛔ `migraciones-aplicadas/` — NO volver a correr en producción
 
-Migraciones históricas ya aplicadas a la base de la finca y ya fusionadas en
-`schema.sql`. Se conservan solo como registro. En particular
+Migraciones ya aplicadas a la base de la finca y ya fusionadas en
+`schema.sql`. Se conservan como registro histórico. En particular
 `migracion-color.sql` es **destructiva si se re-ejecuta** (recrea la vista
-`v_animales` con una definición vieja que hoy falla y la dejaría eliminada).
+`v_animales` con una definición vieja que hoy falla y la dejaría eliminada) y
+`migracion-integridad.sql` es orden-dependiente (recrea `v_animales` con una
+definición previa a `migracion-ganancia.sql`). La tanda de jul 2026
+(vacunaciones/zona-horaria/nacimiento/restaurar/ganancia) es idempotente —
+re-correrla no daña, pero tampoco hace falta: ya está toda en `schema.sql`.
+`test/integracion.js` re-ejecuta las idempotentes SOLO en la base efímera
+local, nunca en producción.
 
 ## Reglas para cambios futuros
 

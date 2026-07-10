@@ -1,5 +1,5 @@
 /* =============================================================================
- * Los Chagualos · MODELO CANÓNICO DE DATOS  (core/model.js)
+ * Los Chagualos · MODELO CANÓNICO DE DATOS  (test/fixtures/model.js)
  * -----------------------------------------------------------------------------
  * ⚠️ SOLO PARA TESTS: la app NO carga este archivo (los datos reales vienen de
  * Supabase vía core/store.js). Lo usa únicamente test/smoke.js como fixture

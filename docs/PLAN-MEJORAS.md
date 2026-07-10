@@ -190,7 +190,7 @@
   trabajo de la dueña, así que **no se ejecuta unilateralmente**: queda como
   recomendación con los pasos listos.
 - [x] 🟢 **Actualizar/archivar `PLAN-arquitectura.md` y `PLAN-backend.md`.** ✅
-  Banner "ARCHIVADO / DESACTUALIZADO" al inicio de ambos, apuntando a la realidad
+  Banner "ARCHIVADO / DESACTUALIZADO" al inicio de ambos (hoy en `docs/archivo/`), apuntando a la realidad
   vigente (`PROJECT.md`, `GAPS.md`, `supabase/README.md`, `PLAN-MEJORAS.md`). Se
   dejan en su sitio (varios docs los referencian) en vez de mover archivos.
 

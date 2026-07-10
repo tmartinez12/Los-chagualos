@@ -130,9 +130,15 @@ function pruebasSql() {
   //    propósito: recrea v_animales con una definición PREVIA a la de
   //    `migracion-ganancia`, así que solo aplica en orden sobre la base
   //    desplegada (integridad → … → ganancia), no sobre el schema ya fusionado.
+  //    Viven en migraciones-aplicadas/ (ya corrieron en la finca); el test las
+  //    re-ejecuta solo en la base EFÍMERA local — la prohibición de re-correr
+  //    es sobre la base de producción. Migraciones NUEVAS (supabase/
+  //    migracion-*.sql) se agregan aquí mientras estén pendientes.
   const migs = ['migracion-nacimiento.sql', 'migracion-restaurar.sql', 'migracion-ganancia.sql'];
   for (const m of migs) {
-    const ruta = path.join(RAIZ, 'supabase', m);
+    const ruta = fs.existsSync(path.join(RAIZ, 'supabase', m))
+      ? path.join(RAIZ, 'supabase', m)                              // pendiente
+      : path.join(RAIZ, 'supabase', 'migraciones-aplicadas', m);    // ya aplicada
     if (!fs.existsSync(ruta)) { skip(m + ' (no existe)'); continue; }
     try {
       psql('lc_test', ['-f', ruta], { stdio: ['ignore', 'ignore', 'pipe'] });

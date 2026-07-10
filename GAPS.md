@@ -51,7 +51,7 @@ red) — ESE espejo también se verifica automáticamente contra Postgres.
 **Código muerto: mayormente limpio.** ✅ `fichas={}`, `diaOverrides`/
 `editDiaCell`, `partoInfo={}` — eliminados (Fase 5). `login-pin` — archivada
 con advertencia clara. `PLAN-arquitectura.md`/`PLAN-backend.md` — archivados
-con banner de "desactualizado". Sigue pendiente: `estadoBase()` duplicada
+en `docs/archivo/` con banner de "desactualizado". Sigue pendiente: `estadoBase()` duplicada
 en los dos JS (decisión consciente de NO unificar — toca el DOM, y
 `core/rules.js` debe seguir siendo puro/cargable en Node para los tests).
 
@@ -184,9 +184,9 @@ nota de baja):
   creció un poco (`derivarProximosPartosM`, `recomputarReproM`, etc. — nuevas
   funciones "M" para el paso 3 de Estado único), aunque siguen el patrón ya
   establecido, no uno nuevo.
-- **Documentación que se contradice: RESUELTO.** ✅ `docs/PLAN-arquitectura.md`
-  y `docs/PLAN-backend.md` tienen banner de "archivado/desactualizado" al
-  inicio, apuntando a la realidad vigente.
+- **Documentación que se contradice: RESUELTO.** ✅ Los planes viejos viven en
+  `docs/archivo/` con banner de "archivado/desactualizado" al inicio,
+  apuntando a la realidad vigente.
 
 ---
 

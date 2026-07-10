@@ -1,5 +1,9 @@
 # NOTES.md — Observaciones durante la reorganización (no arregladas a propósito)
 
+> **ARCHIVADO (jul 2026).** Registro histórico de la sesión de reorganización.
+> Sus pendientes quedaron resueltos: los planes viejos viven en `docs/archivo/`
+> con banner, y la cabecera de `test/fixtures/model.js` ya dice su ruta real.
+
 > Regla de la sesión: solo mover/renombrar; lo que se encuentre se anota aquí.
 
 ## Fase 1 (docs/)

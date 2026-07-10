@@ -31,8 +31,9 @@ listas/fichas/tablas principales; falta refactorizar los `onclick` en strings)
 · B2 (matching exacto `numDe()` en trata/seca/baja móvil; quedan otros sitios)
 · M13 (litros validados en store; faltan `max` en date inputs).
 
-**Pendiente del dueño:** correr `supabase/migracion-integridad.sql` en el SQL
-Editor (después de vacunaciones y zona-horaria, si faltan — ver `supabase/README.md`).
+**Pendiente del dueño:** ✅ ya no hay — todas las migraciones corrieron en la
+base real (jul 2026) y viven en `supabase/migraciones-aplicadas/` (ver
+`supabase/README.md`).
 
 **Segunda ronda (M6–M16), corregidos:** M6 (carrera de KPIs repro móvil: usa la
 lista local) · M7 (cachés canónicos actualizados en parto/baja de ambas
