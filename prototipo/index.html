@@ -328,8 +328,8 @@
     <div class="card">
       <div class="timeline" id="vmHistoria"></div>
     </div>
-    <button class="btn filled mt12" style="width:100%;justify-content:center" onclick="openSheet()">
-      ＋ Registrar evento en esta vaca</button>
+    <!-- el CTA de registrar es el FAB "+" (siempre visible, y dentro de la
+         ficha abre el menú DE ESTA VACA vía sheetIr) — sin botón duplicado -->
   </div>
 
   <!-- ============ PLAN SANITARIO ============ -->
@@ -511,12 +511,15 @@
 
     <div class="sheet-sec">Novedades del hato</div>
     <div class="quick">
-      <button onclick="closeSheet();openPalp()"><svg class="ic"><use href="#i-repeat"/></svg><span class="q-label">Palpación</span></button>
-      <button onclick="closeSheet();openParto()"><svg class="ic"><use href="#i-sprout"/></svg><span class="q-label">Parto / nacimiento</span></button>
-      <button onclick="closeSheet();openTrata()"><svg class="ic"><use href="#i-cross"/></svg><span class="q-label">Tratamiento</span></button>
-      <button onclick="closeSheet();openSeca()"><svg class="ic"><use href="#i-cal"/></svg><span class="q-label">Secado de vaca</span></button>
+      <!-- sheetIr pasa la vaca de la ficha abierta (si la hay): el título del
+           sheet ya decía "Registrar en 042 · Lucero" pero las acciones no lo
+           cumplían — ahora sí llegan preseleccionadas -->
+      <button onclick="sheetIr(openPalp)"><svg class="ic"><use href="#i-repeat"/></svg><span class="q-label">Palpación</span></button>
+      <button onclick="sheetIr(openParto)"><svg class="ic"><use href="#i-sprout"/></svg><span class="q-label">Parto / nacimiento</span></button>
+      <button onclick="sheetIr(openTrata)"><svg class="ic"><use href="#i-cross"/></svg><span class="q-label">Tratamiento</span></button>
+      <button onclick="sheetIr(openSeca)"><svg class="ic"><use href="#i-cal"/></svg><span class="q-label">Secado de vaca</span></button>
       <button onclick="closeSheet();openNuevaVaca()"><svg class="ic"><use href="#i-bag"/></svg><span class="q-label">Vaca nueva</span></button>
-      <button onclick="closeSheet();openBaja()"><svg class="ic"><use href="#i-out"/></svg><span class="q-label">Baja · venta/muerte</span></button>
+      <button onclick="sheetIr(openBaja)"><svg class="ic"><use href="#i-out"/></svg><span class="q-label">Baja · venta/muerte</span></button>
     </div>
   </div>
 

@@ -429,6 +429,15 @@ function openSheet(){
   document.getElementById('sheet').classList.add('show');}
 function closeSheet(){document.getElementById('scrim').classList.remove('show');
   document.getElementById('sheet').classList.remove('show');}
+/* acción del menú "+": si hay una FICHA abierta, la acción llega con ESA vaca
+ * preseleccionada ("Registrar en 042 · Lucero" ahora se cumple, no solo se
+ * anuncia en el título). Fuera de la ficha, comportamiento de siempre. */
+function sheetIr(fn){
+  closeSheet();
+  const enFicha=document.querySelector('.screen.active')&&document.querySelector('.screen.active').id==='scr-vaca';
+  const fa=enFicha&&fichaActualM&&animalesPorIdM[fichaActualM];
+  fn(fa?(fa.id+' · '+fa.nombre):undefined);
+}
 function sheetPick(msg){closeSheet();snack(msg);}
 let snackTimer;
 function snack(msg,accionLabel,accionFn){const sb=document.getElementById('snackbar');

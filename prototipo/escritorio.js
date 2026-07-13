@@ -1036,6 +1036,10 @@ function goVaca(num,from){
   document.querySelectorAll('#nav a').forEach(a=>a.classList.remove('active'));
   document.getElementById('pgTitle').textContent='Ficha: '+cow.num+' · '+cow.n;
   document.getElementById('pgSub').textContent=cow.raza+' · '+cow.edad+' · '+cow.grupo;
+  /* el CTA contextual lleva el NOMBRE: lo distingue del "+ Registrar" global
+   * del top bar (mismo verbo, distinto alcance → confusión directa) */
+  const evBtn=document.getElementById('vacaEventoBtn');
+  if(evBtn)evBtn.textContent='＋ Evento de '+cow.n;
   document.querySelector('.content').scrollTop=0;
   const backLabels={'pg-hato':'Volver al hato','pg-leche':'Volver a producción','pg-repro':'Volver a reproducción'};
   document.getElementById('vacaBackLabel').textContent=backLabels[vacaFrom]||'Volver';
