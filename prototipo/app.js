@@ -233,9 +233,14 @@ function renderFicha(num){
     (a.diasVacia!=null&&a.estadoRepro==='vacia'?'<br><b style="color:var(--ink)">Días vacía:</b> '+a.diasVacia:'')+
     ((a.procedencia||a.valorCompra)?'<br><b style="color:var(--ink)">Compra:</b> '+LCRules.esc(a.procedencia||'')+(a.valorCompra?' · $'+Number(a.valorCompra).toLocaleString('es-CO'):''):'')+
     (a.nota?'<br><b style="color:var(--ink)">📝 Nota:</b> '+LCRules.esc(a.nota):'');
-  /* curva */
-  renderFichaCurva(a.del||0,ayer);
-  document.getElementById('vmCurvaSub').textContent='Pico típico ~DEL 55 · hoy va en DEL '+(a.del==null?'—':a.del);
+  /* curva: solo para lecheras (en ordeño u horra) — para una cría o un macho
+   * era una gráfica vacía ocupando media pantalla */
+  const esLecheraM=a.grupo==='ordeño'||a.grupo==='horra';
+  const cc=document.getElementById('vmCurvaCard');if(cc)cc.style.display=esLecheraM?'':'none';
+  if(esLecheraM){
+    renderFichaCurva(a.del||0,ayer);
+    document.getElementById('vmCurvaSub').textContent='Pico típico ~DEL 55 · hoy va en DEL '+(a.del==null?'—':a.del);
+  }
   /* sanidad */
   const retiroD=a.retiroLecheHasta?diasHastaM(a.retiroLecheHasta):null;const sanOk=!(retiroD!=null&&retiroD>=0);
   document.getElementById('vmSanidad').innerHTML='<svg class="ic-s ic" style="color:var('+(sanOk?'--green':'--red')+')"><use href="#i-shield"/></svg>'+

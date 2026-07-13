@@ -1012,6 +1012,15 @@ function confirmarPaso(num){
     compensarBD:()=>LCStore.updateAnimalCampos(num,{grupo:prevGrupo}).then(()=>LCStore.deleteMovimientoGrupo(movId)).then(()=>{if(vacaActual===num)renderVacaEtapas(num);}),
   });
 }
+/* detalle mensual de la ficha: colapsado por defecto (crece sin tope) */
+function toggleVacaMensual(){
+  const mc=document.getElementById('vacaMensualCard');
+  const mt=document.getElementById('vacaMensualToggle');
+  if(!mc)return;
+  const abierto=mc.style.display!=='none';
+  mc.style.display=abierto?'none':'';
+  if(mt)mt.textContent=abierto?'Ver detalle':'Ocultar detalle';
+}
 /* línea de tiempo de etapas (movimientos de grupo con su fecha) en la ficha */
 async function renderVacaEtapas(num){
   const box=document.getElementById('vacaEtapas');if(!box)return;
@@ -1040,6 +1049,20 @@ function goVaca(num,from){
    * del top bar (mismo verbo, distinto alcance → confusión directa) */
   const evBtn=document.getElementById('vacaEventoBtn');
   if(evBtn)evBtn.textContent='＋ Evento de '+cow.n;
+  /* qué bloques aplican a ESTE animal: producción solo para lecheras (en
+   * ordeño u horra); reproducción solo para hembras. Para una cría o un
+   * macho, media ficha de leche era ruido. */
+  (function(){
+    const ac=animalesPorId[cow.num]||{};
+    const esLechera=ac.grupo==='ordeño'||ac.grupo==='horra';
+    const esHembra=ac.sexo!=='M';
+    const bl=document.getElementById('vacaBloqueLeche');if(bl)bl.style.display=esLechera?'':'none';
+    const bl2=document.getElementById('vacaBloqueLeche2');if(bl2)bl2.style.display=esLechera?'':'none';
+    const br=document.getElementById('vacaBloqueRepro');if(br)br.style.display=esHembra?'':'none';
+    /* el detalle mensual arranca colapsado en cada ficha */
+    const mc=document.getElementById('vacaMensualCard');if(mc)mc.style.display='none';
+    const mt=document.getElementById('vacaMensualToggle');if(mt)mt.textContent='Ver detalle';
+  })();
   document.querySelector('.content').scrollTop=0;
   const backLabels={'pg-hato':'Volver al hato','pg-leche':'Volver a producción','pg-repro':'Volver a reproducción'};
   document.getElementById('vacaBackLabel').textContent=backLabels[vacaFrom]||'Volver';

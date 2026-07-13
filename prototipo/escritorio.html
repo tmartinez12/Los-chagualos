@@ -193,36 +193,53 @@
           </div>
           <div id="vacaSanidadLista" style="display:none;font-size:12px;color:var(--ink-2);line-height:1.8;margin-top:8px;border-top:1px solid var(--border);padding-top:8px"></div>
         </div>
-        <div class="card" style="margin-top:12px" id="vacaCurvaCard">
-          <div class="chart-title" style="font-size:13.5px">Curva de lactancia</div>
-          <div class="chart-sub" id="vacaCurvaSub"></div>
-          <svg id="vacaCurva" viewBox="0 0 560 150" style="width:100%"></svg>
-        </div>
-        <div class="section-label" style="margin-top:18px">Producción por lactancia (de parto a parto)</div>
-        <div class="card" style="padding:8px;overflow-x:auto">
-          <table><thead><tr><th>Lactancia</th><th>Inicio</th><th>Fin</th><th class="r">Total L</th><th class="r">Promedio</th></tr></thead>
-          <tbody id="vacaLactTb"></tbody></table>
-        </div>
-
-        <div class="section-label" style="margin-top:18px" id="vacaMensualLabel">Producción mensual</div>
-        <div class="card" style="padding:8px;overflow-x:auto">
-          <table><thead><tr><th>Mes</th><th class="r">L/día prom</th><th class="r">Total L</th><th class="r">Días ordeñados</th><th>Nota</th></tr></thead>
-          <tbody id="vacaMensualTb"></tbody></table>
+        <!-- PRODUCCIÓN (uso diario): curva primero. Todo el bloque se oculta
+             para animales que no ordeñan (crías, levante, novillas, machos) -->
+        <div id="vacaBloqueLeche">
+          <div class="card" style="margin-top:12px" id="vacaCurvaCard">
+            <div class="chart-title" style="font-size:13.5px">Curva de lactancia</div>
+            <div class="chart-sub" id="vacaCurvaSub"></div>
+            <svg id="vacaCurva" viewBox="0 0 560 150" style="width:100%"></svg>
+          </div>
         </div>
 
-        <div class="section-label" style="margin-top:18px;display:flex;justify-content:space-between;align-items:baseline;gap:8px">
-          <span id="vacaPartosLabel">Partos de esta vaca</span>
-          <button class="btn outl small" style="text-transform:none;letter-spacing:0" onclick="openPartoHist(vacaActual)">＋ Agregar parto</button>
-        </div>
-        <div class="card" style="padding:8px;overflow-x:auto">
-          <table><thead><tr><th>Fecha</th><th>Cría</th><th class="r">Sexo</th><th class="r">Peso</th><th>Tipo</th><th class="r">Resultado</th></tr></thead>
-          <tbody id="vacaPartosTb"></tbody></table>
+        <!-- REPRODUCCIÓN junta (la evidencia de la alerta de arriba):
+             partos + palpaciones, ya no separadas por las tablas de leche -->
+        <div id="vacaBloqueRepro">
+          <div class="section-label" style="margin-top:18px;display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+            <span id="vacaPartosLabel">Partos de esta vaca</span>
+            <button class="btn outl small" style="text-transform:none;letter-spacing:0" onclick="openPartoHist(vacaActual)">＋ Agregar parto</button>
+          </div>
+          <div class="card" style="padding:8px;overflow-x:auto">
+            <table><thead><tr><th>Fecha</th><th>Cría</th><th class="r">Sexo</th><th class="r">Peso</th><th>Tipo</th><th class="r">Resultado</th></tr></thead>
+            <tbody id="vacaPartosTb"></tbody></table>
+          </div>
+
+          <div class="section-label" style="margin-top:18px">Historial de palpaciones</div>
+          <div class="card" style="padding:8px;overflow-x:auto">
+            <table><thead><tr><th>Fecha</th><th>Resultado</th><th class="r">Preñez</th><th>Motivo</th></tr></thead>
+            <tbody id="vacaPalpTb"></tbody></table>
+          </div>
         </div>
 
-        <div class="section-label" style="margin-top:18px">Historial de palpaciones</div>
-        <div class="card" style="padding:8px;overflow-x:auto">
-          <table><thead><tr><th>Fecha</th><th>Resultado</th><th class="r">Preñez</th><th>Motivo</th></tr></thead>
-          <tbody id="vacaPalpTb"></tbody></table>
+        <!-- ANÁLISIS de producción (consulta ocasional): lactancias +
+             mensual COLAPSABLE (crece sin tope con los años) -->
+        <div id="vacaBloqueLeche2">
+          <div class="section-label" style="margin-top:18px">Producción por lactancia (de parto a parto)</div>
+          <div class="card" style="padding:8px;overflow-x:auto">
+            <table><thead><tr><th>Lactancia</th><th>Inicio</th><th>Fin</th><th class="r">Total L</th><th class="r">Promedio</th></tr></thead>
+            <tbody id="vacaLactTb"></tbody></table>
+          </div>
+
+          <div class="section-label" style="margin-top:18px;display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+            <span id="vacaMensualLabel">Producción mensual</span>
+            <button class="btn outl small" id="vacaMensualToggle" style="text-transform:none;letter-spacing:0"
+              onclick="toggleVacaMensual()">Ver detalle</button>
+          </div>
+          <div class="card" id="vacaMensualCard" style="padding:8px;overflow-x:auto;display:none">
+            <table><thead><tr><th>Mes</th><th class="r">L/día prom</th><th class="r">Total L</th><th class="r">Días ordeñados</th><th>Nota</th></tr></thead>
+            <tbody id="vacaMensualTb"></tbody></table>
+          </div>
         </div>
       </div>
 
