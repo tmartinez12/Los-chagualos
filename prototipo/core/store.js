@@ -364,6 +364,26 @@
     return data;
   }
 
+  /* Enlaza un animal YA existente como la cría de un parto sin cría: marca
+   * partos.cria_id y, si se da, la madre en el animal (genealogía consistente).
+   * La BD tiene un índice único en cria_id: si el animal ya es cría de otro
+   * parto, el UPDATE falla (23505) y se traduce a un error claro. Para revertir
+   * (Deshacer), llamar con criaId=null (desvincula) sin tocar la madre. */
+  async function vincularCriaParto(partoId, criaId, madreId) {
+    const up = await client().from('partos').update({ cria_id: criaId }).eq('id', partoId).select().single();
+    if (up.error) {
+      if (up.error.code === '23505') { up.error.code = 'CRIA_YA_VINCULADA'; }
+      throw up.error;
+    }
+    if (criaId && madreId) {
+      const upm = await client().from('animales')
+        .update({ madre_id: madreId, origen: 'nacido_finca' }).eq('id', criaId);
+      if (upm.error) throw upm.error;
+    }
+    _invalidarAnimales();   // el conteo de partos derivado cambia
+    return up.data;
+  }
+
   /* --- Parto completo (cría + parto + madre) en UNA transacción -------------- *
    * Usa la función registrar_parto_completo() de Postgres: o se guarda todo o
    * no se guarda nada (antes eran 3 escrituras sueltas y un fallo a mitad
@@ -711,7 +731,7 @@
     registrarVacunacion, getVacunaciones, deleteVacunacion,
     getProduccionMensual, getPartos, getPalpaciones, getTratamientos, terminarTratamiento, reactivarTratamiento,
     updateAnimalCampos, darDeBaja, deleteAnimal, deleteParto, deletePalpacion, deleteTratamiento,
-    moverGrupo, deleteMovimientoGrupo, getMovimientosGrupo,
+    moverGrupo, deleteMovimientoGrupo, getMovimientosGrupo, vincularCriaParto,
     registrarTratamiento, registrarParto, registrarPartoCompleto, registrarPalpacion,
     exportarTodo, restaurarTodo,
     /* expuestos para las pruebas de contrato (schema ↔ store ↔ respaldo): NO

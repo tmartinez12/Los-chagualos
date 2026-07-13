@@ -1012,6 +1012,53 @@ function confirmarPaso(num){
     compensarBD:()=>LCStore.updateAnimalCampos(num,{grupo:prevGrupo}).then(()=>LCStore.deleteMovimientoGrupo(movId)).then(()=>{if(vacaActual===num)renderVacaEtapas(num);}),
   });
 }
+/* Vincular una CRÍA existente a un parto sin cría. Candidatos: animales que
+ * NO son ya cría de otro parto (la BD tiene un único por cría), no la madre y
+ * no dados de baja. Con buscador (pensado para ~100 animales). */
+function abrirVincularCria(partoId,madreNum){
+  const yaCrias=new Set((_partosRaw||[]).map(p=>p.cria_id).filter(Boolean).map(String));
+  const cands=Object.values(animalesPorId)
+    .filter(a=>a.grupo!=='baja'&&String(a.id)!==String(madreNum)&&!yaCrias.has(String(a.id)))
+    .sort((x,y)=>String(x.id).localeCompare(String(y.id),undefined,{numeric:true}));
+  openReg('Vincular cría a este parto','Elige el animal que nació en este parto — quedará como su cría');
+  const body=document.getElementById('regBody');body.innerHTML='';
+  document.getElementById('regActions').style.display='none';
+  if(!cands.length){body.innerHTML='<div style="color:var(--ink-3);font-size:13px;padding:8px">No hay animales disponibles para vincular (todos ya son cría de un parto, o no hay otros animales).</div>';return;}
+  const cont=document.createElement('div');
+  cont.innerHTML='<input id="vcBuscar" placeholder="🔍 Buscar por número o nombre…" autocomplete="off" '+
+      'style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--card);font-family:inherit;font-size:13px;padding:8px 12px;outline:none;margin-bottom:6px">'+
+    '<div id="vcLista" style="max-height:260px;overflow-y:auto">'+
+    cands.map(a=>'<button class="btn outl" data-num="'+LCRules.esc(String(a.id))+'" data-txt="'+LCRules.esc((String(a.id)+' '+(a.nombre||'')).toLowerCase())+'" '+
+      'style="width:100%;justify-content:flex-start;margin-bottom:6px;text-transform:none;letter-spacing:0">'+
+      '<b>'+LCRules.esc(String(a.id))+'</b>&nbsp; '+LCRules.esc(a.nombre||'')+
+      '<span style="margin-left:auto;color:var(--ink-3);font-size:12px">'+(GRUPO_DISPLAY[a.grupo]||a.grupo)+'</span></button>').join('')+
+    '</div>';
+  body.appendChild(cont);
+  cont.querySelector('#vcBuscar').oninput=function(){
+    const q=this.value.trim().toLowerCase();
+    cont.querySelectorAll('button[data-num]').forEach(b=>{b.style.display=(!q||b.dataset.txt.indexOf(q)>=0)?'':'none';});
+  };
+  cont.querySelectorAll('button[data-num]').forEach(b=>{b.onclick=()=>{closeReg();vincularCriaEjecutar(partoId,b.dataset.num,madreNum);};});
+}
+function vincularCriaEjecutar(partoId,criaId,madreNum){
+  const p=(_partosRaw||[]).find(x=>String(x.id)===String(partoId));if(!p)return;
+  const cria=animalesPorId[criaId];
+  const prevMadre=cria?cria.madreId:null;const prevOrigen=cria?cria.origen:null;
+  const repintar=()=>{if(vacaActual===madreNum)goVaca(madreNum,vacaFrom);
+    if(typeof recomputarPartosRecientes==='function')recomputarPartosRecientes();};
+  LCAcciones.ejecutarConDeshacer({
+    snack,
+    aplicar(){p.cria_id=criaId;if(cria){cria.madreId=madreNum;cria.origen='nacido_finca';}repintar();},
+    escribir:typeof LCStore!=='undefined'?()=>LCStore.vincularCriaParto(partoId,criaId,madreNum):null,
+    avisoError:(e)=>(e&&e.code==='CRIA_YA_VINCULADA')
+      ? '⚠ '+criaId+' ya es cría de otro parto — no se puede vincular dos veces'
+      : '⚠ No se pudo vincular la cría en la base — reintenta',
+    mensaje:criaId+' quedó vinculada como cría de este parto',
+    revertir(){p.cria_id=null;if(cria){cria.madreId=prevMadre;cria.origen=prevOrigen;}repintar();},
+    compensarBD:typeof LCStore!=='undefined'?()=>LCStore.vincularCriaParto(partoId,null)
+      .then(()=>LCStore.updateAnimalCampos(criaId,{madre_id:prevMadre||null,origen:prevOrigen||null})):null,
+  });
+}
 /* detalle mensual de la ficha: colapsado por defecto (crece sin tope) */
 function toggleVacaMensual(){
   const mc=document.getElementById('vacaMensualCard');
@@ -1175,11 +1222,22 @@ function goVaca(num,from){
     if(!ps.length)ptb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:12px;color:var(--ink-3)">Sin partos registrados.</td></tr>';
     ps.forEach(p=>{
       const sinDetalle=!p.cria_id&&!p.sexo_cria;   // parto histórico del registro inicial
-      ptb.innerHTML+='<tr><td>'+fmtFechaAno(p.fecha)+'</td>'+
-        '<td>'+(p.cria_id?('<b>'+p.cria_id+'</b> '+(animalesPorId[p.cria_id]?animalesPorId[p.cria_id].nombre:'')):'—')+'</td>'+
+      /* cría: si está vinculada, número+nombre; si no y la cría nació viva,
+       * un enlace para vincular un animal existente como la cría */
+      const criaCell=p.cria_id
+        ? '<b>'+LCRules.esc(p.cria_id)+'</b> '+LCRules.esc(animalesPorId[p.cria_id]?animalesPorId[p.cria_id].nombre:'')
+        : (p.estado_cria!=='muerta'
+            ? '<a class="cria-link" data-parto="'+LCRules.esc(p.id)+'" style="cursor:pointer;color:var(--ink-3);text-decoration:underline">＋ vincular cría</a>'
+            : '—');
+      const tr=document.createElement('tr');
+      tr.innerHTML='<td>'+fmtFechaAno(p.fecha)+'</td>'+
+        '<td>'+criaCell+'</td>'+
         '<td class="r">'+(p.sexo_cria==='H'?'♀':p.sexo_cria==='M'?'♂':'—')+'</td><td class="r">'+(p.peso_kg?p.peso_kg+' kg':'—')+'</td>'+
         '<td>'+(p.tipo||'normal')+'</td>'+
-        '<td class="r">'+(sinDetalle?'<span class="badge">histórico</span>':'<span class="badge '+(p.estado_cria==='viva'?'ok':'bad')+'">'+(p.estado_cria==='viva'?'viva':'mortinato')+'</span>')+'</td></tr>';
+        '<td class="r">'+(sinDetalle?'<span class="badge">histórico</span>':'<span class="badge '+(p.estado_cria==='viva'?'ok':'bad')+'">'+(p.estado_cria==='viva'?'viva':'mortinato')+'</span>')+'</td>';
+      const lk=tr.querySelector('.cria-link');
+      if(lk)lk.onclick=()=>abrirVincularCria(p.id,cow.num);
+      ptb.appendChild(tr);
     });
     const lblP=document.getElementById('vacaPartosLabel');
     if(lblP){const iv=intervaloPartosVaca(cow.num);
