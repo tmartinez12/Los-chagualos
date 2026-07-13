@@ -93,6 +93,10 @@ function go(id,el){
   document.getElementById('pgTitle').textContent=titles[id][0];
   document.getElementById('pgSub').textContent=subFor(id);
   document.querySelector('.content').scrollTop=0;
+  /* el scatter mide su contenedor al dibujarse; si la ventana se redimensionó
+   * mientras esta página estaba oculta (ancho medido = 0), re-dibujar ahora que
+   * es visible para que tome el tamaño correcto. */
+  if(id==='pg-leche'&&typeof renderScatters==='function')renderScatters();
 }
 /* refresca el subtítulo si estamos en la página afectada */
 function refreshHeader(){
@@ -573,17 +577,28 @@ function scatterCows(){
 }
 function renderScatter(svgId){
   const svg=document.getElementById(svgId);if(!svg)return;
+  /* Responsivo: se dibuja a la MEDIDA real del contenedor (1 unidad de viewBox
+   * = 1 px), no a un tamaño fijo 560×180. Así, en pantalla angosta, las
+   * etiquetas y los puntos conservan su tamaño legible en vez de encogerse, y
+   * la altura mínima evita que el scatter se aplaste en una tira donde las
+   * vacas se amontonan y "no se ven todas". Si la página está oculta y no se
+   * puede medir el ancho, se usa el tamaño clásico como respaldo. */
+  const medido=Math.round(svg.clientWidth||svg.getBoundingClientRect().width||0);
+  const w=medido>=320?medido:560;
+  const h=Math.max(200,Math.min(300,Math.round(w*0.42)));
+  svg.setAttribute('viewBox','0 0 '+w+' '+h);
+  svg.setAttribute('height',h);   // altura explícita (antes solo width:100% → relación fija)
   const cows=scatterCows();
   if(!cows.length){
     /* sin datos: explica qué falta en vez de quedar en blanco */
     const enOrdeno=(typeof hato!=='undefined')?hato.filter(a=>a.grupo==='En ordeño').length:0;
     const msg=enOrdeno?('Las '+enOrdeno+' vacas en ordeño no tienen DEL ni ordeños cargados.')
       :'Aún no hay vacas en ordeño con datos de producción.';
-    svg.innerHTML='<text x="280" y="78" text-anchor="middle" font-family="Work Sans,sans-serif" font-size="12" fill="#A8ACA0">'+msg+'</text>'+
-      '<text x="280" y="98" text-anchor="middle" font-family="Work Sans,sans-serif" font-size="11" fill="#C0C4B8">Completa el DEL (✏️ Editar) y registra ordeños para ver la producción.</text>';
+    svg.innerHTML='<text x="'+(w/2)+'" y="'+(h/2-10)+'" text-anchor="middle" font-family="Work Sans,sans-serif" font-size="12" fill="#A8ACA0">'+msg+'</text>'+
+      '<text x="'+(w/2)+'" y="'+(h/2+12)+'" text-anchor="middle" font-family="Work Sans,sans-serif" font-size="11" fill="#C0C4B8">Completa el DEL (✏️ Editar) y registra ordeños para ver la producción.</text>';
     return;
   }
-  const pad={l:45,r:15,t:12,b:28},w=560,h=180;
+  const pad={l:45,r:15,t:14,b:30};
   const pw=w-pad.l-pad.r,ph=h-pad.t-pad.b;
   /* eje X adaptado al hato: hasta la vaca más avanzada + margen (redondeado a 60) */
   const maxDel=Math.max(240,Math.ceil(Math.max(...cows.map(c=>c.del+40))/60)*60);
@@ -627,6 +642,13 @@ function renderScatter(svgId){
   if(t)t.textContent='Producción vs DEL · '+cows.length+' vacas en ordeño';
 }
 function renderScatters(){if(!scatterListo)return;renderScatter('scatterLeche');}
+/* el scatter se dibuja a la medida del contenedor: al cambiar el tamaño de la
+ * ventana se re-ajusta solo (con debounce para no re-dibujar en cada píxel). */
+let _scatterResizeT=null;
+window.addEventListener('resize',function(){
+  clearTimeout(_scatterResizeT);
+  _scatterResizeT=setTimeout(function(){if(typeof renderScatters==='function')renderScatters();},150);
+});
 
 /* ===== Histórico de producción ===== */
 /* ===== Año en consulta (filtro global) =====
