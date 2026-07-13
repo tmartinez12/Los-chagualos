@@ -3,7 +3,9 @@
 > Julio 2026. Método: render en Chromium de `pg-vaca` (escritorio, 1280px) y
 > `scr-vaca` (móvil, 440px) con un animal completamente poblado (preñada 3m,
 > 3 partos, palpaciones, tratamiento terminado, vacuna, nota de manejo,
-> etapas). Solo hallazgos — sin cambios de código.
+> etapas). Los hallazgos P1/P2/P3 fueron IMPLEMENTADOS en la misma sesión
+> (commits 7a9fa20, 48f179a y el de la pasada P3) — se conserva como registro
+> del estado anterior y la justificación de cada cambio.
 
 ## Orden actual de las secciones
 

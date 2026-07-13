@@ -4,7 +4,7 @@ const titles={
   'scr-ordeno':['Leche','Producción y ordeño del día'],
   'scr-potreros':['Potreros',''],
   'scr-hato':['Hato','Inventario del hato'],
-  'scr-vaca':['Ficha del animal','Se consulta mucho, se edita poco'],
+  'scr-vaca':['Ficha del animal',''],   // el subtítulo lo pone renderFicha (grupo · DEL)
   'scr-sanitario':['Sanidad','Tratamientos, retiros y vacunas'],
   'scr-repro':['Reproducción','Monta natural · la palpación manda'],
   'scr-partos':['Partos','Las palpaciones marcan las fechas'],
@@ -181,6 +181,16 @@ function renderFicha(num){
   fichaActualM=num;
   document.getElementById('vmNombre').textContent=a.id+' · '+a.nombre;
   document.getElementById('vmSub').textContent=[a.raza,a.color,edadTextoM(a),GRUPO_DISPLAY_M[a.grupo],origenM(a)].filter(Boolean).join(' · ');
+  /* subtítulo de la barra: información útil, no copy interno */
+  titles['scr-vaca']=['Ficha del animal',[GRUPO_DISPLAY_M[a.grupo],a.del!=null?'DEL '+a.del:null].filter(Boolean).join(' · ')];
+  const bs=document.getElementById('barSub');
+  if(bs&&document.getElementById('scr-vaca').classList.contains('active'))bs.textContent=titles['scr-vaca'][1];
+  /* nota de manejo visible bajo el nombre (además de en los datos) */
+  const nbM=document.getElementById('vmNotaBadge');
+  if(nbM){
+    if(a.nota){nbM.style.display='';nbM.innerHTML='<span class="badge warn">📝 '+LCRules.esc(a.nota)+'</span>';}
+    else{nbM.style.display='none';nbM.innerHTML='';}
+  }
   /* alerta reproductiva/sanitaria */
   const r=deriveReproFichaM(a);const al=document.getElementById('vmAlerta');
   al.className='alert '+(r.cls==='bad'?'urgent':r.cls==='warn'?'warn':'info');
@@ -212,14 +222,18 @@ function renderFicha(num){
   const ultParto=partosVaca.length?partosVaca[0].fecha:null;
   /* días abiertos: desde el último parto y aún sin preñez confirmada */
   const diasAbiertos=(ultParto&&a.estadoRepro!=='prenada')?diasDesdeM(ultParto):null;
-  /* stats */
+  /* stats — el 4º es CONDICIONAL, igual que el escritorio: preñada → cuánto
+   * falta para el parto; si no → días abiertos; peso vive en los datos */
   const ayer=(a.leche&&a.leche.ayer!=null)?a.leche.ayer:0;
+  const statCond=(a.estadoRepro==='prenada'&&a.prenez&&a.prenez.partoEstimado)
+    ?'<div class="stat"><div class="s-label">Próximo parto</div><div class="s-value">~'+diasHastaM(a.prenez.partoEstimado)+' días</div></div>'
+    :(diasAbiertos!=null?'<div class="stat"><div class="s-label">Días abiertos</div><div class="s-value'+(diasAbiertos>120?' down':'')+'">'+diasAbiertos+'</div></div>'
+      :'<div class="stat"><div class="s-label">Peso</div><div class="s-value">'+(a.pesoKg?a.pesoKg+' kg':'—')+'</div></div>');
   document.getElementById('vmStats').innerHTML=
     '<div class="stat"><div class="s-label">Último ordeño</div><div class="s-value">'+ayer+' L</div></div>'+
     '<div class="stat"><div class="s-label">DEL</div><div class="s-value">'+(a.del==null?'—':a.del+' días')+'</div></div>'+
-    '<div class="stat"><div class="s-label">Peso</div><div class="s-value">'+(a.pesoKg?a.pesoKg+' kg':'—')+'</div></div>'+
+    statCond+
     '<div class="stat"><div class="s-label">Partos</div><div class="s-value">'+(a.partos||0)+'</div></div>'+
-    (diasAbiertos!=null?'<div class="stat"><div class="s-label">Días abiertos</div><div class="s-value'+(diasAbiertos>120?' down':'')+'">'+diasAbiertos+'</div></div>':'')+
     ((a.gananciaDiaG&&(a.grupo==='levante'||a.grupo==='cria'))?'<div class="stat"><div class="s-label">Ganancia</div><div class="s-value">'+a.gananciaDiaG+' g/día</div></div>':'');
   /* genealogía */
   const madre=a.madreId?(animalesPorIdM[a.madreId]?a.madreId+' '+animalesPorIdM[a.madreId].nombre:a.madreId):'—';
@@ -228,7 +242,7 @@ function renderFicha(num){
   document.getElementById('vmGenea').innerHTML='<b style="color:var(--ink)">Nacimiento:</b> '+fmtNacimientoM(a)+'<br>'+
     '<b style="color:var(--ink)">Madre:</b> '+LCRules.esc(madre)+
     ' &nbsp;·&nbsp; <b style="color:var(--ink)">Padre:</b> '+LCRules.esc(padre)+
-    '<br><b style="color:var(--ink)">Crías:</b> '+(crias.length?LCRules.esc(crias.join(', ')):'sin crías registradas')+
+    (crias.length?'<br><b style="color:var(--ink)">Crías:</b> '+LCRules.esc(crias.join(', ')):'')+
     (a.pesoKg&&a.fechaPeso?'<br><b style="color:var(--ink)">Peso:</b> '+a.pesoKg+' kg <span style="color:var(--ink-3)">('+fmtFechaCortaM(a.fechaPeso)+')</span>':'')+
     (a.diasVacia!=null&&a.estadoRepro==='vacia'?'<br><b style="color:var(--ink)">Días vacía:</b> '+a.diasVacia:'')+
     ((a.procedencia||a.valorCompra)?'<br><b style="color:var(--ink)">Compra:</b> '+LCRules.esc(a.procedencia||'')+(a.valorCompra?' · $'+Number(a.valorCompra).toLocaleString('es-CO'):''):'')+

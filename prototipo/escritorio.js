@@ -964,7 +964,7 @@ function deriveReproFicha(a){
     diasAbiertos:(typeof _diasAbiertos==='function'?_diasAbiertos(a.id):null)??a.diasVacia,
     hijas:(a.grupo==='macho'&&a.rolToro)?Object.values(animalesPorId).filter(x=>x.padreId===a.id&&x.grupo!=='baja').length:0,
     fmtFecha:iso=>{const d=new Date(iso+'T00:00:00');return d.getDate()+' '+LCRules.MESC[d.getMonth()];}});
-  return r?{badge:r.nivel,text:r.titulo,sub:r.sub}:{badge:'',text:a.grupo,sub:''};
+  return r?{badge:r.nivel,text:r.titulo,sub:r.sub,secar:r.secar}:{badge:'',text:a.grupo,sub:''};
 }
 function buildFichaBasica(a){
   const crias=Object.values(animalesPorId).filter(x=>x.madreId===a.id).map(x=>x.id+' '+x.nombre);
@@ -1043,8 +1043,10 @@ function goVaca(num,from){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('pg-vaca').classList.add('active');
   document.querySelectorAll('#nav a').forEach(a=>a.classList.remove('active'));
-  document.getElementById('pgTitle').textContent='Ficha: '+cow.num+' · '+cow.n;
-  document.getElementById('pgSub').textContent=cow.raza+' · '+cow.edad+' · '+cow.grupo;
+  /* título de página GENÉRICO: la identidad vive solo en el hero (antes se
+   * repetía idéntica a 30px de distancia) */
+  document.getElementById('pgTitle').textContent='Ficha del animal';
+  document.getElementById('pgSub').textContent='';
   /* el CTA contextual lleva el NOMBRE: lo distingue del "+ Registrar" global
    * del top bar (mismo verbo, distinto alcance → confusión directa) */
   const evBtn=document.getElementById('vacaEventoBtn');
@@ -1086,11 +1088,21 @@ function goVaca(num,from){
   document.getElementById('vacaFotoInput').value='';
   document.getElementById('vacaNombre').textContent=cow.num+' · '+cow.n;
   document.getElementById('vacaSub').textContent=[cow.raza,cow.color,cow.edad,cow.grupo,cow.origen].filter(x=>x&&x!=='—').join(' · ');
+  /* nota de manejo visible en el hero (además de en los datos) */
+  const nb=document.getElementById('vacaNotaBadge');
+  if(nb){
+    if(cow.nota){nb.style.display='';nb.innerHTML='<span class="badge warn">📝 '+LCRules.esc(cow.nota)+'</span>';}
+    else{nb.style.display='none';nb.innerHTML='';}
+  }
   const al=document.getElementById('vacaAlerta');
   const pasoFicha=_pasoSiguiente(animalesPorId[cow.num]);
+  /* la alerta trae su acción: secado para preñadas en ordeño (paridad con el
+   * móvil, que ya lo tenía) o el paso de etapa pendiente */
+  const puedeSecar=cow.repro.secar&&(animalesPorId[cow.num]||{}).grupo==='ordeño';
   al.innerHTML='<div class="alert '+(cow.repro.badge==='bad'?'urgent':cow.repro.badge==='warn'?'warn':cow.repro.badge==='ok'?'ok':'info')+'">'+
     '<div style="flex:1"><div class="a-title">'+cow.repro.text+'</div>'+
     '<div class="a-sub">'+cow.repro.sub+'</div></div>'+
+    (puedeSecar?'<button class="btn outl small" onclick="openSeca(vacaActual)">Programar secado</button>':'')+
     (pasoFicha?'<button class="btn small" onclick="confirmarPaso(vacaActual)">'+pasoFicha.label+'</button>':'')+
     '</div>';
   /* historial de etapas (movimientos de grupo con su fecha), carga async */
@@ -1115,8 +1127,18 @@ function goVaca(num,from){
       '<div class="k-trend mut">'+(cow.prom7!=null?'prom. 7 días: '+cow.prom7+' L':'sin historial')+'</div></div>'+
     '<div class="card kpi"><div class="k-label">DEL</div><div class="k-value">'+cow.del+' <span class="k-unit">días</span></div>'+
       '<div class="k-trend mut">días en leche</div></div>'+
-    '<div class="card kpi"><div class="k-label">Días abiertos</div><div class="k-value'+(cow.diasAbiertos>120?' down':'')+'">'+(cow.diasAbiertos!=null?cow.diasAbiertos:'—')+'</div>'+
-      '<div class="k-trend mut">desde el último parto</div></div>'+
+    (function(){
+      /* KPI condicional: preñada → cuánto falta para el parto (un '—' en
+       * "días abiertos" no informa nada); si no → días abiertos */
+      const ac=animalesPorId[cow.num]||{};
+      if(ac.estadoRepro==='prenada'&&ac.prenez&&ac.prenez.partoEstimado){
+        const d=diasHasta(ac.prenez.partoEstimado);
+        return '<div class="card kpi"><div class="k-label">Próximo parto</div><div class="k-value">'+(d!=null&&d>=0?'~'+d:'—')+' <span class="k-unit">días</span></div>'+
+          '<div class="k-trend mut">'+fmtFechaCorta(ac.prenez.partoEstimado)+'</div></div>';
+      }
+      return '<div class="card kpi"><div class="k-label">Días abiertos</div><div class="k-value'+(cow.diasAbiertos>120?' down':'')+'">'+(cow.diasAbiertos!=null?cow.diasAbiertos:'—')+'</div>'+
+        '<div class="k-trend mut">desde el último parto</div></div>';
+    })()+
     '<div class="card kpi"><div class="k-label">Partos</div><div class="k-value">'+cow.parto+'</div>'+
       '<div class="k-trend mut">'+(function(){const iv=intervaloPartosVaca(cow.num);
         return iv!=null?'pare cada '+(iv/30.44).toFixed(1)+' m':(cow.parto===1?'primer parto':'registrados');})()+'</div></div>';
