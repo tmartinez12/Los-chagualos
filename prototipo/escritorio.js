@@ -337,7 +337,7 @@ function renderRegistro(){
   const esPeriodoActual=(regVista==='mes'?MES_OFFSET===0:SEMANA_OFFSET===0);
   enOrdeno.forEach((a,fila)=>{
     const tr=document.createElement('tr');
-    let cells='<td><div class="cell-animal"><div class="cini">'+LCRules.esc(a.id)+'</div><div class="cn">'+LCRules.esc(a.nombre)+'</div></div></td>';
+    let cells='<td><div class="cell-animal cell-link" title="Abrir la ficha de '+LCRules.esc(a.nombre)+'"><div class="cini">'+LCRules.esc(a.id)+'</div><div class="cn">'+LCRules.esc(a.nombre)+'</div></div></td>';
     let tot=0,tieneDatos=false;
     dias.forEach((d,col)=>{const iso=_isoDe(d),fut=iso>hoyIso,v=ordenosDiaMap[a.id+'|'+iso];
       if(v!=null){tot+=Number(v)||0;tieneDatos=true;}
@@ -350,6 +350,9 @@ function renderRegistro(){
     });
     cells+='<td class="r" style="font-weight:700" id="regtot-'+a.id+'">'+(tot?Math.round(tot):'—')+'</td>';
     tr.innerHTML=cells;
+    /* clic en el número o nombre → ficha de la vaca (sin interferir con las
+     * casillas de litros, que están en otras columnas). */
+    const al=tr.querySelector('.cell-link');if(al)al.onclick=()=>goVaca(a.id,'pg-leche');
     /* la vaca sin ningún registro en el período actual se nota AQUÍ mismo */
     if(!tieneDatos&&esPeriodoActual){
       tr.style.background='rgba(196,74,58,.05)';
