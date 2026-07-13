@@ -756,11 +756,22 @@ function sanModoM(modo){
   document.querySelectorAll('#vacListaSelM input[data-animal]').forEach(cb=>{cb.checked=vacM.sel.has(cb.dataset.animal);});
   _sanPintarModoM();_vacContadorM();
 }
+/* filtro combinado (grupo + texto): una fila es visible si pasa AMBOS */
+function _sanFiltrarM(){
+  const q=((document.getElementById('sanBuscarM')||{}).value||'').trim().toLowerCase();
+  const g=vacM.filtroGrupo||'';
+  document.querySelectorAll('#vacListaSelM label[data-num]').forEach(l=>{
+    const pasa=(!q||l.dataset.txt.indexOf(q)>=0)&&(!g||l.dataset.grupo===g);
+    l.style.display=pasa?'flex':'none';
+  });
+  _vacContadorM();
+}
 function openSanidadM(modo,cowPre){
   vacM.modo=modo||'vacuna';
   vacM.tipo='aftosa';vacM.producto='';vacM.lote='';
   /* medicamento: texto libre y obligatorio; retiro arranca en 0 */
   vacM.medicina='';vacM.retiro=0;
+  vacM.filtroGrupo='';   // filtro de grupo de la lista: arranca en 'Todas'
   vacM.fecha=isoHoyM();vacM.proxima='';vacM.nota='';
   document.getElementById('vacTipoChips').querySelectorAll('.chip').forEach((c,i)=>c.classList.toggle('sel',i===0));
   const med=document.getElementById('trataMedChips');if(med)med.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
@@ -774,7 +785,7 @@ function openSanidadM(modo,cowPre){
   vacM.sel=vacM.modo==='vacuna'?new Set(activos.map(a=>String(a.id))):new Set(pre?[pre]:[]);
   const box=document.getElementById('vacListaSelM');
   if(box){
-    box.innerHTML=activos.map(a=>'<label data-num="'+LCRules.esc(String(a.id))+'" data-txt="'+LCRules.esc((String(a.id)+' '+(a.nombre||'')).toLowerCase())+'" '+
+    box.innerHTML=activos.map(a=>'<label data-num="'+LCRules.esc(String(a.id))+'" data-grupo="'+LCRules.esc(a.grupo||'')+'" data-txt="'+LCRules.esc((String(a.id)+' '+(a.nombre||'')).toLowerCase())+'" '+
       'style="display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 0;border-bottom:1px solid var(--surface)">'+
       '<input type="checkbox" data-animal="'+LCRules.esc(String(a.id))+'"'+(vacM.sel.has(String(a.id))?' checked':'')+'> '+
       '<b>'+LCRules.esc(String(a.id))+'</b> '+LCRules.esc(a.nombre||'')+
@@ -784,12 +795,21 @@ function openSanidadM(modo,cowPre){
       if(this.checked)vacM.sel.add(this.dataset.animal);else vacM.sel.delete(this.dataset.animal);
       _vacContadorM();};});
   }
+  /* chips de filtro por grupo: 'Todas' + solo los grupos presentes, con conteo */
+  const gbox=document.getElementById('sanGrupoChipsM');
+  if(gbox){
+    const porGrupo={};activos.forEach(a=>{porGrupo[a.grupo]=(porGrupo[a.grupo]||0)+1;});
+    const ordenG=['ordeño','horra','novilla','levante','cria','macho'].filter(g=>porGrupo[g]);
+    gbox.innerHTML='<button class="chip sel" data-g="">Todas ('+activos.length+')</button>'+
+      ordenG.map(g=>'<button class="chip" data-g="'+LCRules.esc(g)+'">'+(GRUPO_DISPLAY_M[g]||g)+' ('+porGrupo[g]+')</button>').join('');
+    gbox.querySelectorAll('.chip').forEach(ch=>{ch.onclick=function(){
+      vacM.filtroGrupo=this.dataset.g;
+      [...gbox.children].forEach(c=>c.classList.toggle('sel',c===this));
+      _sanFiltrarM();
+    };});
+  }
   const busca=document.getElementById('sanBuscarM');
-  if(busca)busca.oninput=function(){
-    const q=this.value.trim().toLowerCase();
-    document.querySelectorAll('#vacListaSelM label[data-num]').forEach(l=>{l.style.display=(!q||l.dataset.txt.indexOf(q)>=0)?'flex':'none';});
-    _vacContadorM();
-  };
+  if(busca)busca.oninput=_sanFiltrarM;
   const master=document.getElementById('vacSelTodasM');
   if(master)master.onchange=function(){
     const on=this.checked;

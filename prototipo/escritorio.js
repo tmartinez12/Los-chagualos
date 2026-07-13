@@ -1541,6 +1541,16 @@ function _sanContador(){
   const lbl=document.getElementById('sanSelTodasLbl');
   if(lbl)lbl.textContent=visibles.length===filas.length?'Seleccionar todas':'Seleccionar las filtradas ('+visibles.length+')';
 }
+/* filtro combinado (grupo + texto): una fila es visible si pasa AMBOS */
+function _sanAplicarFiltro(cont){
+  const q=((document.getElementById('sanBuscar')||{}).value||'').trim().toLowerCase();
+  const g=sanidadState.filtroGrupo||'';
+  cont.querySelectorAll('label[data-num]').forEach(l=>{
+    const pasa=(!q||l.dataset.txt.indexOf(q)>=0)&&(!g||l.dataset.grupo===g);
+    l.style.display=pasa?'flex':'none';
+  });
+  _sanContador();
+}
 function _sanSelector(body){
   const activos=Object.values(animalesPorId).filter(a=>a.grupo!=='baja')
     .sort((x,y)=>String(x.id).localeCompare(String(y.id),undefined,{numeric:true}));
@@ -1551,18 +1561,24 @@ function _sanSelector(body){
     '<input type="checkbox" id="vacSelTodas"> <span id="sanSelTodasLbl">Seleccionar todas</span>'+
     '<span id="vacSelCount" style="margin-left:auto;font-weight:500;color:var(--ink-2)"></span></label>'+
     '<div id="vacListaSel" style="max-height:200px;overflow-y:auto;padding:4px 2px">'+
-    activos.map(a=>'<label data-num="'+LCRules.esc(String(a.id))+'" data-txt="'+LCRules.esc((String(a.id)+' '+(a.nombre||'')).toLowerCase())+'" '+
+    activos.map(a=>'<label data-num="'+LCRules.esc(String(a.id))+'" data-grupo="'+LCRules.esc(a.grupo||'')+'" data-txt="'+LCRules.esc((String(a.id)+' '+(a.nombre||'')).toLowerCase())+'" '+
       'style="display:flex;align-items:center;gap:8px;font-size:13px;padding:5px 0;cursor:pointer;border-bottom:1px solid var(--surface)">'+
       '<input type="checkbox" data-animal="'+LCRules.esc(String(a.id))+'"'+(sanidadState.sel.has(String(a.id))?' checked':'')+'> '+
       '<b>'+LCRules.esc(String(a.id))+'</b> '+LCRules.esc(a.nombre||'')+
       ' <span style="margin-left:auto;color:var(--ink-3);font-size:11.5px">'+(GRUPO_DISPLAY[a.grupo]||a.grupo)+'</span></label>').join('')+
     '</div>';
+  /* chips de filtro por grupo: 'Todas' + solo los grupos presentes, con conteo.
+   * Combinado con "Seleccionar todas" (que actúa sobre lo visible) da
+   * "vacunar/tratar todo un grupo" en dos toques. */
+  const porGrupo={};activos.forEach(a=>{porGrupo[a.grupo]=(porGrupo[a.grupo]||0)+1;});
+  const ordenG=['ordeño','horra','novilla','levante','cria','macho'].filter(g=>porGrupo[g]);
+  const itemsG=[{val:'',label:'Todas ('+activos.length+')'}]
+    .concat(ordenG.map(g=>({val:g,label:(GRUPO_DISPLAY[g]||g)+' ('+porGrupo[g]+')'})));
+  const chipsG=regChips(itemsG,sanidadState.filtroGrupo||'',v=>{sanidadState.filtroGrupo=v;_sanAplicarFiltro(cont);});
+  chipsG.style.marginBottom='4px';
+  body.appendChild(chipsG);
   body.appendChild(cont);
-  cont.querySelector('#sanBuscar').oninput=function(){
-    const q=this.value.trim().toLowerCase();
-    cont.querySelectorAll('label[data-num]').forEach(l=>{l.style.display=(!q||l.dataset.txt.indexOf(q)>=0)?'flex':'none';});
-    _sanContador();
-  };
+  cont.querySelector('#sanBuscar').oninput=function(){_sanAplicarFiltro(cont);};
   cont.querySelector('#vacSelTodas').onchange=function(){
     const on=this.checked;
     cont.querySelectorAll('label[data-num]').forEach(l=>{
@@ -1576,7 +1592,7 @@ function _sanSelector(body){
     if(this.checked)sanidadState.sel.add(this.dataset.animal);else sanidadState.sel.delete(this.dataset.animal);
     _sanContador();
   };});
-  _sanContador();
+  _sanAplicarFiltro(cont);   // aplica el filtro vigente (grupo) al reconstruirse
 }
 function openSanidad(modo,cowPre){
   const s=sanidadState;
@@ -1586,6 +1602,7 @@ function openSanidad(modo,cowPre){
   /* medicamento: texto LIBRE y obligatorio (hay que saber QUÉ se le puso);
    * retiro arranca en 0 — solo se sube si de verdad hay retiro de leche */
   s.medicina='';s.retiro=0;
+  s.filtroGrupo='';   // filtro de grupo de la lista: arranca en 'Todas'
   const activos=Object.values(animalesPorId).filter(a=>a.grupo!=='baja');
   const pre=cowPre?String(cowPre).split('·')[0].trim():null;
   /* vacuna: todas marcadas (el ciclo); tratamiento: solo la preseleccionada */
