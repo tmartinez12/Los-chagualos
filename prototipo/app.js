@@ -316,7 +316,12 @@ const editM={};
 function openEditVaca(){
   const num=fichaActualM;const a=num&&animalesPorIdM[num];
   if(!a){snack('Abre una ficha primero');return;}
-  editM.num=num;editM.nombre=a.nombre||'';editM.raza=a.raza||'';editM.color=a.color||'';editM.nota=a.nota||'';
+  editM.num=num;editM.nombre=a.nombre||'';editM.color=a.color||'';editM.nota=a.nota||'';
+  /* raza por chips + "otra" (paridad con el escritorio): si la raza guardada
+   * está en la lista estándar, se marca el chip; si no, va al campo "otra" */
+  const RAZAS_M=['Holstein × Gyr','F1','Gyrolando','Holstein','Normando'];
+  editM.raza=RAZAS_M.includes(a.raza)?a.raza:'';
+  editM.razaOtra=RAZAS_M.includes(a.raza)?'':(a.raza||'');
   editM.nacimiento=a.nacimiento||'';editM.peso=(a.pesoKg!=null?a.pesoKg:'');
   editM.inicio=a.inicioLactancia||'';editM.leche=(a.leche&&a.leche.ayer!=null?a.leche.ayer:'');
   editM.grupo=a.grupo||'ordeño';editM.madre=a.madreId||'';editM.padre=a.padreId||'';
@@ -334,7 +339,8 @@ function openEditVaca(){
   const em=document.getElementById('editMadre');if(em)em.value=editM.madre;
   document.getElementById('editCow').textContent=(a.id+' · '+a.nombre).toUpperCase();
   document.getElementById('editNombre').value=editM.nombre;
-  document.getElementById('editRaza').value=editM.raza;
+  document.querySelectorAll('#editRazaChips .chip').forEach(c=>c.classList.toggle('sel',c.dataset.raza===editM.raza));
+  document.getElementById('editRazaOtra').value=editM.razaOtra;
   const ec=document.getElementById('editColor');if(ec)ec.value=editM.color;
   const en=document.getElementById('editNota');if(en)en.value=editM.nota;
   document.getElementById('editNac').value=editM.nacimiento||'';
@@ -348,6 +354,13 @@ function closeEdit(){document.getElementById('editSheet').classList.remove('show
   document.getElementById('scrim').classList.remove('show');}
 function editPickGrupo(btn,val){editM.grupo=val;
   [...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));}
+/* raza: elegir un chip limpia "otra raza"; escribir en "otra" deselecciona los
+ * chips — nunca hay dos fuentes de verdad para la raza */
+function editPickRaza(btn,val){editM.raza=val;editM.razaOtra='';
+  [...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));
+  const o=document.getElementById('editRazaOtra');if(o)o.value='';}
+function editRazaOtraInput(v){editM.razaOtra=v;editM.raza='';
+  document.querySelectorAll('#editRazaChips .chip').forEach(c=>c.classList.remove('sel'));}
 function editPickSexo(btn,val){editM.sexo=val;
   [...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));
   _editPintarRol();}
@@ -373,7 +386,7 @@ function saveEditVaca(){
   if(padre&&!animalesPorIdM[padre]){snack('⚠ El padre '+padre+' no está registrado — corrige el número');return;}
   if(padre===num){snack('⚠ Un animal no puede ser su propio padre');return;}
   const nombre=(editM.nombre||'').trim()||a.nombre;
-  const raza=(editM.raza||'').trim()||null;
+  const raza=(editM.razaOtra||'').trim()||editM.raza||null;
   const color=(editM.color||'').trim()||null;
   const nota=(editM.nota||'').trim()||null;
   const nacimiento=editM.nacimiento||null;

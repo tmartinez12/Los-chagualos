@@ -745,8 +745,23 @@
     <div class="handle"></div>
     <h3>Editar datos</h3>
     <div class="m-label" id="editCow">—</div>
+    <!-- mismo orden que "Editar datos" del escritorio: identidad → clasificación
+         → nacimiento → origen/genealogía → peso → lactancia → nota -->
     <div class="section-label" style="margin-top:8px">Nombre</div>
     <input id="editNombre" placeholder="Nombre del animal" oninput="editM.nombre=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
+    <div class="section-label">Raza</div>
+    <div class="chips" id="editRazaChips">
+      <button class="chip" data-raza="Holstein × Gyr" onclick="editPickRaza(this,'Holstein × Gyr')">Holstein × Gyr</button>
+      <button class="chip" data-raza="F1" onclick="editPickRaza(this,'F1')">F1</button>
+      <button class="chip" data-raza="Gyrolando" onclick="editPickRaza(this,'Gyrolando')">Gyrolando</button>
+      <button class="chip" data-raza="Holstein" onclick="editPickRaza(this,'Holstein')">Holstein</button>
+      <button class="chip" data-raza="Normando" onclick="editPickRaza(this,'Normando')">Normando</button>
+    </div>
+    <input id="editRazaOtra" placeholder="Otra raza (si no está arriba): Jersey, criolla…" oninput="editRazaOtraInput(this.value)"
+      style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-top:8px">
+    <div class="section-label">Color</div>
+    <input id="editColor" placeholder="Ej. negra, pinta roja, barcina…" oninput="editM.color=this.value"
       style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
     <div class="section-label">Grupo</div>
     <div class="chips" id="editGrupo">
@@ -770,31 +785,19 @@
         <button class="chip" onclick="editPickRol(this,false)">No reproductor</button>
       </div>
     </div>
-    <div class="section-label">Madre · padre (número, ya registrados)</div>
-    <input id="editMadre" placeholder="Madre. Ej. 042" oninput="editM.madre=this.value"
-      style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);padding:10px 12px;outline:none;margin-bottom:8px">
-    <input id="editPadre" placeholder="Padre. Ej. T01" oninput="editM.padre=this.value"
-      style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);padding:10px 12px;outline:none">
-    <div class="section-label">Raza</div>
-    <input id="editRaza" placeholder="Ej. Holstein × Gyr" oninput="editM.raza=this.value"
-      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
-    <div class="section-label">Color</div>
-    <input id="editColor" placeholder="Ej. negra, pinta roja, barcina…" oninput="editM.color=this.value"
-      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
     <div class="section-label">Fecha de nacimiento</div>
     <input id="editNac" type="date" oninput="editM.nacimiento=this.value"
-      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
-    <div class="section-label">Peso (kg)</div>
-    <input id="editPeso" type="number" inputmode="numeric" placeholder="kg" oninput="editM.peso=this.value"
-      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
-    <div class="section-label">Inicio de lactancia (último parto)</div>
-    <input id="editInicio" type="date" oninput="editM.inicio=this.value"
       style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
     <div class="section-label">Origen</div>
     <div class="chips" id="editOrigen">
       <button class="chip" onclick="editPickOrigen(this,'nacido_finca')">🐄 Nacida en la finca</button>
       <button class="chip" onclick="editPickOrigen(this,'comprado')">🛒 Comprada</button>
     </div>
+    <div class="section-label">Madre · padre (número, ya registrados)</div>
+    <input id="editMadre" placeholder="Madre. Ej. 042" oninput="editM.madre=this.value"
+      style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);padding:10px 12px;outline:none;margin-bottom:8px">
+    <input id="editPadre" placeholder="Padre. Ej. T01" oninput="editM.padre=this.value"
+      style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);padding:10px 12px;outline:none">
     <div id="editCompraWrap" style="display:none">
       <div class="section-label">Procedencia · valor (compra)</div>
       <input id="editProc" placeholder="Finca o vendedor" oninput="editM.procedencia=this.value"
@@ -802,12 +805,18 @@
       <input id="editValor" type="number" inputmode="numeric" placeholder="Valor de compra $" oninput="editM.valor=this.value"
         style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
     </div>
-    <div class="section-label">Nota 📝</div>
-    <input id="editNota" placeholder="Ej. patea al ordeño, propensa a mastitis…" oninput="editM.nota=this.value"
-      style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
+    <div class="section-label">Peso (kg)</div>
+    <input id="editPeso" type="number" inputmode="numeric" placeholder="kg" oninput="editM.peso=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
+    <div class="section-label">Inicio de lactancia (último parto)</div>
+    <input id="editInicio" type="date" oninput="editM.inicio=this.value"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
     <div class="section-label">Último ordeño (L) · registra un ordeño de esta vaca</div>
     <input id="editLeche" type="number" inputmode="numeric" placeholder="litros del último ordeño" oninput="editM.leche=this.value"
       style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
+    <div class="section-label">Nota 📝</div>
+    <input id="editNota" placeholder="Ej. patea al ordeño, propensa a mastitis…" oninput="editM.nota=this.value"
+      style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
     <button class="btn filled" style="width:100%;justify-content:center;margin-top:16px" onclick="saveEditVaca()">
       <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar cambios</button>
     <div style="font-size:11px;color:var(--ink-3);margin-top:10px;text-align:center">
