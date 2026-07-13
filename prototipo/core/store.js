@@ -324,9 +324,12 @@
   async function registrarTratamiento(t) {
     const fila = {
       id: t.id || _idUnico('T-'), animal_id: t.animalId,
-      problema: t.problema, medicamento: t.medicamento || null,
+      /* el campo principal es el TRATAMIENTO (medicamento); la enfermedad
+       * (problema) es opcional — hoy no se captura en los formularios. */
+      problema: t.problema || null, medicamento: t.medicamento,
       inicio: t.inicio || hoyFinca(),
       dias_retiro: t.diasRetiro || 0,   // el retiro va hasta inicio + dias_retiro (derivado)
+      nota: t.nota || null,
       activo: true,
     };
     const { data, error } = await client().from('tratamientos').insert(fila).select().single();
@@ -539,7 +542,7 @@
   async function getTratamientos(soloActivos) {
     const data = await _paginado(() => {
       let q = client().from('tratamientos')
-        .select('id, animal_id, problema, medicamento, inicio, dias_retiro, activo, animales(nombre)')
+        .select('id, animal_id, problema, medicamento, inicio, dias_retiro, activo, nota, animales(nombre)')
         .order('inicio', { ascending: false }).order('id', { ascending: true });
       if (soloActivos) q = q.eq('activo', true);
       return q;

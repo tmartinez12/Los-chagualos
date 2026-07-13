@@ -335,7 +335,7 @@
   <!-- ============ PLAN SANITARIO ============ -->
   <div class="screen" id="scr-sanitario">
     <button class="btn filled" style="width:100%;justify-content:center;margin-top:4px"
-      onclick="openSheet()"><svg class="ic-s ic"><use href="#i-cross"/></svg>Registrar enfermedad o tratamiento</button>
+      onclick="openSheet()"><svg class="ic-s ic"><use href="#i-cross"/></svg>Registrar tratamiento</button>
 
     <div class="section-label">En tratamiento ahora · <span style="color:var(--ink)" id="tratCountM">0</span></div>
     <div id="tratListaM"></div>
@@ -382,37 +382,65 @@
   </div>
 
   <!-- SHEET: registrar vacunación -->
+  <!-- SHEET: registro sanitario UNIFICADO (vacunación + tratamiento) -->
   <div class="sheet" id="vacunaSheet">
     <div class="handle"></div>
-    <h3>Registrar vacunación</h3>
-    <div class="m-del" style="margin-bottom:12px">Queda como soporte ICA.</div>
-    <div class="section-label" style="margin-top:0">Tipo</div>
-    <div class="chips" id="vacTipoChips">
-      <button class="chip sel" onclick="vacPick(this,'tipo','aftosa')">Aftosa</button>
-      <button class="chip" onclick="vacPick(this,'tipo','brucelosis')">Brucelosis</button>
-      <button class="chip" onclick="vacPick(this,'tipo','desparasitacion')">Desparasitación</button>
-      <button class="chip" onclick="vacPick(this,'tipo','vitaminas')">Vitaminas</button>
-      <button class="chip" onclick="vacPick(this,'tipo','otra')">Otra</button>
+    <h3>Registro sanitario</h3>
+    <div class="m-del" style="margin-bottom:12px">Vacunación o tratamiento · marca a quiénes se les aplicó.</div>
+    <div class="chips" id="sanModoChipsM">
+      <button class="chip sel" onclick="sanModoM('vacuna',this)">💉 Vacunación</button>
+      <button class="chip" onclick="sanModoM('trata',this)">💊 Tratamiento</button>
     </div>
-    <div class="section-label">¿A quiénes? (desmarca las que no)</div>
+    <div id="sanBloqueVacTipo">
+      <div class="section-label">Tipo</div>
+      <div class="chips" id="vacTipoChips">
+        <button class="chip sel" onclick="vacPick(this,'tipo','aftosa')">Aftosa</button>
+        <button class="chip" onclick="vacPick(this,'tipo','brucelosis')">Brucelosis</button>
+        <button class="chip" onclick="vacPick(this,'tipo','desparasitacion')">Desparasitación</button>
+        <button class="chip" onclick="vacPick(this,'tipo','vitaminas')">Vitaminas</button>
+        <button class="chip" onclick="vacPick(this,'tipo','otra')">Otra</button>
+      </div>
+    </div>
+    <div id="sanBloqueTrata" style="display:none">
+      <div class="section-label">Tratamiento aplicado</div>
+      <div class="chips" id="trataMedChips">
+        <button class="chip sel" onclick="vacPick(this,'medicina','Antibiótico')">Antibiótico</button>
+        <button class="chip" onclick="vacPick(this,'medicina','Antiinflamatorio')">Antiinflamatorio</button>
+        <button class="chip" onclick="vacPick(this,'medicina','Vitaminas')">Vitaminas</button>
+        <button class="chip" onclick="vacPick(this,'medicina','Desparasitante')">Desparasitante</button>
+        <button class="chip" onclick="vacPick(this,'medicina','Otro')">Otro</button>
+      </div>
+      <div class="section-label">Retiro de leche (días)</div>
+      <div class="chips" style="align-items:center">
+        <button class="chip" onclick="sanRetiroM(-1)">−</button>
+        <span style="font-weight:700;min-width:80px;text-align:center;font-size:15px"><span id="sanRetiroValM">4</span> días</span>
+        <button class="chip" onclick="sanRetiroM(1)">＋</button>
+      </div>
+    </div>
+    <div class="section-label">¿A quiénes?</div>
+    <input id="sanBuscarM" placeholder="🔍 Buscar por número o nombre…" autocomplete="off"
+      style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:9px 12px;outline:none;margin-bottom:6px">
     <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;padding:6px 2px;border-bottom:1px solid var(--border)">
-      <input type="checkbox" id="vacSelTodasM" checked> Seleccionar todas
+      <input type="checkbox" id="vacSelTodasM"> <span id="sanSelTodasLblM">Seleccionar todas</span>
       <span id="vacSelCountM" style="margin-left:auto;font-weight:500;color:var(--ink-2);font-size:12px"></span>
     </label>
     <div id="vacListaSelM" style="max-height:180px;overflow-y:auto;padding:2px"></div>
-    <input id="vacProductoM" placeholder="Producto (opcional)" oninput="vacM.producto=this.value"
-      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-top:8px">
-    <input id="vacLoteM" placeholder="Lote (opcional)" oninput="vacM.lote=this.value"
-      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-top:8px">
-    <div class="section-label">Fecha · próxima dosis (opcional)</div>
+    <div id="sanBloqueVacDetalle">
+      <input id="vacProductoM" placeholder="Producto (opcional)" oninput="vacM.producto=this.value"
+        style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-top:8px">
+      <input id="vacLoteM" placeholder="Lote (opcional)" oninput="vacM.lote=this.value"
+        style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-top:8px">
+      <div class="section-label">Próxima dosis (opcional)</div>
+      <input id="vacProximaM" type="date" oninput="vacM.proxima=this.value"
+        style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);padding:10px 12px;outline:none">
+    </div>
+    <div class="section-label">Fecha</div>
     <input id="vacFechaM" type="date" oninput="vacM.fecha=this.value"
-      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);padding:10px 12px;outline:none;margin-bottom:8px">
-    <input id="vacProximaM" type="date" oninput="vacM.proxima=this.value"
-      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);padding:10px 12px;outline:none">
-    <input id="vacNotaM" placeholder="Nota (opcional)" oninput="vacM.nota=this.value"
-      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-top:8px">
-    <button class="btn filled" style="width:100%;justify-content:center;margin-top:16px" onclick="saveVacunaM()">
-      <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar vacunación</button>
+      style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);padding:10px 12px;outline:none">
+    <input id="vacNotaM" placeholder="Nota (opcional): dosis, quién aplicó, reacción…" oninput="vacM.nota=this.value"
+      style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-top:8px">
+    <button class="btn filled" style="width:100%;justify-content:center;margin-top:16px" onclick="saveSanidadM()">
+      <svg class="ic-s ic"><use href="#i-check"/></svg><span id="sanGuardarLblM">Guardar vacunación</span></button>
   </div>
 
   <!-- ============ GRUPO (drill-down) ============ -->
@@ -486,7 +514,7 @@
     <div class="quick">
       <button onclick="closeSheet();openPalp()"><svg class="ic"><use href="#i-repeat"/></svg><span class="q-label">Palpación</span></button>
       <button onclick="closeSheet();openParto()"><svg class="ic"><use href="#i-sprout"/></svg><span class="q-label">Parto / nacimiento</span></button>
-      <button onclick="closeSheet();openTrata()"><svg class="ic"><use href="#i-cross"/></svg><span class="q-label">Enfermedad / tratamiento</span></button>
+      <button onclick="closeSheet();openTrata()"><svg class="ic"><use href="#i-cross"/></svg><span class="q-label">Tratamiento</span></button>
       <button onclick="closeSheet();openSeca()"><svg class="ic"><use href="#i-cal"/></svg><span class="q-label">Secado de vaca</span></button>
       <button onclick="closeSheet();openNuevaVaca()"><svg class="ic"><use href="#i-bag"/></svg><span class="q-label">Vaca nueva</span></button>
       <button onclick="closeSheet();openBaja()"><svg class="ic"><use href="#i-out"/></svg><span class="q-label">Baja · venta/muerte</span></button>
@@ -603,45 +631,6 @@
     <div style="font-size:11px;color:var(--ink-3);margin-top:10px;text-align:center">
       Si está preñada, se calcula el parto (~9 meses de gestación) y entra a los próximos partos.
       Si está vacía, queda en la lista para servicio.</div>
-  </div>
-
-  <!-- SHEET: registrar enfermedad / tratamiento -->
-  <div class="sheet" id="trataSheet">
-    <div class="handle"></div>
-    <h3>Registrar enfermedad / tratamiento</h3>
-    <div class="m-label" id="trataCow">—</div>
-    <div class="m-del" id="trataInfo" style="margin-bottom:14px"></div>
-
-    <div class="section-label" style="margin-top:0">Vaca</div>
-    <div class="chips" id="trataCows"></div>
-
-    <div class="section-label">Problema</div>
-    <div class="chips">
-      <button class="chip sel" onclick="trataPick(this,'problema','Mastitis')">Mastitis</button>
-      <button class="chip" onclick="trataPick(this,'problema','Cojera')">Cojera</button>
-      <button class="chip" onclick="trataPick(this,'problema','Diarrea')">Diarrea</button>
-      <button class="chip" onclick="trataPick(this,'problema','Herida')">Herida</button>
-      <button class="chip" onclick="trataPick(this,'problema','Otro')">Otro</button>
-    </div>
-
-    <div class="section-label">Tratamiento</div>
-    <div class="chips">
-      <button class="chip sel" onclick="trataPick(this,'medicina','Antibiótico')">Antibiótico</button>
-      <button class="chip" onclick="trataPick(this,'medicina','Antiinflamatorio')">Antiinflamatorio</button>
-      <button class="chip" onclick="trataPick(this,'medicina','Otro')">Otro</button>
-    </div>
-
-    <div class="section-label">Retiro de leche (días)</div>
-    <div class="chips" style="align-items:center">
-      <button class="chip" onclick="trataRetiro(-1)">−</button>
-      <span style="font-weight:700;min-width:80px;text-align:center;font-size:15px"><span id="trataRetiroVal">4</span> días</span>
-      <button class="chip" onclick="trataRetiro(1)">＋</button>
-    </div>
-
-    <button class="btn filled" style="width:100%;justify-content:center;margin-top:16px" onclick="saveTrata()">
-      <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar tratamiento</button>
-    <div style="font-size:11px;color:var(--ink-3);margin-top:10px;text-align:center">
-      El retiro marca la vaca en el ordeño y avisa que su leche no se vende hasta la fecha.</div>
   </div>
 
   <!-- SHEET: registrar secado -->

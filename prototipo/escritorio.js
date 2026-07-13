@@ -1160,7 +1160,7 @@ function goVaca(num,from){
     const enElAnio=(_tratamientosTodos||[]).filter(t=>String(t.animal_id)===String(cow.num)&&t.inicio&&new Date(t.inicio+'T00:00:00')>=hace12m).length;
     if(enElAnio>=3)lineas.push('<span style="color:var(--red)">⚠ '+enElAnio+' tratamientos en 12 meses — patrón a vigilar</span>');
     pasados.slice(0,4).forEach(t=>{
-      lineas.push('💊 '+fmtFechaAno(t.inicio)+' · '+(t.problema||'')+(t.medicamento?' · '+t.medicamento.toLowerCase():'')+' <span style="color:var(--ink-3)">(terminado)</span>');});
+      lineas.push('💊 '+fmtFechaAno(t.inicio)+' · '+LCRules.esc(t.medicamento||t.problema||'tratamiento')+(t.problema&&t.medicamento?' ('+LCRules.esc(t.problema.toLowerCase())+')':'')+(t.nota?' · '+LCRules.esc(t.nota):'')+' <span style="color:var(--ink-3)">(terminado)</span>');});
     /* solo vacunas que DE VERDAD le aplican (lista exacta; en legado, solo si
      * ya existía en esa fecha — LCRules.vacunaAplicaA) */
     (_vacunaciones||[]).filter(v=>LCRules.vacunaAplicaA(v,animalesPorId[cow.num])).slice(0,3).forEach(v=>{
@@ -1403,9 +1403,13 @@ function renderVacias(){
 
 /* ===== Tratamientos / sanidad del animal ===== */
 let tratamientos=[];
-/* derivación tratamiento canónico (BD) → tarjeta de la UI */
+/* derivación tratamiento canónico (BD) → tarjeta de la UI. El texto principal
+ * es el TRATAMIENTO (medicamento); `problema` solo aparece en filas viejas que
+ * lo traían. La nota se muestra si existe. */
 function tratamientoAFila(t){
-  const desc=(t.problema||'')+(t.medicamento?' · '+t.medicamento.toLowerCase():'');
+  const desc=(t.medicamento||t.problema||'Tratamiento')+
+    (t.problema&&t.medicamento?' ('+t.problema.toLowerCase()+')':'')+
+    (t.nota?' · '+t.nota:'');
   const retiroD=t.retiro_leche_hasta?Math.round((new Date(t.retiro_leche_hasta+'T00:00:00')-HOY_LC)/86400000):null;
   const conRetiro=retiroD!=null&&retiroD>=0;
   return {id:t.id,num:t.animal_id,n:(t.animales&&t.animales.nombre)||t.animal_id,desc:desc,
@@ -1519,62 +1523,121 @@ function exportarSoporteICA(){
 /* ===== Registro de vacunaciones ===== */
 const TIPO_VAC=[{val:'aftosa',label:'Aftosa'},{val:'brucelosis',label:'Brucelosis'},
   {val:'desparasitacion',label:'Desparasitación'},{val:'vitaminas',label:'Vitaminas'},{val:'otra',label:'Otra'}];
-const vacunaState={};
-/* lista con checkboxes: seleccionas EXACTAMENTE a quiénes se les aplicó (con
- * "todas" de un clic, como en el correo). Guarda la lista real — así una vaca
- * nueva no aparece vacunada por eventos anteriores a su llegada. */
-function _vacRefrescarContador(){
+/* ===== REGISTRO SANITARIO UNIFICADO (vacunación + tratamiento) ==============
+ * Un solo modal con dos modos. La lista de animales es COMPARTIDA: buscador
+ * por número/nombre (pensado para ~100 animales: la lista es scrolleable y el
+ * buscador la corta al toque), "Seleccionar todas" que actúa sobre lo
+ * FILTRADO, y contador global. Vacunación arranca con todas marcadas (el
+ * ciclo típico); tratamiento arranca sin marcar (se tratan pocas). Se guarda
+ * la lista EXACTA de animales. Campo de nota en ambos modos. */
+const sanidadState={};
+function _sanContador(){
   const c=document.getElementById('vacSelCount');if(!c)return;
-  const total=document.querySelectorAll('#vacListaSel input[data-animal]').length;
-  c.textContent=vacunaState.sel.size+' de '+total+' seleccionadas';
+  const filas=document.querySelectorAll('#vacListaSel label[data-num]');
+  const visibles=[...filas].filter(l=>l.style.display!=='none');
+  c.textContent=sanidadState.sel.size+' de '+filas.length+' seleccionadas';
   const master=document.getElementById('vacSelTodas');
-  if(master)master.checked=vacunaState.sel.size===total&&total>0;
+  if(master)master.checked=visibles.length>0&&visibles.every(l=>sanidadState.sel.has(l.dataset.num));
+  const lbl=document.getElementById('sanSelTodasLbl');
+  if(lbl)lbl.textContent=visibles.length===filas.length?'Seleccionar todas':'Seleccionar las filtradas ('+visibles.length+')';
 }
-function openVacuna(){
-  vacunaState.tipo='aftosa';vacunaState.producto='';vacunaState.lote='';vacunaState.fecha=isoHoy();
+function _sanSelector(body){
   const activos=Object.values(animalesPorId).filter(a=>a.grupo!=='baja')
     .sort((x,y)=>String(x.id).localeCompare(String(y.id),undefined,{numeric:true}));
-  vacunaState.sel=new Set(activos.map(a=>String(a.id)));   // por defecto: todas (el caso común, el ciclo)
-  openReg('Registrar vacunación','Queda como soporte ICA · marca a quiénes se les aplicó');
-  const body=document.getElementById('regBody');body.innerHTML='';
-  body.appendChild(regLabel('Tipo'));
-  body.appendChild(regChips(TIPO_VAC,vacunaState.tipo,v=>vacunaState.tipo=v));
-  body.appendChild(regLabel('¿A quiénes? (desmarca las que no)'));
   const cont=document.createElement('div');
-  cont.innerHTML='<label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:6px 2px;border-bottom:1px solid var(--border);cursor:pointer">'+
-    '<input type="checkbox" id="vacSelTodas" checked> Seleccionar todas'+
+  cont.innerHTML='<input id="sanBuscar" placeholder="🔍 Buscar por número o nombre…" autocomplete="off" '+
+      'style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--card);font-family:inherit;font-size:13px;padding:8px 12px;outline:none;margin:2px 0 6px;box-sizing:border-box">'+
+    '<label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:6px 2px;border-bottom:1px solid var(--border);cursor:pointer">'+
+    '<input type="checkbox" id="vacSelTodas"> <span id="sanSelTodasLbl">Seleccionar todas</span>'+
     '<span id="vacSelCount" style="margin-left:auto;font-weight:500;color:var(--ink-2)"></span></label>'+
-    '<div id="vacListaSel" style="max-height:220px;overflow-y:auto;padding:4px 2px">'+
-    activos.map(a=>'<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:5px 0;cursor:pointer;border-bottom:1px solid var(--surface)">'+
-      '<input type="checkbox" data-animal="'+LCRules.esc(String(a.id))+'" checked> '+
+    '<div id="vacListaSel" style="max-height:200px;overflow-y:auto;padding:4px 2px">'+
+    activos.map(a=>'<label data-num="'+LCRules.esc(String(a.id))+'" data-txt="'+LCRules.esc((String(a.id)+' '+(a.nombre||'')).toLowerCase())+'" '+
+      'style="display:flex;align-items:center;gap:8px;font-size:13px;padding:5px 0;cursor:pointer;border-bottom:1px solid var(--surface)">'+
+      '<input type="checkbox" data-animal="'+LCRules.esc(String(a.id))+'"'+(sanidadState.sel.has(String(a.id))?' checked':'')+'> '+
       '<b>'+LCRules.esc(String(a.id))+'</b> '+LCRules.esc(a.nombre||'')+
       ' <span style="margin-left:auto;color:var(--ink-3);font-size:11.5px">'+(GRUPO_DISPLAY[a.grupo]||a.grupo)+'</span></label>').join('')+
     '</div>';
   body.appendChild(cont);
+  cont.querySelector('#sanBuscar').oninput=function(){
+    const q=this.value.trim().toLowerCase();
+    cont.querySelectorAll('label[data-num]').forEach(l=>{l.style.display=(!q||l.dataset.txt.indexOf(q)>=0)?'flex':'none';});
+    _sanContador();
+  };
   cont.querySelector('#vacSelTodas').onchange=function(){
     const on=this.checked;
-    cont.querySelectorAll('input[data-animal]').forEach(cb=>{cb.checked=on;
-      if(on)vacunaState.sel.add(cb.dataset.animal);else vacunaState.sel.delete(cb.dataset.animal);});
-    _vacRefrescarContador();
+    cont.querySelectorAll('label[data-num]').forEach(l=>{
+      if(l.style.display==='none')return;   // el master solo toca lo VISIBLE (filtrado)
+      const cb=l.querySelector('input[data-animal]');cb.checked=on;
+      if(on)sanidadState.sel.add(cb.dataset.animal);else sanidadState.sel.delete(cb.dataset.animal);
+    });
+    _sanContador();
   };
   cont.querySelectorAll('input[data-animal]').forEach(cb=>{cb.onchange=function(){
-    if(this.checked)vacunaState.sel.add(this.dataset.animal);else vacunaState.sel.delete(this.dataset.animal);
-    _vacRefrescarContador();
+    if(this.checked)sanidadState.sel.add(this.dataset.animal);else sanidadState.sel.delete(this.dataset.animal);
+    _sanContador();
   };});
-  _vacRefrescarContador();
-  body.appendChild(regTexto('Producto (opcional)','Ej. Aftogan',v=>vacunaState.producto=v,'text',vacunaState.producto));
-  body.appendChild(regTexto('Lote (opcional)','lote del biológico',v=>vacunaState.lote=v,'text',vacunaState.lote));
-  body.appendChild(regTexto('Fecha','',v=>vacunaState.fecha=v,'date',vacunaState.fecha));
-  document.getElementById('regSaveBtn').onclick=saveVacuna;
+  _sanContador();
 }
-function saveVacuna(){
-  const ids=Array.from(vacunaState.sel||[]);
-  if(!ids.length){snack('Marca al menos un animal para registrar la vacunación');return;}
+function openSanidad(modo,cowPre){
+  const s=sanidadState;
+  s.modo=modo||'vacuna';
+  s.fecha=isoHoy();s.nota='';
+  s.tipo='aftosa';s.producto='';s.lote='';s.proxima='';
+  s.medicina='Antibiótico';s.retiro=4;
+  const activos=Object.values(animalesPorId).filter(a=>a.grupo!=='baja');
+  const pre=cowPre?String(cowPre).split('·')[0].trim():null;
+  /* vacuna: todas marcadas (el ciclo); tratamiento: solo la preseleccionada */
+  s.sel=s.modo==='vacuna'?new Set(activos.map(a=>String(a.id))):new Set(pre?[pre]:[]);
+  openReg('Registro sanitario','Vacunación o tratamiento · marca a quiénes se les aplicó');
+  _sanBody();
+}
+function _sanBody(){
+  const s=sanidadState;
+  const body=document.getElementById('regBody');body.innerHTML='';
+  body.appendChild(regLabel('¿Qué vas a registrar?'));
+  body.appendChild(regChips([{val:'vacuna',label:'💉 Vacunación'},{val:'trata',label:'💊 Tratamiento'}],s.modo,
+    v=>{if(v===s.modo)return;s.modo=v;
+      /* al cambiar de modo, la selección vuelve al default de ese modo */
+      const activos=Object.values(animalesPorId).filter(a=>a.grupo!=='baja');
+      s.sel=v==='vacuna'?new Set(activos.map(a=>String(a.id))):new Set();
+      _sanBody();}));
+  if(s.modo==='vacuna'){
+    body.appendChild(regLabel('Tipo'));
+    body.appendChild(regChips(TIPO_VAC,s.tipo,v=>s.tipo=v));
+  }else{
+    body.appendChild(regLabel('Tratamiento aplicado'));
+    body.appendChild(regChips(['Antibiótico','Antiinflamatorio','Vitaminas','Desparasitante','Otro'].map(m=>({val:m,label:m})),s.medicina,v=>s.medicina=v));
+  }
+  body.appendChild(regLabel('¿A quiénes?'));
+  _sanSelector(body);
+  if(s.modo==='vacuna'){
+    body.appendChild(regTexto('Producto (opcional)','Ej. Aftogan',v=>s.producto=v,'text',s.producto));
+    body.appendChild(regTexto('Lote (opcional)','lote del biológico',v=>s.lote=v,'text',s.lote));
+    body.appendChild(regTexto('Próxima dosis (opcional)','',v=>s.proxima=v,'date',s.proxima));
+  }else{
+    body.appendChild(regLabel('Días de retiro de leche'));
+    body.appendChild(regStepper(()=>s.retiro,v=>s.retiro=v,0,10,'días'));
+  }
+  body.appendChild(regTexto('Fecha','',v=>s.fecha=v,'date',s.fecha));
+  body.appendChild(regTexto('Nota (opcional)','Ej. dosis, quién aplicó, reacción…',v=>s.nota=v,'text',s.nota));
+  document.getElementById('regSaveBtn').onclick=saveSanidad;
+}
+/* wrappers: los botones y menús existentes siguen funcionando */
+function openVacuna(){openSanidad('vacuna');}
+function saveSanidad(){
+  const s=sanidadState;
+  const ids=Array.from(s.sel||[]);
+  if(!ids.length){snack('Marca al menos un animal en la lista');return;}
+  if(s.modo==='vacuna')_saveVacunaSan(ids);else _saveTrataSan(ids);
+}
+function _saveVacunaSan(ids){
+  const s=sanidadState;
   closeReg();
-  const tipoLabel=(TIPO_VAC.find(t=>t.val===vacunaState.tipo)||{}).label||vacunaState.tipo;
+  const tipoLabel=(TIPO_VAC.find(t=>t.val===s.tipo)||{}).label||s.tipo;
   if(typeof LCStore!=='undefined'){
-    LCStore.registrarVacunacion({tipo:vacunaState.tipo,animalIds:ids,
-      producto:vacunaState.producto||null,lote:vacunaState.lote||null,fecha:vacunaState.fecha||isoHoy()})
+    LCStore.registrarVacunacion({tipo:s.tipo,animalIds:ids,
+      producto:s.producto||null,lote:s.lote||null,fecha:s.fecha||isoHoy(),
+      proxima:s.proxima||null,nota:s.nota||null})
       .then(()=>cargarVacunaciones())
       .catch(e=>{console.warn('Vacunación no guardada:',e.message||e);snack('⚠ La vacunación NO se guardó en la base — reintenta');});
   }
@@ -2244,7 +2307,7 @@ function openMenuRegistro(){
   const opts=[
     ['🥛 Leche del ordeño',()=>{closeReg();go('pg-leche',navFor('pg-leche'));}],
     ['🔬 Palpación',()=>{closeReg();openPalp();}],
-    ['💊 Enfermedad / tratamiento',()=>{closeReg();openTrata();}],
+    ['💊 Tratamiento',()=>{closeReg();openTrata();}],
     ['🐄 Parto',()=>{closeReg();openParto();}],
     ['🌾 Secar vaca',()=>{closeReg();openSeca();}],
     ['🐄 Vaca nueva (compra / nacida)',()=>{closeReg();openNuevaVaca();}],
@@ -2267,7 +2330,7 @@ function openMenuVaca(){
   const opts=[
     ['✏️ Editar datos',()=>{closeReg();openEditarVaca(num);}],
     ['🔬 Palpación',()=>{closeReg();openPalp(ref);}],
-    ['💊 Enfermedad / tratamiento',()=>{closeReg();openTrata(ref);}],
+    ['💊 Tratamiento',()=>{closeReg();openTrata(ref);}],
     ['🌾 Secar',()=>{closeReg();openSeca(ref);}],
     ['🐄 Parto',()=>{closeReg();openParto(ref);}],
     ['↧ Dar de baja',()=>{closeReg();openBaja(ref);}],
@@ -2398,55 +2461,49 @@ function guardarEditarVaca(){
 }
 
 /* --- tratamiento (standalone) --- */
-const tratState={};
+/* tratamiento: mismo modal sanitario unificado, en modo 'trata'. Acepta la
+ * vaca preseleccionada (desde la ficha o el menú contextual). */
 function openTrata(cow){
-  /* cualquier animal del hato puede enfermarse, no solo las de ordeño */
-  const cands=hato.slice();
-  if(!cow&&!cands.length){snack('No hay animales registrados para tratar');return;}
-  tratState.num=cow?(''+cow).split('·')[0].trim():cands[0].num;
-  tratState.problema='Mastitis';tratState.medicina='Antibiótico';tratState.retiro=4;
-  tratState.added=false;
-  openReg('Registrar enfermedad / tratamiento','Queda en la sanidad del animal y activa el retiro de leche');
-  const body=document.getElementById('regBody');body.innerHTML='';
-  body.appendChild(regLabel('Animal'));
-  body.appendChild(regChips(cands.map(a=>({val:a.num,label:a.num+' '+a.n})),tratState.num,v=>tratState.num=v));
-  body.appendChild(regLabel('Problema'));
-  body.appendChild(regChips(['Mastitis','Cojera','Fiebre','Parásitos','Herida','Otro'].map(p=>({val:p,label:p})),tratState.problema,v=>tratState.problema=v));
-  body.appendChild(regLabel('Medicamento'));
-  body.appendChild(regChips(['Antibiótico','Antiinflamatorio','Vitaminas','Desparasitante','Otro'].map(m=>({val:m,label:m})),tratState.medicina,v=>tratState.medicina=v));
-  body.appendChild(regLabel('Días de retiro de leche'));
-  body.appendChild(regStepper(()=>tratState.retiro,v=>tratState.retiro=v,0,10,'días'));
-  document.getElementById('regSaveBtn').onclick=saveTrata;
+  if(!Object.values(animalesPorId).filter(a=>a.grupo!=='baja').length){snack('No hay animales registrados para tratar');return;}
+  openSanidad('trata',cow);
 }
-function saveTrata(){
-  const a=hato.find(x=>x.num===tratState.num);const nombre=a?a.n:tratState.num;
+/* guarda UN tratamiento por cada animal marcado (el retiro se deriva por
+ * animal en v_animales), con un solo "Deshacer" que revierte todos. */
+function _saveTrataSan(ids){
+  const s=sanidadState;
   closeReg();
-  const conRetiro=tratState.retiro>0;
-  const trat={num:tratState.num,n:nombre,desc:tratState.problema+' · '+tratState.medicina.toLowerCase(),
-    retiro:conRetiro?'retiro de leche hasta '+fechaDias(tratState.retiro):'',
-    badge:conRetiro?'retiro '+tratState.retiro+'d':'sin retiro',badgeCls:conRetiro?'bad':'ok'};
-  let addedTag=false;
-  /* id conocido para poder revertir en la base si se deshace */
-  const tid=LCRules.idUnico('T-');
-  const retiroTxt=conRetiro?' · retiro '+tratState.retiro+'d (hasta '+fechaDias(tratState.retiro)+')':' · sin retiro';
+  const conRetiro=s.retiro>0;
+  const fecha=s.fecha||isoHoy();
+  const tids=ids.map(()=>LCRules.idUnico('T-'));
+  const filasHato=ids.map(id=>hato.find(x=>x.num===id)).filter(Boolean);
+  const trats=ids.map((id,i)=>{
+    const a=animalesPorId[id];
+    return {id:tids[i],num:id,n:(a&&a.nombre)||id,
+      desc:s.medicina+(s.nota?' · '+s.nota:''),
+      retiro:conRetiro?'retiro de leche hasta '+fechaDias(s.retiro):'',
+      badge:conRetiro?'retiro '+s.retiro+'d':'sin retiro',badgeCls:conRetiro?'bad':'ok'};
+  });
+  const tagsAgregados=[];
+  const retiroTxt=conRetiro?' · retiro '+s.retiro+'d (hasta '+fechaDias(s.retiro)+')':' · sin retiro';
+  const quien=ids.length===1?((animalesPorId[ids[0]]&&animalesPorId[ids[0]].nombre)||ids[0]):ids.length+' animales';
   LCAcciones.ejecutarConDeshacer({
     aplicar(){
-      tratamientos.push(trat);
-      if(a&&!a.tags.includes('tratamiento')){a.tags.push('tratamiento');addedTag=true;}
+      trats.forEach(t=>tratamientos.push(t));
+      filasHato.forEach(a=>{if(!a.tags.includes('tratamiento')){a.tags.push('tratamiento');tagsAgregados.push(a);}});
       renderTratamientos();renderHatoFiltros();renderHato();
       go('pg-sanitario',navFor('pg-sanitario'));
     },
     escribir:typeof LCStore!=='undefined'?
-      ()=>LCStore.registrarTratamiento({id:tid,animalId:tratState.num,problema:tratState.problema,
-        medicamento:tratState.medicina,diasRetiro:tratState.retiro}):null,
+      ()=>Promise.all(ids.map((id,i)=>LCStore.registrarTratamiento({id:tids[i],animalId:id,
+        medicamento:s.medicina,diasRetiro:s.retiro,inicio:fecha,nota:s.nota||null}))):null,
     avisoError:()=>'⚠ El tratamiento NO se guardó en la base — revisa la conexión y reintenta',
-    mensaje:nombre+': '+tratState.problema.toLowerCase()+' · '+tratState.medicina.toLowerCase()+retiroTxt,
+    mensaje:quien+': '+s.medicina.toLowerCase()+retiroTxt,
     revertir(){
-      const i=tratamientos.indexOf(trat);if(i>=0)tratamientos.splice(i,1);
-      if(a&&addedTag){const ti=a.tags.indexOf('tratamiento');if(ti>=0)a.tags.splice(ti,1);}
+      trats.forEach(t=>{const i=tratamientos.indexOf(t);if(i>=0)tratamientos.splice(i,1);});
+      tagsAgregados.forEach(a=>{const ti=a.tags.indexOf('tratamiento');if(ti>=0)a.tags.splice(ti,1);});
       renderTratamientos();renderHatoFiltros();renderHato();
     },
-    compensarBD:typeof LCStore!=='undefined'?()=>LCStore.deleteTratamiento(tid):null,
+    compensarBD:typeof LCStore!=='undefined'?()=>Promise.all(tids.map(tid=>LCStore.deleteTratamiento(tid))):null,
     snack,
   });
 }

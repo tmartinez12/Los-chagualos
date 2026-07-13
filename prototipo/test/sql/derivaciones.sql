@@ -13,9 +13,9 @@ VALUES ('T1', 'Ternera', 'bovino', 'cria', 'H', hoy_finca() - 200, 120);   -- 12
 
 -- ordeño de "ayer" (leche_ultima)
 INSERT INTO ordenos (animal_id, fecha, litros, turno) VALUES ('V1', hoy_finca() - 1, 15, 'dia');
--- tratamiento con retiro activo (retiro_calc)
-INSERT INTO tratamientos (id, animal_id, problema, inicio, dias_retiro, activo)
-VALUES ('TR1', 'V1', 'Mastitis', hoy_finca() - 1, 4, true);
+-- tratamiento con retiro activo (retiro_calc); medicamento es el campo principal
+INSERT INTO tratamientos (id, animal_id, medicamento, inicio, dias_retiro, activo)
+VALUES ('TR1', 'V1', 'Antibiótico', hoy_finca() - 1, 4, true);
 
 DO $$
 DECLARE edad numeric; del int; leche numeric; retiro date; gan numeric;

@@ -253,7 +253,7 @@ function renderFicha(num){
   });
   (_tratamientosM||[]).filter(x=>String(x.animal_id)===String(a.id)).forEach(x=>{
     const ret=(x.dias_retiro>0)?' · retiro '+x.dias_retiro+'d':'';
-    ev.push(['💊 '+LCRules.esc(x.problema||'Tratamiento')+(x.medicamento?' · '+LCRules.esc(x.medicamento.toLowerCase()):'')+ret+(x.activo?'':' <span style="color:var(--ink-3)">(terminado)</span>'),x.inicio]);
+    ev.push(['💊 '+LCRules.esc(x.medicamento||x.problema||'Tratamiento')+(x.problema&&x.medicamento?' ('+LCRules.esc(x.problema.toLowerCase())+')':'')+(x.nota?' · '+LCRules.esc(x.nota):'')+ret+(x.activo?'':' <span style="color:var(--ink-3)">(terminado)</span>'),x.inicio]);
   });
   /* solo vacunas que DE VERDAD le aplican (lista exacta; en legado, solo si ya
    * existía en esa fecha — LCRules.vacunaAplicaA) */
@@ -486,7 +486,7 @@ function renderTratamientosM(lista){
     const nombre=(t.animales&&t.animales.nombre)||t.animal_id;
     return '<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">'+
       '<div><div class="li-title">'+LCRules.esc(t.animal_id)+' · '+LCRules.esc(nombre)+'</div>'+
-      '<div class="li-sub">'+LCRules.esc(t.problema||'')+(t.medicamento?' · '+LCRules.esc(t.medicamento.toLowerCase()):'')+
+      '<div class="li-sub">'+LCRules.esc(t.medicamento||t.problema||'Tratamiento')+(t.problema&&t.medicamento?' ('+LCRules.esc(t.problema.toLowerCase())+')':'')+(t.nota?' · '+LCRules.esc(t.nota):'')+
       (conRetiro?' · <b>retiro hasta '+fmtFechaCortaM(t.retiro_leche_hasta)+'</b>':'')+'</div></div>'+
       (conRetiro?'<span class="badge bad">retiro '+retiroD+'d</span>':'<span class="badge ok">sin retiro</span>')+'</div>'+
       '<button class="btn outl small" style="margin-top:10px" onclick="terminarTrataM(\''+LCRules.esc(t.id)+'\')">✓ Marcar terminado</button></div>';
@@ -711,32 +711,64 @@ function renderSanProximaM(){
   sub.textContent=p.b+' · despar. cada 3 meses · aftosa may/nov';
 }
 /* ===== Vacunaciones (móvil) ===== */
-const vacM={tipo:'aftosa',producto:'',lote:'',fecha:'',proxima:'',nota:'',sel:new Set()};
+/* ===== REGISTRO SANITARIO UNIFICADO (vacunación + tratamiento) ==============
+ * Un solo sheet con dos modos. Lista de animales COMPARTIDA: buscador por
+ * número/nombre (pensado para ~100 animales), "Seleccionar todas" que actúa
+ * sobre lo FILTRADO, y contador. Vacunación arranca con todas marcadas (el
+ * ciclo); tratamiento arranca sin marcar (se tratan pocas). Nota en ambos. */
+const vacM={modo:'vacuna',tipo:'aftosa',producto:'',lote:'',fecha:'',proxima:'',nota:'',
+  medicina:'Antibiótico',retiro:4,sel:new Set()};
 function vacPick(btn,campo,val){vacM[campo]=val;[...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));}
-/* lista con checkboxes: seleccionas EXACTAMENTE a quiénes (con "todas" de un
- * clic). Guarda la lista real — una vaca nueva ya no aparece vacunada por
- * eventos anteriores a su llegada. */
+function sanRetiroM(d){vacM.retiro=Math.max(0,Math.min(10,vacM.retiro+d));
+  document.getElementById('sanRetiroValM').textContent=vacM.retiro;}
 function _vacContadorM(){
   const c=document.getElementById('vacSelCountM');if(!c)return;
-  const total=document.querySelectorAll('#vacListaSelM input[data-animal]').length;
-  c.textContent=vacM.sel.size+' de '+total;
+  const filas=document.querySelectorAll('#vacListaSelM label[data-num]');
+  const visibles=[...filas].filter(l=>l.style.display!=='none');
+  c.textContent=vacM.sel.size+' de '+filas.length;
   const master=document.getElementById('vacSelTodasM');
-  if(master)master.checked=vacM.sel.size===total&&total>0;
+  if(master)master.checked=visibles.length>0&&visibles.every(l=>vacM.sel.has(l.dataset.num));
+  const lbl=document.getElementById('sanSelTodasLblM');
+  if(lbl)lbl.textContent=visibles.length===filas.length?'Seleccionar todas':'Seleccionar las filtradas ('+visibles.length+')';
 }
-function openVacunaM(){
+function _sanPintarModoM(){
+  const esVac=vacM.modo==='vacuna';
+  const bt=document.getElementById('sanBloqueVacTipo');if(bt)bt.style.display=esVac?'':'none';
+  const bd=document.getElementById('sanBloqueVacDetalle');if(bd)bd.style.display=esVac?'':'none';
+  const tr=document.getElementById('sanBloqueTrata');if(tr)tr.style.display=esVac?'none':'';
+  const g=document.getElementById('sanGuardarLblM');if(g)g.textContent=esVac?'Guardar vacunación':'Guardar tratamiento';
+  const chips=document.querySelectorAll('#sanModoChipsM .chip');
+  chips.forEach((c,i)=>c.classList.toggle('sel',(i===0)===esVac));
+}
+function sanModoM(modo){
+  if(vacM.modo===modo)return;
+  vacM.modo=modo;
+  /* al cambiar de modo, la selección vuelve al default de ese modo */
+  const activos=Object.values(animalesPorIdM).filter(a=>a.grupo!=='baja');
+  vacM.sel=modo==='vacuna'?new Set(activos.map(a=>String(a.id))):new Set();
+  document.querySelectorAll('#vacListaSelM input[data-animal]').forEach(cb=>{cb.checked=vacM.sel.has(cb.dataset.animal);});
+  _sanPintarModoM();_vacContadorM();
+}
+function openSanidadM(modo,cowPre){
+  vacM.modo=modo||'vacuna';
   vacM.tipo='aftosa';vacM.producto='';vacM.lote='';
+  vacM.medicina='Antibiótico';vacM.retiro=4;
   vacM.fecha=isoHoyM();vacM.proxima='';vacM.nota='';
-  document.querySelectorAll('#vacunaSheet .chips').forEach((g,gi)=>g.querySelectorAll('.chip').forEach((c,i)=>c.classList.toggle('sel',i===0)));
-  ['vacProductoM','vacLoteM','vacProximaM','vacNotaM'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('vacTipoChips').querySelectorAll('.chip').forEach((c,i)=>c.classList.toggle('sel',i===0));
+  const med=document.getElementById('trataMedChips');if(med)med.querySelectorAll('.chip').forEach((c,i)=>c.classList.toggle('sel',i===0));
+  const rv=document.getElementById('sanRetiroValM');if(rv)rv.textContent=vacM.retiro;
+  ['vacProductoM','vacLoteM','vacProximaM','vacNotaM','sanBuscarM'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   const vf=document.getElementById('vacFechaM');if(vf){vf.max=isoHoyM();vf.value=vacM.fecha;}
-  /* armar la lista de animales activos, todas marcadas por defecto (el ciclo) */
+  /* lista de animales activos; default por modo: vacuna=todas, trata=la pre */
   const activos=Object.values(animalesPorIdM).filter(a=>a.grupo!=='baja')
     .sort((x,y)=>String(x.id).localeCompare(String(y.id),undefined,{numeric:true}));
-  vacM.sel=new Set(activos.map(a=>String(a.id)));
+  const pre=cowPre?String(cowPre).split('·')[0].trim():null;
+  vacM.sel=vacM.modo==='vacuna'?new Set(activos.map(a=>String(a.id))):new Set(pre?[pre]:[]);
   const box=document.getElementById('vacListaSelM');
   if(box){
-    box.innerHTML=activos.map(a=>'<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 0;border-bottom:1px solid var(--surface)">'+
-      '<input type="checkbox" data-animal="'+LCRules.esc(String(a.id))+'" checked> '+
+    box.innerHTML=activos.map(a=>'<label data-num="'+LCRules.esc(String(a.id))+'" data-txt="'+LCRules.esc((String(a.id)+' '+(a.nombre||'')).toLowerCase())+'" '+
+      'style="display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 0;border-bottom:1px solid var(--surface)">'+
+      '<input type="checkbox" data-animal="'+LCRules.esc(String(a.id))+'"'+(vacM.sel.has(String(a.id))?' checked':'')+'> '+
       '<b>'+LCRules.esc(String(a.id))+'</b> '+LCRules.esc(a.nombre||'')+
       '<span style="margin-left:auto;color:var(--ink-3);font-size:11px">'+(GRUPO_DISPLAY_M[a.grupo]||a.grupo)+'</span></label>').join('')
       ||'<span style="color:var(--ink-3);font-size:12.5px">Sin animales — sincroniza primero</span>';
@@ -744,21 +776,36 @@ function openVacunaM(){
       if(this.checked)vacM.sel.add(this.dataset.animal);else vacM.sel.delete(this.dataset.animal);
       _vacContadorM();};});
   }
+  const busca=document.getElementById('sanBuscarM');
+  if(busca)busca.oninput=function(){
+    const q=this.value.trim().toLowerCase();
+    document.querySelectorAll('#vacListaSelM label[data-num]').forEach(l=>{l.style.display=(!q||l.dataset.txt.indexOf(q)>=0)?'flex':'none';});
+    _vacContadorM();
+  };
   const master=document.getElementById('vacSelTodasM');
-  if(master){master.checked=true;master.onchange=function(){
+  if(master)master.onchange=function(){
     const on=this.checked;
-    document.querySelectorAll('#vacListaSelM input[data-animal]').forEach(cb=>{cb.checked=on;
-      if(on)vacM.sel.add(cb.dataset.animal);else vacM.sel.delete(cb.dataset.animal);});
-    _vacContadorM();};}
-  _vacContadorM();
+    document.querySelectorAll('#vacListaSelM label[data-num]').forEach(l=>{
+      if(l.style.display==='none')return;   // el master solo toca lo VISIBLE (filtrado)
+      const cb=l.querySelector('input[data-animal]');cb.checked=on;
+      if(on)vacM.sel.add(cb.dataset.animal);else vacM.sel.delete(cb.dataset.animal);
+    });
+    _vacContadorM();
+  };
+  _sanPintarModoM();_vacContadorM();
   document.getElementById('scrim').classList.add('show');
   document.getElementById('vacunaSheet').classList.add('show');
 }
+/* wrappers: los botones existentes siguen funcionando */
+function openVacunaM(){openSanidadM('vacuna');}
 function closeVacuna(){document.getElementById('vacunaSheet').classList.remove('show');
   document.getElementById('scrim').classList.remove('show');}
-function saveVacunaM(){
+function saveSanidadM(){
   const ids=Array.from(vacM.sel||[]);
-  if(!ids.length){snack('Marca al menos un animal para registrar la vacunación');return;}
+  if(!ids.length){snack('Marca al menos un animal en la lista');return;}
+  if(vacM.modo==='vacuna')_saveVacunaSanM(ids);else _saveTrataSanM(ids);
+}
+function _saveVacunaSanM(ids){
   closeVacuna();
   encolar();
   if(typeof LCStore!=='undefined'){
@@ -769,6 +816,40 @@ function saveVacunaM(){
       .catch(e=>{console.warn('Vacunación móvil no guardada:',e.message||e);snack('⚠ La vacunación NO se guardó en la base — reintenta');});
   }
   snack('Vacunación registrada: '+vacM.tipo+' · '+(ids.length===1?ids[0]:ids.length+' animales'));
+}
+/* guarda UN tratamiento por cada animal marcado, con un solo "Deshacer" */
+function _saveTrataSanM(ids){
+  closeVacuna();
+  const conRetiro=vacM.retiro>0;
+  const fecha=vacM.fecha||isoHoyM();
+  const medicina=vacM.medicina, retiro=vacM.retiro, nota=vacM.nota||null;
+  const tids=ids.map(()=>LCRules.idUnico('T-'));
+  /* retiro visible en las tarjetas de ordeño de las marcadas que ordeñan */
+  const enOrdeno=ids.map(id=>cows.find(c=>c.num===id)).filter(Boolean);
+  const retirosPrevios=enOrdeno.map(c=>c.retiro);
+  const quien=ids.length===1?((animalesPorIdM[ids[0]]&&animalesPorIdM[ids[0]].nombre)||ids[0]):ids.length+' animales';
+  const msg=conRetiro
+    ? 'Tratamiento ('+medicina.toLowerCase()+') en '+quien+' · retiro '+retiro+'d (hasta '+fechaDias(retiro)+') — no vender su leche'
+    : 'Tratamiento ('+medicina.toLowerCase()+') en '+quien+' · sin retiro de leche';
+  LCAcciones.ejecutarConDeshacer({
+    aplicar(){
+      enOrdeno.forEach(c=>{c.retiro=retiro||undefined;});
+      renderCows();encolar();
+    },
+    escribir:typeof LCStore!=='undefined'?
+      ()=>Promise.all(ids.map((id,i)=>LCStore.registrarTratamiento({id:tids[i],animalId:id,
+        medicamento:medicina,diasRetiro:retiro,inicio:fecha,nota:nota})))
+        .then(()=>{desencolar();cargarTratamientosMovil();}):null,
+    avisoError:()=>'⚠ El tratamiento NO se guardó en la base — revisa la señal y reintenta',
+    mensaje:msg,
+    revertir(){
+      enOrdeno.forEach((c,i)=>{c.retiro=retirosPrevios[i];});
+      renderCows();desencolar();snack('Tratamiento deshecho');
+    },
+    compensarBD:typeof LCStore!=='undefined'?
+      ()=>Promise.all(tids.map(tid=>LCStore.deleteTratamiento(tid))).then(()=>cargarTratamientosMovil()):null,
+    snack,
+  });
 }
 function renderVacunacionesM(lista){
   if(lista)_vacunacionesM=lista;
@@ -1246,66 +1327,10 @@ function savePalp(){
 }
 /* ===== Enfermedad / tratamiento (activa el retiro de leche) ===== */
 const fechaDias=LCRules.fechaDias;
-const trata={cow:'',problema:'Mastitis',medicina:'Antibiótico',retiro:4};
-function trataMarcarVaca(){document.querySelectorAll('#trataCows .chip').forEach(c=>
-  c.classList.toggle('sel',c.textContent.trim().split(' ')[0]===numDe(trata.cow)));}
-function openTrata(cow){
-  const lista=listaTodos();
-  trata.cow=cow||lista[0]||'';
-  trata.problema='Mastitis';trata.medicina='Antibiótico';trata.retiro=4;
-  pintarCowChips('trataCows',lista,trata.cow,trataCow);
-  document.getElementById('trataCow').textContent=(trata.cow||'—').toUpperCase();
-  const cd=cows.find(c=>numDe(trata.cow)===c.num);
-  document.getElementById('trataInfo').textContent=cd?cd.del:'Selecciona el problema y el tratamiento';
-  document.getElementById('trataRetiroVal').textContent=trata.retiro;
-  // problema y tratamiento vuelven a la primera opción
-  const groups=document.querySelectorAll('#trataSheet .chips');
-  [1,2].forEach(gi=>groups[gi].querySelectorAll('.chip').forEach((c,i)=>c.classList.toggle('sel',i===0)));
-  document.getElementById('scrim').classList.add('show');
-  document.getElementById('trataSheet').classList.add('show');
-}
-function closeTrata(){document.getElementById('trataSheet').classList.remove('show');
-  document.getElementById('scrim').classList.remove('show');}
-function trataCow(cow){trata.cow=cow;
-  document.getElementById('trataCow').textContent=cow.toUpperCase();
-  const cd=cows.find(c=>numDe(cow)===c.num);
-  document.getElementById('trataInfo').textContent=cd?cd.del:'Selecciona el problema y el tratamiento';
-  trataMarcarVaca();}
-function trataPick(btn,campo,val){trata[campo]=val;
-  [...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));}
-function trataRetiro(d){trata.retiro=Math.max(0,Math.min(10,trata.retiro+d));
-  document.getElementById('trataRetiroVal').textContent=trata.retiro;}
-function saveTrata(){
-  if(!trata.cow){closeTrata();snack('No hay animales para tratar — registra el hato primero');return;}
-  closeTrata();
-  const cd=cows.find(c=>numDe(trata.cow)===c.num);
-  const nombre=trata.cow.split('·')[1].trim();
-  const prev=cd?cd.retiro:undefined;
-  /* id conocido de antemano para poder BORRAR el tratamiento si se deshace */
-  const tid=LCRules.idUnico('T-');
-  const base='Tratamiento de '+trata.problema.toLowerCase()+' en '+nombre+' ('+trata.medicina.toLowerCase()+')';
-  const msg=trata.retiro>0
-    ? base+' · retiro de leche '+trata.retiro+'d (hasta '+fechaDias(trata.retiro)+') — no vender su leche'
-    : base+' · sin retiro de leche';
-  LCAcciones.ejecutarConDeshacer({
-    aplicar(){
-      if(cd)cd.retiro=trata.retiro||undefined;
-      renderCows();encolar();
-      setTimeout(()=>go('scr-ordeno'),300);
-    },
-    escribir:typeof LCStore!=='undefined'?
-      ()=>LCStore.registrarTratamiento({id:tid,animalId:numDe(trata.cow),problema:trata.problema,
-        medicamento:trata.medicina,diasRetiro:trata.retiro}).then(()=>{desencolar();cargarTratamientosMovil();}):null,
-    avisoError:()=>'⚠ El tratamiento NO se guardó en la base — revisa la señal y reintenta',
-    mensaje:msg,
-    revertir(){
-      if(cd)cd.retiro=prev;renderCows();desencolar();snack('Tratamiento deshecho');
-    },
-    compensarBD:typeof LCStore!=='undefined'?
-      ()=>LCStore.deleteTratamiento(tid).then(()=>cargarTratamientosMovil()):null,
-    snack,
-  });
-}
+/* tratamiento: mismo sheet sanitario unificado, en modo 'trata'. closeTrata
+ * queda como alias (el scrim lo llama). */
+function openTrata(cow){openSanidadM('trata',cow);}
+function closeTrata(){closeVacuna();}
 /* ===== Secado (sale del ordeño → pasa a horras) ===== */
 const seca={cow:''};
 let nHorras=0;

@@ -175,8 +175,8 @@ CREATE UNIQUE INDEX uq_partos_cria ON partos (cria_id) WHERE cria_id IS NOT NULL
 CREATE TABLE tratamientos (
   id                  TEXT PRIMARY KEY,
   animal_id           TEXT NOT NULL REFERENCES animales(id) ON DELETE CASCADE,
-  problema            TEXT NOT NULL,
-  medicamento         TEXT,
+  problema            TEXT,          -- opcional: hoy se registra el TRATAMIENTO, no la enfermedad
+  medicamento         TEXT NOT NULL, -- el tratamiento aplicado (campo principal)
   inicio              DATE NOT NULL,
   dias_retiro         INTEGER,               -- el retiro va hasta inicio + dias_retiro (derivado)
   activo              BOOLEAN NOT NULL DEFAULT TRUE,
