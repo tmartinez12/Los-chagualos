@@ -1583,7 +1583,9 @@ function openSanidad(modo,cowPre){
   s.modo=modo||'vacuna';
   s.fecha=isoHoy();s.nota='';
   s.tipo='aftosa';s.producto='';s.lote='';s.proxima='';
-  s.medicina='Antibiótico';s.retiro=4;
+  /* medicamento: texto LIBRE y obligatorio (hay que saber QUÉ se le puso);
+   * retiro arranca en 0 — solo se sube si de verdad hay retiro de leche */
+  s.medicina='';s.retiro=0;
   const activos=Object.values(animalesPorId).filter(a=>a.grupo!=='baja');
   const pre=cowPre?String(cowPre).split('·')[0].trim():null;
   /* vacuna: todas marcadas (el ciclo); tratamiento: solo la preseleccionada */
@@ -1605,8 +1607,16 @@ function _sanBody(){
     body.appendChild(regLabel('Tipo'));
     body.appendChild(regChips(TIPO_VAC,s.tipo,v=>s.tipo=v));
   }else{
-    body.appendChild(regLabel('Tratamiento aplicado'));
-    body.appendChild(regChips(['Antibiótico','Antiinflamatorio','Vitaminas','Desparasitante','Otro'].map(m=>({val:m,label:m})),s.medicina,v=>s.medicina=v));
+    /* el NOMBRE del medicamento/tratamiento es texto libre y OBLIGATORIO —
+     * hay que poder saber después qué se le puso a la vaca. Los chips son
+     * atajos que rellenan el campo (y se puede seguir escribiendo encima). */
+    const medWrap=regTexto('Medicamento / tratamiento aplicado (obligatorio)','Ej. Oxitetraciclina 200, Ivermectina, calcio…',v=>s.medicina=v,'text',s.medicina);
+    const medInp=medWrap.querySelector('input');
+    body.appendChild(medWrap);
+    const sugerencias=regChips(['Antibiótico','Antiinflamatorio','Vitaminas','Desparasitante'].map(m=>({val:m,label:m})),s.medicina,
+      v=>{s.medicina=v;if(medInp){medInp.value=v;medInp.focus();}});
+    sugerencias.style.marginTop='6px';
+    body.appendChild(sugerencias);
   }
   body.appendChild(regLabel('¿A quiénes?'));
   _sanSelector(body);
@@ -1628,6 +1638,10 @@ function saveSanidad(){
   const s=sanidadState;
   const ids=Array.from(s.sel||[]);
   if(!ids.length){snack('Marca al menos un animal en la lista');return;}
+  if(s.modo==='trata'){
+    s.medicina=(s.medicina||'').trim();
+    if(!s.medicina){snack('Escribe el nombre del medicamento o tratamiento que aplicaste');return;}
+  }
   if(s.modo==='vacuna')_saveVacunaSan(ids);else _saveTrataSan(ids);
 }
 function _saveVacunaSan(ids){

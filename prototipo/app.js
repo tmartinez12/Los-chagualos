@@ -717,8 +717,15 @@ function renderSanProximaM(){
  * sobre lo FILTRADO, y contador. Vacunación arranca con todas marcadas (el
  * ciclo); tratamiento arranca sin marcar (se tratan pocas). Nota en ambos. */
 const vacM={modo:'vacuna',tipo:'aftosa',producto:'',lote:'',fecha:'',proxima:'',nota:'',
-  medicina:'Antibiótico',retiro:4,sel:new Set()};
+  medicina:'',retiro:0,sel:new Set()};
 function vacPick(btn,campo,val){vacM[campo]=val;[...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));}
+/* atajo: el chip rellena el campo de texto del medicamento (se puede seguir
+ * escribiendo encima — el NOMBRE es lo que queda guardado) */
+function sanMedM(btn,val){
+  vacM.medicina=val;
+  const inp=document.getElementById('trataMedM');if(inp){inp.value=val;inp.focus();}
+  [...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));
+}
 function sanRetiroM(d){vacM.retiro=Math.max(0,Math.min(10,vacM.retiro+d));
   document.getElementById('sanRetiroValM').textContent=vacM.retiro;}
 function _vacContadorM(){
@@ -752,12 +759,13 @@ function sanModoM(modo){
 function openSanidadM(modo,cowPre){
   vacM.modo=modo||'vacuna';
   vacM.tipo='aftosa';vacM.producto='';vacM.lote='';
-  vacM.medicina='Antibiótico';vacM.retiro=4;
+  /* medicamento: texto libre y obligatorio; retiro arranca en 0 */
+  vacM.medicina='';vacM.retiro=0;
   vacM.fecha=isoHoyM();vacM.proxima='';vacM.nota='';
   document.getElementById('vacTipoChips').querySelectorAll('.chip').forEach((c,i)=>c.classList.toggle('sel',i===0));
-  const med=document.getElementById('trataMedChips');if(med)med.querySelectorAll('.chip').forEach((c,i)=>c.classList.toggle('sel',i===0));
+  const med=document.getElementById('trataMedChips');if(med)med.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
   const rv=document.getElementById('sanRetiroValM');if(rv)rv.textContent=vacM.retiro;
-  ['vacProductoM','vacLoteM','vacProximaM','vacNotaM','sanBuscarM'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['vacProductoM','vacLoteM','vacProximaM','vacNotaM','sanBuscarM','trataMedM'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   const vf=document.getElementById('vacFechaM');if(vf){vf.max=isoHoyM();vf.value=vacM.fecha;}
   /* lista de animales activos; default por modo: vacuna=todas, trata=la pre */
   const activos=Object.values(animalesPorIdM).filter(a=>a.grupo!=='baja')
@@ -803,6 +811,10 @@ function closeVacuna(){document.getElementById('vacunaSheet').classList.remove('
 function saveSanidadM(){
   const ids=Array.from(vacM.sel||[]);
   if(!ids.length){snack('Marca al menos un animal en la lista');return;}
+  if(vacM.modo==='trata'){
+    vacM.medicina=(vacM.medicina||'').trim();
+    if(!vacM.medicina){snack('Escribe el nombre del medicamento o tratamiento que aplicaste');return;}
+  }
   if(vacM.modo==='vacuna')_saveVacunaSanM(ids);else _saveTrataSanM(ids);
 }
 function _saveVacunaSanM(ids){

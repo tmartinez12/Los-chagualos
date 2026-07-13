@@ -402,18 +402,19 @@
       </div>
     </div>
     <div id="sanBloqueTrata" style="display:none">
-      <div class="section-label">Tratamiento aplicado</div>
+      <div class="section-label">Medicamento / tratamiento aplicado (obligatorio)</div>
+      <input id="trataMedM" placeholder="Ej. Oxitetraciclina 200, Ivermectina, calcio…" oninput="vacM.medicina=this.value"
+        style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-bottom:6px">
       <div class="chips" id="trataMedChips">
-        <button class="chip sel" onclick="vacPick(this,'medicina','Antibiótico')">Antibiótico</button>
-        <button class="chip" onclick="vacPick(this,'medicina','Antiinflamatorio')">Antiinflamatorio</button>
-        <button class="chip" onclick="vacPick(this,'medicina','Vitaminas')">Vitaminas</button>
-        <button class="chip" onclick="vacPick(this,'medicina','Desparasitante')">Desparasitante</button>
-        <button class="chip" onclick="vacPick(this,'medicina','Otro')">Otro</button>
+        <button class="chip" onclick="sanMedM(this,'Antibiótico')">Antibiótico</button>
+        <button class="chip" onclick="sanMedM(this,'Antiinflamatorio')">Antiinflamatorio</button>
+        <button class="chip" onclick="sanMedM(this,'Vitaminas')">Vitaminas</button>
+        <button class="chip" onclick="sanMedM(this,'Desparasitante')">Desparasitante</button>
       </div>
-      <div class="section-label">Retiro de leche (días)</div>
+      <div class="section-label">Retiro de leche (días) · déjalo en 0 si no aplica</div>
       <div class="chips" style="align-items:center">
         <button class="chip" onclick="sanRetiroM(-1)">−</button>
-        <span style="font-weight:700;min-width:80px;text-align:center;font-size:15px"><span id="sanRetiroValM">4</span> días</span>
+        <span style="font-weight:700;min-width:80px;text-align:center;font-size:15px"><span id="sanRetiroValM">0</span> días</span>
         <button class="chip" onclick="sanRetiroM(1)">＋</button>
       </div>
     </div>
