@@ -134,7 +134,7 @@ function pruebasSql() {
   //    re-ejecuta solo en la base EFÍMERA local — la prohibición de re-correr
   //    es sobre la base de producción. Migraciones NUEVAS (supabase/
   //    migracion-*.sql) se agregan aquí mientras estén pendientes.
-  const migs = ['migracion-nacimiento.sql', 'migracion-restaurar.sql', 'migracion-ganancia.sql', 'migracion-ciclo-vida.sql'];
+  const migs = ['migracion-nacimiento.sql', 'migracion-restaurar.sql', 'migracion-ganancia.sql', 'migracion-ciclo-vida.sql', 'migracion-movimientos-grupo.sql'];
   for (const m of migs) {
     const ruta = fs.existsSync(path.join(RAIZ, 'supabase', m))
       ? path.join(RAIZ, 'supabase', m)                              // pendiente

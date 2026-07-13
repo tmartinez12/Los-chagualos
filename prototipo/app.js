@@ -117,6 +117,64 @@ function deriveReproFichaM(a){
           :{cls:'',title:GRUPO_DISPLAY_M[a.grupo]||a.grupo,sub:''};
 }
 let fichaActualM=null;
+/* reconstruye los mosaicos del hato (grupos[k].animales + contadores) desde
+ * animalesPorIdM. Se usa al cargar y tras un cambio de grupo — evita el estado
+ * paralelo inconsistente (p.ej. incGrupo no maneja 'levante'). */
+function reconstruirGruposM(){
+  Object.keys(grupos).forEach(k=>{grupos[k].animales=[];});
+  Object.values(animalesPorIdM).forEach(a=>{const k=GRUPO_KEY[a.grupo];if(!k||!grupos[k])return;
+    grupos[k].animales.push([a.id+' · '+a.nombre,subAnimalM(a),1]);});
+  Object.keys(grupos).forEach(k=>{const n=grupos[k].animales.length;
+    grupos[k].sub=n+' '+GRUPO_LABEL[k];
+    grupos[k].header='<b>'+n+' '+GRUPO_LABEL[k]+'.</b>';});
+  if(typeof nOrdeno!=='undefined'){
+    nOrdeno=grupos.ordeno.animales.length; nHorras=grupos.horras.animales.length;
+    nNovillas=grupos.novillas.animales.length; nCrias=grupos.crias.animales.length;
+    nMachos=grupos.machos.animales.length; nBajas=grupos.bajas.animales.length;
+  }
+}
+/* paso de etapa pendiente según las señales de edad (mismo criterio que el
+ * escritorio): cría→levante (8m), levante→novilla (H, 3a) o →machos (M, 3a). */
+function _pasoSiguienteM(a){
+  if(!a)return null;
+  if(a.grupo==='cria'&&a.listoLevante)return {a:'levante',de:'cria',label:'Pasar a levante',display:'Levante'};
+  if(a.grupo==='levante'&&a.listoNovilla)return {a:'novilla',de:'levante',label:'Pasar a novilla',display:'Novilla'};
+  if(a.grupo==='levante'&&a.listoMachos)return {a:'macho',de:'levante',label:'Pasar a machos',display:'Machos'};
+  return null;
+}
+/* confirmar el paso: mueve de grupo Y registra el movimiento con su fecha
+ * (RPC mover_grupo), con "Deshacer" que revierte y borra la fila. */
+function confirmarPasoM(num){
+  const a=animalesPorIdM[num];if(!a)return;
+  const paso=_pasoSiguienteM(a);
+  if(!paso){snack(num+' no tiene un paso de etapa pendiente');return;}
+  const prevGrupo=a.grupo;let movId=null;
+  const repintar=()=>{reconstruirGruposM();renderHatoM();if(fichaActualM===num)renderFicha(num);};
+  LCAcciones.ejecutarConDeshacer({
+    snack,
+    aplicar:()=>{a.grupo=paso.a;repintar();},
+    escribir:()=>LCStore.moverGrupo(num,paso.a,{deGrupo:prevGrupo,motivo:'transicion'}).then(r=>{movId=r&&r.movimientoId;if(fichaActualM===num)renderVmEtapas(num);}),
+    avisoError:()=>'⚠ El cambio de grupo NO se guardó en la base — reintenta',
+    mensaje:num+' pasó a '+paso.display+' — registrado hoy',
+    revertir:()=>{a.grupo=prevGrupo;repintar();},
+    compensarBD:()=>LCStore.updateAnimalCampos(num,{grupo:prevGrupo}).then(()=>LCStore.deleteMovimientoGrupo(movId)).then(()=>{if(fichaActualM===num)renderVmEtapas(num);}),
+  });
+}
+/* línea de tiempo de etapas (movimientos de grupo con su fecha) en la ficha */
+async function renderVmEtapas(num){
+  const box=document.getElementById('vmEtapas');if(!box)return;
+  box.style.display='none';box.innerHTML='';
+  if(typeof LCStore==='undefined')return;
+  let movs=[];
+  try{movs=await LCStore.getMovimientosGrupo(num)||[];}catch(e){return;}
+  if(fichaActualM!==num||!movs.length)return;
+  const linea=movs.map(m=>{
+    const de=m.de_grupo?(GRUPO_DISPLAY_M[m.de_grupo]||m.de_grupo)+' → ':'';
+    return '<b style="color:var(--ink)">'+de+(GRUPO_DISPLAY_M[m.a_grupo]||m.a_grupo)+'</b> '+fmtFechaCortaM(m.fecha);
+  }).join(' · ');
+  box.innerHTML='<b style="color:var(--ink)">Etapas:</b> '+linea;
+  box.style.display='';
+}
 function renderFicha(num){
   const a=animalesPorIdM[num];
   if(!a){snack('Ficha de '+num+' — sincroniza primero');return false;}
@@ -126,10 +184,14 @@ function renderFicha(num){
   /* alerta reproductiva/sanitaria */
   const r=deriveReproFichaM(a);const al=document.getElementById('vmAlerta');
   al.className='alert '+(r.cls==='bad'?'urgent':r.cls==='warn'?'warn':'info');
+  const pasoM=_pasoSiguienteM(a);
   al.innerHTML='<div class="a-icon"><svg class="ic"><use href="#i-cal"/></svg></div>'+
     '<div class="a-body"><div class="a-title">'+r.title+'</div>'+(r.sub?'<div class="a-sub">'+r.sub+'</div>':'')+
-    (r.secar?'<button class="btn outl small mt8 vmSecarBtn">Programar secado</button>':'')+'</div>';
+    (r.secar?'<button class="btn outl small mt8 vmSecarBtn">Programar secado</button>':'')+
+    (pasoM?'<button class="btn outl small mt8 vmPasoBtn">'+pasoM.label+'</button>':'')+'</div>';
   if(r.secar){const sb=al.querySelector('.vmSecarBtn');if(sb)sb.onclick=()=>openSeca(a.id+' · '+a.nombre);}
+  if(pasoM){const pb=al.querySelector('.vmPasoBtn');if(pb)pb.onclick=()=>confirmarPasoM(a.id);}
+  renderVmEtapas(num);   // historial de etapas (async)
   /* banner de baja: si el animal está dado de baja, mostrar motivo/fecha/valor/nota + revertir */
   (function(){
     const box=document.getElementById('vmBajaBox');if(!box)return;
@@ -498,19 +560,7 @@ let animalesPorIdM={};
     const maxToro=Math.max(0,...all.map(a=>{const m=/^T0*(\d+)$/.exec(String(a.id));return m?parseInt(m[1],10):NaN;}).filter(n=>!isNaN(n)));
     if(typeof toroSeq!=='undefined'&&maxToro>toroSeq)toroSeq=maxToro;
     /* reconstruir los grupos del hato desde la base */
-    Object.keys(grupos).forEach(k=>{grupos[k].animales=[];});
-    all.forEach(a=>{const k=GRUPO_KEY[a.grupo];if(!k||!grupos[k])return;
-      grupos[k].animales.push([a.id+' · '+a.nombre,subAnimalM(a),1]);});
-    Object.keys(grupos).forEach(k=>{const n=grupos[k].animales.length;
-      grupos[k].sub=n+' '+GRUPO_LABEL[k];
-      grupos[k].header='<b>'+n+' '+GRUPO_LABEL[k]+'.</b>';});
-    /* sincronizar los contadores del hato con los conteos reales, para que las
-     * acciones (parto/baja/secado) muestren números correctos y no un demo. */
-    if(typeof nOrdeno!=='undefined'){
-      nOrdeno=grupos.ordeno.animales.length; nHorras=grupos.horras.animales.length;
-      nNovillas=grupos.novillas.animales.length; nCrias=grupos.crias.animales.length;
-      nMachos=grupos.machos.animales.length; nBajas=grupos.bajas.animales.length;
-    }
+    reconstruirGruposM();
     renderInicioM();renderSanidadVacunasM();renderHatoM();
     estadoBase(null);   // datos abajo: quitar el "cargando…"
   }catch(e){console.warn('Cache/hato móvil:',e.message||e);

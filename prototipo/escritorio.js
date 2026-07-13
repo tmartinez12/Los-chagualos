@@ -978,6 +978,52 @@ function buildFichaBasica(a){
     crias:crias,repro:deriveReproFicha(a),
     sanidad:sanOk?'sin retiros activos':'retiro de leche activo — no vender su leche',sanOk:sanOk};
 }
+/* Paso de etapa pendiente según las señales de edad (aviso + confirmar):
+ * cría→levante (8m), levante→novilla (H, 3a) o levante→machos (M, 3a).
+ * Devuelve {a,de,label,display} o null si no hay paso sugerido. */
+function _pasoSiguiente(a){
+  if(!a)return null;
+  if(a.grupo==='cria'&&a.listoLevante)return {a:'levante',de:'cria',label:'Pasar a levante',display:'Levante'};
+  if(a.grupo==='levante'&&a.listoNovilla)return {a:'novilla',de:'levante',label:'Pasar a novilla',display:'Novilla'};
+  if(a.grupo==='levante'&&a.listoMachos)return {a:'macho',de:'levante',label:'Pasar a machos',display:'Macho'};
+  return null;
+}
+/* Confirmar el paso de etapa: mueve el animal al grupo siguiente y REGISTRA el
+ * movimiento con su fecha (RPC transaccional mover_grupo). Con "Deshacer" que
+ * revierte el grupo y borra la fila del historial. */
+function confirmarPaso(num){
+  const a=animalesPorId[num];if(!a)return;
+  const paso=_pasoSiguiente(a);
+  if(!paso){snack(num+' no tiene un paso de etapa pendiente');return;}
+  const prevGrupo=a.grupo;let movId=null;
+  const repintar=()=>{const fila=hato.find(x=>x.num===num);if(fila)fila.grupo=GRUPO_DISPLAY[a.grupo]||a.grupo;
+    if(typeof recomputarRepro==='function')recomputarRepro();
+    renderHatoFiltros();renderHato();if(vacaActual===num)goVaca(num,vacaFrom);};
+  LCAcciones.ejecutarConDeshacer({
+    snack,
+    aplicar:()=>{a.grupo=paso.a;repintar();},
+    escribir:()=>LCStore.moverGrupo(num,paso.a,{deGrupo:prevGrupo,motivo:'transicion'}).then(r=>{movId=r&&r.movimientoId;if(vacaActual===num)renderVacaEtapas(num);}),
+    avisoError:()=>'⚠ El cambio de grupo NO se guardó en la base — reintenta',
+    mensaje:num+' pasó a '+paso.display+' — registrado hoy',
+    revertir:()=>{a.grupo=prevGrupo;repintar();},
+    compensarBD:()=>LCStore.updateAnimalCampos(num,{grupo:prevGrupo}).then(()=>LCStore.deleteMovimientoGrupo(movId)).then(()=>{if(vacaActual===num)renderVacaEtapas(num);}),
+  });
+}
+/* línea de tiempo de etapas (movimientos de grupo con su fecha) en la ficha */
+async function renderVacaEtapas(num){
+  const box=document.getElementById('vacaEtapas');if(!box)return;
+  box.style.display='none';box.innerHTML='';
+  if(typeof LCStore==='undefined')return;
+  let movs=[];
+  try{movs=await LCStore.getMovimientosGrupo(num)||[];}catch(e){return;}
+  if(vacaActual!==num||!movs.length)return;   // ya cambió de ficha, o sin historial
+  const linea=movs.map(m=>{
+    const de=m.de_grupo?(GRUPO_DISPLAY[m.de_grupo]||m.de_grupo)+' → ':'';
+    return '<b style="color:var(--ink)">'+de+(GRUPO_DISPLAY[m.a_grupo]||m.a_grupo)+'</b> <span style="color:var(--ink-3)">'+fmtFechaAno(m.fecha)+'</span>';
+  }).join(' &nbsp;·&nbsp; ');
+  box.innerHTML='<b style="color:var(--ink)">Etapas:</b> '+linea;
+  box.style.display='';
+}
 function goVaca(num,from){
   let cow=animalesPorId[num]?buildFichaBasica(animalesPorId[num]):null;
   if(!cow)return snack('Ficha de '+num+' — próximamente');
@@ -1011,9 +1057,14 @@ function goVaca(num,from){
   document.getElementById('vacaNombre').textContent=cow.num+' · '+cow.n;
   document.getElementById('vacaSub').textContent=[cow.raza,cow.color,cow.edad,cow.grupo,cow.origen].filter(x=>x&&x!=='—').join(' · ');
   const al=document.getElementById('vacaAlerta');
+  const pasoFicha=_pasoSiguiente(animalesPorId[cow.num]);
   al.innerHTML='<div class="alert '+(cow.repro.badge==='bad'?'urgent':cow.repro.badge==='warn'?'warn':cow.repro.badge==='ok'?'ok':'info')+'">'+
     '<div style="flex:1"><div class="a-title">'+cow.repro.text+'</div>'+
-    '<div class="a-sub">'+cow.repro.sub+'</div></div></div>';
+    '<div class="a-sub">'+cow.repro.sub+'</div></div>'+
+    (pasoFicha?'<button class="btn small" onclick="confirmarPaso(vacaActual)">'+pasoFicha.label+'</button>':'')+
+    '</div>';
+  /* historial de etapas (movimientos de grupo con su fecha), carga async */
+  renderVacaEtapas(cow.num);
   /* banner de baja: si el animal está dado de baja, mostrar motivo/fecha/valor/nota + revertir */
   (function(){
     const box=document.getElementById('vacaBajaBox');if(!box)return;

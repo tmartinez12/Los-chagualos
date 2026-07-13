@@ -233,6 +233,23 @@ CREATE TABLE movimientos_potrero (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- ─── MOVIMIENTOS DE GRUPO (historial del ciclo de vida) ─────────────────────
+-- Cada vez que un animal pasa de un grupo a otro (cría→levante, levante→novilla
+-- /machos, y en general cualquier cambio de grupo confirmado) se registra AQUÍ
+-- con la fecha del cambio. Da la línea de tiempo real del animal — no es
+-- derivable de nada, es un evento, por eso se guarda (como partos/palpaciones).
+CREATE TABLE movimientos_grupo (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  animal_id       TEXT NOT NULL REFERENCES animales(id) ON DELETE CASCADE,
+  de_grupo        grupo_animal,           -- grupo anterior (null si no se conocía)
+  a_grupo         grupo_animal NOT NULL,  -- grupo nuevo
+  fecha           DATE NOT NULL DEFAULT hoy_finca(),
+  motivo          TEXT,                   -- 'transicion' (por edad), o libre
+  registrado_por  UUID REFERENCES profiles(id),
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_movimientos_grupo_animal ON movimientos_grupo (animal_id, fecha DESC);
+
 -- ─── LOGIN ATTEMPTS (rate limiting para PIN) ────────────────────────────────
 
 CREATE TABLE login_attempts (
@@ -334,6 +351,28 @@ BEGIN
   RETURN p_parto_id;
 END $$;
 
+-- ─── MOVER DE GRUPO + REGISTRAR EL PASO, EN UNA TRANSACCIÓN ──────────────────
+-- Cambia el grupo del animal y anota el movimiento con su fecha en UNA
+-- transacción (o entra todo, o nada). Devuelve el id del movimiento para que
+-- el "Deshacer" de la app pueda borrar la fila si se revierte. La app la llama
+-- por RPC; si no está instalada, store.js cae a dos escrituras sueltas.
+CREATE OR REPLACE FUNCTION mover_grupo(
+  p_animal_id text,
+  p_a_grupo   grupo_animal,
+  p_de_grupo  grupo_animal DEFAULT NULL,
+  p_fecha     date DEFAULT NULL,
+  p_motivo    text DEFAULT NULL
+) RETURNS uuid
+LANGUAGE plpgsql AS $$
+DECLARE v_id uuid;
+BEGIN
+  UPDATE animales SET grupo = p_a_grupo WHERE id = p_animal_id;
+  INSERT INTO movimientos_grupo (animal_id, de_grupo, a_grupo, fecha, motivo)
+  VALUES (p_animal_id, p_de_grupo, p_a_grupo, coalesce(p_fecha, hoy_finca()), p_motivo)
+  RETURNING id INTO v_id;
+  RETURN v_id;
+END $$;
+
 -- ─── RESTAURACIÓN TRANSACCIONAL DE UN RESPALDO ──────────────────────────────
 -- Reemplaza TODOS los datos por los del respaldo en UNA transacción (o entra
 -- todo, o no cambia nada). No toca `unidades`. La app la llama por RPC; si no
@@ -347,7 +386,7 @@ BEGIN
     RAISE EXCEPTION 'Respaldo inválido: falta el objeto "tablas".';
   END IF;
   TRUNCATE ordenos, palpaciones, tratamientos, vacunaciones,
-           partos, movimientos_potrero, animales, potreros RESTART IDENTITY CASCADE;
+           partos, movimientos_potrero, movimientos_grupo, animales, potreros RESTART IDENTITY CASCADE;
   INSERT INTO potreros SELECT * FROM jsonb_populate_recordset(NULL::potreros, COALESCE(t->'potreros','[]'::jsonb));
   -- un solo INSERT: las FK madre/padre autorreferenciadas se verifican al final del statement
   INSERT INTO animales SELECT * FROM jsonb_populate_recordset(NULL::animales, COALESCE(t->'animales','[]'::jsonb));
@@ -358,6 +397,7 @@ BEGIN
   INSERT INTO vacunaciones        SELECT * FROM jsonb_populate_recordset(NULL::vacunaciones,        COALESCE(t->'vacunaciones','[]'::jsonb));
   INSERT INTO partos              SELECT * FROM jsonb_populate_recordset(NULL::partos,              COALESCE(t->'partos','[]'::jsonb));
   INSERT INTO movimientos_potrero SELECT * FROM jsonb_populate_recordset(NULL::movimientos_potrero, COALESCE(t->'movimientos_potrero','[]'::jsonb));
+  INSERT INTO movimientos_grupo   SELECT * FROM jsonb_populate_recordset(NULL::movimientos_grupo,   COALESCE(t->'movimientos_grupo','[]'::jsonb));
   RETURN jsonb_build_object('ok', true, 'animales', n_animales);
 END $$;
 

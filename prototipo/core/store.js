@@ -281,6 +281,45 @@
     });
   }
 
+  /* Mueve un animal de grupo Y registra el paso con su fecha, en UNA
+   * transacción (RPC mover_grupo). Devuelve { grupo, movimientoId } para que el
+   * "Deshacer" pueda revertir el grupo y borrar la fila del historial. Si el RPC
+   * no está instalado (migración pendiente), cae a dos escrituras sueltas. */
+  async function moverGrupo(animalId, aGrupo, opts) {
+    opts = opts || {};
+    _invalidarAnimales();
+    const fecha = opts.fecha || hoyFinca();
+    const rpc = await client().rpc('mover_grupo', {
+      p_animal_id: animalId, p_a_grupo: aGrupo,
+      p_de_grupo: opts.deGrupo || null, p_fecha: fecha, p_motivo: opts.motivo || 'transicion',
+    });
+    if (!rpc.error) return { grupo: aGrupo, movimientoId: rpc.data };
+    /* función no instalada → dos escrituras sueltas (no transaccional) */
+    if (rpc.error.code !== 'PGRST202' && rpc.error.code !== '42883') throw rpc.error;
+    await updateAnimalCampos(animalId, { grupo: aGrupo });
+    const { data, error } = await client().from('movimientos_grupo').insert({
+      animal_id: animalId, de_grupo: opts.deGrupo || null, a_grupo: aGrupo,
+      fecha: fecha, motivo: opts.motivo || 'transicion',
+    }).select('id').single();
+    if (error) throw error;
+    return { grupo: aGrupo, movimientoId: data && data.id };
+  }
+  async function deleteMovimientoGrupo(id) {
+    if (!id) return true;
+    const { error } = await client().from('movimientos_grupo').delete().eq('id', id);
+    if (error) throw error;
+    return true;
+  }
+  /* Historial de movimientos de grupo de un animal (para la línea de tiempo de
+   * la ficha), más reciente primero. Vacío si la tabla aún no existe. */
+  async function getMovimientosGrupo(animalId) {
+    const resp = await client().from('movimientos_grupo')
+      .select('id, de_grupo, a_grupo, fecha, motivo')
+      .eq('animal_id', animalId).order('fecha', { ascending: false }).order('id', { ascending: false });
+    if (resp.error) { if (resp.error.code === '42P01') return []; throw resp.error; }
+    return resp.data || [];
+  }
+
   async function registrarTratamiento(t) {
     const fila = {
       id: t.id || _idUnico('T-'), animal_id: t.animalId,
@@ -506,7 +545,7 @@
    *   como archivo .json). restaurarTodo(): vuelve a cargar ese archivo.       */
   const TABLAS_RESPALDO = [
     'potreros', 'animales', 'ordenos', 'palpaciones',
-    'tratamientos', 'vacunaciones', 'partos', 'movimientos_potrero',
+    'tratamientos', 'vacunaciones', 'partos', 'movimientos_potrero', 'movimientos_grupo',
   ];
   /* columnas vigentes por tabla (espejo de schema.sql): la restauración filtra
    * cualquier columna desconocida (p.ej. de un respaldo de un esquema viejo)
@@ -524,6 +563,7 @@
     vacunaciones: ['id', 'tipo', 'alcance', 'animal_id', 'n_animales', 'producto', 'lote', 'fecha', 'proxima', 'nota', 'registrado_por', 'created_at'],
     partos: ['id', 'madre_id', 'cria_id', 'fecha', 'sexo_cria', 'peso_kg', 'tipo', 'estado_cria', 'nota', 'registrado_por', 'created_at'],
     movimientos_potrero: ['id', 'potrero_id', 'fecha', 'tipo', 'registrado_por', 'created_at'],
+    movimientos_grupo: ['id', 'animal_id', 'de_grupo', 'a_grupo', 'fecha', 'motivo', 'registrado_por', 'created_at'],
   };
   /* baja una tabla COMPLETA paginando de a 1000 (PostgREST corta en 1000 por
    * defecto: sin esto el respaldo truncaba el histórico en silencio). */
@@ -624,6 +664,7 @@
     registrarVacunacion, getVacunaciones, deleteVacunacion,
     getProduccionMensual, getPartos, getPalpaciones, getTratamientos, terminarTratamiento, reactivarTratamiento,
     updateAnimalCampos, darDeBaja, deleteAnimal, deleteParto, deletePalpacion, deleteTratamiento,
+    moverGrupo, deleteMovimientoGrupo, getMovimientosGrupo,
     registrarTratamiento, registrarParto, registrarPartoCompleto, registrarPalpacion,
     exportarTodo, restaurarTodo,
     /* expuestos para las pruebas de contrato (schema ↔ store ↔ respaldo): NO

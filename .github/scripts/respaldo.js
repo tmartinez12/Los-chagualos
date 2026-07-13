@@ -5,7 +5,7 @@
 const URL_BASE = 'https://vjzhehvsptvakczynnyw.supabase.co';
 const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqemhlaHZzcHR2YWtjenlubnl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMjA3MTksImV4cCI6MjA5NzY5NjcxOX0.-yNFEQsswSba5cKRfuobNoGj8kljNx2jw78owXb_kWc';
 const TABLAS = ['unidades', 'potreros', 'animales', 'ordenos', 'palpaciones',
-  'tratamientos', 'vacunaciones', 'partos', 'movimientos_potrero'];
+  'tratamientos', 'vacunaciones', 'partos', 'movimientos_potrero', 'movimientos_grupo'];
 
 const fs = require('fs');
 
