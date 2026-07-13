@@ -42,8 +42,14 @@ históricos), y **móvil ≈ escritorio** en ambos flujos.
 - **edad (stepper) vs. fecha de nacimiento:** el alta ofrece ambos (usa la
   fecha si está; si no, estima desde la edad). El editar solo tiene fecha —
   es correcto: al editar ya no se "adivina" la edad, se corrige la fecha.
-- **Raza: chips + "otra" (escritorio) vs. texto libre (editar móvil).** No se
-  unificó el widget (bajo impacto); ambos guardan el mismo campo.
+## Coherencia del editar (seguimiento)
+
+- **Raza en el editar móvil:** era texto libre; se unificó a **chips + "otra
+  raza"** (paridad con el editar del escritorio y el alta). Una raza heredada
+  fuera de la lista cae en "otra"; chip y "otra" son mutuamente excluyentes.
+- **Orden de campos del editar móvil:** se reordenó para seguir el mismo flujo
+  del escritorio (identidad → clasificación → nacimiento → origen/genealogía →
+  peso → lactancia → nota).
 
 ## Verificación
 
