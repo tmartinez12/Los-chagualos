@@ -91,8 +91,16 @@
       pesoKg: r.peso_kg, fechaPeso: r.fecha_peso, gananciaDiaG: r.ganancia_dia_g,
       rolToro: r.rol_toro,
       /* DERIVADOS (antes columnas): lista para servicio y destete próximo */
+      /* señales de transición de etapa (patrón "aviso + confirmar": el grupo NO
+       * cambia solo — estos flags disparan un aviso y la dueña confirma el paso):
+       *   cría → levante  a los ~8 meses (ambos sexos)
+       *   levante → novilla  a los ~3 años (hembras)
+       *   levante → machos   a los ~3 años (machos)
+       * "lista para servicio" sigue siendo por peso: novilla que alcanza 330 kg. */
       listaServicio: (r.grupo === 'novilla' && r.peso_kg != null && Number(r.peso_kg) >= 330),
-      desteteProximo: (r.grupo === 'ternera' && edadDeriv != null && edadDeriv >= 0.58),
+      listoLevante: (r.grupo === 'cria' && edadDeriv != null && edadDeriv >= 8 / 12),
+      listoNovilla: (r.grupo === 'levante' && r.sexo === 'H' && edadDeriv != null && edadDeriv >= 3),
+      listoMachos: (r.grupo === 'levante' && r.sexo === 'M' && edadDeriv != null && edadDeriv >= 3),
       baja: r.baja_motivo ? { motivo: r.baja_motivo, fecha: r.baja_fecha, valor: r.baja_valor, nota: r.baja_nota } : null,
       procedencia: r.procedencia, valorCompra: r.valor_compra,
       updatedAt: r.updated_at,   // para detectar edición concurrente (last-write-wins)
@@ -334,7 +342,7 @@
     if (error.code !== 'PGRST202' && error.code !== '42883') throw error;
     if (p.criaId) await insertAnimal({
       id: p.criaId, nombre: p.criaNombre || '(cría)', raza: p.criaRaza || null,
-      grupo: p.sexo === 'H' ? 'ternera' : 'macho', sexo: p.sexo,
+      grupo: 'cria', sexo: p.sexo,   // ambos sexos nacen como cría
       edadAnios: 0, nacimiento: fecha, origen: 'nacido_finca',
       madreId: p.madreId, pesoKg: p.pesoKg,
     });

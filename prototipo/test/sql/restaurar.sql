@@ -17,7 +17,7 @@ SELECT jsonb_build_object('tablas', jsonb_build_object(
 )) AS p;
 
 -- ensuciar: agregar un animal que NO está en el snapshot
-INSERT INTO animales (id, nombre, especie, grupo, sexo) VALUES ('A3', 'Extra', 'bovino', 'ternera', 'H');
+INSERT INTO animales (id, nombre, especie, grupo, sexo) VALUES ('A3', 'Extra', 'bovino', 'cria', 'H');
 
 -- restaurar el snapshot → A3 debe desaparecer, A1/A2 volver
 DO $$

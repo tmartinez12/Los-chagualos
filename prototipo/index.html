@@ -210,11 +210,11 @@
           <div class="li-sub" id="hsub-levante"></div></div>
         <div class="li-trail"><div class="li-num" id="cnt-levante">0</div></div><svg class="ic chev"><use href="#i-chev"/></svg>
       </div>
-      <div class="list-item" onclick="openGroup('terneras')">
+      <div class="list-item" onclick="openGroup('crias')">
         <div class="li-leading"><svg class="ic"><use href="#i-sprout"/></svg></div>
-        <div class="li-body"><div class="li-title">Terneras</div>
-          <div class="li-sub" id="hsub-terneras"></div></div>
-        <div class="li-trail"><div class="li-num" id="cnt-terneras">0</div></div><svg class="ic chev"><use href="#i-chev"/></svg>
+        <div class="li-body"><div class="li-title">Crías</div>
+          <div class="li-sub" id="hsub-crias"></div></div>
+        <div class="li-trail"><div class="li-num" id="cnt-crias">0</div></div><svg class="ic chev"><use href="#i-chev"/></svg>
       </div>
       <div class="list-item" onclick="openGroup('machos')">
         <div class="li-leading"><svg class="ic"><use href="#i-male"/></svg></div>
@@ -361,7 +361,7 @@
       <div class="a-body">
         <div class="a-title"></div>
         <div class="a-sub"></div>
-        <button class="btn outl small mt8" onclick="openGroup('terneras')">Ver terneras</button>
+        <button class="btn outl small mt8" onclick="openGroup('crias')">Ver crías</button>
       </div>
     </div>
 
@@ -565,7 +565,7 @@
     <button class="btn filled" style="width:100%;justify-content:center;margin-top:16px" onclick="saveParto()">
       <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar parto</button>
     <div style="font-size:11px;color:var(--ink-3);margin-top:10px;text-align:center">
-      Si la cría está viva, entra sola al Hato (♀ Terneras · ♂ Machos) vinculada a la madre.
+      Si la cría está viva, entra sola al Hato (grupo Crías, ♀ o ♂) vinculada a la madre.
       Si nace muerta, queda en el historial de partos · la vaca entra al ordeño en DEL 0.</div>
   </div>
 
@@ -697,7 +697,7 @@
     <div class="section-label">Tipo de animal</div>
     <div class="chips">
       <button class="chip sel" onclick="altaPick(this,'tipo','Novilla')">Novilla</button>
-      <button class="chip" onclick="altaPick(this,'tipo','Ternera')">Ternera</button>
+      <button class="chip" onclick="altaPick(this,'tipo','Cría')">Cría</button>
       <button class="chip" onclick="altaPick(this,'tipo','Vaca en ordeño')">Vaca en ordeño</button>
       <button class="chip" onclick="altaPick(this,'tipo','Toro')">Toro</button>
     </div>
@@ -748,7 +748,7 @@
       <button class="chip" onclick="editPickGrupo(this,'horra')">Horra</button>
       <button class="chip" onclick="editPickGrupo(this,'novilla')">Novilla</button>
       <button class="chip" onclick="editPickGrupo(this,'levante')">Levante</button>
-      <button class="chip" onclick="editPickGrupo(this,'ternera')">Ternera</button>
+      <button class="chip" onclick="editPickGrupo(this,'cria')">Cría</button>
       <button class="chip" onclick="editPickGrupo(this,'macho')">Macho</button>
     </div>
     <div class="section-label">Madre (número, debe estar registrada)</div>

@@ -946,7 +946,7 @@ function renderVacaCurva(del,ayer){
 }
 function fmtEdadLarga(a){
   const n=a.edadAnios;if(n==null)return '—';
-  const enMeses=a.grupo==='levante'||a.grupo==='ternera'||(a.grupo==='macho'&&n<1.5)||n<1;
+  const enMeses=a.grupo==='levante'||a.grupo==='cria'||(a.grupo==='macho'&&n<1.5)||n<1;
   if(enMeses)return Math.round(n*12)+' meses';
   return (n%1===0?String(n):n.toFixed(1).replace('.',','))+' años';
 }
@@ -1370,14 +1370,14 @@ let _tratamientosTodos=[];   // historial completo (activos y terminados) para l
     renderTratamientos();
   }catch(e){console.warn('Tratamientos: usando datos locales:',e.message||e);}
 })();
-/* Sanidad · vacunas: brucelosis desde terneras reales (3-8 meses) + mes actual */
+/* Sanidad · vacunas: brucelosis desde crías hembra reales (3-8 meses) + mes actual */
 function renderSanidadVacunas(){
   const A=Object.values(animalesPorId||{});
   const el=document.getElementById('sanBrucelosis');
   if(el){
-    const t=A.filter(a=>a.grupo==='ternera'&&a.edadAnios!=null&&a.edadAnios>=0.25&&a.edadAnios<=0.67);
+    const t=A.filter(a=>a.grupo==='cria'&&a.sexo==='H'&&a.edadAnios!=null&&a.edadAnios>=0.25&&a.edadAnios<=0.67);
     if(t.length){el.style.display='';
-      el.querySelector('.a-title').textContent='Brucelosis: '+t.length+' ternera'+(t.length>1?'s':'')+' en ventana de vacunación';
+      el.querySelector('.a-title').textContent='Brucelosis: '+t.length+' cría'+(t.length>1?'s':'')+' hembra en ventana de vacunación';
       el.querySelector('.a-sub').textContent=t.slice(0,6).map(x=>x.id+(x.nombre?' '+x.nombre:'')).join(', ')+' · vacuna única entre los 3 y 8 meses';
     }else el.style.display='none';
   }
@@ -1844,10 +1844,10 @@ function recomputarRepro(){
  * orden no importa: _partosRecientesFiltrados() siempre re-ordena al pintar. */
 function _refNombre(id){return animalesPorId[id]?(id+' '+animalesPorId[id].nombre):id;}
 function derivarPartosRecientes(){
-  const GP={ternera:'Terneras',macho:'Machos'};
+  const GP={cria:'Crías',macho:'Machos'};
   return _partosRaw.map(p=>{
-    const criaGrupo=p.cria_id&&animalesPorId[p.cria_id]?(GP[animalesPorId[p.cria_id].grupo]||'Terneras')
-      :(p.sexo_cria==='M'?'Machos':'Terneras');
+    const criaGrupo=p.cria_id&&animalesPorId[p.cria_id]?(GP[animalesPorId[p.cria_id].grupo]||'Crías')
+      :'Crías';
     return {id:p.id,madre:_refNombre(p.madre_id),cria:p.cria_id||'—',fecha:fmtFechaCorta(p.fecha),fechaISO:p.fecha,
       sexo:p.sexo_cria,peso:p.peso_kg||0,tipo:p.tipo,
       estado:p.estado_cria,grupo:p.estado_cria==='viva'?criaGrupo:null};
@@ -1883,7 +1883,7 @@ const fmtFechaCorta=LCRules.fmtFechaCorta;   // compartido en core/rules.js
 /* ===== Hato: tabla con filtros funcionales ===== */
 let hato=[];
 scatterListo=true;   // `hato` ya está definido: el scatter puede leerlo sin riesgo
-const hatoGrupos=['En ordeño','Horra','Novilla','Levante','Ternera','Macho'];
+const hatoGrupos=['En ordeño','Horra','Novilla','Levante','Cría','Macho'];
 const hatoFiltrosEstado=[
   {id:'todas',label:null},
   {id:'prenada',label:'Preñadas',test:a=>a.tags.includes('prenada')},
@@ -2005,10 +2005,10 @@ renderHatoFiltros();renderHato();
  * Convierte un animal en forma canónica (core/model) a la fila que la tabla
  * del hato espera (con presentación derivada: grupo, edad, badges, tags).   */
 const GRUPO_DISPLAY={'ordeño':'En ordeño','horra':'Horra','novilla':'Novilla',
-  'levante':'Levante','ternera':'Ternera','macho':'Macho','baja':'Baja'};
+  'levante':'Levante','cria':'Cría','macho':'Macho','baja':'Baja'};
 /* inverso: display de la UI → valor del modelo/BD */
 const GRUPO_MODELO={'En ordeño':'ordeño','Horra':'horra','Novilla':'novilla',
-  'Levante':'levante','Ternera':'ternera','Macho':'macho','Baja':'baja'};
+  'Levante':'levante','Cría':'cria','Macho':'macho','Baja':'baja'};
 /* "Hoy" del prototipo = 2026-06-13 (igual que HOY_LC, que se usa al LEER/derivar
    días de retiro y vacía). Anclamos las escrituras a esta misma base para que
    diasHasta() lea consistente. Formateo local para evitar corrimientos de zona. */
@@ -2025,7 +2025,7 @@ function fmtNacimiento(a){return LCRules.fmtNacimiento(a);}   // canónica en ru
 const HOY_LC=new Date();   // hoy real (la base trae datos reales)
 function fmtEdad(a){
   const n=a.edadAnios;if(n==null)return '—';
-  const enMeses=a.grupo==='levante'||a.grupo==='ternera'||(a.grupo==='macho'&&n<1.5)||n<1;
+  const enMeses=a.grupo==='levante'||a.grupo==='cria'||(a.grupo==='macho'&&n<1.5)||n<1;
   if(enMeses)return Math.round(n*12)+' m';
   return (n%1===0?String(n):n.toFixed(1).replace('.',','))+' a';
 }
@@ -2050,9 +2050,12 @@ function deriveRepro(a){
   if(a.grupo==='novilla')return a.listaServicio
     ?'<span class="badge warn">lista para servicio</span>'
     :(a.pesoKg?'<span class="sub">'+a.pesoKg+' kg</span>':'');
-  if(a.grupo==='levante'){const g=a.gananciaDiaG?' · '+a.gananciaDiaG+' g/día':'';
+  if(a.grupo==='levante'){
+    if(a.listoNovilla)return '<span class="badge warn">pasar a novilla</span>';
+    if(a.listoMachos)return '<span class="badge warn">pasar a machos</span>';
+    const g=a.gananciaDiaG?' · '+a.gananciaDiaG+' g/día':'';
     return a.pesoKg?'<span class="sub">'+a.pesoKg+' kg'+g+'</span>':'';}
-  if(a.grupo==='ternera')return a.desteteProximo?'<span class="badge warn">destete próximo</span>':'';
+  if(a.grupo==='cria')return a.listoLevante?'<span class="badge warn">pasar a levante</span>':'';
   if(a.grupo==='macho'){
     if(!a.rolToro)return '';
     const h=Object.values(animalesPorId).filter(x=>x.padreId===a.id&&x.grupo!=='baja').length;
@@ -2218,7 +2221,7 @@ function openEditarVaca(num){
   body.appendChild(regTexto('Otra raza (si no está arriba)','Ej. Jersey, criolla…',v=>editState.razaOtra=v,'text',editState.razaOtra));
   body.appendChild(regTexto('Color','Ej. negra, pinta roja, barcina…',v=>editState.color=v,'text',editState.color));
   body.appendChild(regLabel('Grupo'));
-  body.appendChild(regChips([['ordeño','En ordeño'],['horra','Horra'],['novilla','Novilla'],['levante','Levante'],['ternera','Ternera'],['macho','Macho']]
+  body.appendChild(regChips([['ordeño','En ordeño'],['horra','Horra'],['novilla','Novilla'],['levante','Levante'],['cria','Cría'],['macho','Macho']]
     .map(g=>({val:g[0],label:g[1]})),editState.grupo,v=>editState.grupo=v));
   body.appendChild(regHint('Cambiar el grupo corrige una clasificación; no toca la reproducción ni el historial.'));
   body.appendChild(regLabel('Sexo'));
@@ -2475,7 +2478,7 @@ function saveParto(){
   }
   closeReg();
   const sexoTxt=partoState.sexo==='H'?'♀ hembra':'♂ macho';
-  const criaGrupo=partoState.sexo==='H'?'Ternera':'Macho';
+  const criaGrupo='Cría';   // ambos sexos nacen como cría
   const criaNombre=(partoState.criaNombre||'').trim();
   const criaAuto=!((partoState.criaNum||'').trim());   // se usó la secuencia (para revertirla en el Deshacer)
   const fechaParto=partoState.fecha||isoHoy();
@@ -2613,7 +2616,7 @@ function savePartoHist(){
 
 /* --- alta (compra / ingreso) --- */
 /* --- vaca nueva (comprada o nacida) --- */
-const altaGrupoMap={'Vaca en ordeño':'En ordeño','Vaca horra':'Horra','Novilla':'Novilla','Levante':'Levante','Ternera':'Ternera','Toro':'Macho'};
+const altaGrupoMap={'Vaca en ordeño':'En ordeño','Vaca horra':'Horra','Novilla':'Novilla','Levante':'Levante','Cría':'Cría','Toro':'Macho'};
 let altaSeq=0;   // se sincroniza con el mayor número real del hato al cargar
 const compraState={};
 /* helper: campo de texto/número dentro del modal de registro */

@@ -72,7 +72,7 @@ JAMÁS producción) hecho con `generate_series` de Postgres — no hace falta
 generar 500k INSERTs de texto:
 
 - 500 animales con distribución realista (55% ordeño/horra, resto
-  novilla/levante/ternera/macho; ~10% con `estado_repro='prenada'`,
+  novilla/levante/cria/macho; ~10% con `estado_repro='prenada'`,
   chapetas `E-0001…`), sembrados con `INSERT … SELECT … FROM generate_series(1,500)`.
 - Ordeños: `INSERT INTO ordenos SELECT … FROM generate_series(fecha_inicio,
   hoy, interval '1 día') × animales en ordeño`, litros con `random()`

@@ -9,7 +9,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ─── ENUMS ──────────────────────────────────────────────────────────────────
 
 CREATE TYPE grupo_animal AS ENUM (
-  'ordeño', 'horra', 'novilla', 'levante', 'ternera', 'macho', 'baja'
+  'ordeño', 'horra', 'novilla', 'levante', 'cria', 'macho', 'baja'
 );
 
 CREATE TYPE sexo_animal AS ENUM ('H', 'M');
@@ -321,7 +321,7 @@ BEGIN
     INSERT INTO animales (id, nombre, raza, grupo, sexo, edad_anios,
                           nacimiento, origen, madre_id, peso_kg)
     VALUES (p_cria_id, coalesce(p_cria_nombre, '(cría)'), p_cria_raza,
-            CASE WHEN p_sexo = 'H' THEN 'ternera'::grupo_animal ELSE 'macho'::grupo_animal END,
+            'cria'::grupo_animal,   -- ambos sexos nacen como cría (antes: H→ternera, M→macho)
             p_sexo, 0, p_fecha, 'nacido_finca', p_madre_id, p_peso_kg);
   END IF;
   INSERT INTO partos (id, madre_id, cria_id, fecha, sexo_cria, peso_kg, tipo, estado_cria)
@@ -404,7 +404,7 @@ SELECT a.*,
        THEN (hoy_finca() - a.ultima_palpacion) END AS dias_vacia_calc,
   CASE WHEN a.estado_repro = 'prenada' AND a.prenez_meses IS NOT NULL AND a.ultima_palpacion IS NOT NULL
        THEN least(9, round((a.prenez_meses + (hoy_finca() - a.ultima_palpacion) / 30.44)::numeric, 1)) END AS prenez_meses_actual,
-  -- ganancia media diaria desde el nacimiento (g/día); útil en terneras/levante.
+  -- ganancia media diaria desde el nacimiento (g/día); útil en crías/levante.
   -- Requiere peso y nacimiento; sin historial de pesajes es la mejor derivación.
   CASE WHEN a.peso_kg IS NOT NULL AND a.nacimiento IS NOT NULL
             AND (hoy_finca() - a.nacimiento) > 0

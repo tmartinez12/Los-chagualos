@@ -9,13 +9,15 @@ canónico completo: tablas, vistas, funciones (`hoy_finca`,
 
 ## Base EXISTENTE (la desplegada de la finca)
 
-**No hay migraciones pendientes** (jul 2026): las 6 migraciones de la última
-tanda (vacunaciones, zona-horaria, integridad, nacimiento, restaurar,
-ganancia) corrieron todas en la base real, están fusionadas en `schema.sql`
-y se movieron a `migraciones-aplicadas/` (regla 3 de abajo). Cuando haya una
-migración nueva, vivirá aquí en la raíz (`migracion-<nombre>.sql`) mientras
-esté pendiente de correr, con una tabla como esta indicando el orden y si ya
-corrió.
+Migraciones **pendientes** de correr, en orden (idempotentes):
+
+| # | Archivo | Qué hace | ¿Ya corrió? |
+|---|---|---|---|
+| 1 | `migracion-ciclo-vida.sql` | Renombra el grupo `ternera` → `cria` (ambos sexos nacen como cría) y ajusta `registrar_parto_completo`. Las filas con grupo `ternera` pasan a `cria` solas. | **pendiente** (jul 2026) |
+
+Las 6 migraciones de la tanda anterior (vacunaciones, zona-horaria,
+integridad, nacimiento, restaurar, ganancia) ya corrieron y están en
+`migraciones-aplicadas/` (regla 3 de abajo).
 
 Utilidades (no son migraciones):
 

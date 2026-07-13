@@ -64,7 +64,7 @@
 
   /* --- Enums / catálogos ---------------------------------------------------- */
   const enums = {
-    grupo:       ['ordeño', 'horra', 'novilla', 'levante', 'ternera', 'macho', 'baja'],
+    grupo:       ['ordeño', 'horra', 'novilla', 'levante', 'cria', 'macho', 'baja'],
     sexo:        ['H', 'M'],
     estadoRepro: ['prenada', 'servida', 'vacia', 'lactando', 'novilla', null],
     origen:      ['nacido_finca', 'comprado'],
@@ -134,11 +134,11 @@
     a('068', 'Perla',     'Holstein × Gyr', 'levante', 'H', 1.08, { pesoKg:201, gananciaDiaG:470 }),
     a('070', 'Coral',     'Normando',       'levante', 'H', 0.92, { pesoKg:178, gananciaDiaG:490 }),
 
-    // -------- Terneras (muestra de 11) --------
-    a('064', 'Cría de Lucero', 'Holstein × Gyr', 'ternera', 'H', 0.42, { madreId:'042', padreId:'T01', desteteProximo:true }),
-    a('069', 'Cría de Estrella','Gyrolando',      'ternera', 'H', 0.29, { madreId:'027', padreId:'T01' }),
-    a('071', 'Cría de Canela', 'Holstein × Gyr', 'ternera', 'H', 0.38, { madreId:'019', padreId:'T01', desteteProximo:true }),
-    a('073', 'Cría de Morena', 'Normando',       'ternera', 'H', 0.25, { madreId:'045', padreId:'T01' }),
+    // -------- Crías (muestra de 11) --------
+    a('064', 'Cría de Lucero', 'Holstein × Gyr', 'cria', 'H', 0.42, { madreId:'042', padreId:'T01', listoLevante:true }),
+    a('069', 'Cría de Estrella','Gyrolando',      'cria', 'H', 0.29, { madreId:'027', padreId:'T01' }),
+    a('071', 'Cría de Canela', 'Holstein × Gyr', 'cria', 'H', 0.38, { madreId:'019', padreId:'T01', listoLevante:true }),
+    a('073', 'Cría de Morena', 'Normando',       'cria', 'H', 0.25, { madreId:'045', padreId:'T01' }),
 
     // -------- Machos / toros (2) --------
     a('T01', 'Sansón', 'Gyr', 'macho', 'M', 6.0,  { rolToro:true, montaNatural:true, hijasVivas:23, sanidadAlDia:true }),
@@ -258,8 +258,8 @@
       madreId:null, padreId:null,
       // peso / levante
       pesoKg:null, fechaPeso:null, gananciaDiaG:null,
-      // ternera / macho / baja
-      desteteProximo:null, rolToro:null, montaNatural:null, hijasVivas:null,
+      // cria / macho / baja
+      listoLevante:null, listoNovilla:null, listoMachos:null, rolToro:null, montaNatural:null, hijasVivas:null,
       sanidadAlDia:null, ventaProgramada:null, baja:null,
     }, normalizaLeche(extra));
   }

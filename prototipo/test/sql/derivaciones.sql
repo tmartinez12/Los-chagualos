@@ -7,9 +7,9 @@ BEGIN;
 INSERT INTO animales (id, nombre, especie, grupo, sexo, nacimiento, inicio_lactancia, peso_kg)
 VALUES ('V1', 'Vaca', 'bovino', 'ordeño', 'H', hoy_finca() - 1096, hoy_finca() - 100, NULL);   -- ~3 años, DEL 100
 
--- ternera con peso para ganancia/día
+-- cría con peso para ganancia/día
 INSERT INTO animales (id, nombre, especie, grupo, sexo, nacimiento, peso_kg)
-VALUES ('T1', 'Ternera', 'bovino', 'ternera', 'H', hoy_finca() - 200, 120);   -- 120kg en 200 días
+VALUES ('T1', 'Ternera', 'bovino', 'cria', 'H', hoy_finca() - 200, 120);   -- 120kg en 200 días
 
 -- ordeño de "ayer" (leche_ultima)
 INSERT INTO ordenos (animal_id, fecha, litros, turno) VALUES ('V1', hoy_finca() - 1, 15, 'dia');
@@ -27,7 +27,7 @@ BEGIN
   IF leche <> 15 THEN RAISE EXCEPTION 'leche de ayer mal: %', leche; END IF;
   IF retiro IS NULL OR retiro < hoy_finca() THEN RAISE EXCEPTION 'retiro no activo: %', retiro; END IF;
 
-  -- ganancia/día de la ternera: 120000 g / 200 días = 600 g/día
+  -- ganancia/día de la cría: 120000 g / 200 días = 600 g/día
   SELECT ganancia_dia_g INTO gan FROM v_animales WHERE id='T1';
   IF gan <> 600 THEN RAISE EXCEPTION 'ganancia/día mal: % (esperaba 600)', gan; END IF;
 

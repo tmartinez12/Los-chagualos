@@ -32,7 +32,7 @@ const grupos={
   horras:{nombre:'Vacas horras (secas)',sub:'',header:'',animales:[]},
   novillas:{nombre:'Novillas de vientre',sub:'',header:'',animales:[]},
   levante:{nombre:'Hembras de levante',sub:'',header:'',animales:[]},
-  terneras:{nombre:'Terneras',sub:'',header:'',animales:[]},
+  crias:{nombre:'Crías',sub:'',header:'',animales:[]},
   machos:{nombre:'Machos / toros',sub:'',header:'',animales:[]},
   bajas:{nombre:'Bajas · histórico',sub:'',header:'',animales:[]}
 };
@@ -46,13 +46,13 @@ function renderHatoM(){
   set('hmOrdeno',A.filter(a=>a.grupo==='ordeño').length);
   set('hmPrenadas',A.filter(a=>a.estadoRepro==='prenada').length);
   const cnt={};A.forEach(a=>{const k=GRUPO_KEY[a.grupo];if(k)cnt[k]=(cnt[k]||0)+1;});
-  ['ordeno','horras','novillas','levante','terneras','machos','bajas'].forEach(k=>set('cnt-'+k,cnt[k]||0));
+  ['ordeno','horras','novillas','levante','crias','machos','bajas'].forEach(k=>set('cnt-'+k,cnt[k]||0));
   const ordeno=A.filter(a=>a.grupo==='ordeño'),dels=ordeno.map(a=>a.del).filter(d=>typeof d==='number');
   set('hsub-ordeno',dels.length?('DEL promedio '+Math.round(dels.reduce((s,d)=>s+d,0)/dels.length)):(ordeno.length+' vacas'));
   set('hsub-horras',A.filter(a=>a.grupo==='horra'&&a.estadoRepro==='prenada').length+' preñadas');
   set('hsub-novillas',A.filter(a=>a.grupo==='novilla'&&a.pesoKg>=330).length+' con peso para servicio');
   set('hsub-levante',A.filter(a=>a.grupo==='levante').length+' hembras');
-  set('hsub-terneras',A.filter(a=>a.grupo==='ternera'&&a.desteteProximo).length+' con destete próximo');
+  set('hsub-crias',A.filter(a=>a.grupo==='cria'&&a.listoLevante).length+' listas para levante');
   set('hsub-machos',A.filter(a=>a.grupo==='macho').map(a=>a.nombre).slice(0,2).join(', ')||'sin machos');
 }
 function openGroup(k){const g=grupos[k];
@@ -103,7 +103,7 @@ function entrarModulo(m){
 }
 function openCow(num){if(num)renderFicha(num);go('scr-vaca');}
 /* Ficha por-animal: rellena scr-vaca con datos reales de la base (cache). */
-const GRUPO_DISPLAY_M={'ordeño':'En ordeño','horra':'Horra','novilla':'Novilla','levante':'Levante','ternera':'Ternera','macho':'Macho','baja':'Baja'};
+const GRUPO_DISPLAY_M={'ordeño':'En ordeño','horra':'Horra','novilla':'Novilla','levante':'Levante','cria':'Cría','macho':'Macho','baja':'Baja'};
 function origenM(a){return a.origen==='comprado'?'Comprada':a.origen==='nacido_finca'?'Nació en finca':'';}
 function fmtNacimientoM(a){return LCRules.fmtNacimiento(a);}   // canónica en rules.js
 /* adaptador: la lógica canónica vive en LCRules.deriveReproFicha (compartida
@@ -158,7 +158,7 @@ function renderFicha(num){
     '<div class="stat"><div class="s-label">Peso</div><div class="s-value">'+(a.pesoKg?a.pesoKg+' kg':'—')+'</div></div>'+
     '<div class="stat"><div class="s-label">Partos</div><div class="s-value">'+(a.partos||0)+'</div></div>'+
     (diasAbiertos!=null?'<div class="stat"><div class="s-label">Días abiertos</div><div class="s-value'+(diasAbiertos>120?' down':'')+'">'+diasAbiertos+'</div></div>':'')+
-    ((a.gananciaDiaG&&(a.grupo==='levante'||a.grupo==='ternera'))?'<div class="stat"><div class="s-label">Ganancia</div><div class="s-value">'+a.gananciaDiaG+' g/día</div></div>':'');
+    ((a.gananciaDiaG&&(a.grupo==='levante'||a.grupo==='cria'))?'<div class="stat"><div class="s-label">Ganancia</div><div class="s-value">'+a.gananciaDiaG+' g/día</div></div>':'');
   /* genealogía */
   const madre=a.madreId?(animalesPorIdM[a.madreId]?a.madreId+' '+animalesPorIdM[a.madreId].nombre:a.madreId):'—';
   const padre=a.padreId?(animalesPorIdM[a.padreId]?a.padreId+' '+animalesPorIdM[a.padreId].nombre:a.padreId):'—';
@@ -395,22 +395,22 @@ function numDe(cow){return (''+cow).split('·')[0].trim();}
 const snapshotReproDBM=LCRules.snapshotReproDB;   // compartido en core/rules.js
 const fmtFechaCortaM=LCRules.fmtFechaCorta;       // compartido en core/rules.js
 function edadTextoM(a){const n=a.edadAnios;if(n==null)return '';
-  const enMeses=a.grupo==='levante'||a.grupo==='ternera'||(a.grupo==='macho'&&n<1.5)||n<1;
+  const enMeses=a.grupo==='levante'||a.grupo==='cria'||(a.grupo==='macho'&&n<1.5)||n<1;
   return enMeses?Math.round(n*12)+' meses':((n%1===0?String(n):n.toFixed(1).replace('.',','))+' años');}
 function subAnimalM(a){
   switch(a.grupo){
     case 'ordeño':return 'DEL '+(a.del==null?'—':a.del)+' · últ. '+((a.leche&&a.leche.ayer!=null)?a.leche.ayer:0)+' L';
     case 'horra':return a.prenez?('preñada '+a.prenez.meses+' meses'+(a.prenez.partoEstimado?' · parto ~'+fmtFechaCortaM(a.prenez.partoEstimado):'')):'horra';
     case 'novilla':return edadTextoM(a)+(a.pesoKg?' · '+a.pesoKg+' kg':'')+(a.listaServicio?' · lista para servicio':'');
-    case 'levante':return edadTextoM(a)+(a.pesoKg?' · '+a.pesoKg+' kg':'')+(a.gananciaDiaG?' · '+a.gananciaDiaG+' g/día':'');
-    case 'ternera':return edadTextoM(a)+(a.desteteProximo?' · destete próximo':'');
+    case 'levante':return edadTextoM(a)+(a.pesoKg?' · '+a.pesoKg+' kg':'')+(a.gananciaDiaG?' · '+a.gananciaDiaG+' g/día':'')+(a.listoNovilla?' · pasar a novilla':(a.listoMachos?' · pasar a machos':''));
+    case 'cria':return edadTextoM(a)+(a.listoLevante?' · pasar a levante':'');
     case 'macho':return (a.rolToro?'Toro · ':'')+edadTextoM(a);
     case 'baja':return a.baja?((a.baja.motivo||'').toUpperCase()+(a.baja.fecha?' · '+fmtFechaCortaM(a.baja.fecha):'')+(a.baja.nota?' · '+a.baja.nota:'')):'baja';
   }
   return '';
 }
-const GRUPO_KEY={'ordeño':'ordeno','horra':'horras','novilla':'novillas','levante':'levante','ternera':'terneras','macho':'machos','baja':'bajas'};
-const GRUPO_LABEL={ordeno:'vacas en ordeño',horras:'vacas horras',novillas:'novillas',levante:'hembras de levante',terneras:'terneras',machos:'machos',bajas:'bajas'};
+const GRUPO_KEY={'ordeño':'ordeno','horra':'horras','novilla':'novillas','levante':'levante','cria':'crias','macho':'machos','baja':'bajas'};
+const GRUPO_LABEL={ordeno:'vacas en ordeño',horras:'vacas horras',novillas:'novillas',levante:'animales de levante',crias:'crías',machos:'machos',bajas:'bajas'};
 /* Sanidad: tratamientos activos reales (sin demo). */
 function renderTratamientosM(lista){
   const box=document.getElementById('tratListaM');if(!box)return;
@@ -508,7 +508,7 @@ let animalesPorIdM={};
      * acciones (parto/baja/secado) muestren números correctos y no un demo. */
     if(typeof nOrdeno!=='undefined'){
       nOrdeno=grupos.ordeno.animales.length; nHorras=grupos.horras.animales.length;
-      nNovillas=grupos.novillas.animales.length; nTerneras=grupos.terneras.animales.length;
+      nNovillas=grupos.novillas.animales.length; nCrias=grupos.crias.animales.length;
       nMachos=grupos.machos.animales.length; nBajas=grupos.bajas.animales.length;
     }
     renderInicioM();renderSanidadVacunasM();renderHatoM();
@@ -612,13 +612,13 @@ function saveMilk(){
     const tot=cows.reduce((s,x)=>s+x.v,0);
     setTimeout(()=>snack('Ordeño completo: '+tot+' L registrados hoy'),1500);}
 }
-/* Sanidad móvil · vacunas: brucelosis desde terneras reales + mes actual */
+/* Sanidad móvil · vacunas: brucelosis desde crías hembra reales + mes actual */
 function renderSanidadVacunasM(){
   const A=Object.values(animalesPorIdM||{});
   const el=document.getElementById('sanBrucelosisM');
-  if(el){const t=A.filter(a=>a.grupo==='ternera'&&a.edadAnios!=null&&a.edadAnios>=0.25&&a.edadAnios<=0.67);
+  if(el){const t=A.filter(a=>a.grupo==='cria'&&a.sexo==='H'&&a.edadAnios!=null&&a.edadAnios>=0.25&&a.edadAnios<=0.67);
     if(t.length){el.style.display='';
-      el.querySelector('.a-title').textContent='Brucelosis: '+t.length+' ternera'+(t.length>1?'s':'')+' en ventana';
+      el.querySelector('.a-title').textContent='Brucelosis: '+t.length+' cría'+(t.length>1?'s':'')+' hembra en ventana';
       el.querySelector('.a-sub').textContent=t.slice(0,6).map(x=>x.id).join(', ')+' · vacuna única entre los 3 y 8 meses';
     }else el.style.display='none';}
   renderSanCalendarioM();renderSanProximaM();
@@ -757,7 +757,7 @@ updateSync();
  *  número inventado.) */
 let proximosPartos=[];
 let partosRecientes=[];
-let partos2026=0, porParir=0, criaNum=0, nTerneras=0, nMachos=0;
+let partos2026=0, porParir=0, criaNum=0, nCrias=0, nMachos=0;
 const parto={cow:'',sexo:'H',tipo:'normal',estado:'viva',peso:38,fecha:'',criaNum:'',criaNombre:''};
 /* grupos que pueden parir; se prefieren las horras (preñadas próximas) */
 const GRUPOS_MADRE_M=['horra','ordeño','novilla'];
@@ -874,22 +874,20 @@ function saveParto(){
       deshacerCria=()=>{};
       if(parto.estado==='viva'){
         const num=criaIdNueva;
-        // la cría viva entra sola al Hato: hembra → Terneras, macho → Machos
-        const grupo=parto.sexo==='H'?'terneras':'machos';
-        const destino=parto.sexo==='H'?'Terneras':'Machos';
+        // la cría viva (hembra o macho) entra sola al Hato como Cría
+        const grupo='crias', destino='Crías';
         const prevSub=grupos[grupo].sub, prevHeader=grupos[grupo].header;
-        if(parto.sexo==='H'){nTerneras++;subTerneras();}
-        else{nMachos++;subMachos();}
+        nCrias++;subCrias();
         const nombreCria=criaNombreDado||('cría de '+nombre);
         const filaCria=[num+' · '+nombreCria,'recién nacid'+(parto.sexo==='H'?'a':'o')+' · '+parto.peso+' kg · 0 meses',0];
         grupos[grupo].animales.unshift(filaCria);
         /* clicable y en caché apenas se confirme el guardado (ver escribir) */
-        parto._filaCria=filaCria;parto._criaDatos={id:num,nombre:criaNombreDado||('Cría de '+nombre),grupo:parto.sexo==='H'?'ternera':'macho',
+        parto._filaCria=filaCria;parto._criaDatos={id:num,nombre:criaNombreDado||('Cría de '+nombre),grupo:'cria',
           sexo:parto.sexo,pesoKg:parto.peso,nacimiento:fechaP,madreId:numMadre,leche:{},prenez:null};
         partosRecientes.unshift({t:parto.cow+' → cría '+num,
           s:fmtFechaCortaM(fechaP)+' · '+sexoTxt+' · viva · '+parto.peso+' kg · '+tipoTxt,badge:'en '+destino,bw:'ok'});
         deshacerCria=()=>{grupos[grupo].animales.shift();grupos[grupo].sub=prevSub;grupos[grupo].header=prevHeader;
-          if(parto.sexo==='H')nTerneras--;else nMachos--;if(criaAuto)criaNum--;};
+          nCrias--;if(criaAuto)criaNum--;};
         opciones.mensaje='Parto de '+nombre+' · cría '+num+' ('+sexoTxt+', '+parto.peso+' kg) creada en '+destino+' y vinculada · '+nombre+' al ordeño en DEL 0';
       }else{
         // mortinato: no entra al hato, pero queda registrado
@@ -1037,7 +1035,7 @@ function recomputarReproM(){
       const viva=p.estado_cria==='viva';const sx=p.sexo_cria==='H'?'♀ hembra':'♂ macho';
       return {t:refP(p.madre_id)+' → cría'+(p.cria_id?' '+p.cria_id:''),
         s:fmtFechaCortaM(p.fecha)+' · '+sx+' · '+(viva?'viva':'nació muerto')+' · '+(p.peso_kg||0)+' kg · parto '+p.tipo,
-        badge:viva?('en '+(p.sexo_cria==='H'?'Terneras':'Machos')):'mortinato',bw:viva?'ok':'bad'};});
+        badge:viva?'en Crías':'mortinato',bw:viva?'ok':'bad'};});
     partos2026=partosRecientes.length;
     const A=animales;
     /* KPIs reproductivos reales: preñez % e intervalo entre partos */
@@ -1294,8 +1292,8 @@ function subOrdeno(){grupos.ordeno.sub=nOrdeno+' vacas en ordeño';
   grupos.ordeno.header='<b>'+nOrdeno+' vacas en ordeño.</b>';}
 function subNovillas(){grupos.novillas.sub=nNovillas+' novillas';
   grupos.novillas.header='<b>'+nNovillas+' novillas de vientre.</b>';}
-function subTerneras(){grupos.terneras.sub=nTerneras+' terneras';
-  grupos.terneras.header='<b>'+nTerneras+' terneras.</b>';}
+function subCrias(){grupos.crias.sub=nCrias+' crías';
+  grupos.crias.header='<b>'+nCrias+' crías.</b>';}
 function subMachos(){grupos.machos.sub=nMachos+' machos';
   grupos.machos.header='<b>'+nMachos+' machos.</b>';}
 function subHorras(){grupos.horras.sub=nHorras+' vacas horras';
@@ -1305,7 +1303,7 @@ function subBajas(){grupos.bajas.sub=nBajas+' fuera del hato';
 function incGrupo(g,d){
   if(g==='ordeno'){nOrdeno+=d;subOrdeno();}
   else if(g==='novillas'){nNovillas+=d;subNovillas();}
-  else if(g==='terneras'){nTerneras+=d;subTerneras();}
+  else if(g==='crias'){nCrias+=d;subCrias();}
   else if(g==='machos'){nMachos+=d;subMachos();}
   else if(g==='horras'){nHorras+=d;subHorras();}
   else if(g==='bajas'){nBajas+=d;subBajas();}
@@ -1316,7 +1314,7 @@ function openNuevaVaca(){document.getElementById('scrim').classList.add('show');
 function closeNueva(){document.getElementById('nuevaSheet').classList.remove('show');
   document.getElementById('scrim').classList.remove('show');}
 /* --- Alta (compra) --- */
-const altaGrupo={'Vaca en ordeño':'ordeno','Novilla':'novillas','Ternera':'terneras','Toro':'machos'};
+const altaGrupo={'Vaca en ordeño':'ordeno','Novilla':'novillas','Cría':'crias','Toro':'machos'};
 const alta={tipo:'Novilla',raza:'Holstein × Gyr',edad:2,origen:'nacido_finca',num:'',nombre:'',nacimiento:'',procedencia:'',valor:''};
 let altaSeq=0, toroSeq=0;   // se re-siembran desde el mayor id real
 /* siguiente número libre para hembras (el mayor numérico + 1) */
@@ -1358,7 +1356,7 @@ function saveAlta(){
   grupos[g].animales.unshift(fila);
   incGrupo(g,1);encolar();
   if(typeof LCStore!=='undefined'){
-    const GM={ordeno:'ordeño',novillas:'novilla',terneras:'ternera',machos:'macho'};
+    const GM={ordeno:'ordeño',novillas:'novilla',crias:'cria',machos:'macho'};
     LCStore.insertAnimal({id:num,nombre:nombre,raza:alta.raza,grupo:GM[g]||'novilla',
       sexo:g==='machos'?'M':'H',edadAnios:alta.edad,nacimiento:alta.nacimiento||null,
       origen:alta.origen||'nacido_finca',

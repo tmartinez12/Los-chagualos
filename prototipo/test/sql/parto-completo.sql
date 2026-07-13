@@ -13,9 +13,9 @@ SELECT registrar_parto_completo('M1', hoy_finca(), 'H', 38, 'normal', 'viva', 'P
 DO $$
 DECLARE g grupo_animal; il date; np int; cg grupo_animal; er estado_repro;
 BEGIN
-  -- la cría entró como ternera, vinculada a la madre
+  -- la cría entró como cria, vinculada a la madre
   SELECT grupo INTO cg FROM animales WHERE id = 'C1';
-  IF cg IS DISTINCT FROM 'ternera' THEN RAISE EXCEPTION 'cría no quedó en ternera: %', cg; END IF;
+  IF cg IS DISTINCT FROM 'cria' THEN RAISE EXCEPTION 'cría no quedó en cria: %', cg; END IF;
   IF (SELECT madre_id FROM animales WHERE id='C1') <> 'M1' THEN RAISE EXCEPTION 'cría sin madre_id correcto'; END IF;
   -- el parto quedó registrado
   IF (SELECT count(*) FROM partos WHERE id='P1' AND madre_id='M1' AND cria_id='C1') <> 1

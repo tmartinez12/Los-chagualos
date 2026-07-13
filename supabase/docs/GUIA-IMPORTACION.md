@@ -73,7 +73,7 @@ ficha (botón ✏️ Editar) o con un segundo cargue.
 > nacimiento). Están en la plantilla solo como referencia de la ficha completa.
 
 ### Valores de enum válidos
-- `grupo`: ordeño · horra · novilla · levante · ternera · macho · baja
+- `grupo`: ordeño · horra · novilla · levante · cria · macho · baja
 - `sexo`: H · M
 - `estado_repro`: prenada · servida · vacia · lactando · novilla
 - `origen`: nacido_finca · comprado
