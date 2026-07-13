@@ -2882,7 +2882,7 @@ function _siguienteNumeroLibre(){
 function openCompra(){
   compraState.origen='nacida';
   compraState.tipo='Vaca en ordeño';compraState.raza='Holstein × Gyr';compraState.razaOtra='';
-  compraState.edad=4;compraState.nacimiento='';compraState.nombre='';compraState.color='';
+  compraState.nacimiento='';compraState.nombre='';compraState.color='';
   compraState.procedencia='';compraState.valor='';compraState.madre='';compraState.padre='';
   compraState.peso='';compraState.nota='';
   compraState.partosFechas=[''];
@@ -2905,9 +2905,8 @@ function renderAltaForm(){
   body.appendChild(regChips(['Holstein × Gyr','F1','Gyrolando','Holstein','Normando'].map(r=>({val:r,label:r})),compraState.raza,v=>compraState.raza=v));
   body.appendChild(regTexto('Otra raza (si no está arriba)','Ej. Jersey, criolla…',v=>compraState.razaOtra=v,'text',compraState.razaOtra));
   body.appendChild(regTexto('Color (opcional)','Ej. negra, pinta roja…',v=>compraState.color=v,'text',compraState.color));
-  body.appendChild(regTexto('Fecha de nacimiento (si la conoces)','',v=>compraState.nacimiento=v,'date',compraState.nacimiento));
-  body.appendChild(regLabel('Edad aproximada (si no tienes la fecha)'));
-  body.appendChild(regStepper(()=>compraState.edad,v=>compraState.edad=v,0,15,'años'));
+  body.appendChild(regTexto('Fecha de nacimiento (obligatoria)','',v=>compraState.nacimiento=v,'date',compraState.nacimiento));
+  body.appendChild(regHint('La edad se calcula sola desde esta fecha y avanza con el tiempo. Si no la sabes con exactitud, registra la mejor estimación (p.ej. inicio del año que nació).'));
   /* genealogía: madre y padre en ambos orígenes (paridad con Editar); solo se
    * enlazan si ya están registrados */
   body.appendChild(regTexto('Madre (número, si la conoces)','Ej. 042 — debe estar ya registrada',v=>compraState.madre=v,'text',compraState.madre));
@@ -2949,6 +2948,9 @@ function saveCompra(){
   /* validación de duplicado ANTES de cerrar: se corrige ahí mismo */
   if(animalesPorId[num]||hato.find(x=>String(x.num)===String(num))){
     snack('El número '+num+' ya existe en el hato — usa otro');return;}
+  /* fecha de nacimiento obligatoria: la edad se deriva de ella (y avanza) */
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(compraState.nacimiento||'')){
+    snack('Falta la fecha de nacimiento — es obligatoria para registrar el animal');return;}
   const esNacida=compraState.origen==='nacida';
   /* madre y padre: solo se enlazan si ya están registrados (la FK lo exige) */
   let madreId=null,padreId=null,madreAviso='';
@@ -2967,10 +2969,8 @@ function saveCompra(){
   const nombre=(compraState.nombre||'').trim()||'(sin nombre)';
   const raza=(compraState.razaOtra||'').trim()||compraState.raza;
   const color=(compraState.color||'').trim()||null;
-  const nacimiento=compraState.nacimiento||null;
-  const edadAnios=nacimiento
-    ?Math.round(((hoyFincaDate()-new Date(nacimiento+'T00:00:00'))/86400000/365.25)*10)/10
-    :compraState.edad;
+  const nacimiento=compraState.nacimiento;   // obligatoria (validada arriba)
+  const edadAnios=Math.round(((hoyFincaDate()-new Date(nacimiento+'T00:00:00'))/86400000/365.25)*10)/10;
   const esVaca=(compraState.tipo==='Vaca en ordeño'||compraState.tipo==='Vaca horra');
   /* fechas de parto válidas, sin repetidas, de la más vieja a la más nueva */
   const fechasParto=esVaca

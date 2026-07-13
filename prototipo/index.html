@@ -699,9 +699,10 @@
       <button class="chip" onclick="altaPick(this,'tipo','Toro')">Toro</button>
     </div>
 
-    <div class="section-label">Fecha de nacimiento (opcional)</div>
+    <div class="section-label">Fecha de nacimiento (obligatoria)</div>
     <input id="altaNac" type="date" oninput="alta.nacimiento=this.value"
-      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
+      style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
+    <div style="font-size:11px;color:var(--ink-3);margin-top:4px">La edad se calcula sola desde esta fecha. Si no la sabes exacta, registra la mejor estimación.</div>
 
     <div class="section-label">Raza</div>
     <div class="chips">
@@ -710,13 +711,6 @@
       <button class="chip" onclick="altaPick(this,'raza','Gyrolando')">Gyrolando</button>
       <button class="chip" onclick="altaPick(this,'raza','Holstein')">Holstein</button>
       <button class="chip" onclick="altaPick(this,'raza','Normando')">Normando</button>
-    </div>
-
-    <div class="section-label">Edad aproximada (si no sabes la fecha)</div>
-    <div class="chips" style="align-items:center">
-      <button class="chip" onclick="altaEdad(-1)">−</button>
-      <span style="font-weight:700;min-width:84px;text-align:center;font-size:15px"><span id="altaEdadVal">2</span> años</span>
-      <button class="chip" onclick="altaEdad(1)">＋</button>
     </div>
 
     <div class="section-label">Genealogía · peso (opcional)</div>

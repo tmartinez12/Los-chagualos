@@ -1519,20 +1519,19 @@ function closeNueva(){document.getElementById('nuevaSheet').classList.remove('sh
   document.getElementById('scrim').classList.remove('show');}
 /* --- Alta (compra) --- */
 const altaGrupo={'Vaca en ordeño':'ordeno','Novilla':'novillas','Cría':'crias','Toro':'machos'};
-const alta={tipo:'Novilla',raza:'Holstein × Gyr',edad:2,origen:'nacido_finca',num:'',nombre:'',nacimiento:'',procedencia:'',valor:''};
+const alta={tipo:'Novilla',raza:'Holstein × Gyr',origen:'nacido_finca',num:'',nombre:'',nacimiento:'',procedencia:'',valor:''};
 let altaSeq=0, toroSeq=0;   // se re-siembran desde el mayor id real
 /* siguiente número libre para hembras (el mayor numérico + 1) */
 function _siguienteNumM(){
   const nums=Object.keys(animalesPorIdM).map(x=>parseInt(x,10)).filter(n=>!isNaN(n));
   return String(Math.max(altaSeq,...(nums.length?nums:[0]))+1).padStart(3,'0');}
-function openAlta(){alta.tipo='Novilla';alta.raza='Holstein × Gyr';alta.edad=2;
+function openAlta(){alta.tipo='Novilla';alta.raza='Holstein × Gyr';
   alta.origen='nacido_finca';alta.num='';alta.nombre='';alta.nacimiento='';alta.procedencia='';alta.valor='';
   alta.color='';alta.madre='';alta.padre='';alta.peso='';alta.nota='';
   const grupos2=document.querySelectorAll('#altaSheet .chips');
   grupos2[0].querySelectorAll('.chip').forEach((c,i)=>c.classList.toggle('sel',i===0));
   grupos2[1].querySelectorAll('.chip').forEach(c=>c.classList.toggle('sel',c.textContent.trim()==='Novilla'));
   grupos2[2].querySelectorAll('.chip').forEach(c=>c.classList.toggle('sel',c.textContent.trim()==='Holstein × Gyr'));
-  document.getElementById('altaEdadVal').textContent=alta.edad;
   ['altaNum','altaNombre','altaColor','altaNac','altaMadre','altaPadre','altaPeso','altaProc','altaValor','altaNota'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   _altaToggleCompra();   // procedencia/valor arranca oculto (nacida)
   const na=document.getElementById('altaNac');if(na)na.max=isoHoyM();   // sin fechas futuras
@@ -1547,11 +1546,12 @@ function _altaToggleCompra(){const w=document.getElementById('altaCompraWrap');
 function altaPick(btn,campo,val){alta[campo]=val;
   [...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));
   if(campo==='origen')_altaToggleCompra();}
-function altaEdad(d){alta.edad=Math.max(0,Math.min(15,alta.edad+d));
-  document.getElementById('altaEdadVal').textContent=alta.edad;}
 function saveAlta(){
   const g=altaGrupo[alta.tipo];
   /* número: el que teclee la dueña (validado) o el siguiente libre */
+  /* fecha de nacimiento obligatoria: la edad se deriva de ella (y avanza) */
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(alta.nacimiento||'')){
+    snack('Falta la fecha de nacimiento — es obligatoria para registrar el animal');return;}
   let num=(alta.num||'').trim();
   if(num){
     if(animalesPorIdM[num]){snack('⚠ El número '+num+' ya existe — usa otro');return;}
@@ -1562,19 +1562,21 @@ function saveAlta(){
   closeAlta();
   const comprada=alta.origen==='comprado';
   const nombre=(alta.nombre||'').trim()||(comprada?'(compra)':'(sin nombre)');
+  /* edad derivada de la fecha (ya no hay stepper de edad) */
+  const edadAnios=Math.round(((new Date()-new Date(alta.nacimiento+'T00:00:00'))/86400000/365.25)*10)/10;
   /* madre/padre: solo se enlazan si ya están registrados (la FK lo exige) */
   const madreId=(String(alta.madre||'').trim()&&animalesPorIdM[String(alta.madre).trim()])?String(alta.madre).trim():null;
   const padreId=(String(alta.padre||'').trim()&&animalesPorIdM[String(alta.padre).trim()])?String(alta.padre).trim():null;
   const pesoKg=(alta.peso!==''&&alta.peso!=null)?parseFloat(String(alta.peso).replace(',','.')):null;
   const nota=(alta.nota||'').trim()||null;
-  const fila=[num+' · '+nombre,alta.raza+' · '+alta.edad+' años · '+alta.tipo.toLowerCase()+(comprada?' comprada':''),0];
+  const fila=[num+' · '+nombre,alta.raza+' · '+edadAnios+' años · '+alta.tipo.toLowerCase()+(comprada?' comprada':''),0];
   grupos[g].animales.unshift(fila);
   incGrupo(g,1);encolar();
   if(typeof LCStore!=='undefined'){
     const GM={ordeno:'ordeño',novillas:'novilla',crias:'cria',machos:'macho'};
     LCStore.insertAnimal({id:num,nombre:nombre,raza:alta.raza,color:(alta.color||'').trim()||null,nota:nota,
       grupo:GM[g]||'novilla',
-      sexo:g==='machos'?'M':'H',edadAnios:alta.edad,nacimiento:alta.nacimiento||null,
+      sexo:g==='machos'?'M':'H',edadAnios:edadAnios,nacimiento:alta.nacimiento,
       origen:alta.origen||'nacido_finca',madreId:madreId,padreId:padreId,
       pesoKg:pesoKg,fechaPeso:pesoKg!=null?isoHoyM():null,
       procedencia:comprada?(alta.procedencia||null):null,
