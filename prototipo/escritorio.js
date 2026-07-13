@@ -550,9 +550,10 @@ function animalAMilk(a){
 })();
 
 /* ===== Scatter: Producción vs DEL (todas las vacas en ordeño del hato) ===== */
-/* Promedio de litros de los últimos 5 días con ordeño registrado (de ordenosDiaMap).
-   Suaviza la variación día a día. Devuelve null si no hay ordeños de esa vaca. */
-function promedioUltimos5(id){
+/* Promedio de litros de los últimos 7 días con ordeño registrado (de ordenosDiaMap).
+   Suaviza la variación día a día (una semana completa). Devuelve null si no hay
+   ordeños de esa vaca. */
+function promedioUltimos7(id){
   const arr=[];
   for(const k in ordenosDiaMap){
     const i=k.indexOf('|');
@@ -560,16 +561,16 @@ function promedioUltimos5(id){
   }
   if(!arr.length)return null;
   arr.sort((a,b)=>a[0]<b[0]?1:-1);   // por fecha, más reciente primero
-  const top=arr.slice(0,5);
+  const top=arr.slice(0,7);
   return Math.round(top.reduce((s,x)=>s+x[1],0)/top.length*10)/10;
 }
 function scatterCows(){
   let cows=[];
   try{
     cows=hato.filter(a=>a.grupo==='En ordeño'&&a.del!=='—'&&a.del!==undefined&&a.ayer!=='—').map(a=>{
-      // eje Y = promedio de los últimos 5 días; si aún no hay ordeños, el último valor
-      const p5=promedioUltimos5(a.num);
-      return {num:a.num,n:a.n,del:parseInt(a.del),l:(p5!=null?p5:a.ayer),
+      // eje Y = promedio de los últimos 7 días; si aún no hay ordeños, el último valor
+      const p7=promedioUltimos7(a.num);
+      return {num:a.num,n:a.n,del:parseInt(a.del),l:(p7!=null?p7:a.ayer),
         prenada:a.tags.includes('prenada'),vacia:a.tags.includes('vacia'),retiro:a.tags.includes('tratamiento')};
     });
   }catch(e){ /* hato aún no definido en la carga inicial */ }
@@ -631,7 +632,7 @@ function renderScatter(svgId){
     const col=c.vacia?'var(--red)':c.retiro?'var(--red)':c.prenada?'var(--green)':'var(--ink-2)';
     const r=4.5;   // todos los círculos del mismo tamaño; el color distingue el estado
     out+='<circle class="scatterDot" data-gocow="'+LCRules.esc(c.num)+'" cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="'+col+'" opacity="0.85" style="cursor:pointer"'+
-      '><title>'+LCRules.esc(c.num)+' '+LCRules.esc(c.n)+' · DEL '+c.del+' · '+c.l+' L/día (prom. 5 días)</title></circle>';
+      '><title>'+LCRules.esc(c.num)+' '+LCRules.esc(c.n)+' · DEL '+c.del+' · '+c.l+' L/día (prom. 7 días)</title></circle>';
     out+='<text x="'+cx+'" y="'+(cy-r-3)+'" font-family="Work Sans,sans-serif" font-size="8" font-weight="500" fill="#70756A" text-anchor="middle">'+LCRules.esc(c.num)+'</text>';
   });
   svg.innerHTML=out;
@@ -821,7 +822,7 @@ function recomputeMensual(){
   mensualData=Object.values(porAnimal);
   ordenosDiaMap={};(_ordsRaw||[]).forEach(o=>{ordenosDiaMap[o.animal_id+'|'+o.fecha]=o.litros;});
   renderMensual();
-  if(typeof renderScatters==='function')renderScatters();   // el scatter usa el promedio de 5 días
+  if(typeof renderScatters==='function')renderScatters();   // el scatter usa el promedio de 7 días
   renderLecheKpis();   // la producción del año vive en la tarjeta-resumen
 }
 (async function cargarMensualDesdeSupabase(){
@@ -970,7 +971,7 @@ function buildFichaBasica(a){
     origen:a.origen==='comprado'?'Comprada':a.origen==='nacido_finca'?'Nació en finca':'—',
     procedencia:a.procedencia||null,valorCompra:a.valorCompra||null,
     del:(a.del==null?0:a.del),parto:a.partos||0,ayer:(a.leche&&a.leche.ayer!=null?a.leche.ayer:0),
-    prom5:(typeof promedioUltimos5==='function'?promedioUltimos5(a.id):null),
+    prom7:(typeof promedioUltimos7==='function'?promedioUltimos7(a.id):null),
     diasAbiertos:(typeof _diasAbiertos==='function'?_diasAbiertos(a.id):null),
     peso:a.pesoKg?a.pesoKg+' kg':'—',fechaPeso:a.fechaPeso||null,
     madre:a.madreId?nombreRef(a.madreId):'—',padre:a.padreId?nombreRef(a.padreId):'—',
@@ -1030,7 +1031,7 @@ function goVaca(num,from){
   const kpis=document.getElementById('vacaKpis');
   kpis.innerHTML=
     '<div class="card kpi"><div class="k-label">Último ordeño</div><div class="k-value">'+cow.ayer+' <span class="k-unit">L</span></div>'+
-      '<div class="k-trend mut">'+(cow.prom5!=null?'prom. 5 días: '+cow.prom5+' L':'sin historial')+'</div></div>'+
+      '<div class="k-trend mut">'+(cow.prom7!=null?'prom. 7 días: '+cow.prom7+' L':'sin historial')+'</div></div>'+
     '<div class="card kpi"><div class="k-label">DEL</div><div class="k-value">'+cow.del+' <span class="k-unit">días</span></div>'+
       '<div class="k-trend mut">días en leche</div></div>'+
     '<div class="card kpi"><div class="k-label">Días abiertos</div><div class="k-value'+(cow.diasAbiertos>120?' down':'')+'">'+(cow.diasAbiertos!=null?cow.diasAbiertos:'—')+'</div>'+
