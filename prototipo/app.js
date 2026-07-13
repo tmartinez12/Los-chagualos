@@ -319,9 +319,18 @@ function openEditVaca(){
   editM.num=num;editM.nombre=a.nombre||'';editM.raza=a.raza||'';editM.color=a.color||'';editM.nota=a.nota||'';
   editM.nacimiento=a.nacimiento||'';editM.peso=(a.pesoKg!=null?a.pesoKg:'');
   editM.inicio=a.inicioLactancia||'';editM.leche=(a.leche&&a.leche.ayer!=null?a.leche.ayer:'');
-  editM.grupo=a.grupo||'ordeño';editM.madre=a.madreId||'';
+  editM.grupo=a.grupo||'ordeño';editM.madre=a.madreId||'';editM.padre=a.padreId||'';
+  editM.sexo=a.sexo||'H';editM.rolToro=(a.rolToro===true||a.rolToro==='toro');
+  editM.origen=a.origen||'';editM.procedencia=a.procedencia||'';editM.valor=(a.valorCompra!=null?a.valorCompra:'');
   document.querySelectorAll('#editGrupo .chip').forEach(c=>
     c.classList.toggle('sel',c.textContent.trim()===(GRUPO_DISPLAY_M[editM.grupo]||editM.grupo)));
+  document.querySelectorAll('#editSexo .chip').forEach((c,i)=>c.classList.toggle('sel',(i===0)===(editM.sexo==='H')));
+  _editPintarRol();
+  document.querySelectorAll('#editOrigen .chip').forEach((c,i)=>c.classList.toggle('sel',(i===0)===(editM.origen==='nacido_finca')));
+  const cw=document.getElementById('editCompraWrap');if(cw)cw.style.display=editM.origen==='comprado'?'':'none';
+  const ep=document.getElementById('editPadre');if(ep)ep.value=editM.padre;
+  const epr=document.getElementById('editProc');if(epr)epr.value=editM.procedencia;
+  const eva=document.getElementById('editValor');if(eva)eva.value=editM.valor;
   const em=document.getElementById('editMadre');if(em)em.value=editM.madre;
   document.getElementById('editCow').textContent=(a.id+' · '+a.nombre).toUpperCase();
   document.getElementById('editNombre').value=editM.nombre;
@@ -339,11 +348,30 @@ function closeEdit(){document.getElementById('editSheet').classList.remove('show
   document.getElementById('scrim').classList.remove('show');}
 function editPickGrupo(btn,val){editM.grupo=val;
   [...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));}
+function editPickSexo(btn,val){editM.sexo=val;
+  [...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));
+  _editPintarRol();}
+/* rol de toro solo aplica a machos (sin él, la lógica de "hijas del toro" no
+ * se activa) — paridad con el escritorio */
+function _editPintarRol(){
+  const w=document.getElementById('editRolToroWrap');if(!w)return;
+  if(editM.sexo!=='M'){w.style.display='none';editM.rolToro=false;return;}
+  w.style.display='';
+  document.querySelectorAll('#editRolToro .chip').forEach((c,i)=>c.classList.toggle('sel',(i===0)===!!editM.rolToro));
+}
+function editPickRol(btn,val){editM.rolToro=val;
+  [...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));}
+function editPickOrigen(btn,val){editM.origen=val;
+  [...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));
+  const w=document.getElementById('editCompraWrap');if(w)w.style.display=val==='comprado'?'':'none';}
 function saveEditVaca(){
   const num=editM.num,a=animalesPorIdM[num];if(!a)return;
   const madre=(editM.madre||'').trim()||null;
+  const padre=(editM.padre||'').trim()||null;
   if(madre&&!animalesPorIdM[madre]){snack('⚠ La madre '+madre+' no está registrada — corrige el número');return;}
   if(madre===num){snack('⚠ Un animal no puede ser su propia madre');return;}
+  if(padre&&!animalesPorIdM[padre]){snack('⚠ El padre '+padre+' no está registrado — corrige el número');return;}
+  if(padre===num){snack('⚠ Un animal no puede ser su propio padre');return;}
   const nombre=(editM.nombre||'').trim()||a.nombre;
   const raza=(editM.raza||'').trim()||null;
   const color=(editM.color||'').trim()||null;
@@ -355,12 +383,20 @@ function saveEditVaca(){
   closeEdit();
   const grupoNuevo=editM.grupo||a.grupo;
   const grupoCambio=grupoNuevo!==a.grupo;
+  const sexo=editM.sexo||a.sexo||'H';
+  const rolToro=sexo==='M'?!!editM.rolToro:false;
+  const origen=editM.origen||null;
+  const comprada=origen==='comprado';
+  const procedencia=comprada?((editM.procedencia||'').trim()||null):null;
+  const valor=(comprada&&editM.valor!==''&&editM.valor!=null)?parseInt(String(editM.valor).replace(/\D/g,'')):null;
   const campos={nombre:nombre,raza:raza,color:color,nota:nota,nacimiento:nacimiento,inicio_lactancia:inicio,
-    grupo:grupoNuevo,madre_id:madre};
+    grupo:grupoNuevo,madre_id:madre,padre_id:padre,sexo:sexo,rol_toro:rolToro,
+    origen:origen,procedencia:procedencia,valor_compra:valor};
   if(peso!=null&&!isNaN(peso)){campos.peso_kg=peso;campos.fecha_peso=isoHoyM();}
   const delCalc=inicio?Math.max(0,Math.round((new Date()-new Date(inicio+'T00:00:00'))/86400000)):a.del;
   Object.assign(a,{nombre:nombre,raza:raza,color:color,nota:nota,nacimiento:nacimiento,inicioLactancia:inicio,del:delCalc,
-    grupo:grupoNuevo,madreId:madre});
+    grupo:grupoNuevo,madreId:madre,padreId:padre,sexo:sexo,rolToro:rolToro,
+    origen:origen,procedencia:procedencia,valorCompra:valor});
   a.leche=a.leche||{};if(leche!=null&&!isNaN(leche))a.leche.ayer=leche;
   if(peso!=null&&!isNaN(peso)){a.pesoKg=peso;a.fechaPeso=isoHoyM();}
   /* refrescar la entrada del hato y la tarjeta de ordeño */
@@ -1491,20 +1527,26 @@ function _siguienteNumM(){
   return String(Math.max(altaSeq,...(nums.length?nums:[0]))+1).padStart(3,'0');}
 function openAlta(){alta.tipo='Novilla';alta.raza='Holstein × Gyr';alta.edad=2;
   alta.origen='nacido_finca';alta.num='';alta.nombre='';alta.nacimiento='';alta.procedencia='';alta.valor='';
+  alta.color='';alta.madre='';alta.padre='';alta.peso='';alta.nota='';
   const grupos2=document.querySelectorAll('#altaSheet .chips');
   grupos2[0].querySelectorAll('.chip').forEach((c,i)=>c.classList.toggle('sel',i===0));
   grupos2[1].querySelectorAll('.chip').forEach(c=>c.classList.toggle('sel',c.textContent.trim()==='Novilla'));
   grupos2[2].querySelectorAll('.chip').forEach(c=>c.classList.toggle('sel',c.textContent.trim()==='Holstein × Gyr'));
   document.getElementById('altaEdadVal').textContent=alta.edad;
-  ['altaNum','altaNombre','altaNac','altaProc','altaValor'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['altaNum','altaNombre','altaColor','altaNac','altaMadre','altaPadre','altaPeso','altaProc','altaValor','altaNota'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  _altaToggleCompra();   // procedencia/valor arranca oculto (nacida)
   const na=document.getElementById('altaNac');if(na)na.max=isoHoyM();   // sin fechas futuras
   const n=document.getElementById('altaNum');if(n)n.placeholder=_siguienteNumM()+' (siguiente libre)';
   document.getElementById('scrim').classList.add('show');
   document.getElementById('altaSheet').classList.add('show');}
 function closeAlta(){document.getElementById('altaSheet').classList.remove('show');
   document.getElementById('scrim').classList.remove('show');}
+/* procedencia/valor solo tienen sentido si es comprada (paridad con escritorio) */
+function _altaToggleCompra(){const w=document.getElementById('altaCompraWrap');
+  if(w)w.style.display=alta.origen==='comprado'?'':'none';}
 function altaPick(btn,campo,val){alta[campo]=val;
-  [...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));}
+  [...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));
+  if(campo==='origen')_altaToggleCompra();}
 function altaEdad(d){alta.edad=Math.max(0,Math.min(15,alta.edad+d));
   document.getElementById('altaEdadVal').textContent=alta.edad;}
 function saveAlta(){
@@ -1520,14 +1562,21 @@ function saveAlta(){
   closeAlta();
   const comprada=alta.origen==='comprado';
   const nombre=(alta.nombre||'').trim()||(comprada?'(compra)':'(sin nombre)');
+  /* madre/padre: solo se enlazan si ya están registrados (la FK lo exige) */
+  const madreId=(String(alta.madre||'').trim()&&animalesPorIdM[String(alta.madre).trim()])?String(alta.madre).trim():null;
+  const padreId=(String(alta.padre||'').trim()&&animalesPorIdM[String(alta.padre).trim()])?String(alta.padre).trim():null;
+  const pesoKg=(alta.peso!==''&&alta.peso!=null)?parseFloat(String(alta.peso).replace(',','.')):null;
+  const nota=(alta.nota||'').trim()||null;
   const fila=[num+' · '+nombre,alta.raza+' · '+alta.edad+' años · '+alta.tipo.toLowerCase()+(comprada?' comprada':''),0];
   grupos[g].animales.unshift(fila);
   incGrupo(g,1);encolar();
   if(typeof LCStore!=='undefined'){
     const GM={ordeno:'ordeño',novillas:'novilla',crias:'cria',machos:'macho'};
-    LCStore.insertAnimal({id:num,nombre:nombre,raza:alta.raza,grupo:GM[g]||'novilla',
+    LCStore.insertAnimal({id:num,nombre:nombre,raza:alta.raza,color:(alta.color||'').trim()||null,nota:nota,
+      grupo:GM[g]||'novilla',
       sexo:g==='machos'?'M':'H',edadAnios:alta.edad,nacimiento:alta.nacimiento||null,
-      origen:alta.origen||'nacido_finca',
+      origen:alta.origen||'nacido_finca',madreId:madreId,padreId:padreId,
+      pesoKg:pesoKg,fechaPeso:pesoKg!=null?isoHoyM():null,
       procedencia:comprada?(alta.procedencia||null):null,
       valorCompra:(comprada&&alta.valor)?parseInt(String(alta.valor).replace(/\D/g,'')):null})
       .then(a=>{desencolar();

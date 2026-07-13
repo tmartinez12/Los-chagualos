@@ -687,7 +687,9 @@
     <input id="altaNum" placeholder="Se asigna el siguiente libre" oninput="alta.num=this.value"
       style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-bottom:8px">
     <input id="altaNombre" placeholder="Nombre (opcional)" oninput="alta.nombre=this.value"
-      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
+      style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-bottom:8px">
+    <input id="altaColor" placeholder="Color (opcional): negra, pinta roja…" oninput="alta.color=this.value"
+      style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
 
     <div class="section-label">Tipo de animal</div>
     <div class="chips">
@@ -717,11 +719,26 @@
       <button class="chip" onclick="altaEdad(1)">＋</button>
     </div>
 
-    <div class="section-label">Procedencia · valor (opcional)</div>
-    <input id="altaProc" placeholder="Finca o vendedor" oninput="alta.procedencia=this.value"
-      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-bottom:8px">
-    <input id="altaValor" type="number" inputmode="numeric" placeholder="Valor de compra $" oninput="alta.valor=this.value"
-      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
+    <div class="section-label">Genealogía · peso (opcional)</div>
+    <input id="altaMadre" placeholder="Madre (número, ya registrada). Ej. 042" oninput="alta.madre=this.value"
+      style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-bottom:8px">
+    <input id="altaPadre" placeholder="Padre (número, ya registrado). Ej. T01" oninput="alta.padre=this.value"
+      style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-bottom:8px">
+    <input id="altaPeso" type="number" inputmode="numeric" placeholder="Peso (kg)" oninput="alta.peso=this.value"
+      style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
+
+    <!-- procedencia/valor SOLO si es comprada (lo controla altaPick del origen) -->
+    <div id="altaCompraWrap" style="display:none">
+      <div class="section-label">Procedencia · valor (compra)</div>
+      <input id="altaProc" placeholder="Finca o vendedor" oninput="alta.procedencia=this.value"
+        style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-bottom:8px">
+      <input id="altaValor" type="number" inputmode="numeric" placeholder="Valor de compra $" oninput="alta.valor=this.value"
+        style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
+    </div>
+
+    <div class="section-label">Nota 📝 (opcional)</div>
+    <input id="altaNota" placeholder="Ej. patea al ordeño, propensa a mastitis…" oninput="alta.nota=this.value"
+      style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
 
     <button class="btn filled" style="width:100%;justify-content:center;margin-top:16px" onclick="saveAlta()">
       <svg class="ic-s ic"><use href="#i-check"/></svg>Guardar animal</button>
@@ -746,9 +763,24 @@
       <button class="chip" onclick="editPickGrupo(this,'cria')">Cría</button>
       <button class="chip" onclick="editPickGrupo(this,'macho')">Macho</button>
     </div>
-    <div class="section-label">Madre (número, debe estar registrada)</div>
-    <input id="editMadre" placeholder="Ej. 042" oninput="editM.madre=this.value"
-      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);padding:10px 12px;outline:none">
+    <div class="section-label">Sexo</div>
+    <div class="chips" id="editSexo">
+      <button class="chip" onclick="editPickSexo(this,'H')">♀ Hembra</button>
+      <button class="chip" onclick="editPickSexo(this,'M')">♂ Macho</button>
+    </div>
+    <!-- rol de toro: solo para machos (lo muestra editPickSexo) -->
+    <div id="editRolToroWrap" style="display:none">
+      <div class="section-label">Rol</div>
+      <div class="chips" id="editRolToro">
+        <button class="chip" onclick="editPickRol(this,true)">🐂 Toro reproductor</button>
+        <button class="chip" onclick="editPickRol(this,false)">No reproductor</button>
+      </div>
+    </div>
+    <div class="section-label">Madre · padre (número, ya registrados)</div>
+    <input id="editMadre" placeholder="Madre. Ej. 042" oninput="editM.madre=this.value"
+      style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);padding:10px 12px;outline:none;margin-bottom:8px">
+    <input id="editPadre" placeholder="Padre. Ej. T01" oninput="editM.padre=this.value"
+      style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;color:var(--ink);padding:10px 12px;outline:none">
     <div class="section-label">Raza</div>
     <input id="editRaza" placeholder="Ej. Holstein × Gyr" oninput="editM.raza=this.value"
       style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
@@ -764,9 +796,21 @@
     <div class="section-label">Inicio de lactancia (último parto)</div>
     <input id="editInicio" type="date" oninput="editM.inicio=this.value"
       style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
+    <div class="section-label">Origen</div>
+    <div class="chips" id="editOrigen">
+      <button class="chip" onclick="editPickOrigen(this,'nacido_finca')">🐄 Nacida en la finca</button>
+      <button class="chip" onclick="editPickOrigen(this,'comprado')">🛒 Comprada</button>
+    </div>
+    <div id="editCompraWrap" style="display:none">
+      <div class="section-label">Procedencia · valor (compra)</div>
+      <input id="editProc" placeholder="Finca o vendedor" oninput="editM.procedencia=this.value"
+        style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;margin-bottom:8px">
+      <input id="editValor" type="number" inputmode="numeric" placeholder="Valor de compra $" oninput="editM.valor=this.value"
+        style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
+    </div>
     <div class="section-label">Nota 📝</div>
     <input id="editNota" placeholder="Ej. patea al ordeño, propensa a mastitis…" oninput="editM.nota=this.value"
-      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
+      style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
     <div class="section-label">Último ordeño (L) · registra un ordeño de esta vaca</div>
     <input id="editLeche" type="number" inputmode="numeric" placeholder="litros del último ordeño" oninput="editM.leche=this.value"
       style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:14px;padding:10px 12px;outline:none">
