@@ -298,44 +298,43 @@
 
       <!-- ============ PLAN SANITARIO ============ -->
       <div class="page" id="pg-sanitario">
-        <button class="btn filled" style="margin-bottom:14px" onclick="openTrata()">
-          <svg class="ic-s ic"><use href="#i-shield"/></svg>Registrar tratamiento</button>
-
-        <div class="section-label" style="margin-top:0">En tratamiento ahora · <span style="color:var(--red)" id="tratCount">0</span></div>
-        <div id="tratActivos" style="margin-bottom:14px"></div>
-
-        <div class="section-label" style="display:flex;justify-content:space-between;align-items:center">Vacunas
-          <button class="btn outl small" onclick="openVacuna()">＋ Registrar vacunación</button></div>
-        <div class="grid" style="grid-template-columns:1fr 1fr">
-          <div class="card" id="sanProxima" style="border:1.5px solid var(--ink);display:flex;align-items:center;gap:14px">
-            <svg class="ic" style="color:var(--ink-2)"><use href="#i-shield"/></svg>
-            <div style="flex:1"><div style="font-size:14.5px;font-weight:700" id="sanProximaTitulo">Próxima vacunación</div>
-              <div style="font-size:12px;color:var(--ink-2)" id="sanProximaSub">Se calcula del protocolo y de lo registrado</div></div>
-            <button class="btn filled small" onclick="openVacuna()">Registrar</button>
-          </div>
-          <div class="alert warn" id="sanBrucelosis" style="margin:0;display:none">
-            <svg class="ic" style="color:var(--amber)"><use href="#i-sprout"/></svg>
-            <div style="flex:1"><div class="a-title"></div>
-              <div class="a-sub"></div>
-              <button class="btn outl small" style="margin-top:10px" onclick="go('pg-hato')">Ver crías</button></div>
-          </div>
+        <!-- 1 · LO QUE TOCA: la próxima vacuna (con deadline) + alerta de brucelosis -->
+        <div class="card" id="sanProxima" style="border:1.5px solid var(--ink);display:flex;align-items:center;gap:14px">
+          <svg class="ic" style="color:var(--ink-2)"><use href="#i-shield"/></svg>
+          <div style="flex:1"><div style="font-size:15px;font-weight:700" id="sanProximaTitulo">Próxima vacunación</div>
+            <div style="font-size:12px;color:var(--ink-2)" id="sanProximaSub">Se calcula del protocolo y de lo registrado</div></div>
+          <button class="btn filled small" onclick="openVacuna()"><svg class="ic-s ic"><use href="#i-shield"/></svg>Registrar vacunación</button>
+        </div>
+        <div class="alert warn" id="sanBrucelosis" style="margin:10px 0 0;display:none">
+          <svg class="ic" style="color:var(--amber)"><use href="#i-sprout"/></svg>
+          <div style="flex:1"><div class="a-title"></div>
+            <div class="a-sub"></div>
+            <button class="btn outl small" style="margin-top:10px" onclick="go('pg-hato')">Ver crías</button></div>
         </div>
 
-        <div class="section-label">Calendario de vacunación · protocolo</div>
+        <!-- 2 · EN CURSO: tratamientos activos, con su CTA contextual -->
+        <div class="section-label" style="display:flex;justify-content:space-between;align-items:center;margin-top:18px">
+          <span>En tratamiento ahora · <span style="color:var(--red)" id="tratCount">0</span></span>
+          <button class="btn filled small" onclick="openTrata()"><svg class="ic-s ic"><use href="#i-shield"/></svg>Registrar tratamiento</button>
+        </div>
+        <div id="tratActivos" style="margin-bottom:6px"></div>
+
+        <!-- 3 · REFERENCIA: calendario, historial ICA y protocolos (plegados) -->
+        <div class="section-label">Calendario de vacunación</div>
         <div class="pgrid" id="sanCalendario" style="grid-template-columns:repeat(12,1fr)"></div>
 
-        <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:14px">
-          <div class="card">
-            <div class="chart-title" style="font-size:13.5px">Protocolos configurados</div>
-            <div style="font-size:13px;color:var(--ink-2);line-height:1.95;margin-top:8px">
+        <div class="card" style="margin-top:14px">
+          <div class="chart-title" style="font-size:13.5px;display:flex;justify-content:space-between;align-items:center">
+            <span>Historial · soporte ICA</span>
+            <button class="btn outl small" onclick="exportarSoporteICA()"><svg class="ic-s ic"><use href="#i-export"/></svg>Exportar CSV</button>
+          </div>
+          <div id="vacListaHist" style="font-size:12.5px;color:var(--ink-2);line-height:1.7;margin-top:8px"></div>
+          <details style="margin-top:14px;border-top:1px solid var(--border);padding-top:10px">
+            <summary style="font-size:12.5px;color:var(--ink-2);cursor:pointer;font-weight:600">Protocolos configurados</summary>
+            <div style="font-size:12.5px;color:var(--ink-2);line-height:1.95;margin-top:8px">
               Aftosa ICA — mayo / noviembre<br>Brucelosis — crías hembra de 3 a 8 meses<br>
               Desparasitación — cada 3 meses<br>Baño garrapaticida — según clima</div>
-          </div>
-          <div class="card">
-            <div class="chart-title" style="font-size:13.5px">Historial · soporte ICA</div>
-            <div id="vacListaHist" style="font-size:12.5px;color:var(--ink-2);line-height:1.7;margin-top:8px"></div>
-            <button class="btn outl small" style="margin-top:12px" onclick="exportarSoporteICA()"><svg class="ic-s ic"><use href="#i-export"/></svg>Exportar soporte ICA (CSV)</button>
-          </div>
+          </details>
         </div>
       </div>
     </div>

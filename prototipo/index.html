@@ -334,30 +334,20 @@
 
   <!-- ============ PLAN SANITARIO ============ -->
   <div class="screen" id="scr-sanitario">
-    <button class="btn filled" style="width:100%;justify-content:center;margin-top:4px"
-      onclick="openSheet()"><svg class="ic-s ic"><use href="#i-cross"/></svg>Registrar tratamiento</button>
-
-    <div class="section-label">En tratamiento ahora · <span style="color:var(--ink)" id="tratCountM">0</span></div>
-    <div id="tratListaM"></div>
-
-    <button class="btn outl" style="width:100%;justify-content:center;margin-top:4px" onclick="openVacunaM()">
-      <svg class="ic-s ic"><use href="#i-shield"/></svg>Registrar vacunación</button>
-    <div class="section-label">Vacunas</div>
-    <div class="card" style="border:1.5px solid var(--ink)">
+    <!-- 1 · LO QUE TOCA: la próxima vacuna (con deadline) + brucelosis -->
+    <div class="card" style="border:1.5px solid var(--ink);margin-top:4px">
       <div class="row">
         <svg class="ic" style="color:var(--ink-2)"><use href="#i-shield"/></svg>
         <div style="flex:1">
-          <div style="font-size:14.5px;font-weight:700" id="sanProximaTituloM">Próxima vacunación</div>
+          <div style="font-size:15px;font-weight:700" id="sanProximaTituloM">Próxima vacunación</div>
           <div style="font-size:12px;color:var(--ink-2)" id="sanProximaSubM">Se calcula del protocolo y de lo registrado</div>
         </div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <button class="btn filled small" style="flex:1;justify-content:center"
-          onclick="openVacunaM()"><svg class="ic-s ic"><use href="#i-shield"/></svg>Registrar vacunación</button>
-      </div>
+      <button class="btn filled small" style="width:100%;justify-content:center;margin-top:12px"
+        onclick="openVacunaM()"><svg class="ic-s ic"><use href="#i-shield"/></svg>Registrar vacunación</button>
     </div>
 
-    <div class="alert warn" id="sanBrucelosisM" style="display:none">
+    <div class="alert warn" id="sanBrucelosisM" style="display:none;margin-top:10px">
       <div class="a-icon"><svg class="ic"><use href="#i-sprout"/></svg></div>
       <div class="a-body">
         <div class="a-title"></div>
@@ -366,19 +356,26 @@
       </div>
     </div>
 
-    <div class="section-label">Calendario de vacunación · protocolo</div>
+    <!-- 2 · EN CURSO: tratamientos activos + CTA para registrar uno -->
+    <div class="section-label">En tratamiento ahora · <span style="color:var(--ink)" id="tratCountM">0</span></div>
+    <div id="tratListaM"></div>
+    <button class="btn filled" style="width:100%;justify-content:center;margin-top:8px"
+      onclick="openTrata()"><svg class="ic-s ic"><use href="#i-cross"/></svg>Registrar tratamiento</button>
+
+    <!-- 3 · REFERENCIA: calendario, historial y protocolos (plegados) -->
+    <div class="section-label">Calendario de vacunación</div>
     <div class="pgrid" id="sanCalendarioM" style="grid-template-columns:repeat(4,1fr)"></div>
 
-    <div class="list mt12">
-      <div class="list-item" onclick="snack('Protocolos: aftosa ICA may/nov · brucelosis 3-8 meses · desparasitación cada 3 meses · baño garrapaticida — se configuran una vez')">
-        <div class="li-leading"><svg class="ic"><use href="#i-clip"/></svg></div>
-        <div class="li-body"><div class="li-title">Protocolos configurados</div>
-          <div class="li-sub">Aftosa · brucelosis · desparasitación · baño</div></div>
-        <div class="li-trail"><div class="li-num">4</div></div><svg class="ic chev"><use href="#i-chev"/></svg></div>
-      <div class="list-item" style="display:block">
-        <div class="li-title" style="margin-bottom:6px">Historial · soporte ICA</div>
-        <div id="vacListaHistM" style="font-size:12.5px;color:var(--ink-2);line-height:1.7"></div></div>
+    <div class="card flat mt12" style="display:block">
+      <div class="li-title" style="margin-bottom:6px">Historial · soporte ICA</div>
+      <div id="vacListaHistM" style="font-size:12.5px;color:var(--ink-2);line-height:1.7"></div>
     </div>
+    <details style="margin-top:10px;padding:0 2px">
+      <summary style="font-size:13px;color:var(--ink-2);cursor:pointer;font-weight:600;padding:6px 0">Protocolos configurados</summary>
+      <div style="font-size:12.5px;color:var(--ink-2);line-height:1.9;padding:2px 0 6px">
+        Aftosa ICA — mayo / noviembre<br>Brucelosis — crías hembra de 3 a 8 meses<br>
+        Desparasitación — cada 3 meses<br>Baño garrapaticida — según clima</div>
+    </details>
   </div>
 
   <!-- SHEET: registrar vacunación -->
