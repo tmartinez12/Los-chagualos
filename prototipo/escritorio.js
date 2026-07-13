@@ -1161,8 +1161,10 @@ function goVaca(num,from){
     if(enElAnio>=3)lineas.push('<span style="color:var(--red)">⚠ '+enElAnio+' tratamientos en 12 meses — patrón a vigilar</span>');
     pasados.slice(0,4).forEach(t=>{
       lineas.push('💊 '+fmtFechaAno(t.inicio)+' · '+(t.problema||'')+(t.medicamento?' · '+t.medicamento.toLowerCase():'')+' <span style="color:var(--ink-3)">(terminado)</span>');});
-    (_vacunaciones||[]).filter(v=>String(v.animal_id)===String(cow.num)||v.alcance==='hato').slice(0,3).forEach(v=>{
-      lineas.push('💉 '+fmtFechaCorta(v.fecha)+' · '+v.tipo+(v.alcance==='hato'?' (todo el hato)':''));});
+    /* solo vacunas que DE VERDAD le aplican (lista exacta; en legado, solo si
+     * ya existía en esa fecha — LCRules.vacunaAplicaA) */
+    (_vacunaciones||[]).filter(v=>LCRules.vacunaAplicaA(v,animalesPorId[cow.num])).slice(0,3).forEach(v=>{
+      lineas.push('💉 '+fmtFechaCorta(v.fecha)+' · '+v.tipo+((v.animales_ids&&v.animales_ids.length>1)?' ('+v.animales_ids.length+' animales)':(v.alcance==='hato'&&!(v.animales_ids&&v.animales_ids.length)?' (ciclo del hato)':'')));});
     if(lineas.length){sl.style.display='';sl.innerHTML=lineas.join('<br>');}
     else{sl.style.display='none';sl.innerHTML='';}
   }
@@ -1518,36 +1520,65 @@ function exportarSoporteICA(){
 const TIPO_VAC=[{val:'aftosa',label:'Aftosa'},{val:'brucelosis',label:'Brucelosis'},
   {val:'desparasitacion',label:'Desparasitación'},{val:'vitaminas',label:'Vitaminas'},{val:'otra',label:'Otra'}];
 const vacunaState={};
+/* lista con checkboxes: seleccionas EXACTAMENTE a quiénes se les aplicó (con
+ * "todas" de un clic, como en el correo). Guarda la lista real — así una vaca
+ * nueva no aparece vacunada por eventos anteriores a su llegada. */
+function _vacRefrescarContador(){
+  const c=document.getElementById('vacSelCount');if(!c)return;
+  const total=document.querySelectorAll('#vacListaSel input[data-animal]').length;
+  c.textContent=vacunaState.sel.size+' de '+total+' seleccionadas';
+  const master=document.getElementById('vacSelTodas');
+  if(master)master.checked=vacunaState.sel.size===total&&total>0;
+}
 function openVacuna(){
-  vacunaState.tipo='aftosa';vacunaState.alcance='hato';vacunaState.animal='';
-  vacunaState.producto='';vacunaState.lote='';vacunaState.fecha=isoHoy();
-  openReg('Registrar vacunación','Queda como soporte ICA');
+  vacunaState.tipo='aftosa';vacunaState.producto='';vacunaState.lote='';vacunaState.fecha=isoHoy();
+  const activos=Object.values(animalesPorId).filter(a=>a.grupo!=='baja')
+    .sort((x,y)=>String(x.id).localeCompare(String(y.id),undefined,{numeric:true}));
+  vacunaState.sel=new Set(activos.map(a=>String(a.id)));   // por defecto: todas (el caso común, el ciclo)
+  openReg('Registrar vacunación','Queda como soporte ICA · marca a quiénes se les aplicó');
   const body=document.getElementById('regBody');body.innerHTML='';
   body.appendChild(regLabel('Tipo'));
   body.appendChild(regChips(TIPO_VAC,vacunaState.tipo,v=>vacunaState.tipo=v));
-  body.appendChild(regLabel('¿A quién?'));
-  body.appendChild(regChips([{val:'hato',label:'Todo el hato'},{val:'individual',label:'Una animal'}],vacunaState.alcance,
-    v=>{vacunaState.alcance=v;const w=document.getElementById('vacAnimalWrap');if(w)w.style.display=v==='individual'?'':'none';}));
-  const aw=regTexto('Animal (número)','solo si es una animal',v=>vacunaState.animal=v,'text',vacunaState.animal);
-  aw.id='vacAnimalWrap';aw.style.display='none';body.appendChild(aw);
+  body.appendChild(regLabel('¿A quiénes? (desmarca las que no)'));
+  const cont=document.createElement('div');
+  cont.innerHTML='<label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:6px 2px;border-bottom:1px solid var(--border);cursor:pointer">'+
+    '<input type="checkbox" id="vacSelTodas" checked> Seleccionar todas'+
+    '<span id="vacSelCount" style="margin-left:auto;font-weight:500;color:var(--ink-2)"></span></label>'+
+    '<div id="vacListaSel" style="max-height:220px;overflow-y:auto;padding:4px 2px">'+
+    activos.map(a=>'<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:5px 0;cursor:pointer;border-bottom:1px solid var(--surface)">'+
+      '<input type="checkbox" data-animal="'+LCRules.esc(String(a.id))+'" checked> '+
+      '<b>'+LCRules.esc(String(a.id))+'</b> '+LCRules.esc(a.nombre||'')+
+      ' <span style="margin-left:auto;color:var(--ink-3);font-size:11.5px">'+(GRUPO_DISPLAY[a.grupo]||a.grupo)+'</span></label>').join('')+
+    '</div>';
+  body.appendChild(cont);
+  cont.querySelector('#vacSelTodas').onchange=function(){
+    const on=this.checked;
+    cont.querySelectorAll('input[data-animal]').forEach(cb=>{cb.checked=on;
+      if(on)vacunaState.sel.add(cb.dataset.animal);else vacunaState.sel.delete(cb.dataset.animal);});
+    _vacRefrescarContador();
+  };
+  cont.querySelectorAll('input[data-animal]').forEach(cb=>{cb.onchange=function(){
+    if(this.checked)vacunaState.sel.add(this.dataset.animal);else vacunaState.sel.delete(this.dataset.animal);
+    _vacRefrescarContador();
+  };});
+  _vacRefrescarContador();
   body.appendChild(regTexto('Producto (opcional)','Ej. Aftogan',v=>vacunaState.producto=v,'text',vacunaState.producto));
   body.appendChild(regTexto('Lote (opcional)','lote del biológico',v=>vacunaState.lote=v,'text',vacunaState.lote));
   body.appendChild(regTexto('Fecha','',v=>vacunaState.fecha=v,'date',vacunaState.fecha));
   document.getElementById('regSaveBtn').onclick=saveVacuna;
 }
 function saveVacuna(){
+  const ids=Array.from(vacunaState.sel||[]);
+  if(!ids.length){snack('Marca al menos un animal para registrar la vacunación');return;}
   closeReg();
   const tipoLabel=(TIPO_VAC.find(t=>t.val===vacunaState.tipo)||{}).label||vacunaState.tipo;
-  const individual=vacunaState.alcance==='individual';
-  const animalId=individual?(vacunaState.animal||'').trim():null;
-  const nAnimales=individual?null:Object.values(animalesPorId).filter(a=>a.grupo!=='baja').length;
   if(typeof LCStore!=='undefined'){
-    LCStore.registrarVacunacion({tipo:vacunaState.tipo,alcance:vacunaState.alcance,animalId:animalId,
-      nAnimales:nAnimales,producto:vacunaState.producto||null,lote:vacunaState.lote||null,fecha:vacunaState.fecha||isoHoy()})
+    LCStore.registrarVacunacion({tipo:vacunaState.tipo,animalIds:ids,
+      producto:vacunaState.producto||null,lote:vacunaState.lote||null,fecha:vacunaState.fecha||isoHoy()})
       .then(()=>cargarVacunaciones())
       .catch(e=>{console.warn('Vacunación no guardada:',e.message||e);snack('⚠ La vacunación NO se guardó en la base — reintenta');});
   }
-  snack('Vacunación registrada: '+tipoLabel+(individual?(animalId?' · '+animalId:''):' · todo el hato'));
+  snack('Vacunación registrada: '+tipoLabel+' · '+(ids.length===1?ids[0]:ids.length+' animales'));
 }
 let _vacunaciones=[];
 function renderVacunaciones(lista){
@@ -1559,7 +1590,8 @@ function renderVacunaciones(lista){
   box.innerHTML=arr.slice(0,10).map(v=>{
     const quien=v.alcance==='individual'
       ?((v.animales&&v.animales.nombre)?v.animal_id+' '+v.animales.nombre:(v.animal_id||'animal'))
-      :('todo el hato'+(v.n_animales?' ('+v.n_animales+')':''));
+      :((v.animales_ids&&v.animales_ids.length)?(v.animales_ids.length+' animales')   // registro nuevo: lista exacta
+        :('todo el hato'+(v.n_animales?' ('+v.n_animales+')':'')));                    // legado: solo conteo
     return '<div><b style="color:var(--ink)">'+fmtFechaCorta(v.fecha)+'</b> · '+LCRules.esc(v.tipo)+' · '+LCRules.esc(quien)+
       (v.producto?' · '+LCRules.esc(v.producto):'')+(v.lote?' · lote '+LCRules.esc(v.lote):'')+
       ' <span class="del-x" title="Eliminar esta vacunación" onclick="eliminarVacHist(\''+LCRules.esc(v.id)+'\')">✕</span></div>';

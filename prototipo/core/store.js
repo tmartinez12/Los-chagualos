@@ -103,6 +103,7 @@
       listoMachos: (r.grupo === 'levante' && r.sexo === 'M' && edadDeriv != null && edadDeriv >= 3),
       baja: r.baja_motivo ? { motivo: r.baja_motivo, fecha: r.baja_fecha, valor: r.baja_valor, nota: r.baja_nota } : null,
       procedencia: r.procedencia, valorCompra: r.valor_compra,
+      creadoEn: r.created_at,    // cuándo entró a la base (regla de vacunas legado: ver LCRules.vacunaAplicaA)
       updatedAt: r.updated_at,   // para detectar edición concurrente (last-write-wins)
     };
   }
@@ -462,7 +463,33 @@
   }
 
   /* --- Vacunaciones --------------------------------------------------------- */
+  /* v.animalIds (lista de chapetas) es la forma NUEVA: guarda el evento + a
+   * QUIÉNES se aplicó (vacunaciones_animales) en una transacción (RPC
+   * registrar_vacunacion_completa). Sin animalIds, cae al comportamiento viejo
+   * (solo el evento con conteo) — únicamente para compatibilidad. */
   async function registrarVacunacion(v) {
+    const ids = (v.animalIds || []).map(String).filter(Boolean);
+    if (ids.length) {
+      const rpc = await client().rpc('registrar_vacunacion_completa', {
+        p_tipo: v.tipo, p_animal_ids: ids,
+        p_producto: v.producto || null, p_lote: v.lote || null,
+        p_fecha: v.fecha || hoyFinca(), p_proxima: v.proxima || null, p_nota: v.nota || null,
+      });
+      if (!rpc.error) return { id: rpc.data, n_animales: ids.length };
+      /* función no instalada (migración pendiente) → evento + lista en dos pasos */
+      if (rpc.error.code !== 'PGRST202' && rpc.error.code !== '42883') throw rpc.error;
+      const ev = await client().from('vacunaciones').insert({
+        tipo: v.tipo, alcance: ids.length === 1 ? 'individual' : 'hato',
+        animal_id: ids.length === 1 ? ids[0] : null, n_animales: ids.length,
+        producto: v.producto || null, lote: v.lote || null,
+        fecha: v.fecha || hoyFinca(), proxima: v.proxima || null, nota: v.nota || null,
+      }).select().single();
+      if (ev.error) throw ev.error;
+      const det = await client().from('vacunaciones_animales')
+        .insert(ids.map(id => ({ vacunacion_id: ev.data.id, animal_id: id })));
+      if (det.error && det.error.code !== '42P01') throw det.error;   // sin tabla: queda solo el evento (legado)
+      return ev.data;
+    }
     const fila = {
       tipo: v.tipo, alcance: v.alcance || 'hato',
       animal_id: v.alcance === 'individual' ? (v.animalId || null) : null,
@@ -475,10 +502,25 @@
     if (error) throw error;
     return data;
   }
+  /* Lee las vacunaciones CON su lista de animales (v.animales_ids). Si la tabla
+   * de la lista aún no existe (migración pendiente), cae a la lectura clásica
+   * y animales_ids queda []. */
   async function getVacunaciones() {
-    return _paginado(() => client().from('vacunaciones')
-      .select('id, tipo, alcance, animal_id, n_animales, producto, lote, fecha, proxima, nota, animales(nombre)')
-      .order('fecha', { ascending: false }).order('id', { ascending: true }));
+    let filas;
+    try {
+      filas = await _paginado(() => client().from('vacunaciones')
+        .select('id, tipo, alcance, animal_id, n_animales, producto, lote, fecha, proxima, nota, animales(nombre), vacunaciones_animales(animal_id)')
+        .order('fecha', { ascending: false }).order('id', { ascending: true }));
+    } catch (e) {
+      filas = await _paginado(() => client().from('vacunaciones')
+        .select('id, tipo, alcance, animal_id, n_animales, producto, lote, fecha, proxima, nota, animales(nombre)')
+        .order('fecha', { ascending: false }).order('id', { ascending: true }));
+    }
+    return (filas || []).map(v => {
+      v.animales_ids = (v.vacunaciones_animales || []).map(x => String(x.animal_id));
+      delete v.vacunaciones_animales;
+      return v;
+    });
   }
   async function deleteVacunacion(id) {
     const { error } = await client().from('vacunaciones').delete().eq('id', id);
@@ -545,7 +587,7 @@
    *   como archivo .json). restaurarTodo(): vuelve a cargar ese archivo.       */
   const TABLAS_RESPALDO = [
     'potreros', 'animales', 'ordenos', 'palpaciones',
-    'tratamientos', 'vacunaciones', 'partos', 'movimientos_potrero', 'movimientos_grupo',
+    'tratamientos', 'vacunaciones', 'vacunaciones_animales', 'partos', 'movimientos_potrero', 'movimientos_grupo',
   ];
   /* columnas vigentes por tabla (espejo de schema.sql): la restauración filtra
    * cualquier columna desconocida (p.ej. de un respaldo de un esquema viejo)
@@ -561,6 +603,7 @@
     palpaciones: ['id', 'animal_id', 'fecha', 'motivo', 'resultado', 'prenez_meses', 'registrado_por', 'created_at'],
     tratamientos: ['id', 'animal_id', 'problema', 'medicamento', 'inicio', 'dias_retiro', 'activo', 'nota', 'registrado_por', 'created_at'],
     vacunaciones: ['id', 'tipo', 'alcance', 'animal_id', 'n_animales', 'producto', 'lote', 'fecha', 'proxima', 'nota', 'registrado_por', 'created_at'],
+    vacunaciones_animales: ['id', 'vacunacion_id', 'animal_id', 'created_at'],
     partos: ['id', 'madre_id', 'cria_id', 'fecha', 'sexo_cria', 'peso_kg', 'tipo', 'estado_cria', 'nota', 'registrado_por', 'created_at'],
     movimientos_potrero: ['id', 'potrero_id', 'fecha', 'tipo', 'registrado_por', 'created_at'],
     movimientos_grupo: ['id', 'animal_id', 'de_grupo', 'a_grupo', 'fecha', 'motivo', 'registrado_por', 'created_at'],
@@ -637,7 +680,8 @@
       await upsert('animales', conRefs, { onConflict: 'id' });
     }
     /* tablas hijas (ya existen animales y potreros que referencian) */
-    for (const t of ['ordenos', 'palpaciones', 'tratamientos', 'vacunaciones', 'partos', 'movimientos_potrero']) {
+    /* orden: vacunaciones antes que vacunaciones_animales (FK) */
+    for (const t of ['ordenos', 'palpaciones', 'tratamientos', 'vacunaciones', 'vacunaciones_animales', 'partos', 'movimientos_potrero', 'movimientos_grupo']) {
       await upsert(t, T[t]);
     }
     _invalidarAnimales();

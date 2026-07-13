@@ -208,6 +208,48 @@ CREATE TABLE vacunaciones (
 
 CREATE INDEX idx_vacunaciones_fecha ON vacunaciones(fecha DESC);
 
+-- ─── VACUNACIONES · ANIMALES (a QUIÉNES se les aplicó) ──────────────────────
+-- La lista EXACTA de animales de cada vacunación. Antes solo se guardaba un
+-- conteo (n_animales) y cualquier animal — incluso uno registrado después —
+-- aparecía como vacunado. Con esta tabla, la cobertura por animal es real.
+-- (id propio en vez de PK compuesta: el contrato de respaldo/restauración
+-- exige un `id` por fila; la unicidad del par se garantiza aparte.)
+CREATE TABLE vacunaciones_animales (
+  id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  vacunacion_id  UUID NOT NULL REFERENCES vacunaciones(id) ON DELETE CASCADE,
+  animal_id      TEXT NOT NULL REFERENCES animales(id) ON DELETE CASCADE,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (vacunacion_id, animal_id)
+);
+CREATE INDEX idx_vac_animales_animal ON vacunaciones_animales(animal_id);
+
+-- Registrar la vacunación + su lista de animales en UNA transacción (o entra
+-- todo, o nada). Devuelve el id del evento. La app la llama por RPC; si no
+-- está instalada, store.js cae a dos escrituras sueltas.
+CREATE OR REPLACE FUNCTION registrar_vacunacion_completa(
+  p_tipo       text,
+  p_animal_ids text[],
+  p_producto   text DEFAULT NULL,
+  p_lote       text DEFAULT NULL,
+  p_fecha      date DEFAULT NULL,
+  p_proxima    date DEFAULT NULL,
+  p_nota       text DEFAULT NULL
+) RETURNS uuid
+LANGUAGE plpgsql AS $$
+DECLARE v_id uuid; v_n int := COALESCE(array_length(p_animal_ids, 1), 0);
+BEGIN
+  IF v_n = 0 THEN RAISE EXCEPTION 'La vacunación necesita al menos un animal.'; END IF;
+  INSERT INTO vacunaciones (tipo, alcance, animal_id, n_animales, producto, lote, fecha, proxima, nota)
+  VALUES (p_tipo,
+          CASE WHEN v_n = 1 THEN 'individual' ELSE 'hato' END,
+          CASE WHEN v_n = 1 THEN p_animal_ids[1] END,
+          v_n, p_producto, p_lote, COALESCE(p_fecha, hoy_finca()), p_proxima, p_nota)
+  RETURNING id INTO v_id;
+  INSERT INTO vacunaciones_animales (vacunacion_id, animal_id)
+    SELECT v_id, unnest(p_animal_ids);
+  RETURN v_id;
+END $$;
+
 -- ─── POTREROS ───────────────────────────────────────────────────────────────
 
 CREATE TABLE potreros (
@@ -385,7 +427,7 @@ BEGIN
   IF t IS NULL OR jsonb_typeof(t) <> 'object' THEN
     RAISE EXCEPTION 'Respaldo inválido: falta el objeto "tablas".';
   END IF;
-  TRUNCATE ordenos, palpaciones, tratamientos, vacunaciones,
+  TRUNCATE ordenos, palpaciones, tratamientos, vacunaciones, vacunaciones_animales,
            partos, movimientos_potrero, movimientos_grupo, animales, potreros RESTART IDENTITY CASCADE;
   INSERT INTO potreros SELECT * FROM jsonb_populate_recordset(NULL::potreros, COALESCE(t->'potreros','[]'::jsonb));
   -- un solo INSERT: las FK madre/padre autorreferenciadas se verifican al final del statement
@@ -398,6 +440,7 @@ BEGIN
   INSERT INTO partos              SELECT * FROM jsonb_populate_recordset(NULL::partos,              COALESCE(t->'partos','[]'::jsonb));
   INSERT INTO movimientos_potrero SELECT * FROM jsonb_populate_recordset(NULL::movimientos_potrero, COALESCE(t->'movimientos_potrero','[]'::jsonb));
   INSERT INTO movimientos_grupo   SELECT * FROM jsonb_populate_recordset(NULL::movimientos_grupo,   COALESCE(t->'movimientos_grupo','[]'::jsonb));
+  INSERT INTO vacunaciones_animales SELECT * FROM jsonb_populate_recordset(NULL::vacunaciones_animales, COALESCE(t->'vacunaciones_animales','[]'::jsonb));
   RETURN jsonb_build_object('ok', true, 'animales', n_animales);
 END $$;
 

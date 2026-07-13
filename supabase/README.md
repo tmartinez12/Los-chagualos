@@ -14,7 +14,8 @@ Migraciones **pendientes** de correr, en orden (idempotentes):
 | # | Archivo | Qué hace | ¿Ya corrió? |
 |---|---|---|---|
 | 1 | `migracion-ciclo-vida.sql` | Renombra el grupo `ternera` → `cria` (ambos sexos nacen como cría) y ajusta `registrar_parto_completo`. Las filas con grupo `ternera` pasan a `cria` solas. | corrió jul 2026 |
-| 2 | `migracion-movimientos-grupo.sql` | Crea la tabla `movimientos_grupo` (historial del ciclo de vida: cada cambio de grupo con su fecha) y la función `mover_grupo()`. Correr DESPUÉS de la #1. | **pendiente** (jul 2026) |
+| 2 | `migracion-movimientos-grupo.sql` | Crea la tabla `movimientos_grupo` (historial del ciclo de vida: cada cambio de grupo con su fecha) y la función `mover_grupo()`. Correr DESPUÉS de la #1. | corrió jul 2026 |
+| 3 | `migracion-vacunas-lista.sql` | Crea `vacunaciones_animales` (la lista EXACTA de animales de cada vacunación — checkboxes) y el RPC `registrar_vacunacion_completa()`. Arregla que una vaca nueva apareciera vacunada por eventos anteriores. | **pendiente** (jul 2026) |
 
 Las 6 migraciones de la tanda anterior (vacunaciones, zona-horaria,
 integridad, nacimiento, restaurar, ganancia) ya corrieron y están en

@@ -266,10 +266,26 @@
     return null;
   }
 
+  /* ¿Esta vacunación le aplica a este animal? La fuente de verdad es la LISTA
+   * de animales del registro (vacunaciones_animales → v.animales_ids): si
+   * existe, manda. Para registros VIEJOS sin lista ('hato' con solo un
+   * conteo), regla honesta: solo aplica si el animal ya EXISTÍA en esa fecha
+   * (nacimiento, o la fecha de registro en la base) — así una vaca nueva no
+   * aparece "vacunada" por eventos anteriores a su llegada. */
+  function vacunaAplicaA(v, a) {
+    if (!v || !a) return false;
+    const ids = v.animales_ids || null;
+    if (ids && ids.length) return ids.indexOf(String(a.id)) >= 0;
+    if (v.alcance === 'individual') return String(v.animal_id) === String(a.id);
+    /* legado 'hato' sin lista */
+    const desde = a.nacimiento || (a.creadoEn ? String(a.creadoEn).slice(0, 10) : null);
+    return !desde || !v.fecha || String(desde) <= String(v.fecha);
+  }
+
   return {
     MESC, LITROS_MAX, clampLitros, idUnico, fechaParto, fechaDias, esBajonLeche, parseTrat, parsePalpNota, curvaLactancia,
     diasHasta, ordinalParto, fmtFechaCorta, snapshotReproDB, fechaLarga, isoHoy, esc,
-    PROTOCOLO_SAN, fmtNacimiento, deriveReproFicha,
+    PROTOCOLO_SAN, fmtNacimiento, deriveReproFicha, vacunaAplicaA,
     diasEntreIso, partoEstimadoCalc, secarCalc, diasVaciaCalc, prenezMesesActual,
   };
 });

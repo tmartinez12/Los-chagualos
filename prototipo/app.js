@@ -255,8 +255,10 @@ function renderFicha(num){
     const ret=(x.dias_retiro>0)?' · retiro '+x.dias_retiro+'d':'';
     ev.push(['💊 '+LCRules.esc(x.problema||'Tratamiento')+(x.medicamento?' · '+LCRules.esc(x.medicamento.toLowerCase()):'')+ret+(x.activo?'':' <span style="color:var(--ink-3)">(terminado)</span>'),x.inicio]);
   });
-  (_vacunacionesM||[]).filter(v=>String(v.animal_id)===String(a.id)||v.alcance==='hato').forEach(v=>{
-    ev.push(['💉 '+LCRules.esc(v.tipo)+(v.alcance==='hato'?' (todo el hato)':'')+(v.lote?' · lote '+LCRules.esc(v.lote):''),v.fecha]);
+  /* solo vacunas que DE VERDAD le aplican (lista exacta; en legado, solo si ya
+   * existía en esa fecha — LCRules.vacunaAplicaA) */
+  (_vacunacionesM||[]).filter(v=>LCRules.vacunaAplicaA(v,a)).forEach(v=>{
+    ev.push(['💉 '+LCRules.esc(v.tipo)+((v.animales_ids&&v.animales_ids.length>1)?' ('+v.animales_ids.length+' animales)':(v.alcance==='hato'&&!(v.animales_ids&&v.animales_ids.length)?' (ciclo del hato)':''))+(v.lote?' · lote '+LCRules.esc(v.lote):''),v.fecha]);
   });
   ev.sort((x,y)=>String(y[1]||'').localeCompare(String(x[1]||'')));
   const hist=document.getElementById('vmHistoria');
@@ -709,34 +711,64 @@ function renderSanProximaM(){
   sub.textContent=p.b+' · despar. cada 3 meses · aftosa may/nov';
 }
 /* ===== Vacunaciones (móvil) ===== */
-const vacM={tipo:'aftosa',alcance:'hato',animal:'',producto:'',lote:'',fecha:'',proxima:'',nota:''};
+const vacM={tipo:'aftosa',producto:'',lote:'',fecha:'',proxima:'',nota:'',sel:new Set()};
 function vacPick(btn,campo,val){vacM[campo]=val;[...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));}
+/* lista con checkboxes: seleccionas EXACTAMENTE a quiénes (con "todas" de un
+ * clic). Guarda la lista real — una vaca nueva ya no aparece vacunada por
+ * eventos anteriores a su llegada. */
+function _vacContadorM(){
+  const c=document.getElementById('vacSelCountM');if(!c)return;
+  const total=document.querySelectorAll('#vacListaSelM input[data-animal]').length;
+  c.textContent=vacM.sel.size+' de '+total;
+  const master=document.getElementById('vacSelTodasM');
+  if(master)master.checked=vacM.sel.size===total&&total>0;
+}
 function openVacunaM(){
-  vacM.tipo='aftosa';vacM.alcance='hato';vacM.animal='';vacM.producto='';vacM.lote='';
+  vacM.tipo='aftosa';vacM.producto='';vacM.lote='';
   vacM.fecha=isoHoyM();vacM.proxima='';vacM.nota='';
   document.querySelectorAll('#vacunaSheet .chips').forEach((g,gi)=>g.querySelectorAll('.chip').forEach((c,i)=>c.classList.toggle('sel',i===0)));
-  ['vacAnimalM','vacProductoM','vacLoteM','vacProximaM','vacNotaM'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['vacProductoM','vacLoteM','vacProximaM','vacNotaM'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   const vf=document.getElementById('vacFechaM');if(vf){vf.max=isoHoyM();vf.value=vacM.fecha;}
-  document.getElementById('vacAnimalM').style.display='none';
+  /* armar la lista de animales activos, todas marcadas por defecto (el ciclo) */
+  const activos=Object.values(animalesPorIdM).filter(a=>a.grupo!=='baja')
+    .sort((x,y)=>String(x.id).localeCompare(String(y.id),undefined,{numeric:true}));
+  vacM.sel=new Set(activos.map(a=>String(a.id)));
+  const box=document.getElementById('vacListaSelM');
+  if(box){
+    box.innerHTML=activos.map(a=>'<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 0;border-bottom:1px solid var(--surface)">'+
+      '<input type="checkbox" data-animal="'+LCRules.esc(String(a.id))+'" checked> '+
+      '<b>'+LCRules.esc(String(a.id))+'</b> '+LCRules.esc(a.nombre||'')+
+      '<span style="margin-left:auto;color:var(--ink-3);font-size:11px">'+(GRUPO_DISPLAY_M[a.grupo]||a.grupo)+'</span></label>').join('')
+      ||'<span style="color:var(--ink-3);font-size:12.5px">Sin animales — sincroniza primero</span>';
+    box.querySelectorAll('input[data-animal]').forEach(cb=>{cb.onchange=function(){
+      if(this.checked)vacM.sel.add(this.dataset.animal);else vacM.sel.delete(this.dataset.animal);
+      _vacContadorM();};});
+  }
+  const master=document.getElementById('vacSelTodasM');
+  if(master){master.checked=true;master.onchange=function(){
+    const on=this.checked;
+    document.querySelectorAll('#vacListaSelM input[data-animal]').forEach(cb=>{cb.checked=on;
+      if(on)vacM.sel.add(cb.dataset.animal);else vacM.sel.delete(cb.dataset.animal);});
+    _vacContadorM();};}
+  _vacContadorM();
   document.getElementById('scrim').classList.add('show');
   document.getElementById('vacunaSheet').classList.add('show');
 }
 function closeVacuna(){document.getElementById('vacunaSheet').classList.remove('show');
   document.getElementById('scrim').classList.remove('show');}
 function saveVacunaM(){
+  const ids=Array.from(vacM.sel||[]);
+  if(!ids.length){snack('Marca al menos un animal para registrar la vacunación');return;}
   closeVacuna();
-  const individual=vacM.alcance==='individual';
-  const animalId=individual?(vacM.animal||'').trim():null;
-  const nAnimales=individual?null:Object.values(animalesPorIdM).filter(a=>a.grupo!=='baja').length;
   encolar();
   if(typeof LCStore!=='undefined'){
-    LCStore.registrarVacunacion({tipo:vacM.tipo,alcance:vacM.alcance,animalId:animalId,nAnimales:nAnimales,
+    LCStore.registrarVacunacion({tipo:vacM.tipo,animalIds:ids,
       producto:vacM.producto||null,lote:vacM.lote||null,fecha:vacM.fecha||isoHoyM(),
       proxima:vacM.proxima||null,nota:vacM.nota||null})
       .then(()=>{desencolar();cargarVacunacionesM();})
       .catch(e=>{console.warn('Vacunación móvil no guardada:',e.message||e);snack('⚠ La vacunación NO se guardó en la base — reintenta');});
   }
-  snack('Vacunación registrada: '+vacM.tipo+(individual?(animalId?' · '+animalId:''):' · todo el hato'));
+  snack('Vacunación registrada: '+vacM.tipo+' · '+(ids.length===1?ids[0]:ids.length+' animales'));
 }
 function renderVacunacionesM(lista){
   if(lista)_vacunacionesM=lista;
@@ -747,7 +779,8 @@ function renderVacunacionesM(lista){
   box.innerHTML=arr.slice(0,8).map(v=>{
     const quien=v.alcance==='individual'
       ?((v.animales&&v.animales.nombre)?v.animal_id+' '+v.animales.nombre:(v.animal_id||'animal'))
-      :('todo el hato'+(v.n_animales?' ('+v.n_animales+')':''));
+      :((v.animales_ids&&v.animales_ids.length)?(v.animales_ids.length+' animales')   // registro nuevo: lista exacta
+        :('todo el hato'+(v.n_animales?' ('+v.n_animales+')':'')));                    // legado: solo conteo
     return '<div><b style="color:var(--ink)">'+fmtFechaCortaM(v.fecha)+'</b> · '+LCRules.esc(v.tipo)+' · '+LCRules.esc(quien)+(v.lote?' · lote '+LCRules.esc(v.lote):'')+'</div>';
   }).join('');
 }
