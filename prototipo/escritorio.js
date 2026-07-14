@@ -1016,11 +1016,14 @@ function confirmarPaso(num){
  * NO son ya cría de otro parto (la BD tiene un único por cría), no la madre y
  * no dados de baja. Con buscador (pensado para ~100 animales). */
 function abrirVincularCria(partoId,madreNum){
+  const parto=(_partosRaw||[]).find(x=>String(x.id)===String(partoId));
+  const cambiando=!!(parto&&parto.cria_id);
   const yaCrias=new Set((_partosRaw||[]).map(p=>p.cria_id).filter(Boolean).map(String));
   const cands=Object.values(animalesPorId)
     .filter(a=>a.grupo!=='baja'&&String(a.id)!==String(madreNum)&&!yaCrias.has(String(a.id)))
     .sort((x,y)=>String(x.id).localeCompare(String(y.id),undefined,{numeric:true}));
-  openReg('Vincular cría a este parto','Elige el animal que nació en este parto — quedará como su cría');
+  openReg(cambiando?'Cambiar la cría de este parto':'Vincular cría a este parto',
+    'Elige el animal que nació en este parto — quedará como su cría'+(cambiando?' (la cría actual queda sin madre)':''));
   const body=document.getElementById('regBody');body.innerHTML='';
   document.getElementById('regActions').style.display='none';
   if(!cands.length){body.innerHTML='<div style="color:var(--ink-3);font-size:13px;padding:8px">No hay animales disponibles para vincular (todos ya son cría de un parto, o no hay otros animales).</div>';return;}
@@ -1040,40 +1043,83 @@ function abrirVincularCria(partoId,madreNum){
   };
   cont.querySelectorAll('button[data-num]').forEach(b=>{b.onclick=()=>{closeReg();vincularCriaEjecutar(partoId,b.dataset.num,madreNum);};});
 }
+/* Fija (o quita, si criaId=null) la cría de un parto. Si el parto ya tenía otra
+ * cría, esa SALE: se le quita la madre que la vinculación le había puesto (así
+ * "cambiar" = quitar la vieja + poner la nueva, en un solo Deshacer). */
 function vincularCriaEjecutar(partoId,criaId,madreNum){
   const p=(_partosRaw||[]).find(x=>String(x.id)===String(partoId));if(!p)return;
-  const cria=animalesPorId[criaId];
-  const prevMadre=cria?cria.madreId:null;const prevOrigen=cria?cria.origen:null;
+  const nueva=criaId?animalesPorId[criaId]:null;
+  const viejaId=p.cria_id;const vieja=viejaId?animalesPorId[viejaId]:null;
+  const saleVieja=viejaId&&String(viejaId)!==String(criaId);
+  const prevMadre=nueva?nueva.madreId:null,prevOrigen=nueva?nueva.origen:null;
+  const prevMadreVieja=vieja?vieja.madreId:null,prevOrigenVieja=vieja?vieja.origen:null;
   const repintar=()=>{if(vacaActual===madreNum)goVaca(madreNum,vacaFrom);
     if(typeof recomputarPartosRecientes==='function')recomputarPartosRecientes();};
   LCAcciones.ejecutarConDeshacer({
     snack,
-    aplicar(){p.cria_id=criaId;if(cria){cria.madreId=madreNum;cria.origen='nacido_finca';}repintar();},
-    escribir:typeof LCStore!=='undefined'?()=>LCStore.vincularCriaParto(partoId,criaId,madreNum):null,
+    aplicar(){
+      if(saleVieja&&vieja){vieja.madreId=null;vieja.origen=null;}   // el que sale pierde la madre
+      p.cria_id=criaId||null;
+      if(nueva){nueva.madreId=madreNum;nueva.origen='nacido_finca';}
+      repintar();},
+    escribir:typeof LCStore!=='undefined'?()=>LCStore.vincularCriaParto(partoId,criaId||null,madreNum)
+      .then(()=>saleVieja?LCStore.updateAnimalCampos(viejaId,{madre_id:null,origen:null}):null):null,
     avisoError:(e)=>(e&&e.code==='CRIA_YA_VINCULADA')
       ? '⚠ '+criaId+' ya es cría de otro parto — no se puede vincular dos veces'
-      : '⚠ No se pudo vincular la cría en la base — reintenta',
-    mensaje:criaId+' quedó vinculada como cría de este parto',
-    revertir(){p.cria_id=null;if(cria){cria.madreId=prevMadre;cria.origen=prevOrigen;}repintar();},
-    compensarBD:typeof LCStore!=='undefined'?()=>LCStore.vincularCriaParto(partoId,null)
-      .then(()=>LCStore.updateAnimalCampos(criaId,{madre_id:prevMadre||null,origen:prevOrigen||null})):null,
+      : '⚠ No se pudo actualizar la cría en la base — reintenta',
+    mensaje:criaId?(criaId+' quedó vinculada como cría de este parto'):'Cría desvinculada del parto',
+    revertir(){
+      p.cria_id=viejaId||null;
+      if(nueva){nueva.madreId=prevMadre;nueva.origen=prevOrigen;}
+      if(saleVieja&&vieja){vieja.madreId=prevMadreVieja;vieja.origen=prevOrigenVieja;}
+      repintar();},
+    compensarBD:typeof LCStore!=='undefined'?()=>LCStore.vincularCriaParto(partoId,viejaId||null,null)
+      .then(()=>nueva?LCStore.updateAnimalCampos(criaId,{madre_id:prevMadre||null,origen:prevOrigen||null}):null)
+      .then(()=>saleVieja?LCStore.updateAnimalCampos(viejaId,{madre_id:prevMadreVieja||null,origen:prevOrigenVieja||null}):null):null,
   });
 }
-/* Corregir un parto ya registrado (error de dedo): fecha, peso y nota.
- * Sexo, estado y cría no se editan aquí — si están mal, se elimina el parto y
- * se re-registra. Si la vaca llevaba su lactancia desde este parto, corregir
- * la fecha arrastra el inicio de lactancia (esa fecha ES el último parto). */
+/* Corregir un parto ya registrado: fecha y cría vinculada (más eliminar). El
+ * resto (sexo, estado, peso, nota) no se edita aquí — si algo de eso está mal,
+ * se elimina el parto y se re-registra. Si la vaca llevaba su lactancia desde
+ * este parto, corregir la fecha arrastra el inicio de lactancia (esa fecha ES
+ * el último parto). La cría se cambia/quita al instante (con Deshacer); la
+ * fecha se guarda con «Guardar cambios». */
 function abrirEditarParto(partoId){
   const p=(_partosRaw||[]).find(x=>String(x.id)===String(partoId));if(!p)return;
-  const st={fecha:p.fecha,peso:(p.peso_kg!=null?p.peso_kg:''),nota:p.nota||''};
+  const st={fecha:p.fecha};
   const madre=animalesPorId[p.madre_id];
   const arrastra=madre&&madre.inicioLactancia===p.fecha;
-  openReg('Corregir parto de '+p.madre_id,'Solo fecha, peso y nota. Si el sexo o el estado están mal, elimina el parto y regístralo de nuevo');
+  openReg('Corregir parto de '+p.madre_id,'Fecha y cría vinculada. Si el sexo, el estado o el peso están mal, elimina el parto y regístralo de nuevo');
   const body=document.getElementById('regBody');body.innerHTML='';
   body.appendChild(regTexto('Fecha del parto','',v=>st.fecha=v,'date',st.fecha));
   if(arrastra)body.appendChild(regHint('La vaca lleva su lactancia desde este parto: si corriges la fecha, el inicio de lactancia (y el DEL) se corrigen solos.'));
-  body.appendChild(regTexto('Peso de la cría al nacer (kg)','Ej. 32',v=>st.peso=v,'number',st.peso));
-  body.appendChild(regTexto('Nota','Ej. parto asistido de noche…',v=>st.nota=v,'text',st.nota));
+  /* --- cría vinculada: vincular / cambiar / quitar (acción inmediata) --- */
+  body.appendChild(regLabel('Cría vinculada'));
+  const criaBox=document.createElement('div');
+  criaBox.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap';
+  if(p.cria_id){
+    const nom=animalesPorId[p.cria_id]?animalesPorId[p.cria_id].nombre:'';
+    const info=document.createElement('div');info.style.cssText='flex:1;min-width:110px;font-size:14px';
+    info.innerHTML='<b>'+LCRules.esc(String(p.cria_id))+'</b> '+LCRules.esc(nom);
+    const bCambiar=document.createElement('button');bCambiar.className='btn outl';
+    bCambiar.style.cssText='text-transform:none;letter-spacing:0';bCambiar.textContent='Cambiar';
+    bCambiar.onclick=()=>{closeReg();abrirVincularCria(p.id,p.madre_id);};
+    const bQuitar=document.createElement('button');bQuitar.className='btn outl';
+    bQuitar.style.cssText='text-transform:none;letter-spacing:0';bQuitar.textContent='Quitar';
+    bQuitar.onclick=()=>{closeReg();vincularCriaEjecutar(p.id,null,p.madre_id);};
+    criaBox.appendChild(info);criaBox.appendChild(bCambiar);criaBox.appendChild(bQuitar);
+  }else if(p.estado_cria!=='muerta'){
+    const bVinc=document.createElement('button');bVinc.className='btn outl';
+    bVinc.style.cssText='text-transform:none;letter-spacing:0';bVinc.textContent='＋ Vincular cría';
+    bVinc.onclick=()=>{closeReg();abrirVincularCria(p.id,p.madre_id);};
+    criaBox.appendChild(bVinc);
+  }else{
+    const info=document.createElement('div');info.style.cssText='color:var(--ink-3);font-size:13px';
+    info.textContent='Cría muerta (mortinato) — sin animal que vincular.';
+    criaBox.appendChild(info);
+  }
+  body.appendChild(criaBox);
+  body.appendChild(regHint('La cría se cambia/quita al instante (con Deshacer). Al quitarla o cambiarla, el animal que sale queda sin madre registrada.'));
   /* eliminar: para duplicados o partos que nunca ocurrieron */
   const del=document.createElement('button');del.className='btn outl';
   del.style.cssText='width:100%;justify-content:center;margin-top:10px;color:var(--red,#b3261e);border-color:var(--red,#b3261e)';
@@ -1086,13 +1132,11 @@ function guardarEditarParto(partoId,st){
   const p=(_partosRaw||[]).find(x=>String(x.id)===String(partoId));if(!p)return;
   if(!/^\d{4}-\d{2}-\d{2}$/.test(st.fecha||'')){snack('Falta la fecha del parto');return;}
   if(st.fecha>isoHoy()){snack('⚠ La fecha del parto no puede ser futura');return;}
-  const peso=(st.peso!==''&&st.peso!=null)?parseFloat(st.peso):null;
-  if(peso!=null&&(isNaN(peso)||peso<=0)){snack('⚠ El peso debe ser un número mayor que 0');return;}
-  const nota=(st.nota||'').trim()||null;
+  if(st.fecha===p.fecha){closeReg();return;}   // fecha sin cambios: nada que guardar
   const madre=animalesPorId[p.madre_id];
-  const prev={fecha:p.fecha,peso:p.peso_kg,nota:p.nota};
+  const prev={fecha:p.fecha};
   /* el inicio de lactancia sigue a ESTE parto solo si apuntaba a su fecha */
-  const arrastra=madre&&madre.inicioLactancia===p.fecha&&st.fecha!==p.fecha;
+  const arrastra=madre&&madre.inicioLactancia===p.fecha;
   const prevInicio=madre?madre.inicioLactancia:null,prevDel=madre?madre.del:null;
   closeReg();
   const ponFecha=(vieja,nueva)=>{               // mantiene las cachés de fechas
@@ -1104,19 +1148,19 @@ function guardarEditarParto(partoId,st){
     renderHato();if(vacaActual===p.madre_id)goVaca(p.madre_id,vacaFrom);};
   LCAcciones.ejecutarConDeshacer({
     snack,
-    aplicar(){ponFecha(p.fecha,st.fecha);p.fecha=st.fecha;p.peso_kg=peso;p.nota=nota;
+    aplicar(){ponFecha(p.fecha,st.fecha);p.fecha=st.fecha;
       if(arrastra&&madre){madre.inicioLactancia=st.fecha;madre.del=diasDesdeReal(st.fecha);
         const h=hato.find(x=>x.num===p.madre_id);if(h)h.del=(madre.del==null?'—':madre.del);}
       repintar();},
-    escribir:typeof LCStore!=='undefined'?()=>LCStore.updateParto(partoId,{fecha:st.fecha,peso_kg:peso,nota:nota})
+    escribir:typeof LCStore!=='undefined'?()=>LCStore.updateParto(partoId,{fecha:st.fecha})
       .then(()=>arrastra?LCStore.updateAnimalCampos(p.madre_id,{inicio_lactancia:st.fecha}):null):null,
-    avisoError:'⚠ El parto NO se corrigió en la base — reintenta',
+    avisoError:'⚠ La fecha del parto NO se corrigió en la base — reintenta',
     mensaje:'Parto de '+p.madre_id+' corregido',
-    revertir(){ponFecha(p.fecha,prev.fecha);p.fecha=prev.fecha;p.peso_kg=prev.peso;p.nota=prev.nota;
+    revertir(){ponFecha(p.fecha,prev.fecha);p.fecha=prev.fecha;
       if(arrastra&&madre){madre.inicioLactancia=prevInicio;madre.del=prevDel;
         const h=hato.find(x=>x.num===p.madre_id);if(h)h.del=(prevDel==null?'—':prevDel);}
       repintar();},
-    compensarBD:typeof LCStore!=='undefined'?()=>LCStore.updateParto(partoId,{fecha:prev.fecha,peso_kg:prev.peso,nota:prev.nota})
+    compensarBD:typeof LCStore!=='undefined'?()=>LCStore.updateParto(partoId,{fecha:prev.fecha})
       .then(()=>arrastra?LCStore.updateAnimalCampos(p.madre_id,{inicio_lactancia:prevInicio}):null):null,
   });
 }
