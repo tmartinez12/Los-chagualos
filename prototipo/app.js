@@ -1336,6 +1336,13 @@ function listaCows(){return cows.map(c=>c.num+' · '+c.n);}
 function listaTodos(){return Object.values(animalesPorIdM).filter(a=>a.grupo!=='baja').map(a=>a.id+' · '+a.nombre);}
 function palpMarcarVaca(){document.querySelectorAll('#palpCows .chip').forEach(c=>
   c.classList.toggle('sel',c.textContent.trim().split(' ')[0]===numDe(palp.cow)));}
+/* lista completa del picker (prioritarias primero) — la guarda openPalp y el
+ * buscador la filtra sin recalcular */
+let _palpListaM=[];
+function _palpFiltrarM(){
+  const q=((document.getElementById('palpBuscarM')||{}).value||'').trim().toLowerCase();
+  pintarCowChips('palpCows',_palpListaM.filter(k=>!q||k.toLowerCase().indexOf(q)>=0),palp.cow,palpCow);
+}
 function openPalp(cow){
   /* TODAS las hembras palpables (ordeño/horra/novilla), no solo las candidatas
    * servida/vacía: la palpación define el estado, no puede exigir uno previo
@@ -1346,6 +1353,8 @@ function openPalp(cow){
     .map(a=>a.id+' · '+a.nombre).filter(k=>!palpCandidatas[k])
     .sort((x,y)=>x.localeCompare(y,undefined,{numeric:true}));
   const lista=prio.concat(resto);
+  _palpListaM=lista;
+  const pb=document.getElementById('palpBuscarM');if(pb)pb.value='';
   palp.cow=cow||lista[0]||'';
   palp.resultado='prenada';palp.meses=2;palp.fecha=isoHoyM();
   pintarCowChips('palpCows',lista,palp.cow,palpCow);

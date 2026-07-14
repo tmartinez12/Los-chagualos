@@ -409,7 +409,10 @@
   <div class="m-del" id="palpInfo">celo sin repetir — ¿preñada?</div>
 
   <div class="p-label">Vaca</div>
-  <div class="pchips" id="palpCows"></div>
+  <!-- con 30+ por palpar los chips solos no alcanzan: buscador + scroll -->
+  <input id="palpBuscar" placeholder="🔍 Buscar por número o nombre…" autocomplete="off" oninput="renderPalpCows()"
+    style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--card);font-family:inherit;font-size:13px;padding:8px 12px;outline:none;margin-bottom:6px">
+  <div class="pchips" id="palpCows" style="max-height:230px;overflow-y:auto"></div>
 
   <div class="p-label">Fecha de la palpación</div>
   <input type="date" id="palpFecha"

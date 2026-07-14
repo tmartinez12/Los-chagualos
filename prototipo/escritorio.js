@@ -1968,7 +1968,21 @@ function aplicarTratamientos(num,nombre,trats,contexto){
 const palp={cow:'',nota:'',parsed:null};
 function renderPalpCows(){
   const c=document.getElementById('palpCows');if(!c)return;c.innerHTML='';
-  _palpElegibles().forEach(it=>{
+  const q=((document.getElementById('palpBuscar')||{}).value||'').trim().toLowerCase();
+  const eleg=_palpElegibles().filter(it=>!q||it.cow.toLowerCase().indexOf(q)>=0);
+  if(!eleg.length){c.innerHTML='<span style="font-size:12.5px;color:var(--ink-3)">Ninguna vaca coincide con la búsqueda.</span>';return;}
+  /* con muchas por palpar, separar visualmente las prioritarias del resto */
+  const yaC=new Set(palpCandidatas.map(x=>x.cow));
+  const conGrupos=yaC.size>0;
+  let grupoPrev=null;
+  eleg.forEach(it=>{
+    if(conGrupos){
+      const g=yaC.has(it.cow)?'Por confirmar':'Las demás';
+      if(g!==grupoPrev){grupoPrev=g;
+        const lab=document.createElement('div');
+        lab.style.cssText='width:100%;flex-basis:100%;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-3);margin:4px 0 2px';
+        lab.textContent=g;c.appendChild(lab);}
+    }
     const b=document.createElement('button');b.className='pchip';
     b.textContent=it.cow.replace(' · ',' ');
     if(it.cow===palp.cow)b.classList.add('sel');
@@ -2016,6 +2030,7 @@ function openPalp(cow){
   if(cow)palp.cow=cow;
   else if(!eleg.find(x=>x.cow===palp.cow)&&eleg.length)palp.cow=eleg[0].cow;
   palp.nota='';palp.parsed=null;
+  const pb=document.getElementById('palpBuscar');if(pb)pb.value='';
   const info=eleg.find(x=>x.cow===palp.cow);
   document.getElementById('palpInfo').textContent=info?info.motivo:'Confirma el resultado de la palpación';
   document.getElementById('palpNota').value='';

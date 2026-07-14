@@ -611,7 +611,10 @@
     <div class="m-del" id="palpInfo" style="margin-bottom:14px"></div>
 
     <div class="section-label" style="margin-top:0">Vaca</div>
-    <div class="chips" id="palpCows"></div>
+    <!-- con 30+ por palpar los chips solos no alcanzan: buscador + scroll -->
+    <input id="palpBuscarM" placeholder="🔍 Buscar por número o nombre…" autocomplete="off" oninput="_palpFiltrarM()"
+      style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);font-family:inherit;font-size:13px;padding:8px 12px;outline:none;margin-bottom:6px">
+    <div class="chips" id="palpCows" style="max-height:180px;overflow-y:auto"></div>
 
     <div class="section-label">Resultado</div>
     <div class="chips">
