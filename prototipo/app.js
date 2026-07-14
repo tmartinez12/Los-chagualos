@@ -323,7 +323,7 @@ function openEditVaca(){
   editM.raza=RAZAS_M.includes(a.raza)?a.raza:'';
   editM.razaOtra=RAZAS_M.includes(a.raza)?'':(a.raza||'');
   editM.nacimiento=a.nacimiento||'';editM.peso=(a.pesoKg!=null?a.pesoKg:'');
-  editM.inicio=a.inicioLactancia||'';editM.leche=(a.leche&&a.leche.ayer!=null?a.leche.ayer:'');
+  editM.inicio=a.inicioLactancia||'';
   editM.grupo=a.grupo||'ordeño';editM.madre=a.madreId||'';editM.padre=a.padreId||'';
   editM.sexo=a.sexo||'H';editM.rolToro=(a.rolToro===true||a.rolToro==='toro');
   editM.origen=a.origen||'';editM.procedencia=a.procedencia||'';editM.valor=(a.valorCompra!=null?a.valorCompra:'');
@@ -346,7 +346,6 @@ function openEditVaca(){
   document.getElementById('editNac').value=editM.nacimiento||'';
   document.getElementById('editPeso').value=editM.peso;
   document.getElementById('editInicio').value=editM.inicio||'';
-  document.getElementById('editLeche').value=editM.leche;
   document.getElementById('scrim').classList.add('show');
   document.getElementById('editSheet').classList.add('show');
 }
@@ -392,7 +391,6 @@ function saveEditVaca(){
   const nacimiento=editM.nacimiento||null;
   const peso=(editM.peso!==''&&editM.peso!=null)?parseFloat(editM.peso):null;
   const inicio=editM.inicio||null;
-  const leche=(editM.leche!==''&&editM.leche!=null)?parseFloat(editM.leche):null;
   closeEdit();
   const grupoNuevo=editM.grupo||a.grupo;
   const grupoCambio=grupoNuevo!==a.grupo;
@@ -410,7 +408,6 @@ function saveEditVaca(){
   Object.assign(a,{nombre:nombre,raza:raza,color:color,nota:nota,nacimiento:nacimiento,inicioLactancia:inicio,del:delCalc,
     grupo:grupoNuevo,madreId:madre,padreId:padre,sexo:sexo,rolToro:rolToro,
     origen:origen,procedencia:procedencia,valorCompra:valor});
-  a.leche=a.leche||{};if(leche!=null&&!isNaN(leche))a.leche.ayer=leche;
   if(peso!=null&&!isNaN(peso)){a.pesoKg=peso;a.fechaPeso=isoHoyM();}
   /* refrescar la entrada del hato y la tarjeta de ordeño */
   if(grupoCambio){
@@ -434,8 +431,6 @@ function saveEditVaca(){
       desencolar();
       if(e&&e.code==='CONFLICTO'){snack('⚠ '+num+': otro dispositivo cambió esta ficha — recarga para no pisar sus cambios');}
       else{console.warn('Edición móvil no guardada:',e.message||e);snack('⚠ '+num+': los cambios NO se guardaron en la base — reintenta');}});
-    if(leche!=null&&!isNaN(leche)){const ay=new Date(isoHoyM()+'T00:00:00');ay.setDate(ay.getDate()-1);
-      LCStore.registrarOrdeno(num,leche,isoDeM(ay)).catch(()=>{});}
   }
   snack(num+' actualizado');
 }

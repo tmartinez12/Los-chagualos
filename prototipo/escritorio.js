@@ -2490,7 +2490,7 @@ function openEditarVaca(num){
   editState.num=num;
   editState.nombre=a.nombre||'';editState.color=a.color||'';editState.nota=a.nota||'';
   editState.nacimiento=a.nacimiento||'';editState.peso=(a.pesoKg!=null?a.pesoKg:'');
-  editState.inicio=a.inicioLactancia||'';editState.leche=(a.leche&&a.leche.ayer!=null?a.leche.ayer:'');
+  editState.inicio=a.inicioLactancia||'';
   /* paridad con "Registrar animal": raza por chips, grupo, origen, genealogía y compra */
   const RAZAS=['Holstein × Gyr','F1','Gyrolando','Holstein','Normando'];
   editState.raza=RAZAS.includes(a.raza)?a.raza:'';
@@ -2517,16 +2517,18 @@ function openEditarVaca(num){
   pintaRolToro();
   body.appendChild(regTexto('Fecha de nacimiento','',v=>editState.nacimiento=v,'date',editState.nacimiento));
   body.appendChild(regLabel('Origen'));
-  body.appendChild(regChips([{val:'nacido_finca',label:'🐄 Nacida en la finca'},{val:'comprado',label:'🛒 Comprada'}],editState.origen,v=>editState.origen=v));
+  body.appendChild(regChips([{val:'nacido_finca',label:'🐄 Nacida en la finca'},{val:'comprado',label:'🛒 Comprada'}],editState.origen,v=>{editState.origen=v;_editToggleCompra();}));
   body.appendChild(regTexto('Madre (número, debe estar registrada)','Ej. 042',v=>editState.madre=v,'text',editState.madre));
   body.appendChild(regTexto('Padre (número, debe estar registrado)','Ej. T01',v=>editState.padre=v,'text',editState.padre));
-  body.appendChild(regTexto('Procedencia (si es comprada)','Finca o vendedor',v=>editState.procedencia=v,'text',editState.procedencia));
-  body.appendChild(regTexto('Valor de compra (opcional)','$',v=>editState.valor=v,'number',editState.valor));
+  /* procedencia y valor SOLO si es comprada (un animal nacido no tiene compra) */
+  const compraWrap=document.createElement('div');compraWrap.id='editCompraWrap';
+  compraWrap.appendChild(regTexto('Procedencia (finca o vendedor)','Ej. Finca La Esperanza',v=>editState.procedencia=v,'text',editState.procedencia));
+  compraWrap.appendChild(regTexto('Valor de compra (opcional)','$',v=>editState.valor=v,'number',editState.valor));
+  body.appendChild(compraWrap);
+  _editToggleCompra();
   body.appendChild(regTexto('Peso (kg)','',v=>editState.peso=v,'number',editState.peso));
   body.appendChild(regTexto('Inicio de lactancia (último parto)','',v=>editState.inicio=v,'date',editState.inicio));
   body.appendChild(regHint('El DEL se calcula solo desde esta fecha (hoy − inicio de lactancia).'));
-  body.appendChild(regTexto('Leche de ayer (L)','registra el ordeño de ayer',v=>editState.leche=v,'number',editState.leche));
-  body.appendChild(regHint('“Leche de ayer” crea un registro de ordeño; lo demás (promedios, histórico) se calcula solo.'));
   body.appendChild(regTexto('Nota 📝','Ej. patea al ordeño, propensa a mastitis…',v=>editState.nota=v,'text',editState.nota));
   document.getElementById('regSaveBtn').onclick=guardarEditarVaca;
 }
@@ -2539,10 +2541,12 @@ function pintaRolToro(){
     editState.rolToro?'toro':'no',v=>editState.rolToro=(v==='toro')));
   w.appendChild(regHint('Marca “Toro reproductor” para que sus crías se cuenten como hijas de este toro.'));
 }
+/* procedencia/valor solo tienen sentido si el animal fue comprado */
+function _editToggleCompra(){const w=document.getElementById('editCompraWrap');
+  if(w)w.style.display=editState.origen==='comprado'?'':'none';}
 /* "hoy" de la finca como Date local a medianoche (para restas de días) */
 function hoyFincaDate(){return new Date(isoHoy()+'T00:00:00');}
 function diasDesdeReal(iso){if(!iso)return null;const d=new Date(iso+'T00:00:00');return Math.max(0,Math.round((hoyFincaDate()-d)/86400000));}
-function isoAyerReal(){const d=hoyFincaDate();d.setDate(d.getDate()-1);return isoDe(d);}
 function guardarEditarVaca(){
   const num=editState.num,a=animalesPorId[num];if(!a)return;
   const nombre=(editState.nombre||'').trim()||a.nombre;
@@ -2552,33 +2556,33 @@ function guardarEditarVaca(){
   const nacimiento=editState.nacimiento||null;
   const peso=(editState.peso!==''&&editState.peso!=null)?parseFloat(editState.peso):null;
   const inicio=editState.inicio||null;
-  const leche=(editState.leche!==''&&editState.leche!=null)?parseFloat(editState.leche):null;
   /* genealogía: si se da un número, debe existir (FK en la base) */
   const madre=(editState.madre||'').trim()||null;
   const padre=(editState.padre||'').trim()||null;
   if(madre&&!animalesPorId[madre]){snack('⚠ La madre '+madre+' no está registrada — corrige el número');return;}
   if(padre&&!animalesPorId[padre]){snack('⚠ El padre '+padre+' no está registrado — corrige el número');return;}
   if(madre===num||padre===num){snack('⚠ Un animal no puede ser su propia madre o padre');return;}
-  const valor=(editState.valor!==''&&editState.valor!=null)?parseInt(String(editState.valor).replace(/\D/g,'')):null;
   closeReg();
   /* persistir TODO lo editable (paridad con "Registrar animal") */
   const sexo=editState.sexo||a.sexo||'H';
   const rolToro=sexo==='M'?!!editState.rolToro:false;
+  /* procedencia/valor solo se guardan si el origen es comprada (si no, van null) */
+  const comprada=editState.origen==='comprado';
+  const procedencia=comprada?((editState.procedencia||'').trim()||null):null;
+  const valor=(comprada&&editState.valor!==''&&editState.valor!=null)?parseInt(String(editState.valor).replace(/\D/g,'')):null;
   const campos={nombre:nombre,raza:raza,color:color,nota:nota,nacimiento:nacimiento,inicio_lactancia:inicio,
     grupo:editState.grupo||a.grupo,origen:editState.origen||null,sexo:sexo,rol_toro:rolToro,
     madre_id:madre,padre_id:padre,
-    procedencia:(editState.procedencia||'').trim()||null,valor_compra:valor};
+    procedencia:procedencia,valor_compra:valor};
   if(peso!=null&&!isNaN(peso)){campos.peso_kg=peso;campos.fecha_peso=isoHoy();}
-  /* DEL y leche se DERIVAN: actualizo la caché para reflejarlo de inmediato */
+  /* DEL se DERIVA del inicio de lactancia: actualizo la caché de inmediato */
   const delCalc=inicio?diasDesdeReal(inicio):a.del;
   const grupoCambio=campos.grupo!==a.grupo;
   Object.assign(a,{nombre:nombre,raza:raza,color:color,nota:nota,nacimiento:nacimiento,inicioLactancia:inicio,del:delCalc,
     grupo:campos.grupo,origen:campos.origen,sexo:sexo,rolToro:rolToro,madreId:madre,padreId:padre,
     procedencia:campos.procedencia,valorCompra:valor});
-  a.leche=a.leche||{};if(leche!=null&&!isNaN(leche))a.leche.ayer=leche;
   if(peso!=null&&!isNaN(peso)){a.pesoKg=peso;a.fechaPeso=isoHoy();}
   const h=hato.find(x=>x.num===num);if(h){h.n=nombre;h.raza=raza;h.del=(delCalc==null?'—':delCalc);
-    if(leche!=null&&!isNaN(leche))h.ayer=leche;
     if(grupoCambio)h.grupo=GRUPO_DISPLAY[a.grupo]||a.grupo;}
   /* si entró o salió del ordeño, la lista de registro de leche cambia */
   const mEdit=milkCows.findIndex(c=>c.num===num);
@@ -2595,8 +2599,6 @@ function guardarEditarVaca(){
       }else{
         console.warn('Edición no guardada en la base:',e.message||e);
         snack('⚠ '+num+': los cambios NO se guardaron en la base — reintenta');}});
-    /* "leche de ayer" = registrar un ordeño real de ayer (fuente de verdad) */
-    if(leche!=null&&!isNaN(leche))LCStore.registrarOrdeno(num,leche,isoAyerReal()).catch(()=>{});
   }
   snack(num+' actualizado');
 }
