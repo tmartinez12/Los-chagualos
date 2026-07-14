@@ -1337,7 +1337,15 @@ function listaTodos(){return Object.values(animalesPorIdM).filter(a=>a.grupo!=='
 function palpMarcarVaca(){document.querySelectorAll('#palpCows .chip').forEach(c=>
   c.classList.toggle('sel',c.textContent.trim().split(' ')[0]===numDe(palp.cow)));}
 function openPalp(cow){
-  const lista=Object.keys(palpCandidatas).length?Object.keys(palpCandidatas):listaCows();
+  /* TODAS las hembras palpables (ordeño/horra/novilla), no solo las candidatas
+   * servida/vacía: la palpación define el estado, no puede exigir uno previo
+   * (una vaca recién registrada no aparecía). Prioritarias primero. */
+  const prio=Object.keys(palpCandidatas);
+  const resto=Object.values(animalesPorIdM)
+    .filter(a=>a.sexo!=='M'&&['ordeño','horra','novilla'].includes(a.grupo))
+    .map(a=>a.id+' · '+a.nombre).filter(k=>!palpCandidatas[k])
+    .sort((x,y)=>x.localeCompare(y,undefined,{numeric:true}));
+  const lista=prio.concat(resto);
   palp.cow=cow||lista[0]||'';
   palp.resultado='prenada';palp.meses=2;palp.fecha=isoHoyM();
   pintarCowChips('palpCows',lista,palp.cow,palpCow);

@@ -1968,7 +1968,7 @@ function aplicarTratamientos(num,nombre,trats,contexto){
 const palp={cow:'',nota:'',parsed:null};
 function renderPalpCows(){
   const c=document.getElementById('palpCows');if(!c)return;c.innerHTML='';
-  palpCandidatas.forEach(it=>{
+  _palpElegibles().forEach(it=>{
     const b=document.createElement('button');b.className='pchip';
     b.textContent=it.cow.replace(' · ',' ');
     if(it.cow===palp.cow)b.classList.add('sel');
@@ -2012,10 +2012,11 @@ function renderPalpInterp(){
   }else{extra.style.display='none';}
 }
 function openPalp(cow){
+  const eleg=_palpElegibles();
   if(cow)palp.cow=cow;
-  else if(!palpCandidatas.find(x=>x.cow===palp.cow)&&palpCandidatas.length)palp.cow=palpCandidatas[0].cow;
+  else if(!eleg.find(x=>x.cow===palp.cow)&&eleg.length)palp.cow=eleg[0].cow;
   palp.nota='';palp.parsed=null;
-  const info=palpCandidatas.find(x=>x.cow===palp.cow);
+  const info=eleg.find(x=>x.cow===palp.cow);
   document.getElementById('palpInfo').textContent=info?info.motivo:'Confirma el resultado de la palpación';
   document.getElementById('palpNota').value='';
   const fIn=document.getElementById('palpFecha');if(fIn)fIn.value=isoHoy();   // por defecto hoy, editable
@@ -2199,7 +2200,23 @@ function _motivoCandidata(a){
   if(!a)return null;
   if(a.estadoRepro==='servida')return 'servida, por confirmar';
   if(a.estadoRepro==='vacia')return 'vacía'+(a.diasVacia?' hace '+a.diasVacia+' días':', confirmar estado');
-  return null;
+  if(a.estadoRepro==='prenada')return 'preñada — reconfirmar o corregir';
+  return 'sin estado reproductivo — la palpación lo define';
+}
+/* Elegibles para el MODAL de palpar: TODAS las hembras palpables (ordeño/
+ * horra/novilla), no solo las candidatas servida/vacía — la palpación ES la
+ * fuente de verdad del estado, así que no puede exigir un estado previo (una
+ * vaca recién registrada no aparecía y no había cómo palparla). Prioritarias
+ * primero con su motivo; los KPIs y la lista de la pantalla de reproducción
+ * siguen usando palpCandidatas (solo por-confirmar), sin cambio. */
+function _palpElegibles(){
+  const yaC=new Set(palpCandidatas.map(c=>c.cow));
+  const resto=Object.values(animalesPorId)
+    .filter(a=>a.sexo!=='M'&&['ordeño','horra','novilla'].includes(a.grupo))
+    .map(a=>({cow:a.id+' · '+a.nombre,motivo:_motivoCandidata(a)}))
+    .filter(c=>!yaC.has(c.cow))
+    .sort((x,y)=>x.cow.localeCompare(y.cow,undefined,{numeric:true}));
+  return palpCandidatas.concat(resto);
 }
 function derivarPalpCandidatas(){
   return Object.values(animalesPorId).filter(a=>a.grupo!=='baja'&&(a.estadoRepro==='servida'||a.estadoRepro==='vacia'))
