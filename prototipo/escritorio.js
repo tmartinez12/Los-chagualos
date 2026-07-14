@@ -1965,7 +1965,7 @@ function aplicarTratamientos(num,nombre,trats,contexto){
     renderTratamientos();
   };
 }
-const palp={cow:'',resultado:null,dias:'',obs:'reevaluar',trats:[],tratOtro:'',nota:'',parsed:null};
+const palp={cow:'',resultado:null,dias:'',obs:'reevaluar',trat:'',nota:'',parsed:null};
 /* dropdown de vaca: botón con la elegida; desplegado = buscador + lista */
 function palpDropToggle(){
   const p=document.getElementById('palpDropPanel');if(!p)return;
@@ -2034,10 +2034,46 @@ const OBS_PALP=[
   {key:'frio',label:'Ovarios fríos'},
   {key:'quiste',label:'Posible quiste'},
 ];
-const TRATS_PALP=['Fosfosan','Antripan','Vitaminas'];
+/* lo aplicado se ESCRIBE (separado por coma si son varios) */
+function _palpTrats(){return (palp.trat||'').split(/[,+]/).map(s=>s.trim()).filter(Boolean);}
+/* medicamentos ya usados en la finca, del más al menos frecuente (para
+ * sugerir mientras se escribe y mantener los nombres consistentes) */
+function _medicamentosUsados(){
+  const freq={},nombre={};
+  (_tratamientosTodos||[]).forEach(t=>{
+    String(t.medicamento||'').split(/[,+]/).forEach(m=>{
+      m=m.trim();if(!m)return;const k=m.toLowerCase();
+      freq[k]=(freq[k]||0)+1;if(!nombre[k])nombre[k]=m;});});
+  return Object.keys(freq).sort((a,b)=>freq[b]-freq[a]).map(k=>nombre[k]);
+}
+/* sugiere para el ÚLTIMO segmento del campo (después de la última coma);
+ * elegir una sugerencia reemplaza ese segmento */
+function palpTratSugerir(){
+  const box=document.getElementById('palpTratSug');if(!box)return;box.innerHTML='';
+  const inp=document.getElementById('palpTrat');if(!inp)return;
+  const partes=(inp.value||'').split(',');
+  const seg=partes[partes.length-1].trim().toLowerCase();
+  if(!seg)return;
+  const previos=partes.slice(0,-1).map(s=>s.trim().toLowerCase());
+  const sug=_medicamentosUsados()
+    .filter(m=>m.toLowerCase().indexOf(seg)>=0&&m.toLowerCase()!==seg&&!previos.includes(m.toLowerCase()))
+    .slice(0,6);
+  if(!sug.length)return;
+  sug.forEach(m=>{
+    const b=document.createElement('button');
+    b.style.cssText='display:block;width:100%;box-sizing:border-box;border:0;background:transparent;'+
+      'border-radius:8px;padding:7px 10px;font-family:inherit;font-size:13px;color:var(--ink);cursor:pointer;text-align:left';
+    b.innerHTML='💊 '+LCRules.esc(m)+' <span style="color:var(--ink-3);font-size:11.5px">(ya usado)</span>';
+    b.onmouseenter=()=>b.style.background='var(--surface)';
+    b.onmouseleave=()=>b.style.background='transparent';
+    b.onclick=()=>{partes[partes.length-1]=' '+m;
+      inp.value=partes.join(',').replace(/^\s+/,'');
+      palp.trat=inp.value;box.innerHTML='';palpRefrescar();inp.focus();};
+    box.appendChild(b);
+  });
+}
 function _palpConstruirParsed(){
-  const trat=palp.trats.slice();
-  const otro=(palp.tratOtro||'').trim();if(otro)trat.push(otro);
+  const trat=_palpTrats();
   const r=palp.resultado;
   if(!r)return null;
   if(r==='prenada'){
@@ -2072,12 +2108,6 @@ function renderPalpForm(){
   if(oc){oc.innerHTML='';OBS_PALP.forEach(o=>{
     const b=document.createElement('button');b.className='pchip'+((palp.obs||'reevaluar')===o.key?' sel':'');
     b.textContent=o.label;b.onclick=()=>{palp.obs=o.key;renderPalpForm();};oc.appendChild(b);});}
-  const tc=document.getElementById('palpTratChips');
-  if(tc){tc.innerHTML='';TRATS_PALP.forEach(t=>{
-    const b=document.createElement('button');b.className='pchip'+(palp.trats.includes(t)?' sel':'');
-    b.textContent=t;b.onclick=()=>{const i=palp.trats.indexOf(t);
-      if(i>=0)palp.trats.splice(i,1);else palp.trats.push(t);renderPalpForm();};
-    tc.appendChild(b);});}
   palpRefrescar();
 }
 /* recalcula la interpretación y el resumen (lo llaman los oninput fijos) */
@@ -2112,8 +2142,9 @@ function openPalp(cow){
   if(cow)palp.cow=cow;
   else if(!eleg.find(x=>x.cow===palp.cow)&&eleg.length)palp.cow=eleg[0].cow;
   /* estado estructurado limpio en cada apertura */
-  palp.resultado=null;palp.dias='';palp.obs='reevaluar';palp.trats=[];palp.tratOtro='';palp.nota='';palp.parsed=null;
-  ['palpNota','palpDias','palpTratOtro'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  palp.resultado=null;palp.dias='';palp.obs='reevaluar';palp.trat='';palp.nota='';palp.parsed=null;
+  ['palpNota','palpDias','palpTrat'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  const ts=document.getElementById('palpTratSug');if(ts)ts.innerHTML='';
   /* dropdown cerrado y limpio al abrir el modal; el botón muestra la elegida */
   const pb=document.getElementById('palpBuscar');if(pb)pb.value='';
   const panel=document.getElementById('palpDropPanel');if(panel)panel.style.display='none';

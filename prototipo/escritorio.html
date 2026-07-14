@@ -446,13 +446,16 @@
     <div class="pchips" id="palpObsChips"></div>
   </div>
 
+  <!-- siempre se ESCRIBE qué se aplicó (chips fijos como "Vitaminas" no dicen
+       cuál); al escribir se sugiere lo ya usado en la finca para no terminar
+       con "vit A" un día y "Vitamina A" otro -->
   <div class="p-label">Tratamiento aplicado (opcional)</div>
-  <div class="pchips" id="palpTratChips"></div>
-  <input type="text" id="palpTratOtro" placeholder="Otro tratamiento (si no está arriba)"
-    autocomplete="off" oninput="palp.tratOtro=this.value;palpRefrescar()"
+  <input type="text" id="palpTrat" placeholder="Escribe qué se aplicó. Ej. Fosfosan, Vitamina A…"
+    autocomplete="off" oninput="palp.trat=this.value;palpTratSugerir();palpRefrescar()"
     style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);
-      font-family:inherit;font-size:13px;color:var(--ink);padding:8px 12px;outline:none;margin-top:6px">
-  <div class="p-hint" style="color:var(--ink-2);font-weight:500">Queda registrado en la sanidad del animal.</div>
+      font-family:inherit;font-size:13px;color:var(--ink);padding:8px 12px;outline:none">
+  <div id="palpTratSug"></div>
+  <div class="p-hint" style="color:var(--ink-2);font-weight:500">Separa con coma si aplicaron varios. Queda registrado en la sanidad del animal.</div>
 
   <div class="p-label">Nota (opcional)</div>
   <input type="text" id="palpNota" placeholder="Ej. revisar en 3 semanas…"
