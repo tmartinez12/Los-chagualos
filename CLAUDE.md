@@ -3,9 +3,11 @@
 App de gestión de finca lechera (Colombia). Vanilla JS sin build, dos UIs
 (escritorio + móvil) sobre Supabase Postgres. **Arquitectura y contexto:
 `PROJECT.md`** (qué es, cómo fluyen los datos, decisiones de diseño, rutas
-críticas). **Problemas conocidos: `GAPS.md`** (deuda, tests faltantes, bordes
-frágiles, seguridad con severidad). Historial de arreglos: `docs/AUDITORIA.md`.
-Base de datos (instalar/migrar): `supabase/README.md`.
+críticas). **Requisitos funcionales y reglas de negocio: `docs/REQUISITOS.md`**
+(qué hace el sistema y sus invariantes). **Problemas conocidos: `GAPS.md`**
+(deuda, tests faltantes, bordes frágiles, seguridad con severidad). Historial
+de arreglos: `docs/AUDITORIA.md`. Base de datos (instalar/migrar):
+`supabase/README.md`.
 
 ## Comandos
 
