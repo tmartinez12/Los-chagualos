@@ -427,27 +427,46 @@
     style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);
       font-family:inherit;font-size:14px;color:var(--ink);padding:10px 12px;outline:none;margin-bottom:6px">
 
-  <div class="p-label">Anotación del veterinario</div>
-  <div style="position:relative">
-    <input type="text" id="palpNota" placeholder="Ej: P+120, VF, VO FRIO, CL, R-SERVIDA…"
-      autocomplete="off" spellcheck="false"
-      style="width:100%;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);
-        font-family:inherit;font-size:15px;font-weight:600;color:var(--ink);padding:12px 14px;
-        outline:none;letter-spacing:.3px">
-  </div>
-  <div id="palpInterp" style="margin-top:10px;min-height:48px"></div>
+  <!-- captura ESTRUCTURADA: lo que se guarda es siempre lo que se ve
+       seleccionado (el texto libre se prestaba para confusiones) -->
+  <div class="p-label">Resultado</div>
+  <div class="pchips" id="palpResChips"></div>
 
-  <div id="palpExtraWrap" style="display:none">
-    <div class="p-label">Tratamiento aplicado</div>
-    <div class="pchips" id="palpTratChips"></div>
-    <div class="p-hint" style="color:var(--ink-2);font-weight:500">Queda registrado en la sanidad del animal.</div>
+  <div id="palpDiasWrap" style="display:none">
+    <div class="p-label">Días de preñez (como lo dicta el veterinario)</div>
+    <input type="number" id="palpDias" min="1" max="300" placeholder="Ej. 120" inputmode="numeric"
+      autocomplete="off" oninput="palp.dias=this.value;palpRefrescar()"
+      style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);
+        font-family:inherit;font-size:15px;font-weight:600;color:var(--ink);padding:10px 14px;outline:none">
+    <div id="palpPartoEst" style="font-size:12px;color:var(--green);font-weight:600;margin-top:4px;min-height:16px"></div>
   </div>
+
+  <div id="palpObsWrap" style="display:none">
+    <div class="p-label">Detalle de la observación</div>
+    <div class="pchips" id="palpObsChips"></div>
+  </div>
+
+  <div class="p-label">Tratamiento aplicado (opcional)</div>
+  <div class="pchips" id="palpTratChips"></div>
+  <input type="text" id="palpTratOtro" placeholder="Otro tratamiento (si no está arriba)"
+    autocomplete="off" oninput="palp.tratOtro=this.value;palpRefrescar()"
+    style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);
+      font-family:inherit;font-size:13px;color:var(--ink);padding:8px 12px;outline:none;margin-top:6px">
+  <div class="p-hint" style="color:var(--ink-2);font-weight:500">Queda registrado en la sanidad del animal.</div>
+
+  <div class="p-label">Nota (opcional)</div>
+  <input type="text" id="palpNota" placeholder="Ej. revisar en 3 semanas…"
+    autocomplete="off" oninput="palp.nota=this.value"
+    style="width:100%;box-sizing:border-box;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);
+      font-family:inherit;font-size:13px;color:var(--ink);padding:8px 12px;outline:none">
+
+  <div id="palpInterp" style="margin-top:10px;min-height:48px"></div>
 
   <div class="m-actions">
     <button class="btn outl" onclick="closePalp()">Cancelar</button>
     <button class="btn filled" id="palpSaveBtn" onclick="savePalp()" disabled><svg class="ic-s ic"><use href="#i-check"/></svg>Guardar palpación</button>
   </div>
-  <div class="p-foot">Escribe la anotación tal como la dice el veterinario. El sistema la interpreta automáticamente.</div>
+  <div class="p-foot">Elige el resultado tal como lo dicta el veterinario. El resumen de abajo es exactamente lo que se guarda.</div>
 </div>
 
 <!-- MODAL genérico: registro rápido (tratamiento, secado, parto, alta, baja, menú) -->
