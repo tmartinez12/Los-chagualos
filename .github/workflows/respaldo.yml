@@ -1,0 +1,21 @@
+name: Respaldo semanal de la base
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'   # lunes 4:00 am hora de Colombia (9:00 UTC)
+    - cron: '0 9 * * 4'   # jueves también: el free tier pausa a los ~7 días justos
+  workflow_dispatch:        # también se puede lanzar a mano
+
+jobs:
+  respaldo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exportar todas las tablas (paginado)
+        run: node .github/scripts/respaldo.js
+      - name: Guardar el respaldo como artefacto (se conserva 90 días)
+        uses: actions/upload-artifact@v4
+        with:
+          name: respaldo-base-${{ github.run_id }}
+          path: respaldo/*.json
+          retention-days: 90

@@ -8,6 +8,22 @@ cinco unidades productivas: **ganadería de leche, potreros, maíz, miel y café
 
 ---
 
+## 0. Estado actual vs visión (leer primero)
+
+Este README describe la **visión completa** del producto. Lo que existe HOY:
+
+- ✅ **Ganadería de leche** funcionando de punta a punta (hato, ordeño, reproducción,
+  partos, sanidad) en dos superficies (escritorio + móvil) contra Supabase.
+- ⚠️ **Sin login**: RLS desactivado, la anon key es pública — MVP consciente
+  (ver `docs/AUDITORIA.md` A1). "Multi-rol" es visión, no realidad.
+- ⚠️ **Offline-first es visión**: hoy si no hay señal el registro falla con un
+  aviso honesto; no existe cola offline todavía.
+- 🔜 **Potreros** existe como pantalla oculta; **café, miel y maíz** son solo diseño.
+- 📋 El estado técnico detallado (brechas y correcciones) vive en `docs/AUDITORIA.md`
+  y `GAPS.md`; la instalación de la base en `supabase/README.md`.
+
+---
+
 ## 1. Visión y principios de diseño
 
 **Visión:** una sola fuente de verdad para toda la finca, donde cada decisión

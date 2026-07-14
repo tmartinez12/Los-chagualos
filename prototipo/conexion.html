@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prueba de conexión · Los Chagualos</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, sans-serif; }
+    body { max-width: 680px; margin: 0 auto; padding: 24px; color: #1a2b1a; background: #f6f8f4; }
+    h1 { font-size: 1.3rem; }
+    .estado { padding: 14px 16px; border-radius: 12px; font-weight: 600; margin: 16px 0; }
+    .cargando { background: #fff7e0; color: #7a5b00; }
+    .ok { background: #e3f5e3; color: #1a6b1a; }
+    .error { background: #fde3e3; color: #8b1a1a; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; background: #fff; border-radius: 12px; overflow: hidden; }
+    th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid #eef0ea; font-size: .92rem; }
+    th { background: #2e5e2e; color: #fff; font-weight: 600; }
+    .vacio { padding: 16px; color: #667; }
+    code { background: #eef0ea; padding: 2px 6px; border-radius: 6px; font-size: .85em; }
+    pre { background: #1a2b1a; color: #cde; padding: 12px; border-radius: 10px; overflow-x: auto; font-size: .8rem; }
+  </style>
+</head>
+<body>
+  <h1>🐄 Prueba de conexión a Supabase</h1>
+  <p>Esta página lee la tabla <code>animales</code> directamente de tu base.
+     Si ves la lista (o "0 animales"), la conexión funciona.</p>
+
+  <div id="estado" class="estado cargando">Conectando…</div>
+  <div id="resultado"></div>
+
+  <script src="core/vendor/supabase-js-2.110.0.js"></script>
+  <script src="core/store.js?v=dev"></script>
+  <script>
+    const estado = document.getElementById('estado');
+    const resultado = document.getElementById('resultado');
+
+    (async () => {
+      try {
+        const animales = await LCStore.getAnimales();
+
+        estado.className = 'estado ok';
+        estado.textContent = '✅ Conexión OK · ' + animales.length + ' animal(es) en la base';
+
+        if (animales.length === 0) {
+          resultado.innerHTML = '<div class="vacio">La base está vacía todavía. ' +
+            'Importa tus Excel o inserta animales de prueba para verlos aquí.</div>';
+          return;
+        }
+
+        let html = '<table><thead><tr><th>ID</th><th>Nombre</th><th>Grupo</th>' +
+                   '<th>Raza</th><th>Leche ayer</th></tr></thead><tbody>';
+        animales.forEach(a => {
+          html += '<tr><td>' + a.id + '</td><td>' + (a.nombre||'') + '</td><td>' +
+                  (a.grupo||'') + '</td><td>' + (a.raza||'') + '</td><td>' +
+                  (a.leche && a.leche.ayer != null ? a.leche.ayer + ' L' : '—') + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        resultado.innerHTML = html;
+      } catch (err) {
+        estado.className = 'estado error';
+        estado.textContent = '❌ Error de conexión';
+        resultado.innerHTML = '<pre>' + (err.message || err) +
+          '\n\n' + JSON.stringify(err, null, 2) + '</pre>';
+      }
+    })();
+  </script>
+</body>
+</html>

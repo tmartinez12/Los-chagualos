@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "description": "Los Chagualos — gestión de finca lechera. Sin build: prototipo/ se publica tal cual a GitHub Pages.",
+  "scripts": {
+    "test": "node prototipo/test/smoke.js && node prototipo/test/integracion.js",
+    "lint": "node --check prototipo/app.js && node --check prototipo/escritorio.js && node --check prototipo/core/store.js && node --check prototipo/core/rules.js && node --check prototipo/core/acciones.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.61.0"
+  }
+}
