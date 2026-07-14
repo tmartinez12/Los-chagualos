@@ -1308,6 +1308,8 @@ function goVaca(num,from){
     '<div style="font-size:12.5px;color:var(--ink-2)"><b style="color:var(--ink)">'+(cow.sanOk?'Sanidad al día':'Alerta sanitaria')+'</b> — '+cow.sanidad+'</div>';
   /* historial de palpaciones de esta vaca */
   if(typeof renderVacaPalpaciones==='function')renderVacaPalpaciones(cow.num);
+  /* pesajes de esta vaca (carga perezosa, cacheada por animal) */
+  renderVacaPesajes(cow.num);
   /* partos de esta vaca (de la tabla partos) + su intervalo entre partos */
   const ptb=document.getElementById('vacaPartosTb');
   if(ptb){ptb.innerHTML='';
@@ -2622,20 +2624,12 @@ function renderVacaDatos(){
   if(a.origen==='comprado')F('Compra',esc(a.procedencia||'')+(a.valorCompra?(a.procedencia?' · ':'')+'$'+Number(a.valorCompra).toLocaleString('es-CO'):''));
   F('Madre',a.madreId?esc(nombreRef(a.madreId)):'');
   F('Padre',a.padreId?esc(nombreRef(a.padreId)):'');
-  F('Peso',a.pesoKg?a.pesoKg+' kg'+(a.fechaPeso?' <span style="color:var(--ink-3)">('+fmtFechaCorta(a.fechaPeso)+')</span>':''):'');
-  /* historial de pesajes (tabla pesajes), cargado al expandir; muestra los
-   * últimos 3 con su fecha y la ganancia diaria entre los dos más recientes */
+  /* peso al nacer: manda el del parto donde quedó como cría; si no hay parto
+   * registrado (compradas/históricos), el manual de la ficha. Los DEMÁS pesos
+   * viven en la tabla "Pesajes" de la ficha, cada uno con su fecha. */
   (function(){
-    const ps=_pesajesCache[a.id];
-    if(ps===undefined||ps===null){_cargarPesajes(a.id);F('Pesajes','<span style="color:var(--ink-3)">cargando…</span>');return;}
-    if(!ps.length)return;   // sin historial: la fila Peso ya dice lo que hay
-    let gan='';
-    if(ps.length>=2&&ps[0].fecha>ps[1].fecha){
-      const dias=Math.round((new Date(ps[0].fecha+'T00:00:00')-new Date(ps[1].fecha+'T00:00:00'))/86400000);
-      if(dias>0){const g=(ps[0].peso_kg-ps[1].peso_kg)/dias;
-        gan=' <span style="color:var(--ink-3)">· '+(g>=0?'+':'')+(g*1000).toFixed(0)+' g/día</span>';}
-    }
-    F('Pesajes',ps.slice(0,3).map(p=>p.peso_kg+' kg <span style="color:var(--ink-3)">('+fmtFechaCorta(p.fecha)+')</span>').join(' · ')+gan);
+    const pn=_pesoNacerDe(a);
+    F('Peso al nacer',pn?pn.val+' kg'+(pn.delParto?' <span style="color:var(--ink-3)">(del parto)</span>':''):'');
   })();
   if(a.grupo==='ordeño'||a.grupo==='horra'||a.inicioLactancia)
     F('Inicio de lactancia',a.inicioLactancia?fmtFechaAno(a.inicioLactancia):'');
@@ -2650,14 +2644,46 @@ function renderVacaDatos(){
 const _pesajesCache={};   // num → [{id,fecha,peso_kg}] desc por fecha (para la ficha)
 const pesajeState={};
 /* baja el historial una vez por animal (null = pidiendo); al llegar repinta
- * la ficha si sigue abierta en ese animal */
+ * la tabla de pesajes si la ficha sigue abierta en ese animal */
 function _cargarPesajes(num){
   if(_pesajesCache[num]!==undefined)return;   // ya cargado o en vuelo
   if(typeof LCStore==='undefined'||!LCStore.getPesajes){_pesajesCache[num]=[];return;}
   _pesajesCache[num]=null;
   LCStore.getPesajes(num)
-    .then(f=>{_pesajesCache[num]=f||[];if(vacaActual===num&&vacaDatosAbierto&&!vacaDatosEditando)renderVacaDatos();})
+    .then(f=>{_pesajesCache[num]=f||[];if(vacaActual===num)renderVacaPesajes(num);})
     .catch(e=>{console.warn('Pesajes de '+num+':',e.message||e);_pesajesCache[num]=[];});
+}
+/* peso al nacer: {val, delParto} — el peso del parto donde el animal es cría
+ * manda; el manual (animales.peso_nacer) es para quien no tiene ese parto. */
+function _pesoNacerDe(a){
+  const p=(_partosRaw||[]).find(x=>String(x.cria_id)===String(a.id)&&x.peso_kg);
+  if(p)return {val:p.peso_kg,delParto:true};
+  return a.pesoNacer!=null?{val:a.pesoNacer,delParto:false}:null;
+}
+/* tabla "Pesajes" de la ficha: fecha · peso · ganancia diaria vs el anterior */
+function renderVacaPesajes(num){
+  const tb=document.getElementById('vacaPesajesTb');if(tb===null||vacaActual!==num)return;
+  const ps=_pesajesCache[num];
+  if(ps===undefined||ps===null){
+    _cargarPesajes(num);
+    tb.innerHTML='<tr><td colspan="3" style="text-align:center;padding:12px;color:var(--ink-3)">Cargando…</td></tr>';
+    return;
+  }
+  if(!ps.length){
+    tb.innerHTML='<tr><td colspan="3" style="text-align:center;padding:12px;color:var(--ink-3)">Sin pesajes — regístralos con «＋ Registrar pesaje».</td></tr>';
+    return;
+  }
+  tb.innerHTML='';
+  ps.forEach((p,i)=>{
+    const ant=ps[i+1];let gan='—';
+    if(ant&&p.fecha>ant.fecha){
+      const dias=Math.round((new Date(p.fecha+'T00:00:00')-new Date(ant.fecha+'T00:00:00'))/86400000);
+      if(dias>0){const g=(p.peso_kg-ant.peso_kg)/dias*1000;
+        gan=(g>=0?'+':'')+g.toFixed(0)+' g/día';}
+    }
+    tb.innerHTML+='<tr><td>'+fmtFechaAno(p.fecha)+'</td><td class="r"><b>'+p.peso_kg+' kg</b></td>'+
+      '<td class="r" style="color:var(--ink-3)">'+gan+'</td></tr>';
+  });
 }
 function openPesaje(cow){
   const num=cow?(''+cow).split('·')[0].trim():vacaActual;
@@ -2682,7 +2708,7 @@ function savePesaje(){
   const esReciente=!prevFecha||fecha>=prevFecha;   // ¿actualiza la copia rápida?
   const fila={id:null,fecha:fecha,peso_kg:peso};   // id llega cuando la BD responda
   let pesajeRowId=null;
-  const repintar=()=>{if(vacaActual===num)renderVacaDatos();};
+  const repintar=()=>{if(vacaActual===num)renderVacaPesajes(num);};
   LCAcciones.ejecutarConDeshacer({
     snack,
     aplicar(){
@@ -2707,7 +2733,7 @@ function editarDatosVaca(){
   if(!a){snack('No tengo los datos de '+vacaActual+' desde la base — sincroniza primero');return;}
   editState.num=vacaActual;
   editState.nombre=a.nombre||'';editState.color=a.color||'';editState.nota=a.nota||'';
-  editState.nacimiento=a.nacimiento||'';editState.peso=(a.pesoKg!=null?a.pesoKg:'');
+  editState.nacimiento=a.nacimiento||'';editState.pesoNacer=(a.pesoNacer!=null?a.pesoNacer:'');
   editState.inicio=a.inicioLactancia||'';
   /* paridad con "Registrar animal": raza por chips, grupo, origen, genealogía y compra */
   const RAZAS=['Holstein × Gyr','F1','Gyrolando','Holstein','Normando'];
@@ -2748,7 +2774,14 @@ function _pintarDatosForm(box){
   compraWrap.appendChild(regTexto('Valor de compra (opcional)','$',v=>editState.valor=v,'number',editState.valor));
   box.appendChild(compraWrap);
   _editToggleCompra();
-  box.appendChild(regTexto('Peso (kg)','',v=>editState.peso=v,'number',editState.peso));
+  /* peso al nacer: si viene del parto no se edita aquí (manda el parto);
+   * los pesos con fecha van por "＋ Registrar pesaje" en la ficha */
+  const pnParto=_pesoNacerDe(animalesPorId[editState.num]||{});
+  if(pnParto&&pnParto.delParto){
+    box.appendChild(regHint('Peso al nacer: '+pnParto.val+' kg — viene del parto donde quedó como cría (se corrige en ese parto).'));
+  }else{
+    box.appendChild(regTexto('Peso al nacer (kg)','Ej. 32 — para animales sin parto registrado',v=>editState.pesoNacer=v,'number',editState.pesoNacer));
+  }
   box.appendChild(regTexto('Inicio de lactancia (último parto)','',v=>editState.inicio=v,'date',editState.inicio));
   box.appendChild(regHint('El DEL se calcula solo desde esta fecha (hoy − inicio de lactancia).'));
   box.appendChild(regTexto('Nota 📝','Ej. patea al ordeño, propensa a mastitis…',v=>editState.nota=v,'text',editState.nota));
@@ -2783,7 +2816,11 @@ function guardarEditarVaca(){
   const color=(editState.color||'').trim()||null;
   const nota=(editState.nota||'').trim()||null;
   const nacimiento=editState.nacimiento||null;
-  const peso=(editState.peso!==''&&editState.peso!=null)?parseFloat(editState.peso):null;
+  /* peso al nacer: solo el MANUAL se guarda aquí (si viene del parto, manda el
+   * parto y el campo ni se mostró); los pesos con fecha van por Pesaje */
+  const pnParto=_pesoNacerDe(a);
+  const pesoNacer=(editState.pesoNacer!==''&&editState.pesoNacer!=null)?parseFloat(editState.pesoNacer):null;
+  if(pesoNacer!=null&&(isNaN(pesoNacer)||pesoNacer<=0)){snack('⚠ El peso al nacer debe ser un número mayor que 0');return;}
   const inicio=editState.inicio||null;
   /* genealogía: si se da un número, debe existir (FK en la base) */
   const madre=(editState.madre||'').trim()||null;
@@ -2803,14 +2840,14 @@ function guardarEditarVaca(){
     grupo:editState.grupo||a.grupo,origen:editState.origen||null,sexo:sexo,rol_toro:rolToro,
     madre_id:madre,padre_id:padre,
     procedencia:procedencia,valor_compra:valor};
-  if(peso!=null&&!isNaN(peso)){campos.peso_kg=peso;campos.fecha_peso=isoHoy();}
+  if(!(pnParto&&pnParto.delParto))campos.peso_nacer=pesoNacer;
   /* DEL se DERIVA del inicio de lactancia: actualizo la caché de inmediato */
   const delCalc=inicio?diasDesdeReal(inicio):a.del;
   const grupoCambio=campos.grupo!==a.grupo;
   Object.assign(a,{nombre:nombre,raza:raza,color:color,nota:nota,nacimiento:nacimiento,inicioLactancia:inicio,del:delCalc,
     grupo:campos.grupo,origen:campos.origen,sexo:sexo,rolToro:rolToro,madreId:madre,padreId:padre,
     procedencia:campos.procedencia,valorCompra:valor});
-  if(peso!=null&&!isNaN(peso)){a.pesoKg=peso;a.fechaPeso=isoHoy();}
+  if(!(pnParto&&pnParto.delParto))a.pesoNacer=pesoNacer;
   const h=hato.find(x=>x.num===num);if(h){h.n=nombre;h.raza=raza;h.del=(delCalc==null?'—':delCalc);
     if(grupoCambio)h.grupo=GRUPO_DISPLAY[a.grupo]||a.grupo;}
   /* si entró o salió del ordeño, la lista de registro de leche cambia */

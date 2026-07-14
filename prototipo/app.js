@@ -322,7 +322,7 @@ function openEditVaca(){
   const RAZAS_M=['Holstein × Gyr','F1','Gyrolando','Holstein','Normando'];
   editM.raza=RAZAS_M.includes(a.raza)?a.raza:'';
   editM.razaOtra=RAZAS_M.includes(a.raza)?'':(a.raza||'');
-  editM.nacimiento=a.nacimiento||'';editM.peso=(a.pesoKg!=null?a.pesoKg:'');
+  editM.nacimiento=a.nacimiento||'';
   editM.inicio=a.inicioLactancia||'';
   editM.grupo=a.grupo||'ordeño';editM.madre=a.madreId||'';editM.padre=a.padreId||'';
   editM.sexo=a.sexo||'H';editM.rolToro=(a.rolToro===true||a.rolToro==='toro');
@@ -344,7 +344,6 @@ function openEditVaca(){
   const ec=document.getElementById('editColor');if(ec)ec.value=editM.color;
   const en=document.getElementById('editNota');if(en)en.value=editM.nota;
   document.getElementById('editNac').value=editM.nacimiento||'';
-  document.getElementById('editPeso').value=editM.peso;
   document.getElementById('editInicio').value=editM.inicio||'';
   document.getElementById('scrim').classList.add('show');
   document.getElementById('editSheet').classList.add('show');
@@ -389,7 +388,6 @@ function saveEditVaca(){
   const color=(editM.color||'').trim()||null;
   const nota=(editM.nota||'').trim()||null;
   const nacimiento=editM.nacimiento||null;
-  const peso=(editM.peso!==''&&editM.peso!=null)?parseFloat(editM.peso):null;
   const inicio=editM.inicio||null;
   closeEdit();
   const grupoNuevo=editM.grupo||a.grupo;
@@ -403,12 +401,10 @@ function saveEditVaca(){
   const campos={nombre:nombre,raza:raza,color:color,nota:nota,nacimiento:nacimiento,inicio_lactancia:inicio,
     grupo:grupoNuevo,madre_id:madre,padre_id:padre,sexo:sexo,rol_toro:rolToro,
     origen:origen,procedencia:procedencia,valor_compra:valor};
-  if(peso!=null&&!isNaN(peso)){campos.peso_kg=peso;campos.fecha_peso=isoHoyM();}
   const delCalc=inicio?Math.max(0,Math.round((new Date()-new Date(inicio+'T00:00:00'))/86400000)):a.del;
   Object.assign(a,{nombre:nombre,raza:raza,color:color,nota:nota,nacimiento:nacimiento,inicioLactancia:inicio,del:delCalc,
     grupo:grupoNuevo,madreId:madre,padreId:padre,sexo:sexo,rolToro:rolToro,
     origen:origen,procedencia:procedencia,valorCompra:valor});
-  if(peso!=null&&!isNaN(peso)){a.pesoKg=peso;a.fechaPeso=isoHoyM();}
   /* refrescar la entrada del hato y la tarjeta de ordeño */
   if(grupoCambio){
     /* moverla de grupo en el drill-down y refrescar contadores del hato */

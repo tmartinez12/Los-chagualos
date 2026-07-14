@@ -23,6 +23,46 @@ CREATE TABLE IF NOT EXISTS pesajes (
 
 CREATE INDEX IF NOT EXISTS idx_pesajes_animal ON pesajes(animal_id, fecha DESC);
 
+-- peso al nacer MANUAL (compradas/históricos sin parto registrado); si el
+-- animal es cría de un parto, manda el peso_kg de ESE parto (no se duplica)
+ALTER TABLE animales ADD COLUMN IF NOT EXISTS peso_nacer NUMERIC(5,1);
+
+-- v_animales expande a.* AL CREARSE: la columna nueva no entra sola. Se
+-- recrea con la definición canónica vigente (espejo exacto de schema.sql).
+-- Sin dependientes: nada más selecciona de esta vista dentro del esquema.
+DROP VIEW IF EXISTS v_animales;
+CREATE VIEW v_animales AS
+SELECT a.*,
+  (SELECT count(*)::int FROM partos p WHERE p.madre_id = a.id) AS partos,
+  CASE WHEN a.nacimiento IS NOT NULL
+       THEN round(((hoy_finca() - a.nacimiento) / 365.25)::numeric, 1) END AS edad_calc,
+  CASE WHEN a.inicio_lactancia IS NOT NULL
+       THEN (hoy_finca() - a.inicio_lactancia) END AS del_calc,
+  ( SELECT o.litros FROM ordenos o
+    WHERE o.animal_id = a.id AND o.turno = 'dia'
+    ORDER BY o.fecha DESC LIMIT 1 ) AS leche_ultima,
+  ( SELECT max(t.inicio + t.dias_retiro) FROM tratamientos t
+    WHERE t.animal_id = a.id AND t.activo AND t.dias_retiro > 0
+      AND (t.inicio + t.dias_retiro) >= hoy_finca() ) AS retiro_calc,
+  -- calculados EN DÍAS (30,44 días/mes): el round por meses metía ±15 días de error
+  CASE WHEN a.estado_repro = 'prenada' AND a.prenez_meses IS NOT NULL AND a.ultima_palpacion IS NOT NULL
+       THEN a.ultima_palpacion + round((9 - a.prenez_meses) * 30.44)::int END AS parto_estimado_calc,
+  CASE WHEN a.estado_repro = 'prenada' AND a.prenez_meses IS NOT NULL AND a.ultima_palpacion IS NOT NULL
+       THEN a.ultima_palpacion + round((7 - a.prenez_meses) * 30.44)::int END AS secar_calc,
+  CASE WHEN a.estado_repro = 'vacia' AND a.ultima_palpacion IS NOT NULL
+       THEN (hoy_finca() - a.ultima_palpacion) END AS dias_vacia_calc,
+  CASE WHEN a.estado_repro = 'prenada' AND a.prenez_meses IS NOT NULL AND a.ultima_palpacion IS NOT NULL
+       THEN least(9, round((a.prenez_meses + (hoy_finca() - a.ultima_palpacion) / 30.44)::numeric, 1)) END AS prenez_meses_actual,
+  -- ganancia media diaria desde el nacimiento (g/día); útil en crías/levante.
+  -- Requiere peso y nacimiento; sin historial de pesajes es la mejor derivación.
+  CASE WHEN a.peso_kg IS NOT NULL AND a.nacimiento IS NOT NULL
+            AND (hoy_finca() - a.nacimiento) > 0
+       THEN round(a.peso_kg * 1000.0 / (hoy_finca() - a.nacimiento)) END AS ganancia_dia_g
+FROM animales a;
+
+-- PostgREST/Supabase: la vista recreada necesita los permisos de nuevo
+GRANT SELECT ON v_animales TO anon, authenticated;
+
 -- MVP sin login: RLS desactivado, igual que las demás tablas de datos
 ALTER TABLE pesajes DISABLE ROW LEVEL SECURITY;
 

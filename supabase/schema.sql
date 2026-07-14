@@ -93,6 +93,9 @@ CREATE TABLE animales (
   -- Peso / levante (ganancia_dia_g se DERIVA en v_animales, no se persiste)
   peso_kg             NUMERIC(6,1),
   fecha_peso          DATE,
+  -- peso al nacer MANUAL (compradas/históricos sin parto registrado); si el
+  -- animal es cría de un parto, manda el peso_kg de ESE parto (no se duplica)
+  peso_nacer          NUMERIC(5,1),
 
   -- Macho (el toro designado; hijas/destete/lista-servicio se derivan)
   rol_toro            BOOLEAN,

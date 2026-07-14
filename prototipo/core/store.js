@@ -88,7 +88,7 @@
       secarEstimado: secarDeriv,
       retiroLecheHasta: retiroDerivado,
       madreId: r.madre_id, padreId: r.padre_id,
-      pesoKg: r.peso_kg, fechaPeso: r.fecha_peso, gananciaDiaG: r.ganancia_dia_g,
+      pesoKg: r.peso_kg, fechaPeso: r.fecha_peso, pesoNacer: r.peso_nacer, gananciaDiaG: r.ganancia_dia_g,
       rolToro: r.rol_toro,
       /* DERIVADOS (antes columnas): lista para servicio y destete próximo */
       /* señales de transición de etapa (patrón "aviso + confirmar": el grupo NO
@@ -664,7 +664,7 @@
     potreros: ['id', 'numero', 'dias_descanso', 'hato_actual', 'sugerido_siguiente', 'nota', 'created_at', 'updated_at'],
     animales: ['id', 'nombre', 'unidad_id', 'especie', 'raza', 'color', 'nota', 'grupo', 'sexo',
       'edad_anios', 'nacimiento', 'origen', 'inicio_lactancia', 'estado_repro', 'prenez_meses',
-      'ultima_palpacion', 'madre_id', 'padre_id', 'peso_kg', 'fecha_peso',
+      'ultima_palpacion', 'madre_id', 'padre_id', 'peso_kg', 'fecha_peso', 'peso_nacer',
       'rol_toro', 'baja_motivo', 'baja_fecha', 'baja_valor', 'baja_nota', 'procedencia',
       'valor_compra', 'created_at', 'updated_at'],
     ordenos: ['id', 'animal_id', 'fecha', 'litros', 'turno', 'registrado_por', 'created_at'],
