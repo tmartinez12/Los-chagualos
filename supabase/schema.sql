@@ -170,6 +170,22 @@ CREATE INDEX idx_partos_madre ON partos(madre_id);
 -- una cría no puede figurar en dos partos (inflaría el conteo derivado)
 CREATE UNIQUE INDEX uq_partos_cria ON partos (cria_id) WHERE cria_id IS NOT NULL;
 
+-- ─── PESAJES (historial de peso) ────────────────────────────────────────────
+-- Cada pesaje queda con su fecha (ganancia de peso en levante, regla de los
+-- 330 kg para servicio). animales.peso_kg/fecha_peso guardan el MÁS RECIENTE
+-- como copia rápida; la app la actualiza al registrar (ver registrarPesaje).
+
+CREATE TABLE pesajes (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  animal_id       TEXT NOT NULL REFERENCES animales(id) ON DELETE CASCADE,
+  fecha           DATE NOT NULL DEFAULT hoy_finca(),
+  peso_kg         NUMERIC(5,1) NOT NULL CHECK (peso_kg > 0),
+  registrado_por  UUID REFERENCES profiles(id),
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_pesajes_animal ON pesajes(animal_id, fecha DESC);
+
 -- ─── TRATAMIENTOS / SANIDAD ─────────────────────────────────────────────────
 
 CREATE TABLE tratamientos (
@@ -428,7 +444,7 @@ BEGIN
     RAISE EXCEPTION 'Respaldo inválido: falta el objeto "tablas".';
   END IF;
   TRUNCATE ordenos, palpaciones, tratamientos, vacunaciones, vacunaciones_animales,
-           partos, movimientos_potrero, movimientos_grupo, animales, potreros RESTART IDENTITY CASCADE;
+           partos, pesajes, movimientos_potrero, movimientos_grupo, animales, potreros RESTART IDENTITY CASCADE;
   INSERT INTO potreros SELECT * FROM jsonb_populate_recordset(NULL::potreros, COALESCE(t->'potreros','[]'::jsonb));
   -- un solo INSERT: las FK madre/padre autorreferenciadas se verifican al final del statement
   INSERT INTO animales SELECT * FROM jsonb_populate_recordset(NULL::animales, COALESCE(t->'animales','[]'::jsonb));
@@ -441,6 +457,7 @@ BEGIN
   INSERT INTO movimientos_potrero SELECT * FROM jsonb_populate_recordset(NULL::movimientos_potrero, COALESCE(t->'movimientos_potrero','[]'::jsonb));
   INSERT INTO movimientos_grupo   SELECT * FROM jsonb_populate_recordset(NULL::movimientos_grupo,   COALESCE(t->'movimientos_grupo','[]'::jsonb));
   INSERT INTO vacunaciones_animales SELECT * FROM jsonb_populate_recordset(NULL::vacunaciones_animales, COALESCE(t->'vacunaciones_animales','[]'::jsonb));
+  INSERT INTO pesajes             SELECT * FROM jsonb_populate_recordset(NULL::pesajes,             COALESCE(t->'pesajes','[]'::jsonb));
   RETURN jsonb_build_object('ok', true, 'animales', n_animales);
 END $$;
 
@@ -458,6 +475,7 @@ ALTER TABLE tratamientos        DISABLE ROW LEVEL SECURITY;
 ALTER TABLE vacunaciones        DISABLE ROW LEVEL SECURITY;
 ALTER TABLE potreros            DISABLE ROW LEVEL SECURITY;
 ALTER TABLE movimientos_potrero DISABLE ROW LEVEL SECURITY;
+ALTER TABLE pesajes             DISABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles            DISABLE ROW LEVEL SECURITY;
 
 -- ─── VISTAS DERIVADAS (una sola fuente de verdad) ───────────────────────────

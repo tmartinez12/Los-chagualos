@@ -17,6 +17,7 @@ Migraciones **pendientes** de correr, en orden (idempotentes):
 | 2 | `migracion-movimientos-grupo.sql` | Crea la tabla `movimientos_grupo` (historial del ciclo de vida: cada cambio de grupo con su fecha) y la función `mover_grupo()`. Correr DESPUÉS de la #1. | corrió jul 2026 |
 | 3 | `migracion-vacunas-lista.sql` | Crea `vacunaciones_animales` (la lista EXACTA de animales de cada vacunación — checkboxes) y el RPC `registrar_vacunacion_completa()`. Arregla que una vaca nueva apareciera vacunada por eventos anteriores. | corrió jul 2026 |
 | 4 | `migracion-tratamiento-generico.sql` | `tratamientos.problema` pasa a opcional y `medicamento` a obligatorio (hoy se registra el TRATAMIENTO, no la enfermedad; las filas viejas sin medicamento heredan el problema). | **pendiente** (jul 2026) |
+| 5 | `migracion-pesajes.sql` | Crea la tabla `pesajes` (historial de peso con fecha — acción "⚖️ Pesaje" de la ficha). Actualiza `restaurar_respaldo()` para incluir `pesajes` y `vacunaciones_animales` (faltaba en la versión instalada). | **pendiente** (jul 2026) |
 
 Las 6 migraciones de la tanda anterior (vacunaciones, zona-horaria,
 integridad, nacimiento, restaurar, ganancia) ya corrieron y están en

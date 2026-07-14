@@ -1154,7 +1154,7 @@ function guardarEditarParto(partoId,st){
       repintar();},
     escribir:typeof LCStore!=='undefined'?()=>LCStore.updateParto(partoId,{fecha:st.fecha})
       .then(()=>arrastra?LCStore.updateAnimalCampos(p.madre_id,{inicio_lactancia:st.fecha}):null):null,
-    avisoError:'⚠ La fecha del parto NO se corrigió en la base — reintenta',
+    avisoError:()=>'⚠ La fecha del parto NO se corrigió en la base — reintenta',
     mensaje:'Parto de '+p.madre_id+' corregido',
     revertir(){ponFecha(p.fecha,prev.fecha);p.fecha=prev.fecha;
       if(arrastra&&madre){madre.inicioLactancia=prevInicio;madre.del=prevDel;
@@ -2572,6 +2572,7 @@ function openMenuVaca(){
    * ficha con su lápiz (edición en el lugar, sin modal) */
   const opts=[
     ['🔬 Palpación',()=>{closeReg();openPalp(ref);}],
+    ['⚖️ Pesaje',()=>{closeReg();openPesaje(ref);}],
     ['💊 Tratamiento',()=>{closeReg();openTrata(ref);}],
     ['🌾 Secar',()=>{closeReg();openSeca(ref);}],
     ['🐄 Parto',()=>{closeReg();openParto(ref);}],
@@ -2622,12 +2623,84 @@ function renderVacaDatos(){
   F('Madre',a.madreId?esc(nombreRef(a.madreId)):'');
   F('Padre',a.padreId?esc(nombreRef(a.padreId)):'');
   F('Peso',a.pesoKg?a.pesoKg+' kg'+(a.fechaPeso?' <span style="color:var(--ink-3)">('+fmtFechaCorta(a.fechaPeso)+')</span>':''):'');
+  /* historial de pesajes (tabla pesajes), cargado al expandir; muestra los
+   * últimos 3 con su fecha y la ganancia diaria entre los dos más recientes */
+  (function(){
+    const ps=_pesajesCache[a.id];
+    if(ps===undefined||ps===null){_cargarPesajes(a.id);F('Pesajes','<span style="color:var(--ink-3)">cargando…</span>');return;}
+    if(!ps.length)return;   // sin historial: la fila Peso ya dice lo que hay
+    let gan='';
+    if(ps.length>=2&&ps[0].fecha>ps[1].fecha){
+      const dias=Math.round((new Date(ps[0].fecha+'T00:00:00')-new Date(ps[1].fecha+'T00:00:00'))/86400000);
+      if(dias>0){const g=(ps[0].peso_kg-ps[1].peso_kg)/dias;
+        gan=' <span style="color:var(--ink-3)">· '+(g>=0?'+':'')+(g*1000).toFixed(0)+' g/día</span>';}
+    }
+    F('Pesajes',ps.slice(0,3).map(p=>p.peso_kg+' kg <span style="color:var(--ink-3)">('+fmtFechaCorta(p.fecha)+')</span>').join(' · ')+gan);
+  })();
   if(a.grupo==='ordeño'||a.grupo==='horra'||a.inicioLactancia)
     F('Inicio de lactancia',a.inicioLactancia?fmtFechaAno(a.inicioLactancia):'');
   F('Nota',a.nota?esc(a.nota):'');
   const crias=Object.values(animalesPorId).filter(x=>x.madreId===a.id).map(x=>x.id+' '+x.nombre);
   if(crias.length)F('Crías',esc(crias.join(', ')));
   box.innerHTML=h+'</div>';
+}
+/* --- Pesaje: registrar peso CON su fecha (historial en tabla pesajes) ------
+ * La copia rápida animales.peso_kg/fecha_peso guarda el más reciente; solo se
+ * actualiza si el pesaje es de fecha igual o posterior (uno viejo no la pisa). */
+const _pesajesCache={};   // num → [{id,fecha,peso_kg}] desc por fecha (para la ficha)
+const pesajeState={};
+/* baja el historial una vez por animal (null = pidiendo); al llegar repinta
+ * la ficha si sigue abierta en ese animal */
+function _cargarPesajes(num){
+  if(_pesajesCache[num]!==undefined)return;   // ya cargado o en vuelo
+  if(typeof LCStore==='undefined'||!LCStore.getPesajes){_pesajesCache[num]=[];return;}
+  _pesajesCache[num]=null;
+  LCStore.getPesajes(num)
+    .then(f=>{_pesajesCache[num]=f||[];if(vacaActual===num&&vacaDatosAbierto&&!vacaDatosEditando)renderVacaDatos();})
+    .catch(e=>{console.warn('Pesajes de '+num+':',e.message||e);_pesajesCache[num]=[];});
+}
+function openPesaje(cow){
+  const num=cow?(''+cow).split('·')[0].trim():vacaActual;
+  const a=animalesPorId[num];if(!a){snack('No tengo los datos de '+num);return;}
+  pesajeState.num=num;pesajeState.peso='';pesajeState.fecha=isoHoy();
+  openReg('Pesaje de '+num+' · '+(a.nombre||''),'El peso queda en el historial con su fecha'+
+    (a.pesoKg?' · último: '+a.pesoKg+' kg'+(a.fechaPeso?' ('+fmtFechaCorta(a.fechaPeso)+')':''):''));
+  const body=document.getElementById('regBody');body.innerHTML='';
+  body.appendChild(regTexto('Peso (kg)','Ej. 380',v=>pesajeState.peso=v,'number',''));
+  body.appendChild(regTexto('Fecha del pesaje','',v=>pesajeState.fecha=v,'date',pesajeState.fecha));
+  document.getElementById('regSaveBtn').onclick=savePesaje;
+}
+function savePesaje(){
+  const num=pesajeState.num,a=animalesPorId[num];if(!a)return;
+  const peso=parseFloat(pesajeState.peso);
+  if(isNaN(peso)||peso<=0){snack('⚠ Escribe el peso en kg (mayor que 0)');return;}
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(pesajeState.fecha||'')){snack('Falta la fecha del pesaje');return;}
+  if(pesajeState.fecha>isoHoy()){snack('⚠ La fecha del pesaje no puede ser futura');return;}
+  const fecha=pesajeState.fecha;
+  closeReg();
+  const prevPeso=a.pesoKg!=null?a.pesoKg:null,prevFecha=a.fechaPeso||null;
+  const esReciente=!prevFecha||fecha>=prevFecha;   // ¿actualiza la copia rápida?
+  const fila={id:null,fecha:fecha,peso_kg:peso};   // id llega cuando la BD responda
+  let pesajeRowId=null;
+  const repintar=()=>{if(vacaActual===num)renderVacaDatos();};
+  LCAcciones.ejecutarConDeshacer({
+    snack,
+    aplicar(){
+      if(_pesajesCache[num]){_pesajesCache[num].push(fila);
+        _pesajesCache[num].sort((x,y)=>String(y.fecha).localeCompare(String(x.fecha)));}
+      if(esReciente){a.pesoKg=peso;a.fechaPeso=fecha;}
+      repintar();},
+    escribir:typeof LCStore!=='undefined'?()=>LCStore.registrarPesaje(num,peso,fecha)
+      .then(r=>{pesajeRowId=r.id;fila.id=r.id;}):null,
+    avisoError:()=>'⚠ El pesaje de '+num+' NO se guardó en la base — reintenta',
+    mensaje:num+': '+peso+' kg registrados ('+fmtFechaCorta(fecha)+')',
+    revertir(){
+      if(_pesajesCache[num]){const i=_pesajesCache[num].indexOf(fila);if(i>=0)_pesajesCache[num].splice(i,1);}
+      if(esReciente){a.pesoKg=prevPeso;a.fechaPeso=prevFecha;}
+      repintar();},
+    compensarBD:typeof LCStore!=='undefined'?()=>(pesajeRowId?LCStore.deletePesaje(pesajeRowId):Promise.resolve())
+      .then(()=>esReciente?LCStore.updateAnimalCampos(num,{peso_kg:prevPeso,fecha_peso:prevFecha}):null):null,
+  });
 }
 function editarDatosVaca(){
   const a=animalesPorId[vacaActual];

@@ -614,12 +614,48 @@
       .order('fecha', { ascending: false }).order('id', { ascending: true }));
   }
 
+  /* --- Pesajes (historial de peso con fecha) --------------------------------
+   * Cada pesaje se INSERTA (no pisa); animales.peso_kg/fecha_peso guardan el
+   * más reciente como copia rápida y solo se actualizan si el pesaje nuevo es
+   * de fecha igual o posterior (registrar uno viejo no retrocede la copia). */
+  async function registrarPesaje(animalId, pesoKg, fecha) {
+    const ins = await client().from('pesajes')
+      .insert({ animal_id: animalId, peso_kg: pesoKg, fecha: fecha || hoyFinca() })
+      .select().single();
+    if (ins.error) throw ins.error;
+    const f = ins.data.fecha;
+    const act = await client().from('animales').select('fecha_peso').eq('id', animalId).single();
+    if (!act.error && (!act.data.fecha_peso || f >= act.data.fecha_peso)) {
+      const up = await client().from('animales')
+        .update({ peso_kg: pesoKg, fecha_peso: f }).eq('id', animalId);
+      if (up.error) throw up.error;
+    }
+    _invalidarAnimales();
+    return ins.data;
+  }
+
+  async function getPesajes(animalId) {
+    return _paginado(() => client().from('pesajes')
+      .select('id, animal_id, fecha, peso_kg')
+      .eq('animal_id', animalId)
+      .order('fecha', { ascending: false }).order('id', { ascending: true }));
+  }
+
+  /* borra un pesaje (Deshacer). La copia rápida del animal la restaura quien
+   * llama (conoce el valor previo); aquí solo se borra la fila. */
+  async function deletePesaje(id) {
+    const { error } = await client().from('pesajes').delete().eq('id', id);
+    if (error) throw error;
+    _invalidarAnimales();
+    return true;
+  }
+
   /* --- Respaldo y restauración --------------------------------------------- *
    * exportarTodo(): baja TODAS las tablas de datos a un objeto (para guardar
    *   como archivo .json). restaurarTodo(): vuelve a cargar ese archivo.       */
   const TABLAS_RESPALDO = [
     'potreros', 'animales', 'ordenos', 'palpaciones',
-    'tratamientos', 'vacunaciones', 'vacunaciones_animales', 'partos', 'movimientos_potrero', 'movimientos_grupo',
+    'tratamientos', 'vacunaciones', 'vacunaciones_animales', 'partos', 'pesajes', 'movimientos_potrero', 'movimientos_grupo',
   ];
   /* columnas vigentes por tabla (espejo de schema.sql): la restauración filtra
    * cualquier columna desconocida (p.ej. de un respaldo de un esquema viejo)
@@ -637,6 +673,7 @@
     vacunaciones: ['id', 'tipo', 'alcance', 'animal_id', 'n_animales', 'producto', 'lote', 'fecha', 'proxima', 'nota', 'registrado_por', 'created_at'],
     vacunaciones_animales: ['id', 'vacunacion_id', 'animal_id', 'created_at'],
     partos: ['id', 'madre_id', 'cria_id', 'fecha', 'sexo_cria', 'peso_kg', 'tipo', 'estado_cria', 'nota', 'registrado_por', 'created_at'],
+    pesajes: ['id', 'animal_id', 'fecha', 'peso_kg', 'registrado_por', 'created_at'],
     movimientos_potrero: ['id', 'potrero_id', 'fecha', 'tipo', 'registrado_por', 'created_at'],
     movimientos_grupo: ['id', 'animal_id', 'de_grupo', 'a_grupo', 'fecha', 'motivo', 'registrado_por', 'created_at'],
   };
@@ -741,6 +778,7 @@
     getProduccionMensual, getPartos, getPalpaciones, getTratamientos, terminarTratamiento, reactivarTratamiento,
     updateAnimalCampos, darDeBaja, deleteAnimal, deleteParto, deletePalpacion, deleteTratamiento,
     moverGrupo, deleteMovimientoGrupo, getMovimientosGrupo, vincularCriaParto, updateParto,
+    registrarPesaje, getPesajes, deletePesaje,
     registrarTratamiento, registrarParto, registrarPartoCompleto, registrarPalpacion,
     exportarTodo, restaurarTodo,
     /* expuestos para las pruebas de contrato (schema ↔ store ↔ respaldo): NO
