@@ -248,6 +248,15 @@
     return true;
   }
 
+  /* Corrige campos de un parto ya registrado (fecha, peso_kg, nota — en
+   * snake_case, como updateAnimalCampos). Solo toca lo que se le pasa. */
+  async function updateParto(id, campos) {
+    const { data, error } = await client().from('partos').update(campos).eq('id', id).select().single();
+    if (error) throw error;
+    _invalidarAnimales();   // el último parto derivado puede cambiar
+    return data;
+  }
+
   /* borra el ordeño de una vaca en una fecha (default: hoy de la finca).
    * Lo usan el "Deshacer" del registro y el vaciado de celdas de la semana. */
   async function deleteOrdeno(animalId, fecha) {
@@ -731,7 +740,7 @@
     registrarVacunacion, getVacunaciones, deleteVacunacion,
     getProduccionMensual, getPartos, getPalpaciones, getTratamientos, terminarTratamiento, reactivarTratamiento,
     updateAnimalCampos, darDeBaja, deleteAnimal, deleteParto, deletePalpacion, deleteTratamiento,
-    moverGrupo, deleteMovimientoGrupo, getMovimientosGrupo, vincularCriaParto,
+    moverGrupo, deleteMovimientoGrupo, getMovimientosGrupo, vincularCriaParto, updateParto,
     registrarTratamiento, registrarParto, registrarPartoCompleto, registrarPalpacion,
     exportarTodo, restaurarTodo,
     /* expuestos para las pruebas de contrato (schema ↔ store ↔ respaldo): NO

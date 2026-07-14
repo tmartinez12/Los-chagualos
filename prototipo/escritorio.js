@@ -1059,6 +1059,67 @@ function vincularCriaEjecutar(partoId,criaId,madreNum){
       .then(()=>LCStore.updateAnimalCampos(criaId,{madre_id:prevMadre||null,origen:prevOrigen||null})):null,
   });
 }
+/* Corregir un parto ya registrado (error de dedo): fecha, peso y nota.
+ * Sexo, estado y cría no se editan aquí — si están mal, se elimina el parto y
+ * se re-registra. Si la vaca llevaba su lactancia desde este parto, corregir
+ * la fecha arrastra el inicio de lactancia (esa fecha ES el último parto). */
+function abrirEditarParto(partoId){
+  const p=(_partosRaw||[]).find(x=>String(x.id)===String(partoId));if(!p)return;
+  const st={fecha:p.fecha,peso:(p.peso_kg!=null?p.peso_kg:''),nota:p.nota||''};
+  const madre=animalesPorId[p.madre_id];
+  const arrastra=madre&&madre.inicioLactancia===p.fecha;
+  openReg('Corregir parto de '+p.madre_id,'Solo fecha, peso y nota. Si el sexo o el estado están mal, elimina el parto y regístralo de nuevo');
+  const body=document.getElementById('regBody');body.innerHTML='';
+  body.appendChild(regTexto('Fecha del parto','',v=>st.fecha=v,'date',st.fecha));
+  if(arrastra)body.appendChild(regHint('La vaca lleva su lactancia desde este parto: si corriges la fecha, el inicio de lactancia (y el DEL) se corrigen solos.'));
+  body.appendChild(regTexto('Peso de la cría al nacer (kg)','Ej. 32',v=>st.peso=v,'number',st.peso));
+  body.appendChild(regTexto('Nota','Ej. parto asistido de noche…',v=>st.nota=v,'text',st.nota));
+  /* eliminar: para duplicados o partos que nunca ocurrieron */
+  const del=document.createElement('button');del.className='btn outl';
+  del.style.cssText='width:100%;justify-content:center;margin-top:10px;color:var(--red,#b3261e);border-color:var(--red,#b3261e)';
+  del.textContent='🗑 Eliminar este parto';
+  del.onclick=()=>{closeReg();eliminarPartoHist(partoId);};
+  body.appendChild(del);
+  document.getElementById('regSaveBtn').onclick=()=>guardarEditarParto(partoId,st);
+}
+function guardarEditarParto(partoId,st){
+  const p=(_partosRaw||[]).find(x=>String(x.id)===String(partoId));if(!p)return;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(st.fecha||'')){snack('Falta la fecha del parto');return;}
+  if(st.fecha>isoHoy()){snack('⚠ La fecha del parto no puede ser futura');return;}
+  const peso=(st.peso!==''&&st.peso!=null)?parseFloat(st.peso):null;
+  if(peso!=null&&(isNaN(peso)||peso<=0)){snack('⚠ El peso debe ser un número mayor que 0');return;}
+  const nota=(st.nota||'').trim()||null;
+  const madre=animalesPorId[p.madre_id];
+  const prev={fecha:p.fecha,peso:p.peso_kg,nota:p.nota};
+  /* el inicio de lactancia sigue a ESTE parto solo si apuntaba a su fecha */
+  const arrastra=madre&&madre.inicioLactancia===p.fecha&&st.fecha!==p.fecha;
+  const prevInicio=madre?madre.inicioLactancia:null,prevDel=madre?madre.del:null;
+  closeReg();
+  const ponFecha=(vieja,nueva)=>{               // mantiene las cachés de fechas
+    const fs=_partosPorMadre[p.madre_id]||[];const i=fs.indexOf(vieja);
+    if(i>=0)fs[i]=nueva;const s=fs.slice().sort();
+    if(s.length)_ultimoParto[p.madre_id]=s[s.length-1];};
+  const repintar=()=>{recomputarPartosRecientes();renderPartosRecientes();renderPartosKpis();
+    if(typeof recomputarRepro==='function'){recomputarRepro();renderVacias();renderPalpLista();renderReproKpis();}
+    renderHato();if(vacaActual===p.madre_id)goVaca(p.madre_id,vacaFrom);};
+  LCAcciones.ejecutarConDeshacer({
+    snack,
+    aplicar(){ponFecha(p.fecha,st.fecha);p.fecha=st.fecha;p.peso_kg=peso;p.nota=nota;
+      if(arrastra&&madre){madre.inicioLactancia=st.fecha;madre.del=diasDesdeReal(st.fecha);
+        const h=hato.find(x=>x.num===p.madre_id);if(h)h.del=(madre.del==null?'—':madre.del);}
+      repintar();},
+    escribir:typeof LCStore!=='undefined'?()=>LCStore.updateParto(partoId,{fecha:st.fecha,peso_kg:peso,nota:nota})
+      .then(()=>arrastra?LCStore.updateAnimalCampos(p.madre_id,{inicio_lactancia:st.fecha}):null):null,
+    avisoError:'⚠ El parto NO se corrigió en la base — reintenta',
+    mensaje:'Parto de '+p.madre_id+' corregido',
+    revertir(){ponFecha(p.fecha,prev.fecha);p.fecha=prev.fecha;p.peso_kg=prev.peso;p.nota=prev.nota;
+      if(arrastra&&madre){madre.inicioLactancia=prevInicio;madre.del=prevDel;
+        const h=hato.find(x=>x.num===p.madre_id);if(h)h.del=(prevDel==null?'—':prevDel);}
+      repintar();},
+    compensarBD:typeof LCStore!=='undefined'?()=>LCStore.updateParto(partoId,{fecha:prev.fecha,peso_kg:prev.peso,nota:prev.nota})
+      .then(()=>arrastra?LCStore.updateAnimalCampos(p.madre_id,{inicio_lactancia:prevInicio}):null):null,
+  });
+}
 /* detalle mensual de la ficha: colapsado por defecto (crece sin tope) */
 function toggleVacaMensual(){
   const mc=document.getElementById('vacaMensualCard');
@@ -1219,7 +1280,7 @@ function goVaca(num,from){
   if(ptb){ptb.innerHTML='';
     const ps=(_partosRaw||[]).filter(p=>String(p.madre_id)===String(cow.num))
       .sort((x,y)=>String(y.fecha).localeCompare(String(x.fecha)));
-    if(!ps.length)ptb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:12px;color:var(--ink-3)">Sin partos registrados.</td></tr>';
+    if(!ps.length)ptb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:12px;color:var(--ink-3)">Sin partos registrados.</td></tr>';
     ps.forEach(p=>{
       const sinDetalle=!p.cria_id&&!p.sexo_cria;   // parto histórico del registro inicial
       /* cría: si está vinculada, número+nombre; si no y la cría nació viva,
@@ -1234,9 +1295,11 @@ function goVaca(num,from){
         '<td>'+criaCell+'</td>'+
         '<td class="r">'+(p.sexo_cria==='H'?'♀':p.sexo_cria==='M'?'♂':'—')+'</td><td class="r">'+(p.peso_kg?p.peso_kg+' kg':'—')+'</td>'+
         '<td>'+(p.tipo||'normal')+'</td>'+
-        '<td class="r">'+(sinDetalle?'<span class="badge">histórico</span>':'<span class="badge '+(p.estado_cria==='viva'?'ok':'bad')+'">'+(p.estado_cria==='viva'?'viva':'mortinato')+'</span>')+'</td>';
+        '<td class="r">'+(sinDetalle?'<span class="badge">histórico</span>':'<span class="badge '+(p.estado_cria==='viva'?'ok':'bad')+'">'+(p.estado_cria==='viva'?'viva':'mortinato')+'</span>')+'</td>'+
+        '<td class="r"><a class="parto-edit" title="Corregir este parto" style="cursor:pointer;color:var(--ink-3)">✏️</a></td>';
       const lk=tr.querySelector('.cria-link');
       if(lk)lk.onclick=()=>abrirVincularCria(p.id,cow.num);
+      tr.querySelector('.parto-edit').onclick=()=>abrirEditarParto(p.id);
       ptb.appendChild(tr);
     });
     const lblP=document.getElementById('vacaPartosLabel');
@@ -1390,7 +1453,8 @@ function eliminarPartoHist(id,ev){
   if(!confirm('¿Eliminar el parto de '+p.madre+' ('+p.fecha+')? El conteo de partos de la vaca baja.'))return;
   const fin=()=>{
     const j=_partosRaw.findIndex(x=>x.id===id);
-    if(j>=0){const raw=_partosRaw[j];_partosRaw.splice(j,1);
+    let madreId=null;
+    if(j>=0){const raw=_partosRaw[j];madreId=raw.madre_id;_partosRaw.splice(j,1);
       if(_partosPorMadre[raw.madre_id]){const k=_partosPorMadre[raw.madre_id].lastIndexOf(raw.fecha);
         if(k>=0)_partosPorMadre[raw.madre_id].splice(k,1);}
       if(_ultimoParto[raw.madre_id]===raw.fecha){const fs=(_partosPorMadre[raw.madre_id]||[]).slice().sort();
@@ -1398,6 +1462,9 @@ function eliminarPartoHist(id,ev){
       if(animalesPorId[raw.madre_id]&&animalesPorId[raw.madre_id].partos>0)animalesPorId[raw.madre_id].partos--;}
     recomputarPartosRecientes();
     renderPartosRecientes();renderPartosKpis();
+    if(typeof recomputarRepro==='function')recomputarRepro();
+    /* si el borrado vino de la ficha (o la ficha de la madre está abierta), repintarla */
+    if(vacaActual&&madreId&&String(vacaActual)===String(madreId))goVaca(vacaActual,vacaFrom);
     snack('Parto eliminado');
   };
   if(typeof LCStore!=='undefined')LCStore.deleteParto(id).then(fin)
