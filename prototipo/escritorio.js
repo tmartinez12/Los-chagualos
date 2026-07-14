@@ -1191,7 +1191,7 @@ async function renderVacaEtapas(num){
 function goVaca(num,from){
   let cow=animalesPorId[num]?buildFichaBasica(animalesPorId[num]):null;
   if(!cow)return snack('Ficha de '+num+' — próximamente');
-  if(String(vacaActual)!==String(cow.num))vacaDatosEditando=false;   // cambiar de animal cierra la edición
+  if(String(vacaActual)!==String(cow.num)){vacaDatosEditando=false;vacaDatosAbierto=false;}   // cambiar de animal cierra edición y pliega los datos
   vacaFrom=from||'pg-hato';vacaActual=cow.num;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('pg-vaca').classList.add('active');
@@ -1240,7 +1240,8 @@ function goVaca(num,from){
   else{fimg.removeAttribute('src');foto.classList.remove('has-img');}
   document.getElementById('vacaFotoInput').value='';
   document.getElementById('vacaNombre').textContent=cow.num+' · '+cow.n;
-  document.getElementById('vacaSub').textContent=[cow.raza,cow.color,cow.edad,cow.grupo,cow.origen].filter(x=>x&&x!=='—').join(' · ');
+  /* cerrado: solo edad · raza · grupo (color/origen viven en "Datos") */
+  document.getElementById('vacaSub').textContent=[cow.edad,cow.raza,cow.grupo].filter(x=>x&&x!=='—').join(' · ');
   /* nota de manejo visible en el hero (además de en los datos) */
   const nb=document.getElementById('vacaNotaBadge');
   if(nb){
@@ -2589,9 +2590,21 @@ const editState={};
  * El lápiz de la tarjeta la vuelve un formulario ahí mismo, con Guardar /
  * Cancelar; guardar usa el mismo guardarEditarVaca de siempre. */
 let vacaDatosEditando=false;
+let vacaDatosAbierto=false;   // sección "Datos" del hero plegada/expandida
+function toggleVacaDatos(){
+  vacaDatosAbierto=!vacaDatosAbierto;
+  if(!vacaDatosAbierto)vacaDatosEditando=false;   // plegar descarta una edición a medias
+  renderVacaDatos();
+}
 function renderVacaDatos(){
   const box=document.getElementById('vacaGenea');if(!box)return;
   const a=animalesPorId[vacaActual];if(!a){box.innerHTML='';return;}
+  /* plegar/expandir la sección dentro del hero */
+  const wrap=document.getElementById('vacaDatosWrap');
+  if(wrap)wrap.style.display=vacaDatosAbierto?'':'none';
+  const tg=document.getElementById('vacaDatosToggle');
+  if(tg)tg.textContent=vacaDatosAbierto?'Datos ▴':'Datos ▾';
+  if(!vacaDatosAbierto)return;
   const btn=document.getElementById('vacaDatosEditBtn');
   if(btn)btn.style.display=(vacaDatosEditando||a.grupo==='baja')?'none':'';
   if(vacaDatosEditando){_pintarDatosForm(box,a);return;}

@@ -167,35 +167,40 @@
           <button class="btn outl small" id="vacaNextBtn" style="display:none" title="Vaca siguiente"></button>
           <button class="btn filled small" id="vacaEventoBtn" onclick="openMenuVaca()">＋ Registrar evento</button>
         </div>
-        <div class="card" style="display:flex;gap:16px;align-items:center;padding:16px 20px">
-          <div class="cow-photo" id="vacaFoto" onclick="document.getElementById('vacaFotoInput').click()">
-            <svg class="ic" style="width:26px;height:26px;color:var(--ink-3)"><use href="#i-tag"/></svg>
-            <span class="cow-photo-add">＋ Foto</span>
-            <img id="vacaFotoImg" alt="">
+        <!-- hero: cerrado muestra foto + número·nombre + años·raza·grupo; el
+             botón "Datos" expande AQUÍ MISMO la ficha completa (con su lápiz
+             para editar en el lugar, sin modal) -->
+        <div class="card" style="padding:16px 20px">
+          <div style="display:flex;gap:16px;align-items:center">
+            <div class="cow-photo" id="vacaFoto" onclick="document.getElementById('vacaFotoInput').click()">
+              <svg class="ic" style="width:26px;height:26px;color:var(--ink-3)"><use href="#i-tag"/></svg>
+              <span class="cow-photo-add">＋ Foto</span>
+              <img id="vacaFotoImg" alt="">
+            </div>
+            <input type="file" id="vacaFotoInput" accept="image/*" style="display:none" onchange="setVacaFoto(this)">
+            <div style="flex:1">
+              <div style="font-size:20px;font-weight:700;letter-spacing:-.3px" id="vacaNombre">—</div>
+              <div style="font-size:13px;color:var(--ink-2);margin-top:2px" id="vacaSub"></div>
+              <!-- nota de manejo destacada: es información operativa (p.ej.
+                   "patea al ordeño"), no un dato más al final de una línea -->
+              <div id="vacaNotaBadge" style="display:none;margin-top:6px"></div>
+            </div>
+            <button class="btn outl small" id="vacaDatosToggle" onclick="toggleVacaDatos()" title="Ver todos los datos del animal">Datos ▾</button>
           </div>
-          <input type="file" id="vacaFotoInput" accept="image/*" style="display:none" onchange="setVacaFoto(this)">
-          <div style="flex:1">
-            <div style="font-size:20px;font-weight:700;letter-spacing:-.3px" id="vacaNombre">—</div>
-            <div style="font-size:13px;color:var(--ink-2);margin-top:2px" id="vacaSub"></div>
-            <!-- nota de manejo destacada: es información operativa (p.ej.
-                 "patea al ordeño"), no un dato más al final de una línea -->
-            <div id="vacaNotaBadge" style="display:none;margin-top:6px"></div>
+          <div id="vacaDatosWrap" style="display:none;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:13px;color:var(--ink-2);line-height:1.6">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+              <b style="color:var(--ink)">Datos del animal</b>
+              <div style="flex:1"></div>
+              <button class="btn outl small" id="vacaDatosEditBtn" onclick="editarDatosVaca()" title="Editar estos datos aquí mismo">
+                <svg class="ic-s ic"><use href="#i-edit"/></svg>Editar</button>
+            </div>
+            <div id="vacaGenea"></div>
+            <div id="vacaEtapas" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12.5px"></div>
           </div>
         </div>
         <div id="vacaAlerta" style="margin-top:10px"></div>
         <div id="vacaBajaBox" style="margin-top:10px;display:none"></div>
         <div class="kpis" style="margin-top:12px" id="vacaKpis"></div>
-        <!-- datos del animal: el lápiz vuelve la tarjeta editable EN EL LUGAR (sin modal) -->
-        <div class="card" style="margin-top:12px;font-size:13px;color:var(--ink-2);line-height:1.6">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-            <b style="color:var(--ink)">Datos del animal</b>
-            <div style="flex:1"></div>
-            <button class="btn outl small" id="vacaDatosEditBtn" onclick="editarDatosVaca()" title="Editar estos datos aquí mismo">
-              <svg class="ic-s ic"><use href="#i-edit"/></svg>Editar</button>
-          </div>
-          <div id="vacaGenea"></div>
-          <div id="vacaEtapas" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12.5px"></div>
-        </div>
         <div class="card" style="margin-top:12px;padding:12px 14px">
           <div style="display:flex;gap:10px;align-items:center" id="vacaSanidad">
             <svg class="ic-s ic" style="color:var(--green)"><use href="#i-shield"/></svg>
