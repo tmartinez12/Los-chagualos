@@ -1966,29 +1966,48 @@ function aplicarTratamientos(num,nombre,trats,contexto){
   };
 }
 const palp={cow:'',nota:'',parsed:null};
+/* dropdown de vaca: botón con la elegida; desplegado = buscador + lista */
+function palpDropToggle(){
+  const p=document.getElementById('palpDropPanel');if(!p)return;
+  const abrir=p.style.display==='none';
+  p.style.display=abrir?'':'none';
+  const car=document.getElementById('palpDropCaret');if(car)car.textContent=abrir?'▴':'▾';
+  if(abrir){const b=document.getElementById('palpBuscar');if(b){b.value='';setTimeout(()=>b.focus(),50);}renderPalpCows();}
+}
+function _palpDropLabel(){
+  const l=document.getElementById('palpDropLabel');
+  if(l)l.textContent=palp.cow?palp.cow.replace(' · ',' '):'Elige la vaca…';
+}
 function renderPalpCows(){
   const c=document.getElementById('palpCows');if(!c)return;c.innerHTML='';
   const q=((document.getElementById('palpBuscar')||{}).value||'').trim().toLowerCase();
   const eleg=_palpElegibles().filter(it=>!q||it.cow.toLowerCase().indexOf(q)>=0);
-  if(!eleg.length){c.innerHTML='<span style="font-size:12.5px;color:var(--ink-3)">Ninguna vaca coincide con la búsqueda.</span>';return;}
+  if(!eleg.length){c.innerHTML='<div style="font-size:12.5px;color:var(--ink-3);padding:8px">Ninguna vaca coincide con la búsqueda.</div>';return;}
   /* con muchas por palpar, separar visualmente las prioritarias del resto */
   const yaC=new Set(palpCandidatas.map(x=>x.cow));
   const conGrupos=yaC.size>0;
+  const TAG={servida:'servida',vacia:'vacía',prenada:'preñada'};
   let grupoPrev=null;
   eleg.forEach(it=>{
     if(conGrupos){
       const g=yaC.has(it.cow)?'Por confirmar':'Las demás';
       if(g!==grupoPrev){grupoPrev=g;
         const lab=document.createElement('div');
-        lab.style.cssText='width:100%;flex-basis:100%;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-3);margin:4px 0 2px';
+        lab.style.cssText='font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-3);margin:6px 4px 2px';
         lab.textContent=g;c.appendChild(lab);}
     }
-    const b=document.createElement('button');b.className='pchip';
-    b.textContent=it.cow.replace(' · ',' ');
-    if(it.cow===palp.cow)b.classList.add('sel');
-    b.onclick=()=>{palp.cow=it.cow;
+    const num=it.cow.split(' · ')[0],nombre=it.cow.split(' · ')[1]||'';
+    const a=animalesPorId[num];
+    const sel=it.cow===palp.cow;
+    const b=document.createElement('button');
+    b.style.cssText='width:100%;box-sizing:border-box;display:flex;gap:8px;align-items:center;border:0;'+
+      'background:'+(sel?'var(--surface)':'transparent')+';border-radius:8px;padding:8px 10px;'+
+      'font-family:inherit;font-size:13.5px;color:var(--ink);cursor:pointer;text-align:left';
+    b.innerHTML='<b>'+LCRules.esc(num)+'</b> '+LCRules.esc(nombre)+(sel?' ✓':'')+
+      '<span style="margin-left:auto;color:var(--ink-3);font-size:11.5px">'+(a&&TAG[a.estadoRepro]||'')+'</span>';
+    b.onclick=()=>{palp.cow=it.cow;_palpDropLabel();
       document.getElementById('palpInfo').textContent=it.motivo;
-      renderPalpCows();};
+      palpDropToggle();};   // elegir cierra el dropdown
     c.appendChild(b);
   });
 }
@@ -2030,12 +2049,16 @@ function openPalp(cow){
   if(cow)palp.cow=cow;
   else if(!eleg.find(x=>x.cow===palp.cow)&&eleg.length)palp.cow=eleg[0].cow;
   palp.nota='';palp.parsed=null;
+  /* dropdown cerrado y limpio al abrir el modal; el botón muestra la elegida */
   const pb=document.getElementById('palpBuscar');if(pb)pb.value='';
+  const panel=document.getElementById('palpDropPanel');if(panel)panel.style.display='none';
+  const car=document.getElementById('palpDropCaret');if(car)car.textContent='▾';
+  _palpDropLabel();
   const info=eleg.find(x=>x.cow===palp.cow);
   document.getElementById('palpInfo').textContent=info?info.motivo:'Confirma el resultado de la palpación';
   document.getElementById('palpNota').value='';
   const fIn=document.getElementById('palpFecha');if(fIn)fIn.value=isoHoy();   // por defecto hoy, editable
-  renderPalpCows();renderPalpInterp();
+  renderPalpInterp();
   document.getElementById('palpScrim').classList.add('show');
   document.getElementById('palpModal').classList.add('show');
   setTimeout(()=>document.getElementById('palpNota').focus(),100);

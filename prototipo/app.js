@@ -1334,14 +1334,38 @@ function pintarCowChips(containerId,lista,current,onPick){
 }
 function listaCows(){return cows.map(c=>c.num+' · '+c.n);}
 function listaTodos(){return Object.values(animalesPorIdM).filter(a=>a.grupo!=='baja').map(a=>a.id+' · '+a.nombre);}
-function palpMarcarVaca(){document.querySelectorAll('#palpCows .chip').forEach(c=>
-  c.classList.toggle('sel',c.textContent.trim().split(' ')[0]===numDe(palp.cow)));}
 /* lista completa del picker (prioritarias primero) — la guarda openPalp y el
- * buscador la filtra sin recalcular */
+ * buscador la filtra sin recalcular. Dropdown: botón con la elegida que
+ * despliega búsqueda + lista con scroll. */
 let _palpListaM=[];
+function palpDropToggleM(){
+  const p=document.getElementById('palpDropPanelM');if(!p)return;
+  const abrir=p.style.display==='none';
+  p.style.display=abrir?'':'none';
+  const car=document.getElementById('palpDropCaretM');if(car)car.textContent=abrir?'▴':'▾';
+  if(abrir){const b=document.getElementById('palpBuscarM');if(b){b.value='';}_palpFiltrarM();}
+}
+function _palpDropLabelM(){
+  const l=document.getElementById('palpDropLabelM');
+  if(l)l.textContent=palp.cow?palp.cow.replace(' · ',' '):'Elige la vaca…';
+}
 function _palpFiltrarM(){
+  const c=document.getElementById('palpCows');if(!c)return;c.innerHTML='';
   const q=((document.getElementById('palpBuscarM')||{}).value||'').trim().toLowerCase();
-  pintarCowChips('palpCows',_palpListaM.filter(k=>!q||k.toLowerCase().indexOf(q)>=0),palp.cow,palpCow);
+  const lista=_palpListaM.filter(k=>!q||k.toLowerCase().indexOf(q)>=0);
+  if(!lista.length){c.innerHTML='<div style="font-size:12.5px;color:var(--ink-3);padding:8px">Ninguna vaca coincide con la búsqueda.</div>';return;}
+  lista.forEach(cw=>{
+    const sel=cw===palp.cow;
+    const b=document.createElement('button');
+    b.style.cssText='width:100%;box-sizing:border-box;display:flex;gap:8px;align-items:center;border:0;'+
+      'background:'+(sel?'var(--card)':'transparent')+';border-radius:8px;padding:9px 10px;'+
+      'font-family:inherit;font-size:14px;color:var(--ink);cursor:pointer;text-align:left';
+    const num=cw.split(' · ')[0],nombre=cw.split(' · ')[1]||'';
+    b.innerHTML='<b>'+LCRules.esc(num)+'</b> '+LCRules.esc(nombre)+(sel?' ✓':'')+
+      '<span style="margin-left:auto;color:var(--ink-3);font-size:11.5px">'+LCRules.esc(palpCandidatas[cw]?(palpCandidatas[cw].split(',')[0].split(' hace')[0]):'')+'</span>';
+    b.onclick=()=>{palpCow(cw);palpDropToggleM();};   // elegir cierra el dropdown
+    c.appendChild(b);
+  });
 }
 function openPalp(cow){
   /* TODAS las hembras palpables (ordeño/horra/novilla), no solo las candidatas
@@ -1354,15 +1378,18 @@ function openPalp(cow){
     .sort((x,y)=>x.localeCompare(y,undefined,{numeric:true}));
   const lista=prio.concat(resto);
   _palpListaM=lista;
+  /* dropdown cerrado y limpio al abrir; el botón muestra la elegida */
   const pb=document.getElementById('palpBuscarM');if(pb)pb.value='';
+  const panel=document.getElementById('palpDropPanelM');if(panel)panel.style.display='none';
+  const car=document.getElementById('palpDropCaretM');if(car)car.textContent='▾';
   palp.cow=cow||lista[0]||'';
   palp.resultado='prenada';palp.meses=2;palp.fecha=isoHoyM();
-  pintarCowChips('palpCows',lista,palp.cow,palpCow);
+  _palpDropLabelM();
   document.getElementById('palpCow').textContent=(palp.cow||'—').toUpperCase();
   document.getElementById('palpInfo').textContent=palpCandidatas[palp.cow]||'Confirma el resultado de la palpación';
   document.getElementById('palpMesesVal').textContent=palp.meses;
   const pf=document.getElementById('palpFecha');if(pf){pf.max=isoHoyM();pf.value=palp.fecha;}
-  const res=document.querySelectorAll('#palpSheet .chips')[1].querySelectorAll('.chip');
+  const res=document.querySelectorAll('#palpResChips .chip');
   res.forEach((c,i)=>c.classList.toggle('sel',i===0));
   palpMostrarMeses();
   document.getElementById('scrim').classList.add('show');
@@ -1373,7 +1400,7 @@ function closePalp(){document.getElementById('palpSheet').classList.remove('show
 function palpCow(cow){palp.cow=cow;
   document.getElementById('palpCow').textContent=cow.toUpperCase();
   document.getElementById('palpInfo').textContent=palpCandidatas[cow]||'Confirma el resultado de la palpación';
-  palpMarcarVaca();}
+  _palpDropLabelM();}
 function palpRes(btn,val){palp.resultado=val;
   [...btn.parentNode.children].forEach(c=>c.classList.toggle('sel',c===btn));
   palpMostrarMeses();}
